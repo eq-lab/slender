@@ -5,6 +5,7 @@ members = [
     "common",
     "deployer",
     "pool",
+    "pool-interface",
     "s-token",
     "s-token-interface",
 ]
