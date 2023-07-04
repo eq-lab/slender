@@ -1,0 +1,15 @@
+[package]
+name = "debt-token-interface"
+version = "0.1.0"
+edition = "2021"
+authors = ["eq-lab"]
+description = "Debt-token interface"
+
+[lib]
+crate-type = ["cdylib"]
+
+
+[dependencies]
+soroban-sdk = { git = "https://github.com/stellar/rs-soroban-sdk.git", rev = "e48a3c435a1c1e1055f03f8e507c63f62a927ef9" } # tag 0.9.1
+
+[workspace]
