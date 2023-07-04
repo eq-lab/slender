@@ -1,0 +1,22 @@
+[package]
+name = "pool"
+authors = ["eq-lab"]
+version = "0.1.0"
+edition = "2021"
+description = "Liquidity pool contract"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+s-token-interface={ path="../s-token-interface", version="0.1.0", package="s-token-interface" }
+pool-interface={ path="../pool-interface", version="0.1.0", package="pool-interface" }
+common = { path = "../common", version="0.1.0", package = "common"}
+
+[dev_dependencies]
+soroban-sdk = { workspace = true, features=["testutils"] }
+s-token-interface={path="../s-token-interface"}
+
+[features]
+testutils = ["soroban-sdk/testutils", "s-token-interface/testutils", "pool-interface/testutils"]
