@@ -21,8 +21,8 @@ jobs:
     - name: Clippy
       run: make clippy
     - name: Test
-      run: make test
+      run: |
+        rustup target add wasm32-unknown-unknown
+        make test
     - name: Check
       run: make check
-
-
