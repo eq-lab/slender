@@ -1,4 +1,4 @@
-name: Rust
+name: Linter and tests
 
 on:
   push:
