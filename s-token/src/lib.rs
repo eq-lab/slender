@@ -9,7 +9,7 @@ use crate::storage::*;
 use common::RateMath;
 use pool_interface::{LendingPoolClient, ReserveData};
 use s_token_interface::STokenTrait;
-use soroban_sdk::{contractimpl, token, Address, Bytes, Env};
+use soroban_sdk::{contract, contractimpl, token, Address, Env, String};
 use soroban_token_sdk::TokenMetadata;
 
 fn check_nonnegative_amount(amount: i128) {
@@ -24,6 +24,7 @@ fn verify_caller_is_pool(e: &Env) -> Address {
     pool
 }
 
+#[contract]
 pub struct SToken;
 
 #[contractimpl]
@@ -47,8 +48,8 @@ impl STokenTrait for SToken {
     fn initialize(
         e: Env,
         decimal: u32,
-        name: Bytes,
-        symbol: Bytes,
+        name: String,
+        symbol: String,
         pool: Address,
         treasury: Address,
         underlying_asset: Address,
@@ -92,59 +93,36 @@ impl STokenTrait for SToken {
         read_allowance(&e, from, spender)
     }
 
-    /// Increases the allowance for a spender to withdraw from the `from` address by a specified amount of tokens.
+    /// Set the allowance by `amount` for `spender` to transfer/burn from
+    /// `from`.
     ///
     /// # Arguments
     ///
-    /// - from - The address of the token owner.
-    /// - spender - The address of the spender.
-    /// - amount - The amount of tokens to increase the allowance by.
+    /// - `from` - The address holding the balance of tokens to be drawn from.
+    /// - `spender` - The address being authorized to spend the tokens held by
+    ///   `from`.
+    /// - `amount` - The tokens to be made availabe to `spender`.
+    /// - `expiration_ledger` - Not used. The ledger number where this allowance expires. Cannot
+    ///    be less than the current ledger number unless the amount is being set to 0.
+    ///    An expired entry (where expiration_ledger < the current ledger number)
+    ///    should be treated as a 0 amount allowance.
+    /// # Events
     ///
-    /// # Panics
-    ///
-    /// Panics if the caller is not authorized.
-    /// Panics if the amount is negative.
-    /// Panics if the updated allowance exceeds the maximum value of i128.
-    ///
-    fn increase_allowance(e: Env, from: Address, spender: Address, amount: i128) {
-        from.require_auth();
-
-        check_nonnegative_amount(amount);
-
-        let allowance = read_allowance(&e, from.clone(), spender.clone());
-        let new_allowance = allowance
-            .checked_add(amount)
-            .expect("Updated allowance doesn't fit in an i128");
-
-        write_allowance(&e, from.clone(), spender.clone(), new_allowance);
-        event::increase_allowance(&e, from, spender, amount);
-    }
-
-    /// Decreases the allowance for a spender to withdraw from the `from` address by a specified amount of tokens.
-    ///
-    /// # Arguments
-    ///
-    /// - from - The address of the token owner.
-    /// - spender - The address of the spender.
-    /// - amount - The amount of tokens to decrease the allowance by.
-    ///
+    /// Emits an event with topics `["approve", from: Address,
+    /// spender: Address], data = [amount: i128, expiration_ledger: u32]`
     /// # Panics
     ///
     /// Panics if the caller is not authorized.
     /// Panics if the amount is negative.
     ///
-    fn decrease_allowance(e: Env, from: Address, spender: Address, amount: i128) {
+    fn approve(env: Env, from: Address, spender: Address, amount: i128, _expiration_ledger: u32) {
         from.require_auth();
 
         check_nonnegative_amount(amount);
 
-        let allowance = read_allowance(&e, from.clone(), spender.clone());
-        if amount >= allowance {
-            write_allowance(&e, from.clone(), spender.clone(), 0);
-        } else {
-            write_allowance(&e, from.clone(), spender.clone(), allowance - amount);
-        }
-        event::decrease_allowance(&e, from, spender, amount);
+        write_allowance(&env, from.clone(), spender.clone(), amount);
+
+        event::approve(&env, from, spender, amount, _expiration_ledger);
     }
 
     /// Returns the balance of tokens for a specified `id`.
@@ -258,45 +236,6 @@ impl STokenTrait for SToken {
         panic!("not used")
     }
 
-    /// Clawbacks a specified amount of tokens from the from account.
-    ///
-    /// # Arguments
-    ///
-    /// - from - The address of the token holder to clawback tokens from.
-    /// - amount - The amount of tokens to clawback.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the amount is negative.
-    /// Panics if the caller is not the pool associated with this token.
-    ///
-    fn clawback(e: Env, from: Address, amount: i128) {
-        check_nonnegative_amount(amount);
-        verify_caller_is_pool(&e);
-
-        Self::spend_balance(&e, from.clone(), amount);
-        Self::add_total_supply(&e, -amount);
-        event::clawback(&e, from, amount);
-    }
-
-    /// Sets the authorization status for a specified `id`.
-    ///
-    /// # Arguments
-    ///
-    /// - id - The address to set the authorization status for.
-    /// - authorize - A boolean value indicating whether to authorize (true) or deauthorize (false) the id.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the caller is not the pool associated with this token.
-    ///
-    fn set_authorized(e: Env, id: Address, authorize: bool) {
-        verify_caller_is_pool(&e);
-
-        write_authorization(&e, id.clone(), authorize);
-        event::set_authorized(&e, id, authorize);
-    }
-
     /// Mints a specified amount of tokens for a given `id`.
     ///
     /// # Arguments
@@ -356,7 +295,7 @@ impl STokenTrait for SToken {
     ///
     /// The name of the token as a `soroban_sdk::Bytes` value.
     ///
-    fn name(e: Env) -> Bytes {
+    fn name(e: Env) -> String {
         read_name(&e)
     }
 
@@ -366,7 +305,7 @@ impl STokenTrait for SToken {
     ///
     /// The symbol of the token as a `soroban_sdk::Bytes` value.
     ///
-    fn symbol(e: Env) -> Bytes {
+    fn symbol(e: Env) -> String {
         read_symbol(&e)
     }
 

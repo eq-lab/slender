@@ -1,7 +1,7 @@
 #![deny(warnings)]
 #![no_std]
 
-use soroban_sdk::{contractclient, contractspecfn, Address, Bytes, Env};
+use soroban_sdk::{contractclient, contractspecfn, Address, Env, String};
 pub struct Spec;
 
 /// Interface for SToken
@@ -11,18 +11,16 @@ pub trait STokenTrait {
     fn initialize(
         e: Env,
         decimal: u32,
-        name: Bytes,
-        symbol: Bytes,
+        name: String,
+        symbol: String,
         pool: Address,
         treasury: Address,
         underlying_asset: Address,
     );
 
-    fn allowance(e: Env, from: Address, spender: Address) -> i128;
+    fn allowance(env: Env, from: Address, spender: Address) -> i128;
 
-    fn increase_allowance(e: Env, from: Address, spender: Address, amount: i128);
-
-    fn decrease_allowance(e: Env, from: Address, spender: Address, amount: i128);
+    fn approve(env: Env, from: Address, spender: Address, amount: i128, expiration_ledger: u32);
 
     fn balance(e: Env, id: Address) -> i128;
 
@@ -38,17 +36,13 @@ pub trait STokenTrait {
 
     fn burn_from(e: Env, spender: Address, from: Address, amount: i128);
 
-    fn clawback(e: Env, from: Address, amount: i128);
-
-    fn set_authorized(e: Env, id: Address, authorize: bool);
-
     fn mint(e: Env, to: Address, amount: i128);
 
     fn decimals(e: Env) -> u32;
 
-    fn name(e: Env) -> Bytes;
+    fn name(e: Env) -> String;
 
-    fn symbol(e: Env) -> Bytes;
+    fn symbol(e: Env) -> String;
 
     fn total_supply(e: Env) -> i128;
 

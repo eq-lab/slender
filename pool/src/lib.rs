@@ -2,13 +2,16 @@
 #![no_std]
 use common::RateMath;
 use pool_interface::*;
-use soroban_sdk::{assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env};
+use soroban_sdk::{
+    assert_with_error, contract, contractimpl, panic_with_error, token, Address, BytesN, Env,
+};
 
 mod event;
 mod storage;
 
 use crate::storage::*;
 
+#[contract]
 pub struct LendingPool;
 
 #[contractimpl]

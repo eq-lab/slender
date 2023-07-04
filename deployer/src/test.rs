@@ -3,7 +3,7 @@
 extern crate std;
 
 use crate::{Deployer, DeployerClient};
-use soroban_sdk::{testutils::Address as _, Address, Bytes, BytesN, Env};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String};
 
 mod pool {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/pool.wasm");
@@ -21,7 +21,7 @@ fn deploy_pool_and_s_token() {
     // Deploy pool
     let pool_contract_id = {
         // Install the WASM code to be deployed from the deployer contract.
-        let pool_wasm_hash = env.install_contract_wasm(pool::WASM);
+        let pool_wasm_hash = env.deployer().upload_contract_wasm(pool::WASM);
 
         // Deploy contract using deployer, and include an init function to call.
         let salt = BytesN::from_array(&env, &[5; 32]);
@@ -38,13 +38,13 @@ fn deploy_pool_and_s_token() {
 
     // Deploy s-token
     let s_token_contract_id = {
-        let s_token_wasm_hash = env.install_contract_wasm(s_token::WASM);
+        let s_token_wasm_hash = env.deployer().upload_contract_wasm(s_token::WASM);
 
         let decimal = 7u32;
         let treasury = Address::random(&env);
         let underlying_asset = Address::random(&env);
-        let name = Bytes::from_slice(&env, b"name");
-        let symbol = Bytes::from_slice(&env, b"symbol");
+        let name = String::from_slice(&env, "name");
+        let symbol = String::from_slice(&env, "symbol");
 
         let (contract_id, init_result) = client.deploy_s_token(
             &BytesN::from_array(&env, &[1; 32]),

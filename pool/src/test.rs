@@ -1,7 +1,8 @@
 use crate::*;
 use s_token_interface::STokenClient;
 use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
-use soroban_sdk::{token, vec, IntoVal, Symbol};
+use soroban_sdk::{symbol_short, token, vec, IntoVal, Symbol};
+use token::AdminClient as TokenAdminClient;
 use token::Client as TokenClient;
 
 extern crate std;
@@ -10,8 +11,12 @@ mod s_token {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/s_token.wasm");
 }
 
-fn create_token_contract<'a>(e: &Env, admin: &Address) -> TokenClient<'a> {
-    TokenClient::new(e, &e.register_stellar_asset_contract(admin.clone()))
+fn create_token_contract<'a>(e: &Env, admin: &Address) -> (TokenClient<'a>, TokenAdminClient<'a>) {
+    let stellar_asset_contract = e.register_stellar_asset_contract(admin.clone());
+    (
+        TokenClient::new(e, &stellar_asset_contract),
+        TokenAdminClient::new(e, &stellar_asset_contract),
+    )
 }
 
 fn create_pool_contract<'a>(e: &Env, admin: &Address) -> LendingPoolClient<'a> {
@@ -44,8 +49,10 @@ fn create_s_token_contract<'a>(
 struct Sut<'a> {
     pool: LendingPoolClient<'a>,
     underlying_token: TokenClient<'a>,
+    underlying_token_admin: TokenAdminClient<'a>,
     s_token: STokenClient<'a>,
     debt_token: TokenClient<'a>,
+    debt_token_admin: TokenAdminClient<'a>,
     pool_admin: Address,
     token_admin: Address,
 }
@@ -55,8 +62,8 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
     let token_admin = Address::random(&env);
     let treasury = Address::random(&env);
 
-    let underlying_token = create_token_contract(&env, &token_admin);
-    let debt_token = create_token_contract(&env, &token_admin);
+    let (underlying_token, underlying_token_admin) = create_token_contract(&env, &token_admin);
+    let (debt_token, debt_token_admin) = create_token_contract(&env, &token_admin);
 
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
     let s_token =
@@ -75,7 +82,9 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
         pool,
         s_token,
         underlying_token,
+        underlying_token_admin,
         debt_token,
+        debt_token_admin,
         pool_admin: admin,
         token_admin,
     }
@@ -89,8 +98,8 @@ fn init_reserve() {
     let token_admin = Address::random(&env);
     let treasury = Address::random(&env);
 
-    let underlying_token = create_token_contract(&env, &token_admin);
-    let debt_token = create_token_contract(&env, &token_admin);
+    let (underlying_token, _) = create_token_contract(&env, &token_admin);
+    let (debt_token, _) = create_token_contract(&env, &token_admin);
 
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
     let s_token =
@@ -105,7 +114,6 @@ fn init_reserve() {
     assert_eq!(
         pool.mock_auths(&[MockAuth {
             address: &admin,
-            nonce: 0,
             invoke: &MockAuthInvoke {
                 contract: &pool.address,
                 fn_name: "init_reserve",
@@ -149,8 +157,8 @@ fn init_reserve_when_pool_not_initialized() {
     let token_admin = Address::random(&env);
     let treasury = Address::random(&env);
 
-    let underlying_token = create_token_contract(&env, &token_admin);
-    let debt_token = create_token_contract(&env, &token_admin);
+    let (underlying_token, underlying_token_admin) = create_token_contract(&env, &token_admin);
+    let (debt_token, _) = create_token_contract(&env, &token_admin);
 
     let pool: LendingPoolClient<'_> =
         LendingPoolClient::new(&env, &env.register_contract(None, LendingPool));
@@ -166,15 +174,14 @@ fn init_reserve_when_pool_not_initialized() {
     assert_eq!(
         pool.mock_auths(&[MockAuth {
             address: &admin,
-            nonce: 0,
             invoke: &MockAuthInvoke {
                 contract: &pool.address,
                 fn_name: "init_reserve",
-                args: (&underlying_token.address, init_reserve_input.clone()).into_val(&env),
+                args: (&underlying_token_admin.address, init_reserve_input.clone()).into_val(&env),
                 sub_invokes: &[],
             }
         }])
-        .try_init_reserve(&underlying_token.address, &init_reserve_input)
+        .try_init_reserve(&underlying_token_admin.address, &init_reserve_input)
         .unwrap_err()
         .unwrap(),
         Error::Uninitialized
@@ -188,11 +195,13 @@ fn withdraw_base() {
 
     let sut = init_pool(&env);
 
+    env.budget().reset_default();
+
     let user1 = Address::random(&env);
     let user2 = Address::random(&env);
 
     let initial_balance = 1_000_000_000;
-    sut.underlying_token.mint(&user1, &1_000_000_000);
+    sut.underlying_token_admin.mint(&user1, &1_000_000_000);
     assert_eq!(sut.underlying_token.balance(&user1), initial_balance);
 
     let deposit_amount = 10000;
@@ -208,6 +217,8 @@ fn withdraw_base() {
         sut.underlying_token.balance(&sut.s_token.address),
         deposit_amount
     );
+
+    env.budget().reset_default();
 
     let amount_to_withdraw = 3500;
     sut.pool.withdraw(
@@ -226,14 +237,16 @@ fn withdraw_base() {
         deposit_amount - amount_to_withdraw
     );
 
-    let withdraw_event = env.events().all().pop_back_unchecked().unwrap();
+    env.budget().reset_default();
+
+    let withdraw_event = env.events().all().pop_back_unchecked();
     assert_eq!(
         vec![&env, withdraw_event],
         vec![
             &env,
             (
                 sut.pool.address.clone(),
-                (Symbol::short("withdraw"), &user1).into_val(&env),
+                (symbol_short!("withdraw"), &user1).into_val(&env),
                 (&user2, &sut.underlying_token.address, amount_to_withdraw).into_val(&env)
             ),
         ]
@@ -246,14 +259,14 @@ fn withdraw_base() {
     assert_eq!(sut.s_token.balance(&user1), 0);
     assert_eq!(sut.underlying_token.balance(&sut.s_token.address), 0);
 
-    let withdraw_event = env.events().all().pop_back_unchecked().unwrap();
+    let withdraw_event = env.events().all().pop_back_unchecked();
     assert_eq!(
         vec![&env, withdraw_event],
         vec![
             &env,
             (
                 sut.pool.address.clone(),
-                (Symbol::short("withdraw"), &user1).into_val(&env),
+                (symbol_short!("withdraw"), &user1).into_val(&env),
                 (
                     &user2,
                     sut.underlying_token.address.clone(),
@@ -267,7 +280,7 @@ fn withdraw_base() {
     let coll_disabled_event = env
         .events()
         .all()
-        .get_unchecked(env.events().all().len() - 4)
+        .get(env.events().all().len() - 4)
         .unwrap();
     assert_eq!(
         vec![&env, coll_disabled_event],
@@ -292,8 +305,10 @@ fn withdraw_interest_rate_less_than_one() {
     let user1 = Address::random(&env);
     let user2 = Address::random(&env);
 
+    env.budget().reset_default();
+
     let initial_balance = 1_000_000_000;
-    sut.underlying_token.mint(&user1, &1_000_000_000);
+    sut.underlying_token_admin.mint(&user1, &1_000_000_000);
     assert_eq!(sut.underlying_token.balance(&user1), initial_balance);
 
     let liquidity_index = 500_000_000; //0.5
@@ -312,6 +327,8 @@ fn withdraw_interest_rate_less_than_one() {
         sut.underlying_token.balance(&sut.s_token.address),
         deposit_amount
     );
+
+    env.budget().reset_default();
 
     let withdraw_amount = 500;
     sut.pool.withdraw(
@@ -334,8 +351,10 @@ fn withdraw_interest_rate_greater_than_one() {
     let user1 = Address::random(&env);
     let user2 = Address::random(&env);
 
+    env.budget().reset_default();
+
     let initial_balance = 1_000_000_000;
-    sut.underlying_token.mint(&user1, &1_000_000_000);
+    sut.underlying_token_admin.mint(&user1, &1_000_000_000);
     assert_eq!(sut.underlying_token.balance(&user1), initial_balance);
 
     let liquidity_index = 1_200_000_000; //1.2
@@ -354,6 +373,8 @@ fn withdraw_interest_rate_greater_than_one() {
         sut.underlying_token.balance(&sut.s_token.address),
         deposit_amount
     );
+
+    env.budget().reset_default();
 
     let withdraw_amount = 500;
     sut.pool.withdraw(
@@ -400,12 +421,14 @@ fn withdraw_more_than_balance() {
     let user1 = Address::random(&env);
 
     let initial_balance = 1_000_000_000;
-    sut.underlying_token.mint(&user1, &1_000_000_000);
+    sut.underlying_token_admin.mint(&user1, &1_000_000_000);
     assert_eq!(sut.underlying_token.balance(&user1), initial_balance);
 
     let deposit_amount = 1000;
     sut.pool
         .deposit(&user1, &sut.underlying_token.address, &deposit_amount);
+
+    env.budget().reset_default();
 
     let withdraw_amount = 2000;
     assert_eq!(
@@ -453,10 +476,12 @@ fn deposit() {
 
     let sut = init_pool(&env);
 
+    env.budget().reset_default();
+
     for i in 0..10 {
         let user = Address::random(&env);
         let initial_balance = 1_000_000_000;
-        sut.underlying_token.mint(&user, &1_000_000_000);
+        sut.underlying_token_admin.mint(&user, &1_000_000_000);
         assert_eq!(sut.underlying_token.balance(&user), initial_balance);
 
         let deposit_amount = 1_000_0;
@@ -478,14 +503,14 @@ fn deposit() {
             initial_balance - deposit_amount
         );
 
-        let last = env.events().all().pop_back_unchecked().unwrap();
+        let last = env.events().all().pop_back_unchecked();
         assert_eq!(
             vec![&env, last],
             vec![
                 &env,
                 (
                     sut.pool.address.clone(),
-                    (Symbol::short("deposit"), user).into_val(&env),
+                    (symbol_short!("deposit"), user).into_val(&env),
                     (sut.underlying_token.address.clone(), deposit_amount).into_val(&env)
                 ),
             ]
