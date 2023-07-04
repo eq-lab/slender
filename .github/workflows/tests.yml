@@ -20,4 +20,9 @@ jobs:
       run: make fmt-check
     - name: Clippy
       run: make clippy
+    - name: Test
+      run: make test
+    - name: Check
+      run: make check
+
 
