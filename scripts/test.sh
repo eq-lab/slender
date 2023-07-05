@@ -1,14 +1,14 @@
 #!/bin/bash
 
-declare $(cat scripts/.env)
-declare $(cat scripts/.contracts)
+source scripts/.env
+source scripts/.contracts
 
 invoke() {
     local result=$(soroban contract invoke \
         --id $1 \
         --source $2 \
         --rpc-url http://localhost:8000/soroban/rpc \
-        --network-passphrase 'Standalone Network ; February 2017' \
+        --network-passphrase "$PASSPHRASE" \
         -- \
         $3)
     echo $result
