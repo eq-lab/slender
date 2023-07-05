@@ -69,7 +69,7 @@ All parameters of demo script could be found in `scripts/.env`
 
 ### Futurenet
 
-To deploy and run demo script in the Futurenet network you should run soroban-rpc with command
+To deploy and run demo script in the Futurenet network you should run soroban-rpc with command and wait for synchronization
 
 ```shell
 docker run --rm -it \
