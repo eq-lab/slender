@@ -1,20 +1,21 @@
 #!/bin/bash
 
-declare $(cat scripts/.env)
+source scripts/.env
 
 TREASURY_SECRET="${TREASURY_SECRET:-SDUQ5O67BWZUAR6GTCFWN6QM7BZBXDD5SRPMWUTIS2N37CVNKPNV3GFY}"
 TREASURY_PUBLIC="${TREASURY_PUBLIC:-GCG4IJLJBBHAAACKB245CSY6HFDQDL3OO4FCNYACQE2S7X4P36FAXT3Q}"
 
-curl -s "http://localhost:8000/friendbot?addr=$TOKEN_PUBLIC" 1>/dev/null
-curl -s "http://localhost:8000/friendbot?addr=$POOL_PUBLIC" 1>/dev/null
-sleep 1
+curl -s "$FRIENDBOT_URL?addr=$TOKEN_PUBLIC" 1>/dev/null
+curl -s "$FRIENDBOT_URL?addr=$POOL_PUBLIC" 1>/dev/null
+sleep 10
+
 
 deploy() {
     local address=$(soroban contract deploy \
         --wasm $1 \
         --source $2 \
         --rpc-url http://localhost:8000/soroban/rpc \
-        --network-passphrase 'Standalone Network ; February 2017')
+        --network-passphrase "$PASSPHRASE")
     echo $address
 }
 
@@ -23,7 +24,7 @@ install() {
         --wasm $1 \
         --source $2 \
         --rpc-url http://localhost:8000/soroban/rpc \
-        --network-passphrase 'Standalone Network ; February 2017')
+        --network-passphrase "$PASSPHRASE")
     echo $hash
 }
 
@@ -32,7 +33,7 @@ invoke() {
         --id $1 \
         --source $2 \
         --rpc-url http://localhost:8000/soroban/rpc \
-        --network-passphrase 'Standalone Network ; February 2017' \
+        --network-passphrase "$PASSPHRASE" \
         -- \
         $3)
     echo $result

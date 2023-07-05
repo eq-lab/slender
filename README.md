@@ -66,3 +66,33 @@ Run simulation script (stay at root project directory):
 ```
 
 All parameters of demo script could be found in `scripts/.env`
+
+### Futurenet
+
+To deploy and run demo script in the Futurenet network you should run soroban-rpc with command and wait for synchronization
+
+```shell
+docker run --rm -it \
+   -p 8000:8000 \
+   --name stellar \
+   stellar/quickstart:soroban-dev@sha256:57e8ab498bfa14c65595fbb01cb94b1cdee9637ef2e6634e59d54f6958c05bdb \
+   --futurenet \
+   --enable-soroban-rpc
+```
+
+copy all variables from `.futurenet.env` to `.env` file and run `./scripts/demo.sh`
+
+### How to add token to freighter wallet
+
+In order to add new token to the freighter wallet you need to convert token address base32 representation to hex and use it as Token Id.
+
+Script example:
+
+```js
+const { StrKey } = require("soroban-client");
+
+let id = "CCLZ4QF5QSWBANABDZPC3XKHMVX3GUSLFLP4JS22SCIGLADD2E7STHDR";
+console.log(StrKey.decodeContract(id).toString("hex"));
+//result
+//979e40bd84ac1034011e5e2ddd47656fb3524b2adfc4cb5a9090658063d13f29
+```
