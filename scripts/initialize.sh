@@ -1,17 +1,17 @@
 #!/bin/bash
 
 #Read $TOKEN, $TOKEN_SECRET, $USER_PUBLIC, $POOL, $POOL_SECRET, $STOKEN, $DEBT_TOKEN
-declare $(cat scripts/.env)
-declare $(cat scripts/.contracts)
+source scripts/.env
+source scripts/.contracts
 
-curl -s "http://localhost:8000/friendbot?addr=$USER_PUBLIC" 1>/dev/null
+curl -s "$FRIENDBOT_URL?addr=$USER_PUBLIC" 1>/dev/null
 
 # Mint amount $MINT_AMOUNT to user $USER_PUBLIC
 soroban contract invoke \
     --id $TOKEN \
     --source $TOKEN_SECRET \
     --rpc-url http://localhost:8000/soroban/rpc \
-    --network-passphrase 'Standalone Network ; February 2017' \
+    --network-passphrase "$PASSPHRASE" \
     -- \
     mint \
     --to $USER_PUBLIC \
@@ -24,7 +24,7 @@ soroban contract invoke \
     --id $POOL \
     --source $POOL_SECRET \
     --rpc-url http://localhost:8000/soroban/rpc \
-    --network-passphrase 'Standalone Network ; February 2017' \
+    --network-passphrase "$PASSPHRASE" \
     -- \
     init_reserve \
     --asset $TOKEN \
