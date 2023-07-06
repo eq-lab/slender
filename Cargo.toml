@@ -6,6 +6,8 @@ members = [
     "deployer",
     "pool",
     "pool-interface",
+    "contracts/price-feed-mock",
+    "price-feed-interface",
     "s-token",
     "s-token-interface",
 ]

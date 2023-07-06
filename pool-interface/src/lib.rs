@@ -39,6 +39,10 @@ pub trait LendingPoolTrait {
 
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData>;
 
+    fn set_price_feed(env: Env, feed: Address) -> Result<(), Error>;
+
+    fn get_price_feed(env: Env) -> Option<Address>;
+
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn finalize_transfer(

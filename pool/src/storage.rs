@@ -9,6 +9,7 @@ pub enum DataKey {
     ReserveAssetKey(Address),
     Reserves,
     UserConfig(Address),
+    OraclePriceFeed,
 }
 
 pub fn has_admin(env: &Env) -> bool {
@@ -64,3 +65,15 @@ pub fn read_user_config(env: &Env, user: Address) -> Option<UserConfiguration> {
 pub fn write_user_config(env: &Env, user: Address, config: &UserConfiguration) {
     env.storage().set(&DataKey::UserConfig(user), config);
 }
+
+pub fn read_price_feed(env: &Env) -> Result<Address, Error> {
+    env.storage()
+        .get(&DataKey::OraclePriceFeed)
+        .ok_or(Error::Uninitialized)?
+        .unwrap()
+}
+
+pub fn write_price_feed(env: &Env, feed: Address) {
+    env.storage().set(&DataKey::OraclePriceFeed, &feed);
+}
+

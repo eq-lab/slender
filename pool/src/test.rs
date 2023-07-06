@@ -3,11 +3,16 @@ use s_token_interface::STokenClient;
 use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
 use soroban_sdk::{token, vec, IntoVal, Symbol};
 use token::Client as TokenClient;
+use price_feed_interface::PriceFeedClient;
 
 extern crate std;
 
 mod s_token {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/s_token.wasm");
+}
+
+mod price_feed_mock {
+    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/price_feed_mock.wasm");
 }
 
 fn create_token_contract<'a>(e: &Env, admin: &Address) -> TokenClient<'a> {
@@ -40,12 +45,23 @@ fn create_s_token_contract<'a>(
     client
 }
 
+fn create_price_feed_contract<'a>(
+    env: &Env
+) -> PriceFeedClient<'a> {
+    let client = PriceFeedClient::new(&env, &env.register_contract_wasm(
+        None,
+        price_feed_mock::WASM));
+
+    client
+}
+
 #[allow(dead_code)]
 struct Sut<'a> {
     pool: LendingPoolClient<'a>,
     underlying_token: TokenClient<'a>,
     s_token: STokenClient<'a>,
     debt_token: TokenClient<'a>,
+    price_feed: PriceFeedClient<'a>,
     pool_admin: Address,
     token_admin: Address,
 }
@@ -59,9 +75,12 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
     let debt_token = create_token_contract(&env, &token_admin);
 
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
+    let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
     let s_token =
         create_s_token_contract(&env, &pool.address, &underlying_token.address, &treasury);
+
     assert!(pool.get_reserve(&s_token.address).is_none());
+    assert!(pool.get_price_feed().is_none());
 
     pool.init_reserve(
         &underlying_token.address,
@@ -76,6 +95,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
         s_token,
         underlying_token,
         debt_token,
+        price_feed,
         pool_admin: admin,
         token_admin,
     }
@@ -103,17 +123,18 @@ fn init_reserve() {
     };
 
     assert_eq!(
-        pool.mock_auths(&[MockAuth {
-            address: &admin,
-            nonce: 0,
-            invoke: &MockAuthInvoke {
-                contract: &pool.address,
-                fn_name: "init_reserve",
-                args: (&underlying_token.address, init_reserve_input.clone()).into_val(&env),
-                sub_invokes: &[],
-            }
-        }])
-        .init_reserve(&underlying_token.address, &init_reserve_input),
+        pool
+            .mock_auths(&[MockAuth {
+                address: &admin,
+                nonce: 0,
+                invoke: &MockAuthInvoke {
+                    contract: &pool.address,
+                    fn_name: "init_reserve",
+                    args: (&underlying_token.address, init_reserve_input.clone()).into_val(&env),
+                    sub_invokes: &[],
+                },
+            }])
+            .init_reserve(&underlying_token.address, &init_reserve_input),
         ()
     );
 
@@ -164,19 +185,20 @@ fn init_reserve_when_pool_not_initialized() {
     };
 
     assert_eq!(
-        pool.mock_auths(&[MockAuth {
-            address: &admin,
-            nonce: 0,
-            invoke: &MockAuthInvoke {
-                contract: &pool.address,
-                fn_name: "init_reserve",
-                args: (&underlying_token.address, init_reserve_input.clone()).into_val(&env),
-                sub_invokes: &[],
-            }
-        }])
-        .try_init_reserve(&underlying_token.address, &init_reserve_input)
-        .unwrap_err()
-        .unwrap(),
+        pool
+            .mock_auths(&[MockAuth {
+                address: &admin,
+                nonce: 0,
+                invoke: &MockAuthInvoke {
+                    contract: &pool.address,
+                    fn_name: "init_reserve",
+                    args: (&underlying_token.address, init_reserve_input.clone()).into_val(&env),
+                    sub_invokes: &[],
+                },
+            }])
+            .try_init_reserve(&underlying_token.address, &init_reserve_input)
+            .unwrap_err()
+            .unwrap(),
         Error::Uninitialized
     );
 }
@@ -382,7 +404,7 @@ fn withdraw_zero_amount() {
                 &user1,
                 &sut.underlying_token.address,
                 &withdraw_amount,
-                &user1
+                &user1,
             )
             .unwrap_err()
             .unwrap(),
@@ -414,7 +436,7 @@ fn withdraw_more_than_balance() {
                 &user1,
                 &sut.underlying_token.address,
                 &withdraw_amount,
-                &user1
+                &user1,
             )
             .unwrap_err()
             .unwrap(),
@@ -507,7 +529,7 @@ fn deposit_zero_amount() {
     let deposit_amount = 0;
     assert_eq!(
         sut.pool
-            .try_deposit(&user1, &sut.underlying_token.address, &deposit_amount,)
+            .try_deposit(&user1, &sut.underlying_token.address, &deposit_amount)
             .unwrap_err()
             .unwrap(),
         Error::InvalidAmount
@@ -522,4 +544,34 @@ fn deposit_non_active_reserve() {
 #[test]
 fn deposit_frozen_() {
     //TODO: implement when possible
+}
+
+#[test]
+fn set_price_feed() {
+    let env = Env::default();
+
+    let admin = Address::random(&env);
+
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
+    let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
+
+    assert!(pool.get_price_feed().is_none());
+
+    assert_eq!(
+        pool
+            .mock_auths(&[MockAuth {
+                address: &admin,
+                nonce: 0,
+                invoke: &MockAuthInvoke {
+                    contract: &pool.address,
+                    fn_name: "set_price_feed",
+                    args: (&price_feed.address,).into_val(&env),
+                    sub_invokes: &[],
+                },
+            }])
+            .set_price_feed(&price_feed.address),
+        ()
+    );
+
+    assert!(pool.get_price_feed().is_some());
 }

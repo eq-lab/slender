@@ -1,0 +1,12 @@
+[package]
+name = "price-feed-interface"
+authors = ["eq-lab"]
+version = "0.1.0"
+edition = "2021"
+description = "SEP-40 oracle interface"
+
+[dependencies]
+soroban-sdk = { workspace = true }
+
+[features]
+testutils = ["soroban-sdk/testutils"]
