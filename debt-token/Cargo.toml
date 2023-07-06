@@ -8,8 +8,8 @@ description = "Debt-token contract"
 [lib]
 crate-type = ["cdylib"]
 
-
 [dependencies]
-soroban-sdk = { git = "https://github.com/stellar/rs-soroban-sdk.git", rev = "e48a3c435a1c1e1055f03f8e507c63f62a927ef9" } # tag 0.9.1
-
-[workspace]
+soroban-sdk = { workspace = true }
+soroban-token-sdk = { version = "0.8.4" }
+debt-token-interface = { path = "../debt-token-interface", version = "0.1.0", package = "debt-token-interface" }
+common-token = { path = "../common-token", version = "0.1.0", package = "common-token"}
