@@ -46,23 +46,18 @@ impl UserConfiguration {
         (self.0 >> (reserve_index * 2 + 1)) & 1 != 0
     }
 
-    // fn is_using_as_collateral_or_borrowing(
-    //     &self,
-    //     env: &Env,
-    //     reserve_index: u8,
-    //   ) -> bool {
-    //     Self::check_reserve_index(env, reserve_index);
+    pub fn is_using_as_collateral_or_borrowing(&self, env: &Env, reserve_index: u8) -> bool {
+        Self::check_reserve_index(env, reserve_index);
 
-    //     let reserve_index: u128 = reserve_index.into();
-    //     (self.0 >> (reserve_index * 2)) & 3 != 0
-    //   }
+        let reserve_index: u128 = reserve_index.into();
+        (self.0 >> (reserve_index * 2)) & 3 != 0
+    }
 
-    // fn is_borrowing(&self, env: &Env, reserve_index: u8) -> bool
-    // {
-    //     Self::check_reserve_index(env, reserve_index);
-    //     let reserve_index: u128 = reserve_index.into();
-    //     (self.0 >> (reserve_index * 2)) & 1 != 0
-    // }
+    pub fn is_borrowing(&self, env: &Env, reserve_index: u8) -> bool {
+        Self::check_reserve_index(env, reserve_index);
+        let reserve_index: u128 = reserve_index.into();
+        (self.0 >> (reserve_index * 2)) & 1 != 0
+    }
 
     pub fn is_borrowing_any(&self) -> bool {
         self.0 & BORROWING_MASK != 0

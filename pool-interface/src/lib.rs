@@ -27,6 +27,12 @@ pub enum Error {
     NotEnoughAvailableUserBalance = 8,
     UserConfigNotExists = 9,
     MathOverflowError = 10,
+
+    BorrowingNotEnabled = 11,
+    HealthFactorLowerThanLiqThreshold = 12,
+    CollateralIsZero = 13,
+    CollateralSameAsBorrow = 14,
+    CollateralNotCoverNewBorrow = 15,
 }
 
 /// Interface for SToken
@@ -60,4 +66,6 @@ pub trait LendingPoolTrait {
 
     #[cfg(any(test, feature = "testutils"))]
     fn set_liq_index(env: Env, asset: Address, value: i128) -> Result<(), Error>;
+
+    fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 }

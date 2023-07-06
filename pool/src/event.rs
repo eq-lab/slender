@@ -19,3 +19,8 @@ pub(crate) fn withdraw(e: &Env, who: Address, asset: Address, to: Address, amoun
     let topics = (Symbol::short("withdraw"), who);
     e.events().publish(topics, (to, asset, amount));
 }
+
+pub(crate) fn borrow(e: &Env, who: Address, asset: Address, amount: i128) {
+    let topics = (Symbol::short("borrow"), who);
+    e.events().publish(topics, (asset, amount));
+}

@@ -1,13 +1,28 @@
 #![deny(warnings)]
 #![no_std]
-use common::RateMath;
+use common::{PercentageMath, RateMath, RATE_DENOMINATOR};
 use pool_interface::*;
-use soroban_sdk::{assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env};
+use soroban_sdk::{
+    assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec,
+};
 
 mod event;
 mod storage;
 
 use crate::storage::*;
+
+#[allow(dead_code)] //TODO: rmeove after use borrow_
+#[derive(Debug, Clone, Copy)]
+struct AccountData {
+    collateral: i128,
+    debt: i128,
+    ltv: i128,
+    liquidation_threshold: i128,
+    health_factor: i128,
+}
+
+//TODO: set right value for liquidation threshold
+const HEALTH_FACTOR_LIQUIDATION_THRESHOLD: i128 = 1;
 
 pub struct LendingPool;
 
@@ -214,6 +229,55 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
+    /// Allows users to borrow a specific `amount` of the reserve underlying asset, provided that the borrower
+    /// already deposited enough collateral, or he was given enough allowance by a credit delegator on the
+    /// corresponding debt token
+    ///
+    /// # Arguments
+    /// - who The address of user performing borrowing
+    /// - asset The address of the underlying asset to borrow
+    /// - amount The amount to be borrowed
+    ///
+    fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
+        let mut reserve = read_reserve(&env, asset.clone())?;
+        let user_config = read_user_config(&env, who.clone()).ok_or(Error::UserConfigNotExists)?;
+
+        let amount_in_xlm = amount
+            .checked_mul(Self::get_asset_price(&asset))
+            .ok_or(Error::MathOverflowError)?;
+        //TODO: uncomment when oracle will be implemented
+        //.checked_div(10_i128.pow(reserve.configuration.decimals))
+        //.ok_or(Error::MathOverflowError)?;
+
+        Self::validate_borrow(
+            &env,
+            who.clone(),
+            &reserve,
+            &user_config,
+            amount,
+            amount_in_xlm,
+        )?;
+
+        let debt_token = token::Client::new(&env, &reserve.debt_token_address);
+        let is_first_borrowing = debt_token.balance(&who) == 0;
+        debt_token.mint(&who, &amount);
+        if is_first_borrowing {
+            let mut user_config = user_config;
+            user_config.set_borrowing(&env, reserve.get_id(), true);
+            write_user_config(&env, who.clone(), &user_config);
+        }
+
+        reserve.update_interest_rate();
+        write_reserve(&env, asset.clone(), &reserve);
+
+        let s_token = s_token_interface::STokenClient::new(&env, &reserve.s_token_address);
+        s_token.transfer_underlying_to(&who, &amount);
+
+        event::borrow(&env, who, asset, amount);
+
+        Ok(())
+    }
+
     #[cfg(any(test, feature = "testutils"))]
     fn set_liq_index(env: Env, asset: Address, value: i128) -> Result<(), Error> {
         let mut reserve_data = read_reserve(&env, asset.clone())?;
@@ -266,6 +330,207 @@ impl LendingPool {
 
         //TODO: implement when rates exists
         //balance_decrease_allowed()
+    }
+
+    fn validate_borrow(
+        env: &Env,
+        who: Address,
+        reserve: &ReserveData,
+        user_config: &UserConfiguration,
+        amount: i128,
+        amount_in_xlm: i128,
+    ) -> Result<(), Error> {
+        assert_with_error!(env, amount != 0, Error::InvalidAmount);
+        let flags = reserve.configuration.get_flags();
+        assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
+        assert_with_error!(env, !flags.is_frozen, Error::ReserveFrozen);
+        assert_with_error!(env, !flags.borrowing_enabled, Error::BorrowingNotEnabled);
+
+        let reserves = &read_reserves(env);
+        let account_data = Self::calc_account_data(env, who.clone(), user_config, reserves)?;
+
+        assert_with_error!(env, account_data.collateral > 0, Error::CollateralIsZero);
+        assert_with_error!(
+            env,
+            account_data.health_factor > HEALTH_FACTOR_LIQUIDATION_THRESHOLD,
+            Error::HealthFactorLowerThanLiqThreshold
+        );
+
+        let amount_of_collateral_needed_xlm = account_data
+            .debt
+            .checked_add(amount_in_xlm)
+            .ok_or(Error::MathOverflowError)?
+            .percent_div(account_data.ltv)
+            .ok_or(Error::MathOverflowError)?;
+
+        assert_with_error!(
+            env,
+            amount_of_collateral_needed_xlm <= account_data.collateral,
+            Error::CollateralNotCoverNewBorrow
+        );
+
+        let coll_same_as_borrow_check = !user_config.is_using_as_collateral(env, reserve.get_id())
+            || reserve.configuration.ltv == 0;
+
+        if !coll_same_as_borrow_check {
+            let s_token = s_token_interface::STokenClient::new(env, &reserve.s_token_address);
+            let coll_coeff = Self::get_collateral_coeff(env, &reserve)?;
+            let compounded_balance = s_token
+                .balance(&who)
+                .mul_rate_floor(coll_coeff)
+                .ok_or(Error::MathOverflowError)?;
+
+            assert_with_error!(
+                env,
+                amount > compounded_balance,
+                Error::CollateralSameAsBorrow
+            );
+        }
+        //TODO: check validation
+        Ok(())
+    }
+
+    fn calc_account_data(
+        env: &Env,
+        who: Address,
+        user_config: &UserConfiguration,
+        reserves: &Vec<Address>,
+    ) -> Result<AccountData, Error> {
+        if user_config.is_empty() {
+            return Err(Error::HealthFactorLowerThanLiqThreshold);
+        }
+
+        let mut total_collateral_in_xlm: i128 = 0;
+        let mut total_debt_in_xlm: i128 = 0;
+        let mut avg_ltv: i128 = 0;
+        let mut avg_liquidation_threshold: i128 = 0;
+        let reserves_count = reserves.len() as u8; //TODO: add check to init_reserve() method
+                                                   // calc collateral and debt expressed in XLM token
+        for i in 0..reserves_count {
+            if !user_config.is_using_as_collateral_or_borrowing(env, i) {
+                continue;
+            }
+
+            //TODO: avoid unwrap
+            let curr_reserve_asset = reserves.get(i.into()).unwrap().unwrap();
+            let curr_reserve = read_reserve(env, curr_reserve_asset.clone())?;
+
+            //TODO: uncomment when `get_asset_price` will be implemented
+            let asset_unit = 1i128; //10i128.pow(curr_reserve.configuration.decimals);
+            let reserve_price = Self::get_asset_price(&curr_reserve_asset);
+
+            if curr_reserve.configuration.liq_threshold != 0
+                && user_config.is_using_as_collateral(env, i)
+            {
+                let coll_coeff = Self::get_collateral_coeff(env, &curr_reserve)?;
+
+                // compounded balance of sToken
+                let s_token =
+                    s_token_interface::STokenClient::new(env, &curr_reserve.s_token_address);
+
+                let compounded_balance = s_token
+                    .balance(&who)
+                    .mul_rate_floor(coll_coeff)
+                    .ok_or(Error::MathOverflowError)?;
+
+                let liquidity_balance_in_xlm = compounded_balance
+                    .checked_mul(reserve_price)
+                    .ok_or(Error::MathOverflowError)?
+                    .checked_div(asset_unit)
+                    .ok_or(Error::MathOverflowError)?;
+
+                total_collateral_in_xlm = total_collateral_in_xlm
+                    .checked_add(liquidity_balance_in_xlm)
+                    .ok_or(Error::MathOverflowError)?;
+
+                avg_ltv += i128::from(curr_reserve.configuration.ltv) * liquidity_balance_in_xlm;
+                avg_liquidation_threshold +=
+                    i128::from(curr_reserve.configuration.liq_threshold) * liquidity_balance_in_xlm;
+            }
+
+            if user_config.is_borrowing(env, i) {
+                let debt_coeff = Self::get_debt_coeff(env, &curr_reserve)?;
+
+                let debt_token = token::Client::new(env, &curr_reserve.debt_token_address);
+                let compounded_balance = debt_token
+                    .balance(&who)
+                    .mul_rate_floor(debt_coeff)
+                    .ok_or(Error::MathOverflowError)?;
+
+                let debt_balance_in_xlm = compounded_balance
+                    .checked_mul(reserve_price)
+                    .ok_or(Error::MathOverflowError)?
+                    .checked_div(asset_unit)
+                    .ok_or(Error::MathOverflowError)?;
+
+                total_debt_in_xlm = total_debt_in_xlm
+                    .checked_add(debt_balance_in_xlm)
+                    .ok_or(Error::MathOverflowError)?;
+            }
+        }
+
+        avg_ltv = avg_ltv.checked_div(total_collateral_in_xlm).unwrap_or(0);
+        avg_liquidation_threshold = avg_liquidation_threshold
+            .checked_div(total_collateral_in_xlm)
+            .unwrap_or(0);
+
+        Ok(AccountData {
+            collateral: total_collateral_in_xlm,
+            debt: total_debt_in_xlm,
+            ltv: avg_ltv,
+            liquidation_threshold: avg_liquidation_threshold,
+            health_factor: Self::calc_health_factor(
+                total_collateral_in_xlm,
+                total_debt_in_xlm,
+                avg_liquidation_threshold,
+            )?,
+        })
+    }
+
+    /// Price of asset expressed in XLM token
+    fn get_asset_price(_asset: &Address) -> i128 {
+        1i128
+    }
+
+    fn calc_health_factor(
+        total_collateral: i128,
+        total_debt: i128,
+        liquidation_threshold: i128,
+    ) -> Result<i128, Error> {
+        if total_debt == 0 {
+            return Ok(-1i128);
+        }
+
+        total_collateral
+            .percent_mul(liquidation_threshold)
+            .ok_or(Error::MathOverflowError)?
+            .checked_div(total_debt)
+            .ok_or(Error::MathOverflowError)
+        // return (totalCollateralInETH.percentMul(liquidationThreshold)).wadDiv(totalDebtInETH);
+    }
+
+    fn get_collateral_coeff(_env: &Env, _reserve: &ReserveData) -> Result<i128, Error> {
+        //TODO: implement rate
+        Ok(RATE_DENOMINATOR)
+
+        // let last_update_timestamp = reserve.last_update_timestamp;
+        // let current_timestamp = env.ledger().timestamp();
+
+        // if last_update_timestamp == current_timestamp {
+        //     return Ok(reserve.liquidity_index);
+        // }
+
+        // let time_delta = current_timestamp
+        //     .checked_sub(last_update_timestamp)
+        //     .ok_or(Error::MathOverflowError)?;
+
+        // MathUtils::calc_linear_interest(reserve.liquidity_index, time_delta)
+        //     .ok_or(Error::MathOverflowError)
+    }
+
+    fn get_debt_coeff(_env: &Env, _reserve: &ReserveData) -> Result<i128, Error> {
+        //TODO: implement accrued
+        Ok(RATE_DENOMINATOR)
     }
 }
 

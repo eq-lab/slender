@@ -3,24 +3,24 @@ use soroban_sdk::{contracttype, Address, BytesN, Env};
 #[contracttype]
 pub struct ReserveConfigurationMap {
     //bit 0-15: LTV
-    ltv: u32,
+    pub ltv: u32,
     //bit 16-31: Liq. threshold
-    liq_threshold: u32,
+    pub liq_threshold: u32,
     //bit 32-47: Liq. bonus
-    liq_bonus: u32,
+    pub liq_bonus: u32,
     //bit 48-55: Decimals
-    decimals: u32,
+    pub decimals: u32,
     //bit 56: Reserve is active
-    is_active: bool,
+    pub is_active: bool,
     //bit 57: reserve is frozen
-    is_frozen: bool,
+    pub is_frozen: bool,
     //bit 58: borrowing is enabled
     //bit 59: stable rate borrowing enabled
-    borrowing_enabled: bool,
+    pub borrowing_enabled: bool,
     //bit 60-63: reserved
-    reserved: BytesN<1>,
+    pub reserved: BytesN<1>,
     //bit 64-79: reserve factor
-    reserve_factor: u32,
+    pub reserve_factor: u32,
 }
 
 impl ReserveConfigurationMap {
@@ -98,6 +98,10 @@ impl ReserveData {
 
     pub fn update_state(&mut self) {
         // TODO
+    }
+
+    pub fn update_interest_rate(&mut self) {
+        //TODO: not implemented
     }
 
     pub fn get_id(&self) -> u8 {
