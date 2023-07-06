@@ -18,6 +18,7 @@ fixed-point-math = { workspace = true }
 s-token-interface={ path="../s-token-interface", version="0.1.0", package="s-token-interface" }
 pool-interface={ path="../pool-interface", version="0.1.0", package="pool-interface" }
 common = { path = "../common", version="0.1.0", package = "common"}
+common-token = { path = "../common-token", version="0.1.0", package = "common-token"}
 
 [dev_dependencies]
 soroban-sdk = { version = "0.8.4", features = ["testutils"] }

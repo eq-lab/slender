@@ -7,22 +7,11 @@ mod test;
 
 use crate::storage::*;
 use common::RateMath;
+use common_token::{check_nonnegative_amount, storage::*, verify_caller_is_pool};
 use pool_interface::{LendingPoolClient, ReserveData};
 use s_token_interface::STokenTrait;
 use soroban_sdk::{contractimpl, token, Address, Bytes, Env};
 use soroban_token_sdk::TokenMetadata;
-
-fn check_nonnegative_amount(amount: i128) {
-    if amount < 0 {
-        panic!("negative amount is not allowed: {}", amount)
-    }
-}
-
-fn verify_caller_is_pool(e: &Env) -> Address {
-    let pool = read_pool(e);
-    pool.require_auth();
-    pool
-}
 
 pub struct SToken;
 

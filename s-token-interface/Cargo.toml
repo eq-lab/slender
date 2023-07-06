@@ -5,7 +5,6 @@ version = "0.1.0"
 edition = "2021"
 description = "SToken interface"
 
-
 [dependencies]
 soroban-sdk = { workspace = true }
 
