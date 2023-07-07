@@ -1,9 +1,9 @@
 use crate::*;
+use price_feed_interface::PriceFeedClient;
 use s_token_interface::STokenClient;
 use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
 use soroban_sdk::{token, vec, IntoVal, Symbol};
 use token::Client as TokenClient;
-use price_feed_interface::PriceFeedClient;
 
 extern crate std;
 
@@ -12,7 +12,9 @@ mod s_token {
 }
 
 mod price_feed_mock {
-    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/price_feed_mock.wasm");
+    soroban_sdk::contractimport!(
+        file = "../target/wasm32-unknown-unknown/release/price_feed_mock.wasm"
+    );
 }
 
 fn create_token_contract<'a>(e: &Env, admin: &Address) -> TokenClient<'a> {
@@ -45,12 +47,11 @@ fn create_s_token_contract<'a>(
     client
 }
 
-fn create_price_feed_contract<'a>(
-    env: &Env
-) -> PriceFeedClient<'a> {
-    let client = PriceFeedClient::new(&env, &env.register_contract_wasm(
-        None,
-        price_feed_mock::WASM));
+fn create_price_feed_contract<'a>(env: &Env) -> PriceFeedClient<'a> {
+    let client = PriceFeedClient::new(
+        &env,
+        &env.register_contract_wasm(None, price_feed_mock::WASM),
+    );
 
     client
 }
@@ -123,18 +124,17 @@ fn init_reserve() {
     };
 
     assert_eq!(
-        pool
-            .mock_auths(&[MockAuth {
-                address: &admin,
-                nonce: 0,
-                invoke: &MockAuthInvoke {
-                    contract: &pool.address,
-                    fn_name: "init_reserve",
-                    args: (&underlying_token.address, init_reserve_input.clone()).into_val(&env),
-                    sub_invokes: &[],
-                },
-            }])
-            .init_reserve(&underlying_token.address, &init_reserve_input),
+        pool.mock_auths(&[MockAuth {
+            address: &admin,
+            nonce: 0,
+            invoke: &MockAuthInvoke {
+                contract: &pool.address,
+                fn_name: "init_reserve",
+                args: (&underlying_token.address, init_reserve_input.clone()).into_val(&env),
+                sub_invokes: &[],
+            },
+        }])
+        .init_reserve(&underlying_token.address, &init_reserve_input),
         ()
     );
 
@@ -185,20 +185,19 @@ fn init_reserve_when_pool_not_initialized() {
     };
 
     assert_eq!(
-        pool
-            .mock_auths(&[MockAuth {
-                address: &admin,
-                nonce: 0,
-                invoke: &MockAuthInvoke {
-                    contract: &pool.address,
-                    fn_name: "init_reserve",
-                    args: (&underlying_token.address, init_reserve_input.clone()).into_val(&env),
-                    sub_invokes: &[],
-                },
-            }])
-            .try_init_reserve(&underlying_token.address, &init_reserve_input)
-            .unwrap_err()
-            .unwrap(),
+        pool.mock_auths(&[MockAuth {
+            address: &admin,
+            nonce: 0,
+            invoke: &MockAuthInvoke {
+                contract: &pool.address,
+                fn_name: "init_reserve",
+                args: (&underlying_token.address, init_reserve_input.clone()).into_val(&env),
+                sub_invokes: &[],
+            },
+        }])
+        .try_init_reserve(&underlying_token.address, &init_reserve_input)
+        .unwrap_err()
+        .unwrap(),
         Error::Uninitialized
     );
 }
@@ -558,18 +557,17 @@ fn set_price_feed() {
     assert!(pool.get_price_feed().is_none());
 
     assert_eq!(
-        pool
-            .mock_auths(&[MockAuth {
-                address: &admin,
-                nonce: 0,
-                invoke: &MockAuthInvoke {
-                    contract: &pool.address,
-                    fn_name: "set_price_feed",
-                    args: (&price_feed.address,).into_val(&env),
-                    sub_invokes: &[],
-                },
-            }])
-            .set_price_feed(&price_feed.address),
+        pool.mock_auths(&[MockAuth {
+            address: &admin,
+            nonce: 0,
+            invoke: &MockAuthInvoke {
+                contract: &pool.address,
+                fn_name: "set_price_feed",
+                args: (&price_feed.address,).into_val(&env),
+                sub_invokes: &[],
+            },
+        }])
+        .set_price_feed(&price_feed.address),
         ()
     );
 

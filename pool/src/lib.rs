@@ -6,8 +6,8 @@ use pool_interface::*;
 use soroban_sdk::{assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env};
 
 mod event;
-mod storage;
 mod price_provider;
+mod storage;
 
 use crate::storage::*;
 

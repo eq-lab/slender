@@ -76,4 +76,3 @@ pub fn read_price_feed(env: &Env) -> Result<Address, Error> {
 pub fn write_price_feed(env: &Env, feed: Address) {
     env.storage().set(&DataKey::OraclePriceFeed, &feed);
 }
-

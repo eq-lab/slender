@@ -1,8 +1,8 @@
 #![deny(warnings)]
 #![no_std]
 
-use soroban_sdk::{contractimpl, Address, Env, Vec};
 use price_feed_interface::{PriceData, PriceFeedTrait};
+use soroban_sdk::{contractimpl, Address, Env, Vec};
 
 pub struct PriceFeedMock;
 

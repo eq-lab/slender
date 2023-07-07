@@ -1,5 +1,5 @@
-use soroban_sdk::{Env, Address};
 use price_feed_interface::PriceFeedClient;
+use soroban_sdk::{Address, Env};
 
 #[allow(dead_code)]
 pub struct PriceProvider<'a> {
