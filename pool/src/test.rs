@@ -92,7 +92,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
 
             pool.configure_as_collateral(
                 &token.address,
-                &CollateralConfig {
+                &CollateralParams {
                     ltv: 500,            // 5%
                     liq_threshold: 1000, // 10%,
                     liq_bonus: 11000,    //110%
@@ -454,7 +454,6 @@ fn deposit() {
 
     let token = &sut.reserves[0].token;
     let s_token = &sut.reserves[0].s_token;
-    let debt_token = &sut.reserves[0].debt_token;
 
     for i in 0..10 {
         let user = Address::random(&env);
@@ -579,4 +578,130 @@ fn borrow() {
         "Pool balance"
     );
     assert_eq!(debt_token_balance, borrow_amount, "Debt token balance");
+}
+
+#[test]
+fn borrow_() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let borrower = Address::random(&env);
+
+    let borrow_amount = 0;
+    assert_eq!(
+        sut.pool
+            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount,)
+            .unwrap_err()
+            .unwrap(),
+        Error::UserConfigNotExists
+    )
+}
+
+#[test]
+fn borrow_collateral_is_zero() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let borrower = Address::random(&env);
+
+    let initial_amount = 1_000_000_000;
+    for r in sut.reserves.iter() {
+        r.token.mint(&borrower, &initial_amount);
+        assert_eq!(r.token.balance(&borrower), initial_amount);
+    }
+
+    let deposit_amount = 1000;
+    sut.pool
+        .deposit(&borrower, &sut.reserves[1].token.address, &deposit_amount);
+
+    sut.pool.withdraw(
+        &borrower,
+        &sut.reserves[1].token.address,
+        &i128::MAX,
+        &borrower,
+    );
+
+    let borrow_amount = 100;
+    assert_eq!(
+        sut.pool
+            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount,)
+            .unwrap_err()
+            .unwrap(),
+        Error::HealthFactorLowerThanLiqThreshold
+    )
+}
+
+#[test]
+fn borrow_bad_health_factor() {
+    //TODO: implement
+}
+
+#[test]
+fn borrow_no_active_reserve() {
+    //TODO: implement
+}
+
+#[test]
+fn borrow_reserve_is_forzen() {
+    //TODO: implement
+}
+
+#[test]
+fn borrow_collateral_not_cover_new_debt() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let borrower = Address::random(&env);
+
+    let initial_amount = 1_000_000_000;
+    for r in sut.reserves.iter() {
+        r.token.mint(&borrower, &initial_amount);
+        assert_eq!(r.token.balance(&borrower), initial_amount);
+    }
+
+    let deposit_amount = 500;
+    sut.pool
+        .deposit(&borrower, &sut.reserves[1].token.address, &deposit_amount);
+
+    let borrow_amount = 1000;
+    assert_eq!(
+        sut.pool
+            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount,)
+            .unwrap_err()
+            .unwrap(),
+        Error::CollateralNotCoverNewBorrow
+    )
+}
+
+#[test]
+fn borrow_collateral_same_as_borrow() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let borrower = Address::random(&env);
+
+    let initial_amount = 1_000_000_000;
+    for r in sut.reserves.iter() {
+        r.token.mint(&borrower, &initial_amount);
+        assert_eq!(r.token.balance(&borrower), initial_amount);
+    }
+
+    let deposit_amount = 5000;
+    sut.pool
+        .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
+    sut.pool
+        .deposit(&borrower, &sut.reserves[1].token.address, &deposit_amount);
+
+    let borrow_amount = 100;
+    assert_eq!(
+        sut.pool
+            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount,)
+            .unwrap_err()
+            .unwrap(),
+        Error::CollateralSameAsBorrow
+    )
 }

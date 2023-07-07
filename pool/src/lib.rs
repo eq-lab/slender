@@ -11,13 +11,13 @@ mod storage;
 
 use crate::storage::*;
 
-#[allow(dead_code)] //TODO: rmeove after use borrow_
+#[allow(dead_code)] //TODO: rmeove after full implement validate_borrow
 #[derive(Debug, Clone, Copy)]
 struct AccountData {
     collateral: i128,
     debt: i128,
     ltv: i128,
-    liquidation_threshold: i128,
+    liq_threshold: i128,
     health_factor: i128,
 }
 
@@ -81,11 +81,21 @@ impl LendingPoolTrait for LendingPool {
     }
 
     /// Configures the reserve collateralization parameters
-    /// all the values are expressed in percentages with two decimals of precision. A valid value is 10000, which means 100.00%
+    /// all the values are expressed in percentages with two decimals of precision.
+    ///
+    /// # Arguments
+    ///
+    /// - asset The address of asset that should be set as collateral
+    /// - config Collateral parameters
+    ///
+    /// # Panics
+    ///
+    /// - Panics with `InvalidReserveParams` when wrong collateral params provided.
+    /// - Panics if the caller is not the admin.
     fn configure_as_collateral(
         env: Env,
         asset: Address,
-        config: CollateralConfig,
+        params: CollateralParams,
     ) -> Result<(), Error> {
         Self::ensure_admin(&env)?;
 
@@ -94,16 +104,16 @@ impl LendingPoolTrait for LendingPool {
         //(otherwise a loan against the asset would cause instantaneous liquidation)
         assert_with_error!(
             &env,
-            config.ltv < config.liq_threshold,
+            params.ltv < params.liq_threshold,
             Error::InvalidReserveParams
         );
 
-        if config.liq_threshold != 0 {
+        if params.liq_threshold != 0 {
             //liquidation bonus must be bigger than 100.00%, otherwise the liquidator would receive less
             //collateral than needed to cover the debt
             assert_with_error!(
                 &env,
-                config.liq_bonus as i128 > PERCENTAGE_FACTOR,
+                params.liq_bonus as i128 > PERCENTAGE_FACTOR,
                 Error::InvalidReserveParams
             );
 
@@ -111,15 +121,15 @@ impl LendingPoolTrait for LendingPool {
             //a loan is taken there is enough collateral available to cover the liquidation bonus
             assert_with_error!(
                 env,
-                config
+                params
                     .liq_threshold
-                    .percent_mul(config.liq_bonus)
+                    .percent_mul(params.liq_bonus)
                     .ok_or(Error::MathOverflowError)?
                     <= PERCENTAGE_FACTOR,
                 Error::InvalidReserveParams
             );
         } else {
-            assert_with_error!(&env, config.liq_bonus == 0, Error::InvalidReserveParams);
+            assert_with_error!(&env, params.liq_bonus == 0, Error::InvalidReserveParams);
 
             //if the liquidation threshold is being set to 0,
             // the reserve is being disabled as collateral. To do so,
@@ -128,15 +138,15 @@ impl LendingPoolTrait for LendingPool {
         }
 
         let mut reserve = read_reserve(&env, asset.clone())?;
-        reserve.update_collateral_config(config);
+        reserve.update_collateral_config(params);
         write_reserve(&env, asset.clone(), &reserve);
 
         event::collat_config_change(
             &env,
             asset,
-            config.ltv,
-            config.liq_threshold,
-            config.liq_bonus,
+            params.ltv,
+            params.liq_threshold,
+            params.liq_bonus,
         );
         Ok(())
     }
@@ -298,7 +308,12 @@ impl LendingPoolTrait for LendingPool {
     /// - asset The address of the underlying asset to borrow
     /// - amount The amount to be borrowed
     ///
+    /// # Panics
+    /// - Panics when caller is not authorized as who
+    /// - Panics with
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
+        who.require_auth();
+
         let mut reserve = read_reserve(&env, asset.clone())?;
         let user_config = read_user_config(&env, who.clone()).ok_or(Error::UserConfigNotExists)?;
 
@@ -338,7 +353,7 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
-    //#[cfg(any(test, feature = "testutils"))]
+    #[cfg(any(test, feature = "testutils"))]
     fn set_liq_index(env: Env, asset: Address, value: i128) -> Result<(), Error> {
         let mut reserve_data = read_reserve(&env, asset.clone())?;
         reserve_data.liquidity_index = value;
@@ -463,9 +478,10 @@ impl LendingPool {
         let mut total_collateral_in_xlm: i128 = 0;
         let mut total_debt_in_xlm: i128 = 0;
         let mut avg_ltv: i128 = 0;
-        let mut avg_liquidation_threshold: i128 = 0;
+        let mut avg_liq_threshold: i128 = 0;
         let reserves_count = reserves.len() as u8; //TODO: add check to init_reserve() method
-                                                   // calc collateral and debt expressed in XLM token
+
+        // calc collateral and debt expressed in XLM token
         for i in 0..reserves_count {
             if !user_config.is_using_as_collateral_or_borrowing(env, i) {
                 continue;
@@ -503,9 +519,21 @@ impl LendingPool {
                     .checked_add(liquidity_balance_in_xlm)
                     .ok_or(Error::MathOverflowError)?;
 
-                avg_ltv += i128::from(curr_reserve.configuration.ltv) * liquidity_balance_in_xlm;
-                avg_liquidation_threshold +=
-                    i128::from(curr_reserve.configuration.liq_threshold) * liquidity_balance_in_xlm;
+                avg_ltv = avg_ltv
+                    .checked_add(
+                        i128::from(curr_reserve.configuration.ltv)
+                            .checked_mul(liquidity_balance_in_xlm)
+                            .ok_or(Error::MathOverflowError)?,
+                    )
+                    .ok_or(Error::MathOverflowError)?;
+
+                avg_liq_threshold = avg_liq_threshold
+                    .checked_add(
+                        i128::from(curr_reserve.configuration.liq_threshold)
+                            .checked_mul(liquidity_balance_in_xlm)
+                            .ok_or(Error::MathOverflowError)?,
+                    )
+                    .ok_or(Error::MathOverflowError)?;
             }
 
             if user_config.is_borrowing(env, i) {
@@ -530,7 +558,7 @@ impl LendingPool {
         }
 
         avg_ltv = avg_ltv.checked_div(total_collateral_in_xlm).unwrap_or(0);
-        avg_liquidation_threshold = avg_liquidation_threshold
+        avg_liq_threshold = avg_liq_threshold
             .checked_div(total_collateral_in_xlm)
             .unwrap_or(0);
 
@@ -538,11 +566,11 @@ impl LendingPool {
             collateral: total_collateral_in_xlm,
             debt: total_debt_in_xlm,
             ltv: avg_ltv,
-            liquidation_threshold: avg_liquidation_threshold,
+            liq_threshold: avg_liq_threshold,
             health_factor: Self::calc_health_factor(
                 total_collateral_in_xlm,
                 total_debt_in_xlm,
-                avg_liquidation_threshold,
+                avg_liq_threshold,
             )?,
         })
     }
@@ -566,26 +594,11 @@ impl LendingPool {
             .ok_or(Error::MathOverflowError)?
             .checked_div(total_debt)
             .ok_or(Error::MathOverflowError)
-        // return (totalCollateralInETH.percentMul(liquidationThreshold)).wadDiv(totalDebtInETH);
     }
 
     fn get_collateral_coeff(_env: &Env, _reserve: &ReserveData) -> Result<i128, Error> {
         //TODO: implement rate
         Ok(RATE_DENOMINATOR)
-
-        // let last_update_timestamp = reserve.last_update_timestamp;
-        // let current_timestamp = env.ledger().timestamp();
-
-        // if last_update_timestamp == current_timestamp {
-        //     return Ok(reserve.liquidity_index);
-        // }
-
-        // let time_delta = current_timestamp
-        //     .checked_sub(last_update_timestamp)
-        //     .ok_or(Error::MathOverflowError)?;
-
-        // MathUtils::calc_linear_interest(reserve.liquidity_index, time_delta)
-        //     .ok_or(Error::MathOverflowError)
     }
 
     fn get_debt_coeff(_env: &Env, _reserve: &ReserveData) -> Result<i128, Error> {

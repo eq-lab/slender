@@ -49,7 +49,7 @@ pub trait LendingPoolTrait {
     fn configure_as_collateral(
         env: Env,
         asset: Address,
-        config: CollateralConfig,
+        config: CollateralParams,
     ) -> Result<(), Error>;
 
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData>;
@@ -73,7 +73,7 @@ pub trait LendingPoolTrait {
         to: Address,
     ) -> Result<(), Error>;
 
-    //#[cfg(any(test, feature = "testutils"))]
+    #[cfg(any(test, feature = "testutils"))]
     fn set_liq_index(env: Env, asset: Address, value: i128) -> Result<(), Error>;
 
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
