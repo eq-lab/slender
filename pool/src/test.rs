@@ -462,13 +462,13 @@ fn deposit() {
         assert_eq!(token.balance(&user), initial_balance);
 
         let deposit_amount = 1_000_0;
-        let liq_index = common::RATE_DENOMINATOR + i * 100_000_000;
+        let liq_index = RATE_DENOMINATOR + i * 100_000_000;
         assert_eq!(sut.pool.set_liq_index(&token.address, &liq_index), ());
         sut.pool.deposit(&user, &token.address, &deposit_amount);
 
         assert_eq!(
             s_token.balance(&user),
-            deposit_amount * common::RATE_DENOMINATOR / liq_index
+            deposit_amount * RATE_DENOMINATOR / liq_index
         );
         assert_eq!(token.balance(&user), initial_balance - deposit_amount);
 

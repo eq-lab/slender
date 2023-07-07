@@ -1,6 +1,6 @@
 #![deny(warnings)]
 #![no_std]
-use common::{PercentageMath, RateMath, PERCENTAGE_FACTOR, RATE_DENOMINATOR};
+use common::{percentage_math::*, rate_math::*};
 use pool_interface::*;
 use soroban_sdk::{
     assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec,
@@ -11,7 +11,7 @@ mod storage;
 
 use crate::storage::*;
 
-#[allow(dead_code)] //TODO: rmeove after full implement validate_borrow
+#[allow(dead_code)] //TODO: remove after full implement validate_borrow
 #[derive(Debug, Clone, Copy)]
 struct AccountData {
     collateral: i128,
@@ -104,7 +104,7 @@ impl LendingPoolTrait for LendingPool {
         //(otherwise a loan against the asset would cause instantaneous liquidation)
         assert_with_error!(
             &env,
-            params.ltv < params.liq_threshold,
+            params.ltv <= params.liq_threshold,
             Error::InvalidReserveParams
         );
 
@@ -113,11 +113,11 @@ impl LendingPoolTrait for LendingPool {
             //collateral than needed to cover the debt
             assert_with_error!(
                 &env,
-                params.liq_bonus as i128 > PERCENTAGE_FACTOR,
+                params.liq_bonus > PERCENTAGE_FACTOR,
                 Error::InvalidReserveParams
             );
 
-            //if threshold * bonus is less than PERCENTAGE_FACTOR, it's guaranteed that at the moment
+            //if threshold * bonus is less than or equal to PERCENTAGE_FACTOR, it's guaranteed that at the moment
             //a loan is taken there is enough collateral available to cover the liquidation bonus
             assert_with_error!(
                 env,
@@ -125,7 +125,7 @@ impl LendingPoolTrait for LendingPool {
                     .liq_threshold
                     .percent_mul(params.liq_bonus)
                     .ok_or(Error::MathOverflowError)?
-                    <= PERCENTAGE_FACTOR,
+                    <= PERCENTAGE_FACTOR as i128,
                 Error::InvalidReserveParams
             );
         } else {
@@ -310,7 +310,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// # Panics
     /// - Panics when caller is not authorized as who
-    /// - Panics with
+    /// - Panics if user balance doesn't meet requirements for borrowing an amount of asset
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
 
@@ -391,14 +391,14 @@ impl LendingPool {
     }
 
     fn validate_deposit(reserve: &ReserveData, env: &Env, amount: i128) {
-        assert_with_error!(env, amount != 0, Error::InvalidAmount);
+        assert_with_error!(env, amount > 0, Error::InvalidAmount);
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, !flags.is_frozen, Error::ReserveFrozen);
     }
 
     fn validate_withdraw(reserve: &ReserveData, env: &Env, amount: i128, balance: i128) {
-        assert_with_error!(env, amount != 0, Error::InvalidAmount);
+        assert_with_error!(env, amount > 0, Error::InvalidAmount);
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, amount <= balance, Error::NotEnoughAvailableUserBalance);
@@ -415,7 +415,7 @@ impl LendingPool {
         amount: i128,
         amount_in_xlm: i128,
     ) -> Result<(), Error> {
-        assert_with_error!(env, amount != 0, Error::InvalidAmount);
+        assert_with_error!(env, amount > 0 && amount_in_xlm > 0, Error::InvalidAmount);
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, !flags.is_frozen, Error::ReserveFrozen);

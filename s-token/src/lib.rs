@@ -6,7 +6,7 @@ mod storage;
 mod test;
 
 use crate::storage::*;
-use common::RateMath;
+use common::rate_math::RateMath;
 use pool_interface::{LendingPoolClient, ReserveData};
 use s_token_interface::STokenTrait;
 use soroban_sdk::{contractimpl, token, Address, Bytes, Env};
