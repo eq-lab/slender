@@ -37,7 +37,8 @@ impl<T: Into<i128>> RateMath<T> for T {
     }
 }
 
-const PERCENTAGE_FACTOR: i128 = 10000;
+/// Percent representation
+pub const PERCENTAGE_FACTOR: i128 = 10000;
 
 const HALF_PERCENT: i128 = PERCENTAGE_FACTOR / 2;
 

@@ -1,6 +1,6 @@
 #![deny(warnings)]
 #![no_std]
-use common::{PercentageMath, RateMath, RATE_DENOMINATOR};
+use common::{PercentageMath, RateMath, PERCENTAGE_FACTOR, RATE_DENOMINATOR};
 use pool_interface::*;
 use soroban_sdk::{
     assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec,
@@ -77,6 +77,67 @@ impl LendingPoolTrait for LendingPool {
         write_reserves(&env, &reserves);
         write_reserve(&env, asset, &reserve_data);
 
+        Ok(())
+    }
+
+    /// Configures the reserve collateralization parameters
+    /// all the values are expressed in percentages with two decimals of precision. A valid value is 10000, which means 100.00%
+    fn configure_as_collateral(
+        env: Env,
+        asset: Address,
+        config: CollateralConfig,
+    ) -> Result<(), Error> {
+        Self::ensure_admin(&env)?;
+
+        //validation of the parameters: the LTV can
+        //only be lower or equal than the liquidation threshold
+        //(otherwise a loan against the asset would cause instantaneous liquidation)
+        assert_with_error!(
+            &env,
+            config.ltv < config.liq_threshold,
+            Error::InvalidReserveParams
+        );
+
+        if config.liq_threshold != 0 {
+            //liquidation bonus must be bigger than 100.00%, otherwise the liquidator would receive less
+            //collateral than needed to cover the debt
+            assert_with_error!(
+                &env,
+                config.liq_bonus as i128 > PERCENTAGE_FACTOR,
+                Error::InvalidReserveParams
+            );
+
+            //if threshold * bonus is less than PERCENTAGE_FACTOR, it's guaranteed that at the moment
+            //a loan is taken there is enough collateral available to cover the liquidation bonus
+            assert_with_error!(
+                env,
+                config
+                    .liq_threshold
+                    .percent_mul(config.liq_bonus)
+                    .ok_or(Error::MathOverflowError)?
+                    <= PERCENTAGE_FACTOR,
+                Error::InvalidReserveParams
+            );
+        } else {
+            assert_with_error!(&env, config.liq_bonus == 0, Error::InvalidReserveParams);
+
+            //if the liquidation threshold is being set to 0,
+            // the reserve is being disabled as collateral. To do so,
+            //we need to ensure no liquidity is deposited
+            Self::ensure_no_liquidity(&env, asset.clone())?;
+        }
+
+        let mut reserve = read_reserve(&env, asset.clone())?;
+        reserve.update_collateral_config(config);
+        write_reserve(&env, asset.clone(), &reserve);
+
+        event::collat_config_change(
+            &env,
+            asset,
+            config.ltv,
+            config.liq_threshold,
+            config.liq_bonus,
+        );
         Ok(())
     }
 
@@ -230,8 +291,7 @@ impl LendingPoolTrait for LendingPool {
     }
 
     /// Allows users to borrow a specific `amount` of the reserve underlying asset, provided that the borrower
-    /// already deposited enough collateral, or he was given enough allowance by a credit delegator on the
-    /// corresponding debt token
+    /// already deposited enough collateral
     ///
     /// # Arguments
     /// - who The address of user performing borrowing
@@ -278,7 +338,7 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
-    #[cfg(any(test, feature = "testutils"))]
+    //#[cfg(any(test, feature = "testutils"))]
     fn set_liq_index(env: Env, asset: Address, value: i128) -> Result<(), Error> {
         let mut reserve_data = read_reserve(&env, asset.clone())?;
         reserve_data.liquidity_index = value;
@@ -374,7 +434,7 @@ impl LendingPool {
 
         if !coll_same_as_borrow_check {
             let s_token = s_token_interface::STokenClient::new(env, &reserve.s_token_address);
-            let coll_coeff = Self::get_collateral_coeff(env, &reserve)?;
+            let coll_coeff = Self::get_collateral_coeff(env, reserve)?;
             let compounded_balance = s_token
                 .balance(&who)
                 .mul_rate_floor(coll_coeff)
@@ -498,7 +558,7 @@ impl LendingPool {
         liquidation_threshold: i128,
     ) -> Result<i128, Error> {
         if total_debt == 0 {
-            return Ok(-1i128);
+            return Ok(i128::MAX);
         }
 
         total_collateral
@@ -531,6 +591,19 @@ impl LendingPool {
     fn get_debt_coeff(_env: &Env, _reserve: &ReserveData) -> Result<i128, Error> {
         //TODO: implement accrued
         Ok(RATE_DENOMINATOR)
+    }
+
+    fn ensure_no_liquidity(env: &Env, asset: Address) -> Result<(), Error> {
+        let reserve = read_reserve(env, asset.clone())?;
+        let token = token::Client::new(env, &asset);
+
+        assert_with_error!(
+            env,
+            token.balance(&reserve.s_token_address) == 0 && reserve.current_liquidity_rate == 0,
+            Error::ReserveLiquidityNotZero
+        );
+
+        Ok(())
     }
 }
 

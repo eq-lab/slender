@@ -104,6 +104,12 @@ impl ReserveData {
         //TODO: not implemented
     }
 
+    pub fn update_collateral_config(&mut self, config: CollateralConfig) {
+        self.configuration.ltv = config.ltv;
+        self.configuration.liq_threshold = config.liq_threshold;
+        self.configuration.liq_bonus = config.liq_bonus;
+    }
+
     pub fn get_id(&self) -> u8 {
         self.id.get(0).unwrap()
     }
@@ -118,4 +124,12 @@ pub struct InitReserveInput {
 
 fn zero_bytes<const N: usize>(env: &Env) -> BytesN<N> {
     BytesN::from_array(env, &[0; N])
+}
+
+#[contracttype]
+#[derive(Clone, Copy)]
+pub struct CollateralConfig {
+    pub liq_threshold: u32,
+    pub liq_bonus: u32,
+    pub ltv: u32,
 }

@@ -33,6 +33,9 @@ pub enum Error {
     CollateralIsZero = 13,
     CollateralSameAsBorrow = 14,
     CollateralNotCoverNewBorrow = 15,
+
+    InvalidReserveParams = 16,
+    ReserveLiquidityNotZero = 17,
 }
 
 /// Interface for SToken
@@ -42,6 +45,12 @@ pub trait LendingPoolTrait {
     fn initialize(env: Env, admin: Address) -> Result<(), Error>;
 
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
+
+    fn configure_as_collateral(
+        env: Env,
+        asset: Address,
+        config: CollateralConfig,
+    ) -> Result<(), Error>;
 
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData>;
 
@@ -64,7 +73,7 @@ pub trait LendingPoolTrait {
         to: Address,
     ) -> Result<(), Error>;
 
-    #[cfg(any(test, feature = "testutils"))]
+    //#[cfg(any(test, feature = "testutils"))]
     fn set_liq_index(env: Env, asset: Address, value: i128) -> Result<(), Error>;
 
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;

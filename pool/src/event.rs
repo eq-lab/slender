@@ -24,3 +24,14 @@ pub(crate) fn borrow(e: &Env, who: Address, asset: Address, amount: i128) {
     let topics = (Symbol::short("borrow"), who);
     e.events().publish(topics, (asset, amount));
 }
+
+pub(crate) fn collat_config_change(
+    e: &Env,
+    asset: Address,
+    ltv: u32,
+    liq_threshold: u32,
+    liq_bonus: u32,
+) {
+    let topics = (Symbol::new(e, "collat_config_change"), asset);
+    e.events().publish(topics, (ltv, liq_threshold, liq_bonus));
+}
