@@ -9,6 +9,8 @@ members = [
     "pool-interface",
     "s-token",
     "s-token-interface",
+    "debt-token-interface",
+    "debt-token",
 ]
 
 [profile.release]

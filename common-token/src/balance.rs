@@ -17,11 +17,10 @@ pub fn spend_balance(e: &Env, addr: Address, amount: i128) {
     if !is_authorized(e, addr.clone()) {
         panic!("can't spend when deauthorized");
     }
-    write_balance(
-        e,
-        addr,
-        balance.checked_sub(amount).expect("sufficient balance"),
-    );
+    if balance < amount {
+        panic!("insufficient balance");
+    }
+    write_balance(e, addr, balance - amount);
 }
 
 pub fn add_total_supply(e: &Env, amount: i128) {

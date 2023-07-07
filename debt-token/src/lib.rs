@@ -1,11 +1,14 @@
-// #![deny(warnings)]
+#![deny(warnings)]
 #![no_std]
 
 mod event;
-// mod storage;
 
-// use crate::storage::*;
-use common_token::{storage::*, verify_caller_is_pool};
+use common_token::{
+    balance::{add_total_supply, receive_balance, spend_balance},
+    check_nonnegative_amount,
+    storage::*,
+    verify_caller_is_pool,
+};
 use debt_token_interface::DebtTokenTrait;
 use soroban_sdk::{contractimpl, Address, Bytes, Env};
 use soroban_token_sdk::TokenMetadata;
@@ -31,7 +34,6 @@ impl DebtTokenTrait for DebtToken {
         }
 
         write_pool(&e, &pool);
-        write_underlying_asset(&e, &underlying_asset);
 
         write_metadata(
             &e,
@@ -54,10 +56,15 @@ impl DebtTokenTrait for DebtToken {
         is_authorized(&env, id)
     }
     fn burn(env: Env, from: Address, amount: i128) {
-        todo!();
+        check_nonnegative_amount(amount);
+        verify_caller_is_pool(&env);
+
+        Self::do_burn(&env, from.clone(), amount);
+
+        event::burn(&env, from, amount);
     }
-    fn burn_from(env: Env, spender: Address, from: Address, amount: i128) {
-        todo!();
+    fn burn_from(_env: Env, _spender: Address, _from: Address, _amount: i128) {
+        unimplemented!();
     }
     fn set_authorized(e: Env, id: Address, authorize: bool) {
         verify_caller_is_pool(&e);
@@ -65,11 +72,21 @@ impl DebtTokenTrait for DebtToken {
         write_authorization(&e, id.clone(), authorize);
         event::set_authorized(&e, id, authorize);
     }
-    fn mint(env: Env, to: Address, amount: i128, amount_to_borrow: i128) {
-        todo!();
+    fn mint(env: Env, to: Address, amount: i128) {
+        check_nonnegative_amount(amount);
+        let pool = verify_caller_is_pool(&env);
+
+        receive_balance(&env, to.clone(), amount);
+        add_total_supply(&env, amount);
+        event::mint(&env, pool, to, amount);
     }
     fn clawback(env: Env, from: Address, amount: i128) {
-        todo!();
+        check_nonnegative_amount(amount);
+        verify_caller_is_pool(&env);
+
+        spend_balance(&env, from.clone(), amount);
+        add_total_supply(&env, amount.checked_neg().expect("no overflow"));
+        event::clawback(&env, from, amount);
     }
     fn decimals(env: Env) -> u32 {
         read_decimal(&env)
@@ -85,5 +102,20 @@ impl DebtTokenTrait for DebtToken {
 
     fn total_supply(env: Env) -> i128 {
         read_total_supply(&env)
+    }
+}
+
+impl DebtToken {
+    fn do_burn(e: &Env, from: Address, amount: i128) {
+        let balance = read_balance(e, from.clone());
+        if !is_authorized(e, from.clone()) {
+            panic!("can't spend when deauthorized");
+        }
+        write_balance(
+            e,
+            from,
+            balance.checked_sub(amount).expect("sufficient balance"),
+        );
+        add_total_supply(e, amount.checked_neg().expect("no overflow"));
     }
 }
