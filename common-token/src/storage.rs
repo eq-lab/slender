@@ -7,7 +7,6 @@ pub enum CommonDataKey {
     Balance(Address),
     State(Address), //TODO: bad naming: Authorized/ Not authorized
     Pool,
-    UnderlyingAsset,
     TotalSupply,
 }
 
@@ -21,16 +20,6 @@ pub fn write_pool(e: &Env, id: &Address) {
 
 pub fn has_pool(e: &Env) -> bool {
     e.storage().has(&CommonDataKey::Pool)
-}
-
-pub fn write_underlying_asset(e: &Env, asset: &Address) {
-    e.storage().set(&CommonDataKey::UnderlyingAsset, asset);
-}
-
-pub fn read_underlying_asset(e: &Env) -> Address {
-    e.storage()
-        .get_unchecked(&CommonDataKey::UnderlyingAsset)
-        .unwrap()
 }
 
 pub fn read_balance(e: &Env, addr: Address) -> i128 {

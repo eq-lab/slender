@@ -7,7 +7,7 @@ mod test;
 
 use crate::storage::*;
 use common::RateMath;
-use common_token::{check_nonnegative_amount, storage::*, verify_caller_is_pool};
+use common_token::{balance::*, check_nonnegative_amount, storage::*, verify_caller_is_pool};
 use pool_interface::{LendingPoolClient, ReserveData};
 use s_token_interface::STokenTrait;
 use soroban_sdk::{contractimpl, token, Address, Bytes, Env};
@@ -244,7 +244,7 @@ impl STokenTrait for SToken {
     }
 
     fn burn_from(_e: Env, _spender: Address, _from: Address, _amount: i128) {
-        panic!("not used")
+        unimplemented!();
     }
 
     /// Clawbacks a specified amount of tokens from the from account.
@@ -263,8 +263,8 @@ impl STokenTrait for SToken {
         check_nonnegative_amount(amount);
         verify_caller_is_pool(&e);
 
-        Self::spend_balance(&e, from.clone(), amount);
-        Self::add_total_supply(&e, -amount);
+        spend_balance(&e, from.clone(), amount);
+        add_total_supply(&e, -amount);
         event::clawback(&e, from, amount);
     }
 
@@ -485,8 +485,8 @@ impl SToken {
         let from_balance_prev = read_balance(e, from.clone());
         let to_balance_prev = read_balance(e, to.clone());
 
-        Self::spend_balance(e, from.clone(), amount);
-        Self::receive_balance(e, to.clone(), amount);
+        spend_balance(e, from.clone(), amount);
+        receive_balance(e, to.clone(), amount);
 
         if validate {
             let pool_client = LendingPoolClient::new(e, &read_pool(e));
@@ -511,42 +511,13 @@ impl SToken {
         write_allowance(e, from, spender, allowance - amount);
     }
 
-    fn receive_balance(e: &Env, addr: Address, amount: i128) {
-        let balance = read_balance(e, addr.clone());
-        if !is_authorized(e, addr.clone()) {
-            panic!("can't receive when deauthorized");
-        }
-        write_balance(e, addr, balance + amount);
-    }
-
-    fn spend_balance(e: &Env, addr: Address, amount: i128) {
-        let balance = read_balance(e, addr.clone());
-        if !is_authorized(e, addr.clone()) {
-            panic!("can't spend when deauthorized");
-        }
-        if balance < amount {
-            panic!("insufficient balance");
-        }
-        write_balance(e, addr, balance - amount);
-    }
-
-    fn add_total_supply(e: &Env, amount: i128) {
-        let mut total_supply: i128 = read_total_supply(e);
-        total_supply = total_supply.checked_add(amount).unwrap();
-        if total_supply < 0 {
-            panic!("negative total supply");
-        }
-
-        write_total_supply(e, total_supply);
-    }
-
     fn do_mint(e: &Env, user: Address, amount: i128) {
         if amount == 0 {
             panic!("s-token: invalid mint amount");
         }
 
-        Self::receive_balance(e, user, amount);
-        Self::add_total_supply(e, amount);
+        receive_balance(e, user, amount);
+        add_total_supply(e, amount);
     }
 
     fn do_burn(
@@ -560,8 +531,8 @@ impl SToken {
             panic!("s-token: invalid burn amount");
         }
 
-        Self::spend_balance(e, from, amount_to_burn);
-        Self::add_total_supply(e, -amount_to_burn);
+        spend_balance(e, from, amount_to_burn);
+        add_total_supply(e, amount_to_burn.checked_neg().unwrap());
 
         let underlying_asset = read_underlying_asset(e);
         let underlying_asset_client = token::Client::new(e, &underlying_asset);

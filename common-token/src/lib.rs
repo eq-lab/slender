@@ -3,6 +3,7 @@
 
 use soroban_sdk::{Address, Env};
 
+pub mod balance;
 pub mod storage;
 
 pub fn verify_caller_is_pool(e: &Env) -> Address {

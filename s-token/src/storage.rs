@@ -12,6 +12,17 @@ pub struct AllowanceDataKey {
 pub enum DataKey {
     Allowance(AllowanceDataKey),
     Treasury,
+    UnderlyingAsset,
+}
+
+pub fn write_underlying_asset(e: &Env, asset: &Address) {
+    e.storage().set(&DataKey::UnderlyingAsset, asset);
+}
+
+pub fn read_underlying_asset(e: &Env) -> Address {
+    e.storage()
+        .get_unchecked(&DataKey::UnderlyingAsset)
+        .unwrap()
 }
 
 pub fn write_treasury(e: &Env, treasury: &Address) {
