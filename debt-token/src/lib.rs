@@ -2,6 +2,7 @@
 #![no_std]
 
 mod event;
+mod test;
 
 use common_token::{
     balance::{add_total_supply, receive_balance, spend_balance},
@@ -30,7 +31,7 @@ impl DebtTokenTrait for DebtToken {
         }
 
         if has_pool(&e) {
-            panic!("Already initialized")
+            panic!("Already initialized");
         }
 
         write_pool(&e, &pool);
