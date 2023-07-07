@@ -142,7 +142,7 @@ fn test() {
 }
 
 #[test]
-#[should_panic(expected = "not used")]
+#[should_panic(expected = "not implemented")]
 fn test_burn() {
     let e = Env::default();
     e.mock_all_auths();
