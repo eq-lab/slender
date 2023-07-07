@@ -11,7 +11,9 @@ pub enum CommonDataKey {
 }
 
 pub fn read_pool(e: &Env) -> Address {
-    e.storage().get_unchecked(&CommonDataKey::Pool).unwrap()
+    e.storage()
+        .get_unchecked(&CommonDataKey::Pool)
+        .expect("has pool")
 }
 
 pub fn write_pool(e: &Env, id: &Address) {
