@@ -9,7 +9,7 @@ pub struct PriceProvider<'a> {
 #[allow(dead_code)]
 impl PriceProvider<'_> {
     pub fn new(env: &Env, feed_address: Address) -> Self {
-        let feed = price_feed_interface::PriceFeedClient::new(&env, &feed_address);
+        let feed = price_feed_interface::PriceFeedClient::new(env, &feed_address);
         Self { feed }
     }
 
