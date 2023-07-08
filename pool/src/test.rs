@@ -11,10 +11,8 @@ mod s_token {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/s_token.wasm");
 }
 
-mod price_feed_mock {
-    soroban_sdk::contractimport!(
-        file = "../target/wasm32-unknown-unknown/release/price_feed_mock.wasm"
-    );
+mod price_feed {
+    soroban_sdk::contractimport!(file = "../contracts/se_price_oracle.wasm");
 }
 
 fn create_token_contract<'a>(e: &Env, admin: &Address) -> TokenClient<'a> {
@@ -47,13 +45,11 @@ fn create_s_token_contract<'a>(
     client
 }
 
-fn create_price_feed_contract<'a>(env: &Env) -> PriceFeedClient<'a> {
-    let client = PriceFeedClient::new(
-        &env,
-        &env.register_contract_wasm(None, price_feed_mock::WASM),
-    );
-
-    client
+fn create_price_feed_contract<'a>(e: &Env) -> PriceFeedClient<'a> {
+    PriceFeedClient::new(&e, &e.register_contract_wasm(
+        None,
+        price_feed::WASM,
+    ))
 }
 
 #[allow(dead_code)]
@@ -134,7 +130,7 @@ fn init_reserve() {
                 sub_invokes: &[],
             },
         }])
-        .init_reserve(&underlying_token.address, &init_reserve_input),
+            .init_reserve(&underlying_token.address, &init_reserve_input),
         ()
     );
 
@@ -195,9 +191,9 @@ fn init_reserve_when_pool_not_initialized() {
                 sub_invokes: &[],
             },
         }])
-        .try_init_reserve(&underlying_token.address, &init_reserve_input)
-        .unwrap_err()
-        .unwrap(),
+            .try_init_reserve(&underlying_token.address, &init_reserve_input)
+            .unwrap_err()
+            .unwrap(),
         Error::Uninitialized
     );
 }
@@ -563,11 +559,11 @@ fn set_price_feed() {
             invoke: &MockAuthInvoke {
                 contract: &pool.address,
                 fn_name: "set_price_feed",
-                args: (&price_feed.address,).into_val(&env),
+                args: (&price_feed.address, ).into_val(&env),
                 sub_invokes: &[],
             },
         }])
-        .set_price_feed(&price_feed.address),
+            .set_price_feed(&price_feed.address),
         ()
     );
 

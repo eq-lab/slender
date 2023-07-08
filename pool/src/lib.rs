@@ -3,6 +3,7 @@
 
 use common::RateMath;
 use pool_interface::*;
+use price_feed_interface::{PriceFeedClient};
 use soroban_sdk::{assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env};
 
 mod event;
@@ -86,7 +87,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// # Arguments
     ///
-    /// - feed - The address of the price feed oracle.
+    /// - feed - The contract address of the price feed oracle.
     ///
     /// # Panics
     ///
@@ -95,7 +96,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     fn set_price_feed(env: Env, feed: Address) -> Result<(), Error> {
         Self::ensure_admin(&env)?;
-        // ensure_contract(env, feed)?;
+        PriceFeedClient::new(&env, &feed.clone());
 
         write_price_feed(&env, feed);
 
@@ -106,7 +107,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// # Returns
     ///
-    /// Returns the price feed oracle address if set, or None otherwise.
+    /// Returns the price feed oracle contract id if set, or None otherwise.
     ///
     fn get_price_feed(env: Env) -> Option<Address> {
         read_price_feed(&env).ok()
