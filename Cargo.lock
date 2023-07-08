@@ -605,6 +605,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "price-feed-mock"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "price-feed-interface",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"

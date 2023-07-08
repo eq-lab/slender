@@ -3,8 +3,8 @@
 
 use common::RateMath;
 use pool_interface::*;
-use price_feed_interface::{PriceFeedClient};
 use soroban_sdk::{assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env};
+use crate::price_provider::PriceProvider;
 
 mod event;
 mod price_provider;
@@ -96,7 +96,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     fn set_price_feed(env: Env, feed: Address) -> Result<(), Error> {
         Self::ensure_admin(&env)?;
-        PriceFeedClient::new(&env, &feed.clone());
+        PriceProvider::new(&env, feed.clone());
 
         write_price_feed(&env, feed);
 

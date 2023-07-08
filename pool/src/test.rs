@@ -12,7 +12,7 @@ mod s_token {
 }
 
 mod price_feed {
-    soroban_sdk::contractimport!(file = "../contracts/se_price_oracle.wasm");
+    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/price_feed_mock.wasm");
 }
 
 fn create_token_contract<'a>(e: &Env, admin: &Address) -> TokenClient<'a> {
