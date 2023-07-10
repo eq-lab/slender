@@ -77,7 +77,6 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
         create_s_token_contract(&env, &pool.address, &underlying_token.address, &treasury);
 
     assert!(pool.get_reserve(&s_token.address).is_none());
-    assert!(pool.get_price_feed().is_none());
 
     pool.init_reserve(
         &underlying_token.address,
@@ -546,11 +545,15 @@ fn set_price_feed() {
     let env = Env::default();
 
     let admin = Address::random(&env);
+    let asset_1 = Address::random(&env);
+    let asset_2 = Address::random(&env);
 
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
+    let assets = vec![&env, asset_1.clone(), asset_2.clone()];
 
-    assert!(pool.get_price_feed().is_none());
+    assert!(pool.get_price_feed(&asset_1.clone()).is_none());
+    assert!(pool.get_price_feed(&asset_2.clone()).is_none());
 
     assert_eq!(
         pool.mock_auths(&[MockAuth {
@@ -559,13 +562,14 @@ fn set_price_feed() {
             invoke: &MockAuthInvoke {
                 contract: &pool.address,
                 fn_name: "set_price_feed",
-                args: (&price_feed.address, ).into_val(&env),
+                args: (&price_feed.address, assets.clone()).into_val(&env),
                 sub_invokes: &[],
             },
         }])
-            .set_price_feed(&price_feed.address),
+            .set_price_feed(&price_feed.address, &assets.clone()),
         ()
     );
 
-    assert!(pool.get_price_feed().is_some());
+    assert_eq!(pool.get_price_feed(&asset_1).unwrap(), price_feed.address);
+    assert_eq!(pool.get_price_feed(&asset_2).unwrap(), price_feed.address);
 }

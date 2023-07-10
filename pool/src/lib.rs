@@ -3,7 +3,7 @@
 
 use common::RateMath;
 use pool_interface::*;
-use soroban_sdk::{assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env};
+use soroban_sdk::{assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec};
 use crate::price_provider::PriceProvider;
 
 mod event;
@@ -83,34 +83,39 @@ impl LendingPoolTrait for LendingPool {
         read_reserve(&env, asset).ok()
     }
 
-    /// Sets the price feed oracle address.
+    /// Sets the price feed oracle address for a given assets.
     ///
     /// # Arguments
     ///
     /// - feed - The contract address of the price feed oracle.
+    /// - assets - The collection of assets associated with the price feed.
     ///
     /// # Panics
     ///
     /// - Panics with `Uninitialized` if the admin key is not exist in storage.
     /// - Panics if the caller is not the admin.
     ///
-    fn set_price_feed(env: Env, feed: Address) -> Result<(), Error> {
+    fn set_price_feed(env: Env, feed: Address, assets: Vec<Address>) -> Result<(), Error> {
         Self::ensure_admin(&env)?;
         PriceProvider::new(&env, feed.clone());
 
-        write_price_feed(&env, feed);
+        write_price_feed(&env, feed, &assets);
 
         Ok(())
     }
 
-    /// Retrieves the price feed oracle address.
+    /// Retrieves the price feed oracle address for a given asset.
+    ///
+    /// # Arguments
+    ///
+    /// - asset - The address of the asset associated with the price feed.
     ///
     /// # Returns
     ///
-    /// Returns the price feed oracle contract id if set, or None otherwise.
+    /// Returns the price feed oracle contract id associated with the asset if set, or None otherwise.
     ///
-    fn get_price_feed(env: Env) -> Option<Address> {
-        read_price_feed(&env).ok()
+    fn get_price_feed(env: Env, asset: Address) -> Option<Address> {
+        read_price_feed(&env, asset).ok()
     }
 
     /// Deposits a specified amount of an asset into the reserve associated with the asset.

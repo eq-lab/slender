@@ -2,7 +2,7 @@
 #![no_std]
 
 pub use reserve_config::*;
-use soroban_sdk::{contractclient, contracterror, contractspecfn, Address, Env};
+use soroban_sdk::{contractclient, contracterror, contractspecfn, Address, Env, Vec};
 pub use user_config::*;
 
 mod reserve_config;
@@ -39,9 +39,9 @@ pub trait LendingPoolTrait {
 
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData>;
 
-    fn set_price_feed(env: Env, feed: Address) -> Result<(), Error>;
+    fn set_price_feed(env: Env, feed: Address, assets: Vec<Address>) -> Result<(), Error>;
 
-    fn get_price_feed(env: Env) -> Option<Address>;
+    fn get_price_feed(env: Env, asset: Address) -> Option<Address>;
 
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 

@@ -40,6 +40,7 @@ soroban contract invoke \
     --network-passphrase "$PASSPHRASE" \
     -- \
     set_price_feed \
-    --feed $PRICE_FEED 1>/dev/null
+    --feed $PRICE_FEED \
+    --assets '["GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN"]' 1>/dev/null
 
 echo "Price feed is set"
