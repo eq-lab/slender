@@ -26,7 +26,6 @@ pub enum Error {
     UserConfigInvalidIndex = 7,
     NotEnoughAvailableUserBalance = 8,
     UserConfigNotExists = 9,
-    MathOverflowError = 10,
 
     BorrowingNotEnabled = 11,
     HealthFactorLowerThanLiqThreshold = 12,
@@ -36,10 +35,13 @@ pub enum Error {
     InvalidReserveParams = 15,
     ReserveLiquidityNotZero = 16,
 
-    ValidateBorrowMathError = 17,
-    CalcAccountDataMathError = 18,
-
     ReservesMaxCapacityExceeded = 19,
+    NoPriceForAsset = 20,
+
+    MathOverflowError = 100,
+    PriceMathOverflow = 101,
+    ValidateBorrowMathError = 102,
+    CalcAccountDataMathError = 103,
 }
 
 /// Interface for SToken

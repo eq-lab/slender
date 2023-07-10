@@ -153,6 +153,14 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
             assert_eq!(reserve_config.liq_bonus, liq_bonus);
             assert_eq!(reserve_config.liq_threshold, liq_threshold);
 
+            pool.set_price_feed(
+                &price_feed.address,
+                &soroban_sdk::vec![env, token.address.clone()],
+            );
+
+            let pool_price_feed = pool.get_price_feed(&token.address);
+            assert_eq!(pool_price_feed, Some(price_feed.address.clone()));
+
             ReserveConfig {
                 token,
                 s_token,
@@ -160,6 +168,8 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
             }
         })
         .collect();
+
+    env.budget().reset_default();
 
     Sut {
         pool,

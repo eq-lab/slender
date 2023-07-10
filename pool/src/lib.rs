@@ -1,7 +1,7 @@
 #![deny(warnings)]
 #![no_std]
 use crate::price_provider::PriceProvider;
-use common::{percentage_math::*, rate_math::*};
+use common::{percentage_math::*, rate_math::*, FixedPoint};
 use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
 use s_token_interface::STokenClient;
@@ -221,7 +221,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     fn set_price_feed(env: Env, feed: Address, assets: Vec<Address>) -> Result<(), Error> {
         Self::ensure_admin(&env)?;
-        PriceProvider::new(&env, feed.clone());
+        PriceProvider::new(&env, &feed);
 
         write_price_feed(&env, feed, &assets);
 
@@ -478,12 +478,10 @@ impl LendingPool {
         user_config: &UserConfiguration,
         amount: i128,
     ) -> Result<(), Error> {
+        let (asset_price, denominator) = Self::get_asset_price(env, asset.clone())?;
         let amount_in_xlm = amount
-            .checked_mul(Self::get_asset_price(asset))
-            .ok_or(Error::MathOverflowError)?;
-        //TODO: uncomment when oracle will be implemented
-        //.checked_div(10_i128.pow(reserve.configuration.decimals))
-        //.ok_or(Error::MathOverflowError)?;
+            .fixed_mul_floor(asset_price, denominator)
+            .ok_or(Error::ValidateBorrowMathError)?;
 
         assert_with_error!(env, amount > 0 && amount_in_xlm > 0, Error::InvalidAmount);
         let flags = reserve.configuration.get_flags();
@@ -551,9 +549,8 @@ impl LendingPool {
             let curr_reserve_asset = reserves.get(i.into()).unwrap().unwrap();
             let curr_reserve = read_reserve(env, curr_reserve_asset.clone())?;
 
-            //TODO: uncomment when `get_asset_price` will be implemented
-            let asset_unit = 1i128; //10i128.pow(curr_reserve.configuration.decimals);
-            let reserve_price = Self::get_asset_price(&curr_reserve_asset);
+            let (reserve_price, price_denominator) =
+                Self::get_asset_price(env, curr_reserve_asset.clone())?;
 
             if curr_reserve.configuration.liq_threshold != 0
                 && user_config.is_using_as_collateral(env, i)
@@ -570,9 +567,7 @@ impl LendingPool {
                     .ok_or(Error::CalcAccountDataMathError)?;
 
                 let liquidity_balance_in_xlm = compounded_balance
-                    .checked_mul(reserve_price)
-                    .ok_or(Error::CalcAccountDataMathError)?
-                    .checked_div(asset_unit)
+                    .fixed_mul_floor(reserve_price, price_denominator)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
                 total_collateral_in_xlm = total_collateral_in_xlm
@@ -606,9 +601,7 @@ impl LendingPool {
                     .ok_or(Error::CalcAccountDataMathError)?;
 
                 let debt_balance_in_xlm = compounded_balance
-                    .checked_mul(reserve_price)
-                    .ok_or(Error::CalcAccountDataMathError)?
-                    .checked_div(asset_unit)
+                    .fixed_div_floor(reserve_price, price_denominator)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
                 total_debt_in_xlm = total_debt_in_xlm
@@ -635,9 +628,21 @@ impl LendingPool {
         })
     }
 
-    /// Price of asset expressed in XLM token
-    fn get_asset_price(_asset: &Address) -> i128 {
-        1i128
+    /// Returns price of asset expressed in XLM token and denominator 10^decimals
+    fn get_asset_price(env: &Env, asset: Address) -> Result<(i128, i128), Error> {
+        let price_feed = read_price_feed(env, asset.clone())?;
+        let provider = PriceProvider::new(&env, &price_feed);
+        provider
+            .get_price(&asset)
+            .ok_or(Error::NoPriceForAsset)
+            .map(|price_data| {
+                Ok((
+                    price_data.price,
+                    10_i128
+                        .checked_pow(price_data.decimals)
+                        .ok_or(Error::PriceMathOverflow)?,
+                ))
+            })?
     }
 
     fn calc_health_factor(
