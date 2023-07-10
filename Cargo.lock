@@ -592,6 +592,7 @@ name = "pool"
 version = "0.1.0"
 dependencies = [
  "common",
+ "debt-token-interface",
  "pool-interface",
  "price-feed-interface",
  "s-token-interface",

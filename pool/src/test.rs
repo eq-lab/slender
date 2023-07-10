@@ -1,4 +1,5 @@
 use crate::*;
+use debt_token_interface::DebtTokenClient;
 use price_feed_interface::PriceFeedClient;
 use s_token_interface::STokenClient;
 use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
@@ -9,6 +10,10 @@ extern crate std;
 
 mod s_token {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/s_token.wasm");
+}
+
+mod debt_token {
+    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/debt_token.wasm");
 }
 
 mod price_feed {
@@ -47,6 +52,25 @@ fn create_s_token_contract<'a>(
     client
 }
 
+fn create_debt_token_contract<'a>(
+    e: &Env,
+    pool: &Address,
+    underlying_asset: &Address,
+) -> DebtTokenClient<'a> {
+    let client: DebtTokenClient<'_> =
+        DebtTokenClient::new(&e, &e.register_contract_wasm(None, debt_token::WASM));
+
+    client.initialize(
+        &7,
+        &"DebtToken".into_val(e),
+        &"DTOKEN".into_val(e),
+        &pool,
+        &underlying_asset,
+    );
+
+    client
+}
+
 fn create_price_feed_contract<'a>(e: &Env) -> PriceFeedClient<'a> {
     PriceFeedClient::new(&e, &e.register_contract_wasm(None, price_feed::WASM))
 }
@@ -55,7 +79,7 @@ fn create_price_feed_contract<'a>(e: &Env) -> PriceFeedClient<'a> {
 struct ReserveConfig<'a> {
     token: TokenClient<'a>,
     s_token: STokenClient<'a>,
-    debt_token: TokenClient<'a>,
+    debt_token: DebtTokenClient<'a>,
 }
 
 #[allow(dead_code)]
@@ -72,7 +96,7 @@ impl<'a> Sut<'a> {
         &self.reserves[0].token
     }
 
-    fn debt_token(&self) -> &TokenClient<'a> {
+    fn debt_token(&self) -> &DebtTokenClient<'a> {
         &self.reserves[0].debt_token
     }
 
@@ -92,7 +116,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
     let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..3)
         .map(|_i| {
             let token = create_token_contract(&env, &token_admin);
-            let debt_token = create_token_contract(&env, &token_admin);
+            let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
             let s_token = create_s_token_contract(&env, &pool.address, &token.address, &treasury);
 
             assert!(pool.get_reserve(&s_token.address).is_none());
@@ -579,6 +603,8 @@ fn borrow() {
             pool_balance + deposit_amount
         );
     }
+
+    env.budget().reset_default();
 
     //borrower deposit first token and borrow second token
     sut.pool

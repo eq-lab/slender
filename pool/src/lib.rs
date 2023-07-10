@@ -2,7 +2,9 @@
 #![no_std]
 use crate::price_provider::PriceProvider;
 use common::{percentage_math::*, rate_math::*};
+use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
+use s_token_interface::STokenClient;
 use soroban_sdk::{
     assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec,
 };
@@ -393,9 +395,10 @@ impl LendingPoolTrait for LendingPool {
 
         Self::validate_borrow(&env, who.clone(), &asset, &reserve, &user_config, amount)?;
 
-        let debt_token = token::Client::new(&env, &reserve.debt_token_address);
+        let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
         let is_first_borrowing = debt_token.balance(&who) == 0;
         debt_token.mint(&who, &amount);
+
         if is_first_borrowing {
             let mut user_config = user_config;
             user_config.set_borrowing(&env, reserve.get_id(), true);
@@ -405,7 +408,7 @@ impl LendingPoolTrait for LendingPool {
         reserve.update_interest_rate();
         write_reserve(&env, asset.clone(), &reserve);
 
-        let s_token = s_token_interface::STokenClient::new(&env, &reserve.s_token_address);
+        let s_token = STokenClient::new(&env, &reserve.s_token_address);
         s_token.transfer_underlying_to(&who, &amount);
 
         event::borrow(&env, who, asset, amount);
