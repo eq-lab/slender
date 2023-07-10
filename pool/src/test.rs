@@ -644,7 +644,7 @@ fn borrow_collateral_is_zero() {
             .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount,)
             .unwrap_err()
             .unwrap(),
-        Error::HealthFactorLowerThanLiqThreshold
+        Error::CollateralIsZero
     )
 }
 

@@ -484,7 +484,13 @@ impl LendingPool {
         reserves: &Vec<Address>,
     ) -> Result<AccountData, Error> {
         if user_config.is_empty() {
-            return Err(Error::HealthFactorLowerThanLiqThreshold);
+            return Ok(AccountData {
+                collateral: 0,
+                debt: 0,
+                ltv: 0,
+                liq_threshold: 0,
+                health_factor: i128::MAX,
+            });
         }
 
         let mut total_collateral_in_xlm: i128 = 0;
