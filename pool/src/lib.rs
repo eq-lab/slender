@@ -101,7 +101,7 @@ impl LendingPoolTrait for LendingPool {
     fn configure_as_collateral(
         env: Env,
         asset: Address,
-        params: CollateralParams,
+        params: CollateralParamsInput,
     ) -> Result<(), Error> {
         Self::ensure_admin(&env)?;
 

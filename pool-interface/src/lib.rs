@@ -54,7 +54,7 @@ pub trait LendingPoolTrait {
     fn configure_as_collateral(
         env: Env,
         asset: Address,
-        config: CollateralParams,
+        config: CollateralParamsInput,
     ) -> Result<(), Error>;
 
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData>;

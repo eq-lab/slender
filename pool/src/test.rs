@@ -92,7 +92,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
 
             pool.configure_as_collateral(
                 &token.address,
-                &CollateralParams {
+                &CollateralParamsInput {
                     ltv: 500,            // 5%
                     liq_threshold: 1000, // 10%,
                     liq_bonus: 11000,    //110%

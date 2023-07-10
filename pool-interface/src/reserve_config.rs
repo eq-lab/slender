@@ -105,7 +105,7 @@ impl ReserveData {
         //TODO: not implemented
     }
 
-    pub fn update_collateral_config(&mut self, config: CollateralParams) {
+    pub fn update_collateral_config(&mut self, config: CollateralParamsInput) {
         self.configuration.ltv = config.ltv;
         self.configuration.liq_threshold = config.liq_threshold;
         self.configuration.liq_bonus = config.liq_bonus;
@@ -130,7 +130,7 @@ fn zero_bytes<const N: usize>(env: &Env) -> BytesN<N> {
 ///Collateralization parameters
 #[contracttype]
 #[derive(Clone, Copy)]
-pub struct CollateralParams {
+pub struct CollateralParamsInput {
     ///The threshold at which loans using this asset as collateral will be considered undercollateralized
     pub liq_threshold: u32,
     ///The bonus liquidators receive to liquidate this asset. The values is always above 100%. A value of 105% means the liquidator will receive a 5% bonus
