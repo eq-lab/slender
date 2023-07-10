@@ -3,8 +3,6 @@ pub const PERCENTAGE_FACTOR: u32 = 10000;
 
 const HALF_PERCENT: u32 = PERCENTAGE_FACTOR / 2;
 
-const CHECK_MUL_OVERFLOW: i128 = (i128::MAX - (HALF_PERCENT as i128)) / (PERCENTAGE_FACTOR as i128);
-
 pub trait PercentageMath<T: Into<i128>> {
     fn percent_mul(self, percentage: T) -> Option<i128>;
 
@@ -19,7 +17,7 @@ impl<T: Into<i128>> PercentageMath<T> for T {
             return Some(0);
         }
 
-        if self_i128 > CHECK_MUL_OVERFLOW {
+        if self_i128 > (i128::MAX - (HALF_PERCENT as i128)) / percentage_i128 {
             return None;
         }
 
