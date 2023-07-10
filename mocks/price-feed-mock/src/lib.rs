@@ -21,7 +21,7 @@ impl PriceFeedTrait for PriceFeedMock {
     }
 
     fn resolution(_env: Env) -> u32 {
-        constants::RESOLUTION
+        unimplemented!()
     }
 
     fn price(_env: Env, _asset: Address, _timestamp: u64) -> Option<PriceData> {
@@ -33,8 +33,10 @@ impl PriceFeedTrait for PriceFeedMock {
     }
 
     fn lastprice(env: Env, _asset: Address) -> Option<PriceData> {
+        let price = 10i128.checked_pow(constants::DECIMALS).unwrap();
+
         Some(PriceData {
-            price: common::RATE_DENOMINATOR,
+            price,
             timestamp: env.ledger().timestamp(),
         })
     }
