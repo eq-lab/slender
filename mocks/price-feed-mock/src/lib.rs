@@ -5,7 +5,6 @@ mod constants;
 
 use price_feed_interface::{PriceData, PriceFeedTrait};
 use soroban_sdk::{contractimpl, Address, Env, Vec};
-use crate::constants::Constants;
 
 pub struct PriceFeedMock;
 
@@ -18,11 +17,11 @@ impl PriceFeedTrait for PriceFeedMock {
     }
 
     fn decimals(_env: Env) -> u32 {
-        Constants::DECIMALS
+        constants::DECIMALS
     }
 
     fn resolution(_env: Env) -> u32 {
-        Constants::RESOLUTION
+        constants::RESOLUTION
     }
 
     fn price(_env: Env, _asset: Address, _timestamp: u64) -> Option<PriceData> {
