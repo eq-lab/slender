@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #Read $TOKEN, $TOKEN_SECRET, $USER_PUBLIC, $POOL, $POOL_SECRET, $STOKEN, $DEBT_TOKEN, $PRICE_FEED
+
 source scripts/.env
 source scripts/.contracts
 

@@ -146,6 +146,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "common-token"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
+ "soroban-token-sdk",
+]
+
+[[package]]
 name = "core-foundation-sys"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -217,6 +225,23 @@ dependencies = [
  "darling_core",
  "quote",
  "syn 2.0.18",
+]
+
+[[package]]
+name = "debt-token"
+version = "0.1.0"
+dependencies = [
+ "common-token",
+ "debt-token-interface",
+ "soroban-sdk",
+ "soroban-token-sdk",
+]
+
+[[package]]
+name = "debt-token-interface"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
 ]
 
 [[package]]
@@ -689,6 +714,7 @@ name = "s-token"
 version = "0.1.0"
 dependencies = [
  "common",
+ "common-token",
  "fixed-point-math",
  "pool-interface",
  "s-token-interface",

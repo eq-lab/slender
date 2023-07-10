@@ -3,6 +3,7 @@ resolver = "2"
 
 members = [
     "common",
+    "common-token",
     "deployer",
     "mocks/price-feed-mock",
     "pool",
@@ -10,6 +11,8 @@ members = [
     "price-feed-interface",
     "s-token",
     "s-token-interface",
+    "debt-token-interface",
+    "debt-token",
 ]
 
 [profile.release]

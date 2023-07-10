@@ -6,6 +6,7 @@ test: build
 	cargo test -p deployer
 	cargo test -p s-token --features testutils
 	cargo test -p pool --features testutils
+	cargo test -p debt-token
 
 build:
 	cargo build --target wasm32-unknown-unknown --release 
