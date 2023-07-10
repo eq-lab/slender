@@ -69,8 +69,14 @@ impl LendingPoolTrait for LendingPool {
 
         let mut reserve_data = ReserveData::new(&env, input);
         let mut reserves = read_reserves(&env);
+        let reserves_len = reserves.len();
+        assert_with_error!(
+            &env,
+            reserves_len <= u8::MAX as u32,
+            Error::ReservesMaxCapacityExceeded
+        );
 
-        let id = reserves.len() as u8;
+        let id = reserves_len as u8;
         reserve_data.id = BytesN::from_array(&env, &[id; 1]);
         reserves.push_back(asset.clone());
 
@@ -434,9 +440,9 @@ impl LendingPool {
         let amount_of_collateral_needed_xlm = account_data
             .debt
             .checked_add(amount_in_xlm)
-            .ok_or(Error::MathOverflowError)?
+            .ok_or(Error::ValidateBorrowMathError)?
             .percent_div(account_data.ltv)
-            .ok_or(Error::MathOverflowError)?;
+            .ok_or(Error::ValidateBorrowMathError)?;
 
         assert_with_error!(
             env,
@@ -453,7 +459,7 @@ impl LendingPool {
             let compounded_balance = s_token
                 .balance(&who)
                 .mul_rate_floor(coll_coeff)
-                .ok_or(Error::MathOverflowError)?;
+                .ok_or(Error::ValidateBorrowMathError)?;
 
             assert_with_error!(
                 env,
@@ -479,10 +485,11 @@ impl LendingPool {
         let mut total_debt_in_xlm: i128 = 0;
         let mut avg_ltv: i128 = 0;
         let mut avg_liq_threshold: i128 = 0;
-        let reserves_count = reserves.len() as u8; //TODO: add check to init_reserve() method
+        let reserves_len =
+            u8::try_from(reserves.len()).map_err(|_| Error::ReservesMaxCapacityExceeded)?;
 
         // calc collateral and debt expressed in XLM token
-        for i in 0..reserves_count {
+        for i in 0..reserves_len {
             if !user_config.is_using_as_collateral_or_borrowing(env, i) {
                 continue;
             }
@@ -507,33 +514,33 @@ impl LendingPool {
                 let compounded_balance = s_token
                     .balance(&who)
                     .mul_rate_floor(coll_coeff)
-                    .ok_or(Error::MathOverflowError)?;
+                    .ok_or(Error::CalcAccountDataMathError)?;
 
                 let liquidity_balance_in_xlm = compounded_balance
                     .checked_mul(reserve_price)
-                    .ok_or(Error::MathOverflowError)?
+                    .ok_or(Error::CalcAccountDataMathError)?
                     .checked_div(asset_unit)
-                    .ok_or(Error::MathOverflowError)?;
+                    .ok_or(Error::CalcAccountDataMathError)?;
 
                 total_collateral_in_xlm = total_collateral_in_xlm
                     .checked_add(liquidity_balance_in_xlm)
-                    .ok_or(Error::MathOverflowError)?;
+                    .ok_or(Error::CalcAccountDataMathError)?;
 
                 avg_ltv = avg_ltv
                     .checked_add(
                         i128::from(curr_reserve.configuration.ltv)
                             .checked_mul(liquidity_balance_in_xlm)
-                            .ok_or(Error::MathOverflowError)?,
+                            .ok_or(Error::CalcAccountDataMathError)?,
                     )
-                    .ok_or(Error::MathOverflowError)?;
+                    .ok_or(Error::CalcAccountDataMathError)?;
 
                 avg_liq_threshold = avg_liq_threshold
                     .checked_add(
                         i128::from(curr_reserve.configuration.liq_threshold)
                             .checked_mul(liquidity_balance_in_xlm)
-                            .ok_or(Error::MathOverflowError)?,
+                            .ok_or(Error::CalcAccountDataMathError)?,
                     )
-                    .ok_or(Error::MathOverflowError)?;
+                    .ok_or(Error::CalcAccountDataMathError)?;
             }
 
             if user_config.is_borrowing(env, i) {
@@ -543,17 +550,17 @@ impl LendingPool {
                 let compounded_balance = debt_token
                     .balance(&who)
                     .mul_rate_floor(debt_coeff)
-                    .ok_or(Error::MathOverflowError)?;
+                    .ok_or(Error::CalcAccountDataMathError)?;
 
                 let debt_balance_in_xlm = compounded_balance
                     .checked_mul(reserve_price)
-                    .ok_or(Error::MathOverflowError)?
+                    .ok_or(Error::CalcAccountDataMathError)?
                     .checked_div(asset_unit)
-                    .ok_or(Error::MathOverflowError)?;
+                    .ok_or(Error::CalcAccountDataMathError)?;
 
                 total_debt_in_xlm = total_debt_in_xlm
                     .checked_add(debt_balance_in_xlm)
-                    .ok_or(Error::MathOverflowError)?;
+                    .ok_or(Error::CalcAccountDataMathError)?;
             }
         }
 

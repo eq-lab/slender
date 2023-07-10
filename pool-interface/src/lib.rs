@@ -36,6 +36,11 @@ pub enum Error {
 
     InvalidReserveParams = 16,
     ReserveLiquidityNotZero = 17,
+
+    ValidateBorrowMathError = 18,
+    CalcAccountDataMathError = 19,
+
+    ReservesMaxCapacityExceeded = 20,
 }
 
 /// Interface for SToken
