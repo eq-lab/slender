@@ -1,4 +1,4 @@
-use price_feed_interface::PriceFeedClient;
+use price_feed_interface::{PriceData, PriceFeedClient};
 use soroban_sdk::{Address, Env};
 
 #[allow(dead_code)]
@@ -19,8 +19,13 @@ impl PriceProvider<'_> {
     }
 
     pub fn get_price(&self, asset: Address) -> Option<AssetPrice> {
-        let last_price = self.feed.lastprice(&asset);
-        let decimals = self.feed.decimals();
+        let last_price: Option<PriceData> = self.feed.lastprice(&asset);
+        let decimals: u32 = self.feed.decimals();
+
+        if last_price.is_none()
+        {
+            return None;
+        }
 
         Some(AssetPrice {
             price: last_price?.price,
