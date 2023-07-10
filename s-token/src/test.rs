@@ -142,7 +142,7 @@ fn test() {
 }
 
 #[test]
-#[should_panic(expected = "not used")]
+#[should_panic(expected = "not implemented")]
 fn test_burn() {
     let e = Env::default();
     e.mock_all_auths();
@@ -232,7 +232,7 @@ fn transfer_from_insufficient_allowance() {
 }
 
 #[test]
-#[should_panic(expected = "Already initialized")]
+#[should_panic(expected = "already initialized")]
 fn initialize_already_initialized() {
     let e = Env::default();
     let (token, _pool) = create_token(&e);

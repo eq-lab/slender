@@ -7,22 +7,11 @@ mod test;
 
 use crate::storage::*;
 use common::rate_math::RateMath;
+use common_token::{balance::*, check_nonnegative_amount, storage::*, verify_caller_is_pool};
 use pool_interface::{LendingPoolClient, ReserveData};
 use s_token_interface::STokenTrait;
 use soroban_sdk::{contractimpl, token, Address, Bytes, Env};
 use soroban_token_sdk::TokenMetadata;
-
-fn check_nonnegative_amount(amount: i128) {
-    if amount < 0 {
-        panic!("negative amount is not allowed: {}", amount)
-    }
-}
-
-fn verify_caller_is_pool(e: &Env) -> Address {
-    let pool = read_pool(e);
-    pool.require_auth();
-    pool
-}
 
 pub struct SToken;
 
@@ -43,6 +32,7 @@ impl STokenTrait for SToken {
     ///
     /// Panics with if the specified decimal value exceeds the maximum value of u8.
     /// Panics with if the contract has already been initialized.
+    /// Panics if name or symbol is empty
     ///
     fn initialize(
         e: Env,
@@ -57,8 +47,16 @@ impl STokenTrait for SToken {
             panic!("Decimal must fit in a u8");
         }
 
+        if name.is_empty() {
+            panic!("no name");
+        }
+
+        if symbol.is_empty() {
+            panic!("no symbol");
+        }
+
         if has_pool(&e) {
-            panic!("Already initialized")
+            panic!("already initialized")
         }
 
         write_pool(&e, &pool);
@@ -248,14 +246,13 @@ impl STokenTrait for SToken {
     ///
     fn transfer_from(e: Env, spender: Address, from: Address, to: Address, amount: i128) {
         spender.require_auth();
-        check_nonnegative_amount(amount);
         Self::spend_allowance(&e, from.clone(), spender, amount);
 
         Self::do_transfer(&e, from, to, amount, true);
     }
 
     fn burn_from(_e: Env, _spender: Address, _from: Address, _amount: i128) {
-        panic!("not used")
+        unimplemented!();
     }
 
     /// Clawbacks a specified amount of tokens from the from account.
@@ -269,13 +266,13 @@ impl STokenTrait for SToken {
     ///
     /// Panics if the amount is negative.
     /// Panics if the caller is not the pool associated with this token.
+    /// Panics if overflow happens
     ///
     fn clawback(e: Env, from: Address, amount: i128) {
-        check_nonnegative_amount(amount);
         verify_caller_is_pool(&e);
 
-        Self::spend_balance(&e, from.clone(), amount);
-        Self::add_total_supply(&e, -amount);
+        spend_balance(&e, from.clone(), amount);
+        add_total_supply(&e, amount.checked_neg().expect("s-token: no overflow"));
         event::clawback(&e, from, amount);
     }
 
@@ -310,7 +307,6 @@ impl STokenTrait for SToken {
     /// Panics if the caller is not the pool associated with this token.
     ///
     fn mint(e: Env, to: Address, amount: i128) {
-        check_nonnegative_amount(amount);
         let pool = verify_caller_is_pool(&e);
 
         Self::do_mint(&e, to.clone(), amount);
@@ -332,7 +328,6 @@ impl STokenTrait for SToken {
     /// Panics if the caller is not the pool associated with this token.
     ///
     fn burn(e: Env, from: Address, amount_to_burn: i128, amount_to_withdraw: i128, to: Address) {
-        check_nonnegative_amount(amount_to_burn);
         verify_caller_is_pool(&e);
 
         Self::do_burn(&e, from.clone(), amount_to_burn, amount_to_withdraw, to);
@@ -406,7 +401,6 @@ impl STokenTrait for SToken {
     /// Panics if caller is not associated pool.
     ///
     fn mint_to_treasury(e: Env, amount: i128) {
-        check_nonnegative_amount(amount);
         let pool = verify_caller_is_pool(&e);
         if amount == 0 {
             return;
@@ -498,8 +492,8 @@ impl SToken {
         let from_balance_prev = read_balance(e, from.clone());
         let to_balance_prev = read_balance(e, to.clone());
 
-        Self::spend_balance(e, from.clone(), amount);
-        Self::receive_balance(e, to.clone(), amount);
+        spend_balance(e, from.clone(), amount);
+        receive_balance(e, to.clone(), amount);
 
         if validate {
             let pool_client = LendingPoolClient::new(e, &read_pool(e));
@@ -519,38 +513,9 @@ impl SToken {
     fn spend_allowance(e: &Env, from: Address, spender: Address, amount: i128) {
         let allowance = read_allowance(e, from.clone(), spender.clone());
         if allowance < amount {
-            panic!("insufficient allowance");
+            panic!("s-token: insufficient allowance");
         }
         write_allowance(e, from, spender, allowance - amount);
-    }
-
-    fn receive_balance(e: &Env, addr: Address, amount: i128) {
-        let balance = read_balance(e, addr.clone());
-        if !is_authorized(e, addr.clone()) {
-            panic!("can't receive when deauthorized");
-        }
-        write_balance(e, addr, balance + amount);
-    }
-
-    fn spend_balance(e: &Env, addr: Address, amount: i128) {
-        let balance = read_balance(e, addr.clone());
-        if !is_authorized(e, addr.clone()) {
-            panic!("can't spend when deauthorized");
-        }
-        if balance < amount {
-            panic!("insufficient balance");
-        }
-        write_balance(e, addr, balance - amount);
-    }
-
-    fn add_total_supply(e: &Env, amount: i128) {
-        let mut total_supply: i128 = read_total_supply(e);
-        total_supply = total_supply.checked_add(amount).unwrap();
-        if total_supply < 0 {
-            panic!("negative total supply");
-        }
-
-        write_total_supply(e, total_supply);
     }
 
     fn do_mint(e: &Env, user: Address, amount: i128) {
@@ -558,8 +523,8 @@ impl SToken {
             panic!("s-token: invalid mint amount");
         }
 
-        Self::receive_balance(e, user, amount);
-        Self::add_total_supply(e, amount);
+        receive_balance(e, user, amount);
+        add_total_supply(e, amount);
     }
 
     fn do_burn(
@@ -573,8 +538,11 @@ impl SToken {
             panic!("s-token: invalid burn amount");
         }
 
-        Self::spend_balance(e, from, amount_to_burn);
-        Self::add_total_supply(e, -amount_to_burn);
+        spend_balance(e, from, amount_to_burn);
+        add_total_supply(
+            e,
+            amount_to_burn.checked_neg().expect("s-token: no overflow"),
+        );
 
         let underlying_asset = read_underlying_asset(e);
         let underlying_asset_client = token::Client::new(e, &underlying_asset);

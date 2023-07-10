@@ -1,5 +1,6 @@
 #![deny(warnings)]
 #![no_std]
+use crate::price_provider::PriceProvider;
 use common::{percentage_math::*, rate_math::*};
 use pool_interface::*;
 use soroban_sdk::{
@@ -7,6 +8,7 @@ use soroban_sdk::{
 };
 
 mod event;
+mod price_provider;
 mod storage;
 
 use crate::storage::*;
@@ -28,7 +30,7 @@ pub struct LendingPool;
 
 #[contractimpl]
 impl LendingPoolTrait for LendingPool {
-    // Initializes the contract with the specified admin address.
+    /// Initializes the contract with the specified admin address.
     ///
     /// # Arguments
     ///
@@ -44,6 +46,7 @@ impl LendingPoolTrait for LendingPool {
         }
 
         write_admin(&env, admin);
+
         Ok(())
     }
 
@@ -200,6 +203,41 @@ impl LendingPoolTrait for LendingPool {
     ///
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData> {
         read_reserve(&env, asset).ok()
+    }
+
+    /// Sets the price feed oracle address for a given assets.
+    ///
+    /// # Arguments
+    ///
+    /// - feed - The contract address of the price feed oracle.
+    /// - assets - The collection of assets associated with the price feed.
+    ///
+    /// # Panics
+    ///
+    /// - Panics with `Uninitialized` if the admin key is not exist in storage.
+    /// - Panics if the caller is not the admin.
+    ///
+    fn set_price_feed(env: Env, feed: Address, assets: Vec<Address>) -> Result<(), Error> {
+        Self::ensure_admin(&env)?;
+        PriceProvider::new(&env, feed.clone());
+
+        write_price_feed(&env, feed, &assets);
+
+        Ok(())
+    }
+
+    /// Retrieves the price feed oracle address for a given asset.
+    ///
+    /// # Arguments
+    ///
+    /// - asset - The address of the asset associated with the price feed.
+    ///
+    /// # Returns
+    ///
+    /// Returns the price feed oracle contract id associated with the asset if set, or None otherwise.
+    ///
+    fn get_price_feed(env: Env, asset: Address) -> Option<Address> {
+        read_price_feed(&env, asset).ok()
     }
 
     /// Deposits a specified amount of an asset into the reserve associated with the asset.
@@ -438,7 +476,7 @@ impl LendingPool {
         amount: i128,
     ) -> Result<(), Error> {
         let amount_in_xlm = amount
-            .checked_mul(Self::get_asset_price(&asset))
+            .checked_mul(Self::get_asset_price(asset))
             .ok_or(Error::MathOverflowError)?;
         //TODO: uncomment when oracle will be implemented
         //.checked_div(10_i128.pow(reserve.configuration.decimals))
@@ -451,7 +489,7 @@ impl LendingPool {
         assert_with_error!(env, flags.borrowing_enabled, Error::BorrowingNotEnabled);
 
         let reserves = &read_reserves(env);
-        let account_data = Self::calc_account_data(env, who.clone(), user_config, reserves)?;
+        let account_data = Self::calc_account_data(env, who, user_config, reserves)?;
 
         assert_with_error!(env, account_data.collateral > 0, Error::CollateralIsZero);
         assert_with_error!(
