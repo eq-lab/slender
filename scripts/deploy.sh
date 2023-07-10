@@ -88,6 +88,7 @@ deployStokenResult=$(invoke $deployer $TOKEN_SECRET "deploy_s_token \
     --pool $POOL \
     --treasury $TREASURY_PUBLIC \
     --underlying_asset $TOKEN")
+echo "$deployStokenResult"
 STOKEN=$(addressFromResult $deployStokenResult)
 echo "Stoken contract address: $STOKEN"
 

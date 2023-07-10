@@ -119,7 +119,7 @@ fn test_burn() {
 }
 
 #[test]
-#[should_panic(expected = "Already initialized")]
+#[should_panic(expected = "already initialized")]
 fn initialize_already_initialized() {
     let e = Env::default();
     let (token, _pool) = create_token(&e);
@@ -137,7 +137,7 @@ fn initialize_already_initialized() {
 }
 
 #[test]
-#[should_panic(expected = "Decimal must fit in a u8")]
+#[should_panic(expected = "decimal must fit in a u8")]
 fn decimal_is_over_max() {
     let e = Env::default();
     let token = DebtTokenClient::new(&e, &e.register_contract(None, DebtToken {}));

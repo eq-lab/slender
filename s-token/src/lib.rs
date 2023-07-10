@@ -32,6 +32,7 @@ impl STokenTrait for SToken {
     ///
     /// Panics with if the specified decimal value exceeds the maximum value of u8.
     /// Panics with if the contract has already been initialized.
+    /// Panics if name or symbol is empty
     ///
     fn initialize(
         e: Env,
@@ -46,8 +47,16 @@ impl STokenTrait for SToken {
             panic!("Decimal must fit in a u8");
         }
 
+        if name.is_empty() {
+            panic!("no name");
+        }
+
+        if symbol.is_empty() {
+            panic!("no symbol");
+        }
+
         if has_pool(&e) {
-            panic!("Already initialized")
+            panic!("already initialized")
         }
 
         write_pool(&e, &pool);
@@ -237,7 +246,6 @@ impl STokenTrait for SToken {
     ///
     fn transfer_from(e: Env, spender: Address, from: Address, to: Address, amount: i128) {
         spender.require_auth();
-        check_nonnegative_amount(amount);
         Self::spend_allowance(&e, from.clone(), spender, amount);
 
         Self::do_transfer(&e, from, to, amount, true);
@@ -258,13 +266,13 @@ impl STokenTrait for SToken {
     ///
     /// Panics if the amount is negative.
     /// Panics if the caller is not the pool associated with this token.
+    /// Panics if overflow happens
     ///
     fn clawback(e: Env, from: Address, amount: i128) {
-        check_nonnegative_amount(amount);
         verify_caller_is_pool(&e);
 
         spend_balance(&e, from.clone(), amount);
-        add_total_supply(&e, -amount);
+        add_total_supply(&e, amount.checked_neg().expect("s-token: no overflow"));
         event::clawback(&e, from, amount);
     }
 
@@ -299,7 +307,6 @@ impl STokenTrait for SToken {
     /// Panics if the caller is not the pool associated with this token.
     ///
     fn mint(e: Env, to: Address, amount: i128) {
-        check_nonnegative_amount(amount);
         let pool = verify_caller_is_pool(&e);
 
         Self::do_mint(&e, to.clone(), amount);
@@ -321,7 +328,6 @@ impl STokenTrait for SToken {
     /// Panics if the caller is not the pool associated with this token.
     ///
     fn burn(e: Env, from: Address, amount_to_burn: i128, amount_to_withdraw: i128, to: Address) {
-        check_nonnegative_amount(amount_to_burn);
         verify_caller_is_pool(&e);
 
         Self::do_burn(&e, from.clone(), amount_to_burn, amount_to_withdraw, to);
@@ -395,7 +401,6 @@ impl STokenTrait for SToken {
     /// Panics if caller is not associated pool.
     ///
     fn mint_to_treasury(e: Env, amount: i128) {
-        check_nonnegative_amount(amount);
         let pool = verify_caller_is_pool(&e);
         if amount == 0 {
             return;
@@ -506,7 +511,7 @@ impl SToken {
     fn spend_allowance(e: &Env, from: Address, spender: Address, amount: i128) {
         let allowance = read_allowance(e, from.clone(), spender.clone());
         if allowance < amount {
-            panic!("insufficient allowance");
+            panic!("s-token: insufficient allowance");
         }
         write_allowance(e, from, spender, allowance - amount);
     }
@@ -532,7 +537,10 @@ impl SToken {
         }
 
         spend_balance(e, from, amount_to_burn);
-        add_total_supply(e, amount_to_burn.checked_neg().unwrap());
+        add_total_supply(
+            e,
+            amount_to_burn.checked_neg().expect("s-token: no overflow"),
+        );
 
         let underlying_asset = read_underlying_asset(e);
         let underlying_asset_client = token::Client::new(e, &underlying_asset);
