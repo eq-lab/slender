@@ -31,16 +31,15 @@ pub enum Error {
     BorrowingNotEnabled = 11,
     HealthFactorLowerThanLiqThreshold = 12,
     CollateralIsZero = 13,
-    CollateralSameAsBorrow = 14,
-    CollateralNotCoverNewBorrow = 15,
+    CollateralNotCoverNewBorrow = 14,
 
-    InvalidReserveParams = 16,
-    ReserveLiquidityNotZero = 17,
+    InvalidReserveParams = 15,
+    ReserveLiquidityNotZero = 16,
 
-    ValidateBorrowMathError = 18,
-    CalcAccountDataMathError = 19,
+    ValidateBorrowMathError = 17,
+    CalcAccountDataMathError = 18,
 
-    ReservesMaxCapacityExceeded = 20,
+    ReservesMaxCapacityExceeded = 19,
 }
 
 /// Interface for SToken
@@ -56,6 +55,8 @@ pub trait LendingPoolTrait {
         asset: Address,
         config: CollateralParamsInput,
     ) -> Result<(), Error>;
+
+    fn enable_borrowing_on_reserve(env: Env, asset: Address, enabled: bool) -> Result<(), Error>;
 
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData>;
 

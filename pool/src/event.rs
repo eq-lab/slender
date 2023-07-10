@@ -35,3 +35,13 @@ pub(crate) fn collat_config_change(
     let topics = (Symbol::new(e, "collat_config_change"), asset);
     e.events().publish(topics, (ltv, liq_threshold, liq_bonus));
 }
+
+pub(crate) fn borrowing_enabled(e: &Env, asset: Address) {
+    let topics = (Symbol::new(e, "borrowing_enabled"), asset);
+    e.events().publish(topics, ());
+}
+
+pub(crate) fn borrowing_disabled(e: &Env, asset: Address) {
+    let topics = (Symbol::new(e, "borrowing_disabled"), asset);
+    e.events().publish(topics, ());
+}

@@ -90,14 +90,29 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
                 },
             );
 
+            let ltv = 500; // 5%
+            let liq_threshold = 1000; // 10%,
+            let liq_bonus = 11000; //110%
+
             pool.configure_as_collateral(
                 &token.address,
                 &CollateralParamsInput {
-                    ltv: 500,            // 5%
-                    liq_threshold: 1000, // 10%,
-                    liq_bonus: 11000,    //110%
+                    ltv,
+                    liq_threshold,
+                    liq_bonus,
                 },
             );
+
+            pool.enable_borrowing_on_reserve(&token.address, &true);
+
+            let reserve = pool.get_reserve(&token.address);
+            assert_eq!(reserve.is_some(), true);
+
+            let reserve_config = reserve.unwrap().configuration;
+            assert_eq!(reserve_config.borrowing_enabled, true);
+            assert_eq!(reserve_config.ltv, ltv);
+            assert_eq!(reserve_config.liq_bonus, liq_bonus);
+            assert_eq!(reserve_config.liq_threshold, liq_threshold);
 
             ReserveConfig {
                 token,
@@ -581,7 +596,7 @@ fn borrow() {
 }
 
 #[test]
-fn borrow_() {
+fn borrow_user_confgig_not_exists() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -677,31 +692,54 @@ fn borrow_collateral_not_cover_new_debt() {
 }
 
 #[test]
-fn borrow_collateral_same_as_borrow() {
+fn borrow_disabled_for_borrowing_asset() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
+
+    let initial_amount: i128 = 1_000_000_000;
+    let lender = Address::random(&env);
     let borrower = Address::random(&env);
 
-    let initial_amount = 1_000_000_000;
     for r in sut.reserves.iter() {
+        r.token.mint(&lender, &initial_amount);
+        assert_eq!(r.token.balance(&lender), initial_amount);
+
         r.token.mint(&borrower, &initial_amount);
         assert_eq!(r.token.balance(&borrower), initial_amount);
     }
 
-    let deposit_amount = 5000;
+    //lender deposit all tokens
+    let deposit_amount = 100_000_000;
+    for r in sut.reserves.iter() {
+        let pool_balance = r.token.balance(&r.s_token.address);
+        sut.pool.deposit(&lender, &r.token.address, &deposit_amount);
+        assert_eq!(r.s_token.balance(&lender), deposit_amount);
+        assert_eq!(
+            r.token.balance(&r.s_token.address),
+            pool_balance + deposit_amount
+        );
+    }
+
+    //borrower deposit first token and borrow second token
     sut.pool
         .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
-    sut.pool
-        .deposit(&borrower, &sut.reserves[1].token.address, &deposit_amount);
+    assert_eq!(sut.reserves[0].s_token.balance(&borrower), deposit_amount);
 
-    let borrow_amount = 100;
+    //borrower borrow second token
+    let borrow_asset = sut.reserves[1].token.address.clone();
+    let borrow_amount = 10_000;
+
+    //disable second token for borrowing
+    sut.pool.enable_borrowing_on_reserve(&borrow_asset, &false);
+    let reserve = sut.pool.get_reserve(&borrow_asset);
+    assert_eq!(reserve.unwrap().configuration.borrowing_enabled, false);
     assert_eq!(
         sut.pool
-            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount,)
+            .try_borrow(&borrower, &borrow_asset, &borrow_amount)
             .unwrap_err()
             .unwrap(),
-        Error::CollateralSameAsBorrow
-    )
+        Error::BorrowingNotEnabled
+    );
 }

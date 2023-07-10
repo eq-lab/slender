@@ -55,10 +55,11 @@ pub fn write_reserves(env: &Env, reserves: &Vec<Address>) {
     env.storage().set(&DataKey::Reserves, reserves);
 }
 
-pub fn read_user_config(env: &Env, user: Address) -> Option<UserConfiguration> {
+pub fn read_user_config(env: &Env, user: Address) -> Result<UserConfiguration, Error> {
     env.storage()
         .get(&DataKey::UserConfig(user))
-        .map(|x| x.unwrap())
+        .ok_or(Error::UserConfigNotExists)?
+        .unwrap()
 }
 
 pub fn write_user_config(env: &Env, user: Address, config: &UserConfiguration) {

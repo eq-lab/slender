@@ -86,6 +86,37 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
+    /// Enable borrowing
+    ///
+    /// # Arguments
+    ///
+    ///  - asset - target asset
+    ///  - enabled - enable/disable borrow flag
+    ///
+    /// # Errors
+    ///
+    /// - NoReserveExistForAsset
+    ///
+    /// # Panics
+    ///
+    /// - If the caller is not the admin.
+    ///
+    fn enable_borrowing_on_reserve(env: Env, asset: Address, enabled: bool) -> Result<(), Error> {
+        Self::ensure_admin(&env)?;
+
+        let mut reserve = read_reserve(&env, asset.clone())?;
+        reserve.configuration.borrowing_enabled = enabled;
+        write_reserve(&env, asset.clone(), &reserve);
+
+        if enabled {
+            event::borrowing_enabled(&env, asset);
+        } else {
+            event::borrowing_disabled(&env, asset);
+        }
+
+        Ok(())
+    }
+
     /// Configures the reserve collateralization parameters
     /// all the values are expressed in percentages with two decimals of precision.
     ///
@@ -278,8 +309,7 @@ impl LendingPoolTrait for LendingPool {
 
         Self::validate_withdraw(&reserve, &env, amount_to_withdraw, who_balance);
 
-        let mut user_config: UserConfiguration =
-            read_user_config(&env, who.clone()).ok_or(Error::UserConfigNotExists)?;
+        let mut user_config: UserConfiguration = read_user_config(&env, who.clone())?;
 
         reserve.update_state();
         //TODO: update interest rates
@@ -321,23 +351,9 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
 
         let mut reserve = read_reserve(&env, asset.clone())?;
-        let user_config = read_user_config(&env, who.clone()).ok_or(Error::UserConfigNotExists)?;
+        let user_config = read_user_config(&env, who.clone())?;
 
-        let amount_in_xlm = amount
-            .checked_mul(Self::get_asset_price(&asset))
-            .ok_or(Error::MathOverflowError)?;
-        //TODO: uncomment when oracle will be implemented
-        //.checked_div(10_i128.pow(reserve.configuration.decimals))
-        //.ok_or(Error::MathOverflowError)?;
-
-        Self::validate_borrow(
-            &env,
-            who.clone(),
-            &reserve,
-            &user_config,
-            amount,
-            amount_in_xlm,
-        )?;
+        Self::validate_borrow(&env, who.clone(), &asset, &reserve, &user_config, amount)?;
 
         let debt_token = token::Client::new(&env, &reserve.debt_token_address);
         let is_first_borrowing = debt_token.balance(&who) == 0;
@@ -416,16 +432,23 @@ impl LendingPool {
     fn validate_borrow(
         env: &Env,
         who: Address,
+        asset: &Address,
         reserve: &ReserveData,
         user_config: &UserConfiguration,
         amount: i128,
-        amount_in_xlm: i128,
     ) -> Result<(), Error> {
+        let amount_in_xlm = amount
+            .checked_mul(Self::get_asset_price(&asset))
+            .ok_or(Error::MathOverflowError)?;
+        //TODO: uncomment when oracle will be implemented
+        //.checked_div(10_i128.pow(reserve.configuration.decimals))
+        //.ok_or(Error::MathOverflowError)?;
+
         assert_with_error!(env, amount > 0 && amount_in_xlm > 0, Error::InvalidAmount);
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, !flags.is_frozen, Error::ReserveFrozen);
-        assert_with_error!(env, !flags.borrowing_enabled, Error::BorrowingNotEnabled);
+        assert_with_error!(env, flags.borrowing_enabled, Error::BorrowingNotEnabled);
 
         let reserves = &read_reserves(env);
         let account_data = Self::calc_account_data(env, who.clone(), user_config, reserves)?;
@@ -450,24 +473,7 @@ impl LendingPool {
             Error::CollateralNotCoverNewBorrow
         );
 
-        let coll_same_as_borrow_check = !user_config.is_using_as_collateral(env, reserve.get_id())
-            || reserve.configuration.ltv == 0;
-
-        if !coll_same_as_borrow_check {
-            let s_token = s_token_interface::STokenClient::new(env, &reserve.s_token_address);
-            let coll_coeff = Self::get_collateral_coeff(env, reserve)?;
-            let compounded_balance = s_token
-                .balance(&who)
-                .mul_rate_floor(coll_coeff)
-                .ok_or(Error::ValidateBorrowMathError)?;
-
-            assert_with_error!(
-                env,
-                amount > compounded_balance,
-                Error::CollateralSameAsBorrow
-            );
-        }
-        //TODO: check validation
+        //TODO: complete validation after rate implementation
         Ok(())
     }
 
