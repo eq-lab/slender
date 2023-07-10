@@ -4,8 +4,10 @@ resolver = "2"
 members = [
     "common",
     "deployer",
+    "mocks/price-feed-mock",
     "pool",
     "pool-interface",
+    "price-feed-interface",
     "s-token",
     "s-token-interface",
 ]

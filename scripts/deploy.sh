@@ -91,12 +91,17 @@ deployStokenResult=$(invoke $deployer $TOKEN_SECRET "deploy_s_token \
 STOKEN=$(addressFromResult $deployStokenResult)
 echo "Stoken contract address: $STOKEN"
 
+priceFeed=$(deploy "target/wasm32-unknown-unknown/release/price_feed_mock.wasm" $POOL_SECRET)
+PRICE_FEED=$(addressFromResult $priceFeed)
+echo "Price feed contract address: $PRICE_FEED"
+
 contracts="scripts/.contracts"
 {
     echo "POOL=$POOL"
     echo "STOKEN=$STOKEN"
     echo "TOKEN=$TOKEN"
     echo "DEBT_TOKEN=$DEBT_TOKEN"
+    echo "PRICE_FEED=$PRICE_FEED"
 } >$contracts
 
 echo "Contracts deployed"

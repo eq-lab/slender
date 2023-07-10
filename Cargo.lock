@@ -568,6 +568,7 @@ version = "0.1.0"
 dependencies = [
  "common",
  "pool-interface",
+ "price-feed-interface",
  "s-token-interface",
  "soroban-sdk",
 ]
@@ -594,6 +595,22 @@ checksum = "9825a04601d60621feed79c4e6b56d65db77cdca55cef43b46b0de1096d1c282"
 dependencies = [
  "proc-macro2",
  "syn 2.0.18",
+]
+
+[[package]]
+name = "price-feed-interface"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
+name = "price-feed-mock"
+version = "0.1.0"
+dependencies = [
+ "common",
+ "price-feed-interface",
+ "soroban-sdk",
 ]
 
 [[package]]
