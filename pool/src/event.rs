@@ -19,3 +19,29 @@ pub(crate) fn withdraw(e: &Env, who: Address, asset: Address, to: Address, amoun
     let topics = (Symbol::short("withdraw"), who);
     e.events().publish(topics, (to, asset, amount));
 }
+
+pub(crate) fn borrow(e: &Env, who: Address, asset: Address, amount: i128) {
+    let topics = (Symbol::short("borrow"), who);
+    e.events().publish(topics, (asset, amount));
+}
+
+pub(crate) fn collat_config_change(
+    e: &Env,
+    asset: Address,
+    ltv: u32,
+    liq_threshold: u32,
+    liq_bonus: u32,
+) {
+    let topics = (Symbol::new(e, "collat_config_change"), asset);
+    e.events().publish(topics, (ltv, liq_threshold, liq_bonus));
+}
+
+pub(crate) fn borrowing_enabled(e: &Env, asset: Address) {
+    let topics = (Symbol::new(e, "borrowing_enabled"), asset);
+    e.events().publish(topics, ());
+}
+
+pub(crate) fn borrowing_disabled(e: &Env, asset: Address) {
+    let topics = (Symbol::new(e, "borrowing_disabled"), asset);
+    e.events().publish(topics, ());
+}

@@ -26,7 +26,22 @@ pub enum Error {
     UserConfigInvalidIndex = 7,
     NotEnoughAvailableUserBalance = 8,
     UserConfigNotExists = 9,
-    MathOverflowError = 10,
+
+    BorrowingNotEnabled = 11,
+    HealthFactorLowerThanLiqThreshold = 12,
+    CollateralIsZero = 13,
+    CollateralNotCoverNewBorrow = 14,
+
+    InvalidReserveParams = 15,
+    ReserveLiquidityNotZero = 16,
+
+    ReservesMaxCapacityExceeded = 19,
+    NoPriceForAsset = 20,
+
+    MathOverflowError = 100,
+    PriceMathOverflow = 101,
+    ValidateBorrowMathError = 102,
+    CalcAccountDataMathError = 103,
 }
 
 /// Interface for SToken
@@ -36,6 +51,14 @@ pub trait LendingPoolTrait {
     fn initialize(env: Env, admin: Address) -> Result<(), Error>;
 
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
+
+    fn configure_as_collateral(
+        env: Env,
+        asset: Address,
+        config: CollateralParamsInput,
+    ) -> Result<(), Error>;
+
+    fn enable_borrowing_on_reserve(env: Env, asset: Address, enabled: bool) -> Result<(), Error>;
 
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData>;
 
@@ -64,4 +87,6 @@ pub trait LendingPoolTrait {
 
     #[cfg(any(test, feature = "testutils"))]
     fn set_liq_index(env: Env, asset: Address, value: i128) -> Result<(), Error>;
+
+    fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 }

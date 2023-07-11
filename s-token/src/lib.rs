@@ -6,7 +6,7 @@ mod storage;
 mod test;
 
 use crate::storage::*;
-use common::RateMath;
+use common::rate_math::RateMath;
 use common_token::{balance::*, check_nonnegative_amount, storage::*, verify_caller_is_pool};
 use pool_interface::{LendingPoolClient, ReserveData};
 use s_token_interface::STokenTrait;
@@ -443,13 +443,15 @@ impl STokenTrait for SToken {
     ///
     fn transfer_underlying_to(e: Env, to: Address, amount: i128) {
         check_nonnegative_amount(amount);
-        let pool = verify_caller_is_pool(&e);
+        verify_caller_is_pool(&e);
 
         let underlying_asset = read_underlying_asset(&e);
-        let token_client = token::Client::new(&e, &underlying_asset);
-        token_client.transfer(&pool, &to, &amount);
+        let current_address = e.current_contract_address();
 
-        event::transfer(&e, pool, to, amount);
+        let token_client = token::Client::new(&e, &underlying_asset);
+        token_client.transfer(&current_address, &to, &amount);
+
+        event::transfer(&e, current_address, to, amount);
     }
 
     /// Retrieves the address of the underlying asset.

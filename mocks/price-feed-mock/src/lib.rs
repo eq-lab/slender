@@ -10,7 +10,9 @@ pub struct PriceFeedMock;
 
 #[contractimpl]
 impl PriceFeedTrait for PriceFeedMock {
-    fn base(_env: Env) -> Address { unimplemented!() }
+    fn base(_env: Env) -> Address {
+        unimplemented!()
+    }
 
     fn assets(_env: Env) -> Vec<Address> {
         unimplemented!()

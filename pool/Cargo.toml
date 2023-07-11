@@ -10,9 +10,11 @@ crate-type = ["cdylib"]
 
 [dependencies]
 soroban-sdk = { workspace = true }
-s-token-interface={ path="../s-token-interface", version="0.1.0", package="s-token-interface" }
-pool-interface={ path="../pool-interface", version="0.1.0", package="pool-interface" }
-price-feed-interface={ path="../price-feed-interface", version="0.1.0", package="price-feed-interface" }
+
+s-token-interface = { path="../s-token-interface", version="0.1.0", package = "s-token-interface" }
+debt-token-interface = { path="../debt-token-interface", version="0.1.0", package = "debt-token-interface" }
+pool-interface = { path="../pool-interface", version="0.1.0", package="pool-interface" }
+price-feed-interface= { path="../price-feed-interface", version="0.1.0", package="price-feed-interface" }
 common = { path = "../common", version="0.1.0", package = "common"}
 
 [dev_dependencies]

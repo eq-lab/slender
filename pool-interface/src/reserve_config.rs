@@ -1,26 +1,27 @@
+use common::rate_math::RATE_DENOMINATOR;
 use soroban_sdk::{contracttype, Address, BytesN, Env};
 
 #[contracttype]
 pub struct ReserveConfigurationMap {
     //bit 0-15: LTV
-    ltv: u32,
+    pub ltv: u32,
     //bit 16-31: Liq. threshold
-    liq_threshold: u32,
+    pub liq_threshold: u32,
     //bit 32-47: Liq. bonus
-    liq_bonus: u32,
+    pub liq_bonus: u32,
     //bit 48-55: Decimals
-    decimals: u32,
+    pub decimals: u32,
     //bit 56: Reserve is active
-    is_active: bool,
+    pub is_active: bool,
     //bit 57: reserve is frozen
-    is_frozen: bool,
+    pub is_frozen: bool,
     //bit 58: borrowing is enabled
     //bit 59: stable rate borrowing enabled
-    borrowing_enabled: bool,
+    pub borrowing_enabled: bool,
     //bit 60-63: reserved
-    reserved: BytesN<1>,
+    pub reserved: BytesN<1>,
     //bit 64-79: reserve factor
-    reserve_factor: u32,
+    pub reserve_factor: u32,
 }
 
 impl ReserveConfigurationMap {
@@ -84,8 +85,8 @@ impl ReserveData {
             debt_token_address,
         } = input;
         Self {
-            liquidity_index: common::RATE_DENOMINATOR,
-            variable_borrow_index: common::RATE_DENOMINATOR,
+            liquidity_index: RATE_DENOMINATOR,
+            variable_borrow_index: RATE_DENOMINATOR,
             s_token_address,
             debt_token_address,
             configuration: ReserveConfigurationMap::default(env),
@@ -98,6 +99,16 @@ impl ReserveData {
 
     pub fn update_state(&mut self) {
         // TODO
+    }
+
+    pub fn update_interest_rate(&mut self) {
+        //TODO: not implemented
+    }
+
+    pub fn update_collateral_config(&mut self, config: CollateralParamsInput) {
+        self.configuration.ltv = config.ltv;
+        self.configuration.liq_threshold = config.liq_threshold;
+        self.configuration.liq_bonus = config.liq_bonus;
     }
 
     pub fn get_id(&self) -> u8 {
@@ -114,4 +125,16 @@ pub struct InitReserveInput {
 
 fn zero_bytes<const N: usize>(env: &Env) -> BytesN<N> {
     BytesN::from_array(env, &[0; N])
+}
+
+///Collateralization parameters
+#[contracttype]
+#[derive(Clone, Copy)]
+pub struct CollateralParamsInput {
+    ///The threshold at which loans using this asset as collateral will be considered undercollateralized
+    pub liq_threshold: u32,
+    ///The bonus liquidators receive to liquidate this asset. The values is always above 100%. A value of 105% means the liquidator will receive a 5% bonus
+    pub liq_bonus: u32,
+    ///The loan to value of the asset when used as collateral
+    pub ltv: u32,
 }
