@@ -7,7 +7,7 @@ mod test;
 
 use crate::storage::*;
 use common::rate_math::RateMath;
-use common_token::{balance::*, check_nonnegative_amount, storage::*, verify_caller_is_pool};
+use common_token::{balance::*, require_nonnegative_amount, storage::*, verify_caller_is_pool};
 use pool_interface::{LendingPoolClient, ReserveData};
 use s_token_interface::STokenTrait;
 use soroban_sdk::{contractimpl, token, Address, Bytes, Env};
@@ -107,7 +107,7 @@ impl STokenTrait for SToken {
     fn increase_allowance(e: Env, from: Address, spender: Address, amount: i128) {
         from.require_auth();
 
-        check_nonnegative_amount(amount);
+        require_nonnegative_amount(amount);
 
         let allowance = read_allowance(&e, from.clone(), spender.clone());
         let new_allowance = allowance
@@ -134,7 +134,7 @@ impl STokenTrait for SToken {
     fn decrease_allowance(e: Env, from: Address, spender: Address, amount: i128) {
         from.require_auth();
 
-        check_nonnegative_amount(amount);
+        require_nonnegative_amount(amount);
 
         let allowance = read_allowance(&e, from.clone(), spender.clone());
         if amount >= allowance {
@@ -224,7 +224,7 @@ impl STokenTrait for SToken {
     ///
     fn transfer(e: Env, from: Address, to: Address, amount: i128) {
         from.require_auth();
-        check_nonnegative_amount(amount);
+        require_nonnegative_amount(amount);
 
         Self::do_transfer(&e, from, to, amount, true);
     }
@@ -442,7 +442,7 @@ impl STokenTrait for SToken {
     /// Panics if caller is not associated pool.
     ///
     fn transfer_underlying_to(e: Env, to: Address, amount: i128) {
-        check_nonnegative_amount(amount);
+        require_nonnegative_amount(amount);
         verify_caller_is_pool(&e);
 
         let underlying_asset = read_underlying_asset(&e);

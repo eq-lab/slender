@@ -11,7 +11,7 @@ const BORROWING_MASK: u128 = 0x55555555555555555555555555555555;
 pub struct UserConfiguration(u128);
 
 impl UserConfiguration {
-    fn check_reserve_index(env: &Env, reserve_index: u8) {
+    fn require_reserve_index(env: &Env, reserve_index: u8) {
         assert_with_error!(
             env,
             reserve_index < core::mem::size_of::<u128>() as u8 / 2,
@@ -19,7 +19,7 @@ impl UserConfiguration {
         );
     }
     pub fn set_borrowing(&mut self, env: &Env, reserve_index: u8, borrowing: bool) {
-        Self::check_reserve_index(env, reserve_index);
+        Self::require_reserve_index(env, reserve_index);
 
         let reserve_index: u128 = reserve_index.into();
         self.0 = (self.0 & !(1 << (reserve_index * 2)))
@@ -32,7 +32,7 @@ impl UserConfiguration {
         reserve_index: u8,
         using_as_collateral: bool,
     ) {
-        Self::check_reserve_index(env, reserve_index);
+        Self::require_reserve_index(env, reserve_index);
 
         let reserve_index: u128 = reserve_index.into();
         self.0 = (self.0 & !(1 << (reserve_index * 2 + 1)))
@@ -40,21 +40,21 @@ impl UserConfiguration {
     }
 
     pub fn is_using_as_collateral(&self, env: &Env, reserve_index: u8) -> bool {
-        Self::check_reserve_index(env, reserve_index);
+        Self::require_reserve_index(env, reserve_index);
 
         let reserve_index: u128 = reserve_index.into();
         (self.0 >> (reserve_index * 2 + 1)) & 1 != 0
     }
 
     pub fn is_using_as_collateral_or_borrowing(&self, env: &Env, reserve_index: u8) -> bool {
-        Self::check_reserve_index(env, reserve_index);
+        Self::require_reserve_index(env, reserve_index);
 
         let reserve_index: u128 = reserve_index.into();
         (self.0 >> (reserve_index * 2)) & 3 != 0
     }
 
     pub fn is_borrowing(&self, env: &Env, reserve_index: u8) -> bool {
-        Self::check_reserve_index(env, reserve_index);
+        Self::require_reserve_index(env, reserve_index);
         let reserve_index: u128 = reserve_index.into();
         (self.0 >> (reserve_index * 2)) & 1 != 0
     }

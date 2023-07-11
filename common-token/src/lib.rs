@@ -12,7 +12,7 @@ pub fn verify_caller_is_pool(e: &Env) -> Address {
     pool
 }
 
-pub fn check_nonnegative_amount(amount: i128) {
+pub fn require_nonnegative_amount(amount: i128) {
     if amount < 0 {
         panic!("negative amount is not allowed: {}", amount)
     }

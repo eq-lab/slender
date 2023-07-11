@@ -1,12 +1,12 @@
 use soroban_sdk::{Address, Env};
 
 use crate::{
-    check_nonnegative_amount,
+    require_nonnegative_amount,
     storage::{is_authorized, read_balance, read_total_supply, write_balance, write_total_supply},
 };
 
 pub fn receive_balance(e: &Env, addr: Address, amount: i128) {
-    check_nonnegative_amount(amount);
+    require_nonnegative_amount(amount);
     let balance = read_balance(e, addr.clone());
     if !is_authorized(e, addr.clone()) {
         panic!("can't receive when deauthorized");
@@ -15,7 +15,7 @@ pub fn receive_balance(e: &Env, addr: Address, amount: i128) {
 }
 
 pub fn spend_balance(e: &Env, addr: Address, amount: i128) {
-    check_nonnegative_amount(amount);
+    require_nonnegative_amount(amount);
     let balance = read_balance(e, addr.clone());
     if !is_authorized(e, addr.clone()) {
         panic!("can't spend when deauthorized");

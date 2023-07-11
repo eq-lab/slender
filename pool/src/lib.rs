@@ -66,8 +66,8 @@ impl LendingPoolTrait for LendingPool {
     /// - Panics with `ReserveAlreadyInitialized` if the specified asset key already exists in storage.
     ///
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error> {
-        Self::ensure_admin(&env)?;
-        // ensure_contract(env, asset)?;
+        Self::require_admin(&env)?;
+        // require_contract(env, asset)?;
         if has_reserve(&env, asset.clone()) {
             panic_with_error!(&env, Error::ReserveAlreadyInitialized);
         }
@@ -107,7 +107,7 @@ impl LendingPoolTrait for LendingPool {
     /// - If the caller is not the admin.
     ///
     fn enable_borrowing_on_reserve(env: Env, asset: Address, enabled: bool) -> Result<(), Error> {
-        Self::ensure_admin(&env)?;
+        Self::require_admin(&env)?;
 
         let mut reserve = read_reserve(&env, asset.clone())?;
         reserve.configuration.borrowing_enabled = enabled;
@@ -139,7 +139,7 @@ impl LendingPoolTrait for LendingPool {
         asset: Address,
         params: CollateralParamsInput,
     ) -> Result<(), Error> {
-        Self::ensure_admin(&env)?;
+        Self::require_admin(&env)?;
 
         //validation of the parameters: the LTV can
         //only be lower or equal than the liquidation threshold
@@ -176,7 +176,7 @@ impl LendingPoolTrait for LendingPool {
             //if the liquidation threshold is being set to 0,
             // the reserve is being disabled as collateral. To do so,
             //we need to ensure no liquidity is deposited
-            Self::ensure_no_liquidity(&env, asset.clone())?;
+            Self::require_no_liquidity(&env, asset.clone())?;
         }
 
         let mut reserve = read_reserve(&env, asset.clone())?;
@@ -220,7 +220,7 @@ impl LendingPoolTrait for LendingPool {
     /// - Panics if the caller is not the admin.
     ///
     fn set_price_feed(env: Env, feed: Address, assets: Vec<Address>) -> Result<(), Error> {
-        Self::ensure_admin(&env)?;
+        Self::require_admin(&env)?;
         PriceProvider::new(&env, &feed);
 
         write_price_feed(&env, feed, &assets);
@@ -427,7 +427,7 @@ impl LendingPoolTrait for LendingPool {
 }
 
 impl LendingPool {
-    fn ensure_admin(env: &Env) -> Result<(), Error> {
+    fn require_admin(env: &Env) -> Result<(), Error> {
         let admin: Address = read_admin(env)?;
         admin.require_auth();
         Ok(())
@@ -671,7 +671,7 @@ impl LendingPool {
         Ok(RATE_DENOMINATOR)
     }
 
-    fn ensure_no_liquidity(env: &Env, asset: Address) -> Result<(), Error> {
+    fn require_no_liquidity(env: &Env, asset: Address) -> Result<(), Error> {
         let reserve = read_reserve(env, asset.clone())?;
         let token = token::Client::new(env, &asset);
 
