@@ -2,9 +2,11 @@
 #![no_std]
 
 mod constants;
+mod storage;
 
 use price_feed_interface::{PriceData, PriceFeedTrait};
 use soroban_sdk::{contractimpl, Address, Env, Vec};
+use crate::storage::*;
 
 pub struct PriceFeedMock;
 
@@ -34,12 +36,18 @@ impl PriceFeedTrait for PriceFeedMock {
         unimplemented!()
     }
 
-    fn lastprice(env: Env, _asset: Address) -> Option<PriceData> {
-        let price = 10i128.checked_pow(constants::DECIMALS).unwrap();
+    fn lastprice(env: Env, asset: Address) -> Option<PriceData> {
+        let price = read_asset_price(&env, asset)
+            .or(10i128.checked_pow(constants::DECIMALS))
+            .unwrap();
 
         Some(PriceData {
             price,
             timestamp: env.ledger().timestamp(),
         })
+    }
+
+    fn set_price(env: Env, asset: Address, price: i128) {
+        write_asset_price(&env, asset, price);
     }
 }
