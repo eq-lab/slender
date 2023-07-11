@@ -631,7 +631,7 @@ impl LendingPool {
     /// Returns price of asset expressed in XLM token and denominator 10^decimals
     fn get_asset_price(env: &Env, asset: Address) -> Result<(i128, i128), Error> {
         let price_feed = read_price_feed(env, asset.clone())?;
-        let provider = PriceProvider::new(&env, &price_feed);
+        let provider = PriceProvider::new(env, &price_feed);
         provider
             .get_price(&asset)
             .ok_or(Error::NoPriceForAsset)
