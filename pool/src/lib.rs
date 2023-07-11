@@ -141,6 +141,12 @@ impl LendingPoolTrait for LendingPool {
     ) -> Result<(), Error> {
         Self::require_admin(&env)?;
 
+        assert_with_error!(
+            &env,
+            params.discount <= PERCENTAGE_FACTOR,
+            Error::InvalidReserveParams
+        );
+
         //validation of the parameters: the LTV can
         //only be lower or equal than the liquidation threshold
         //(otherwise a loan against the asset would cause instantaneous liquidation)
@@ -189,6 +195,7 @@ impl LendingPoolTrait for LendingPool {
             params.ltv,
             params.liq_threshold,
             params.liq_bonus,
+            params.discount,
         );
         Ok(())
     }

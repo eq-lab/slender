@@ -31,9 +31,11 @@ pub(crate) fn collat_config_change(
     ltv: u32,
     liq_threshold: u32,
     liq_bonus: u32,
+    discount: u32,
 ) {
     let topics = (Symbol::new(e, "collat_config_change"), asset);
-    e.events().publish(topics, (ltv, liq_threshold, liq_bonus));
+    e.events()
+        .publish(topics, (ltv, liq_threshold, liq_bonus, discount));
 }
 
 pub(crate) fn borrowing_enabled(e: &Env, asset: Address) {
