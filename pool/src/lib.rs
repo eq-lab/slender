@@ -23,6 +23,8 @@ struct AccountData {
     ltv: i128,
     liq_threshold: i128,
     health_factor: i128,
+    /// Net position value
+    npv: i128,
 }
 
 //TODO: set right value for liquidation threshold
@@ -506,6 +508,12 @@ impl LendingPool {
             Error::HealthFactorLowerThanLiqThreshold
         );
 
+        assert_with_error!(
+            env,
+            account_data.npv >= amount_in_xlm,
+            Error::CollateralNotCoverNewBorrow
+        );
+
         let amount_of_collateral_needed_xlm = account_data
             .debt
             .checked_add(amount_in_xlm)
@@ -536,6 +544,7 @@ impl LendingPool {
                 ltv: 0,
                 liq_threshold: 0,
                 health_factor: i128::MAX,
+                npv: 0,
             });
         }
 
@@ -571,6 +580,8 @@ impl LendingPool {
                 let compounded_balance = s_token
                     .balance(&who)
                     .mul_rate_floor(coll_coeff)
+                    .ok_or(Error::CalcAccountDataMathError)?
+                    .percent_mul(curr_reserve.configuration.discount)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
                 let liquidity_balance_in_xlm = compounded_balance
@@ -632,6 +643,7 @@ impl LendingPool {
                 total_debt_in_xlm,
                 avg_liq_threshold,
             )?,
+            npv: total_collateral_in_xlm - total_debt_in_xlm,
         })
     }
 
