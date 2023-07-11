@@ -22,7 +22,7 @@ pub struct ReserveConfigurationMap {
     pub reserved: BytesN<1>,
     //bit 64-79: reserve factor
     pub reserve_factor: u32,
-    // A value between 0 and 10000 specifies what fraction of the underlying asset counts toward the portfolio collateral value.
+    // A value between 0 and 100 % specifies what fraction of the underlying asset counts toward the portfolio collateral value.
     pub discount: u32,
 }
 
