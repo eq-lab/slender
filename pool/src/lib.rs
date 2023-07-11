@@ -191,14 +191,7 @@ impl LendingPoolTrait for LendingPool {
         reserve.update_collateral_config(params);
         write_reserve(&env, asset.clone(), &reserve);
 
-        event::collat_config_change(
-            &env,
-            asset,
-            params.ltv,
-            params.liq_threshold,
-            params.liq_bonus,
-            params.discount,
-        );
+        event::collat_config_change(&env, asset, params);
         Ok(())
     }
 
