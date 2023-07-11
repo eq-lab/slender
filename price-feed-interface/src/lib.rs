@@ -5,7 +5,7 @@
 #![deny(warnings)]
 #![no_std]
 
-use soroban_sdk::{contractclient, contractspecfn, contracttype, Address, Vec};
+use soroban_sdk::{contractclient, contractspecfn, contracttype, Env, Address, Vec};
 pub struct Spec;
 
 /// Price data for an asset at a specific timestamp
@@ -20,23 +20,26 @@ pub struct PriceData {
 #[contractclient(name = "PriceFeedClient")]
 pub trait PriceFeedTrait {
     /// Return the base asset the price is reported in
-    fn base(env: soroban_sdk::Env) -> Address;
+    fn base(env: Env) -> Address;
 
     /// Return all assets quoted by the price feed
-    fn assets(env: soroban_sdk::Env) -> Vec<Address>;
+    fn assets(env: Env) -> Vec<Address>;
 
     /// Return the number of decimals for all assets quoted by the oracle
-    fn decimals(env: soroban_sdk::Env) -> u32;
+    fn decimals(env: Env) -> u32;
 
     /// Return default tick period timeframe (in seconds)
-    fn resolution(env: soroban_sdk::Env) -> u32;
+    fn resolution(env: Env) -> u32;
 
     /// Get price in base asset at specific timestamp
-    fn price(env: soroban_sdk::Env, asset: Address, timestamp: u64) -> Option<PriceData>;
+    fn price(env: Env, asset: Address, timestamp: u64) -> Option<PriceData>;
 
     /// Get last N price records
-    fn prices(env: soroban_sdk::Env, asset: Address, records: u32) -> Option<Vec<PriceData>>;
+    fn prices(env: Env, asset: Address, records: u32) -> Option<Vec<PriceData>>;
 
     /// Get the most recent price for an asset
-    fn lastprice(env: soroban_sdk::Env, asset: Address) -> Option<PriceData>;
+    fn lastprice(env: Env, asset: Address) -> Option<PriceData>;
+
+    /// Sets price in base asset for a given asset. Note: not a SEP-40 method.
+    fn set_price(env: Env, asset: Address, price: i128);
 }
