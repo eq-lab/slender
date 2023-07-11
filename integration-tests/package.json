@@ -1,0 +1,16 @@
+{
+  "name": "slender-integration-tests",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "chai": "^4.3.7",
+    "dotenv": "^16.3.1",
+    "mocha": "^10.2.0",
+    "soroban-client": "^0.8.1"
+  }
+}
