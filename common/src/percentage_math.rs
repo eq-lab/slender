@@ -9,7 +9,7 @@ pub trait PercentageMath<T: Into<i128>> {
     fn percent_div(self, percentage: T) -> Option<i128>;
 }
 
-impl<T: Into<i128>> PercentageMath<T> for T {
+impl<T: Into<i128>, V: Into<i128>> PercentageMath<T> for V {
     fn percent_mul(self, percentage: T) -> Option<i128> {
         let self_i128: i128 = self.into();
         let percentage_i128: i128 = percentage.into();

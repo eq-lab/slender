@@ -23,6 +23,8 @@ struct AccountData {
     ltv: i128,
     liq_threshold: i128,
     health_factor: i128,
+    /// Net position value
+    npv: i128,
 }
 
 //TODO: set right value for liquidation threshold
@@ -140,6 +142,12 @@ impl LendingPoolTrait for LendingPool {
     ) -> Result<(), Error> {
         Self::require_admin(&env)?;
 
+        assert_with_error!(
+            &env,
+            params.discount <= PERCENTAGE_FACTOR,
+            Error::InvalidReserveParams
+        );
+
         //validation of the parameters: the LTV can
         //only be lower or equal than the liquidation threshold
         //(otherwise a loan against the asset would cause instantaneous liquidation)
@@ -182,13 +190,7 @@ impl LendingPoolTrait for LendingPool {
         reserve.update_collateral_config(params);
         write_reserve(&env, asset.clone(), &reserve);
 
-        event::collat_config_change(
-            &env,
-            asset,
-            params.ltv,
-            params.liq_threshold,
-            params.liq_bonus,
-        );
+        event::collat_config_change(&env, asset, params);
         Ok(())
     }
 
@@ -526,6 +528,12 @@ impl LendingPool {
             Error::HealthFactorLowerThanLiqThreshold
         );
 
+        assert_with_error!(
+            env,
+            account_data.npv >= amount_in_xlm,
+            Error::CollateralNotCoverNewBorrow
+        );
+
         let amount_of_collateral_needed_xlm = account_data
             .debt
             .checked_add(amount_in_xlm)
@@ -558,6 +566,7 @@ impl LendingPool {
                 ltv: 0,
                 liq_threshold: 0,
                 health_factor: i128::MAX,
+                npv: 0,
             });
         }
 
@@ -593,6 +602,8 @@ impl LendingPool {
                 let compounded_balance = s_token
                     .balance(&who)
                     .mul_rate_floor(coll_coeff)
+                    .ok_or(Error::CalcAccountDataMathError)?
+                    .percent_mul(curr_reserve.configuration.discount)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
                 let liquidity_balance_in_xlm = compounded_balance
@@ -644,6 +655,10 @@ impl LendingPool {
             .checked_div(total_collateral_in_xlm)
             .unwrap_or(0);
 
+        let npv = total_collateral_in_xlm
+            .checked_sub(total_debt_in_xlm)
+            .ok_or(Error::CalcAccountDataMathError)?;
+
         Ok(AccountData {
             collateral: total_collateral_in_xlm,
             debt: total_debt_in_xlm,
@@ -654,6 +669,7 @@ impl LendingPool {
                 total_debt_in_xlm,
                 avg_liq_threshold,
             )?,
+            npv,
         })
     }
 
