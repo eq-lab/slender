@@ -119,7 +119,7 @@ fn test_burn() {
 }
 
 #[test]
-#[should_panic(expected = "already initialized")]
+#[should_panic(expected = "debt-token: already initialized")]
 fn initialize_already_initialized() {
     let e = Env::default();
     let (token, _pool) = create_token(&e);

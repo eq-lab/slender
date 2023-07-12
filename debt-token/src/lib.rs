@@ -42,19 +42,19 @@ impl DebtTokenTrait for DebtToken {
         underlying_asset: Address,
     ) {
         if decimal > u8::MAX.into() {
-            panic!("decimal must fit in a u8");
+            panic!("debt-token: decimal must fit in a u8");
         }
 
         if name.is_empty() {
-            panic!("no name");
+            panic!("debt-token: no name");
         }
 
         if symbol.is_empty() {
-            panic!("no symbol");
+            panic!("debt-token: no symbol");
         }
 
         if has_pool(&e) {
-            panic!("already initialized");
+            panic!("debt-token: already initialized");
         }
 
         write_pool(&e, &pool);
