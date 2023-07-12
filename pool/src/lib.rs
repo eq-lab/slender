@@ -626,6 +626,10 @@ impl LendingPool {
             .checked_div(total_collateral_in_xlm)
             .unwrap_or(0);
 
+        let npv = total_collateral_in_xlm
+            .checked_sub(total_debt_in_xlm)
+            .ok_or(Error::CalcAccountDataMathError)?;
+
         Ok(AccountData {
             collateral: total_collateral_in_xlm,
             debt: total_debt_in_xlm,
@@ -636,7 +640,7 @@ impl LendingPool {
                 total_debt_in_xlm,
                 avg_liq_threshold,
             )?,
-            npv: total_collateral_in_xlm - total_debt_in_xlm,
+            npv,
         })
     }
 
