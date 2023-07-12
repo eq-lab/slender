@@ -333,7 +333,7 @@ impl LendingPoolTrait for LendingPool {
         // TODO: maybe check with callstack?
         read_reserve(&env, asset.clone())?.s_token_address.require_auth();
         Self::require_not_paused(&env)?;
-        Self::require_good_position(&env, from.clone(), None, true)?;
+        Self::require_good_position(&env, from.clone(), None)?;
 
         if from.clone() != to.clone() {
             let reserve_id = read_reserve(&env, asset.clone())?.get_id();
@@ -535,7 +535,7 @@ impl LendingPool {
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, amount <= balance, Error::NotEnoughAvailableUserBalance);
 
-        match Self::is_good_position(env, who, None, true) {
+        match Self::is_good_position(env, who, None) {
             Ok(good_position) => assert_with_error!(env, good_position, Error::BadPosition),
             Err(e) => assert_with_error!(env, true, e),
         }
@@ -592,7 +592,7 @@ impl LendingPool {
         );
 
         //TODO: complete validation after rate implementation
-        Self::require_good_position(env, who, None, true)?;
+        Self::require_good_position(env, who, None)?;
 
         Ok(())
     }
@@ -785,9 +785,8 @@ impl LendingPool {
         env: &Env,
         who: Address,
         mb_account_data: Option<AccountData>,
-        is_good: bool,
     ) -> Result<bool, Error> {
-        let _account_data = if let Some(account_data) = mb_account_data {
+        let account_data = if let Some(account_data) = mb_account_data {
             account_data
         } else {
             let user_config = read_user_config(env, who.clone())?;
@@ -795,16 +794,15 @@ impl LendingPool {
             Self::calc_account_data(env, who, &user_config, &reserves)?
         };
 
-        Ok(is_good)
+        Ok(account_data.npv > 0)
     }
 
     fn require_good_position(
         env: &Env,
         who: Address,
         mb_account_data: Option<AccountData>,
-        is_good: bool,
     ) -> Result<(), Error> {
-        let is_good_position = Self::is_good_position(env, who, mb_account_data, is_good)?;
+        let is_good_position = Self::is_good_position(env, who, mb_account_data)?;
         if !is_good_position {
             return Err(Error::BadPosition);
         }
