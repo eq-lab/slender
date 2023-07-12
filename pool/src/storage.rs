@@ -10,6 +10,7 @@ pub enum DataKey {
     Reserves,
     UserConfig(Address),
     PriceFeed(Address),
+    Pause,
 }
 
 pub fn has_admin(env: &Env) -> bool {
@@ -72,7 +73,7 @@ pub fn read_price_feed(env: &Env, asset: Address) -> Result<Address, Error> {
 
     env.storage()
         .get(&data_key)
-        .ok_or(Error::Uninitialized)?
+        .ok_or(Error::NoPriceFeed)?
         .unwrap()
 }
 
@@ -81,4 +82,15 @@ pub fn write_price_feed(env: &Env, feed: Address, assets: &Vec<Address>) {
         let data_key = DataKey::PriceFeed(asset.unwrap());
         env.storage().set(&data_key, &feed);
     }
+}
+
+pub fn paused(env: &Env) -> bool {
+    env.storage()
+        .get(&DataKey::Pause)
+        .unwrap_or(Ok(false))
+        .unwrap()
+}
+
+pub fn write_pause(env: &Env, value: bool) {
+    env.storage().set(&DataKey::Pause, &value);
 }

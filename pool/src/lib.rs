@@ -67,7 +67,6 @@ impl LendingPoolTrait for LendingPool {
     ///
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error> {
         Self::require_admin(&env)?;
-        // require_contract(env, asset)?;
         if has_reserve(&env, asset.clone()) {
             panic_with_error!(&env, Error::ReserveAlreadyInitialized);
         }
@@ -264,9 +263,10 @@ impl LendingPoolTrait for LendingPool {
     ///
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
+        Self::require_not_paused(&env)?;
 
         let mut reserve = read_reserve(&env, asset.clone())?;
-        Self::validate_deposit(&reserve, &env, amount);
+        Self::validate_deposit(&env, &reserve, amount);
 
         // Updates the reserve indexes and the timestamp of the update.
         // Implement later with rates.
@@ -297,15 +297,20 @@ impl LendingPoolTrait for LendingPool {
     }
 
     fn finalize_transfer(
-        _asset: Address,
-        _from: Address,
+        env: Env,
+        asset: Address,
+        from: Address,
         _to: Address,
         _amount: i128,
         _balance_from_before: i128,
         _balance_to_before: i128,
-    ) {
-        // mock to use in s_token
-        // whenNotPaused
+    ) -> Result<(), Error> {
+        read_reserve(&env, asset)?.s_token_address.require_auth();
+        Self::require_not_paused(&env)?;
+        // TODO
+        Self::require_good_position(&env, from, None, true)?;
+
+        Ok(())
     }
 
     /// Withdraws a specified amount of an asset from the reserve and transfers it to the caller.
@@ -336,6 +341,7 @@ impl LendingPoolTrait for LendingPool {
         to: Address,
     ) -> Result<(), Error> {
         who.require_auth();
+        Self::require_not_paused(&env)?;
 
         let mut reserve = read_reserve(&env, asset.clone())?;
 
@@ -347,7 +353,7 @@ impl LendingPoolTrait for LendingPool {
             amount
         };
 
-        Self::validate_withdraw(&reserve, &env, amount_to_withdraw, who_balance);
+        Self::validate_withdraw(&env, who.clone(), &reserve, amount_to_withdraw, who_balance);
 
         let mut user_config: UserConfiguration = read_user_config(&env, who.clone())?;
 
@@ -389,6 +395,7 @@ impl LendingPoolTrait for LendingPool {
     /// - Panics if user balance doesn't meet requirements for borrowing an amount of asset
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
+        Self::require_not_paused(&env)?;
 
         let mut reserve = read_reserve(&env, asset.clone())?;
         let user_config = read_user_config(&env, who.clone())?;
@@ -414,6 +421,16 @@ impl LendingPoolTrait for LendingPool {
         event::borrow(&env, who, asset, amount);
 
         Ok(())
+    }
+
+    fn set_pause(env: Env, value: bool) -> Result<(), Error> {
+        Self::require_admin(&env)?;
+        write_pause(&env, value);
+        Ok(())
+    }
+
+    fn paused(env: Env) -> bool {
+        paused(&env)
     }
 
     #[cfg(any(test, feature = "testutils"))]
@@ -453,20 +470,30 @@ impl LendingPool {
         Ok(is_first_deposit)
     }
 
-    fn validate_deposit(reserve: &ReserveData, env: &Env, amount: i128) {
+    fn validate_deposit(env: &Env, reserve: &ReserveData, amount: i128) {
         assert_with_error!(env, amount > 0, Error::InvalidAmount);
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, !flags.is_frozen, Error::ReserveFrozen);
     }
 
-    fn validate_withdraw(reserve: &ReserveData, env: &Env, amount: i128, balance: i128) {
+    fn validate_withdraw(
+        env: &Env,
+        who: Address,
+        reserve: &ReserveData,
+        amount: i128,
+        balance: i128,
+    ) {
         assert_with_error!(env, amount > 0, Error::InvalidAmount);
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, amount <= balance, Error::NotEnoughAvailableUserBalance);
 
-        //TODO: implement when rates exists
+        match Self::is_good_position(env, who, None, true) {
+            Ok(good_position) => assert_with_error!(env, good_position, Error::BadPosition),
+            Err(e) => assert_with_error!(env, true, e),
+        }
+
         //balance_decrease_allowed()
     }
 
@@ -490,7 +517,7 @@ impl LendingPool {
         assert_with_error!(env, flags.borrowing_enabled, Error::BorrowingNotEnabled);
 
         let reserves = &read_reserves(env);
-        let account_data = Self::calc_account_data(env, who, user_config, reserves)?;
+        let account_data = Self::calc_account_data(env, who.clone(), user_config, reserves)?;
 
         assert_with_error!(env, account_data.collateral > 0, Error::CollateralIsZero);
         assert_with_error!(
@@ -513,6 +540,8 @@ impl LendingPool {
         );
 
         //TODO: complete validation after rate implementation
+        Self::require_good_position(env, who, None, true)?;
+
         Ok(())
     }
 
@@ -680,6 +709,45 @@ impl LendingPool {
             token.balance(&reserve.s_token_address) == 0 && reserve.current_liquidity_rate == 0,
             Error::ReserveLiquidityNotZero
         );
+
+        Ok(())
+    }
+
+    fn require_not_paused(env: &Env) -> Result<(), Error> {
+        if paused(env) {
+            return Err(Error::Paused);
+        }
+
+        Ok(())
+    }
+
+    fn is_good_position(
+        env: &Env,
+        who: Address,
+        mb_account_data: Option<AccountData>,
+        is_good: bool,
+    ) -> Result<bool, Error> {
+        let _account_data = if let Some(account_data) = mb_account_data {
+            account_data
+        } else {
+            let user_config = read_user_config(env, who.clone())?;
+            let reserves = read_reserves(env);
+            Self::calc_account_data(env, who, &user_config, &reserves)?
+        };
+
+        Ok(is_good)
+    }
+
+    fn require_good_position(
+        env: &Env,
+        who: Address,
+        mb_account_data: Option<AccountData>,
+        is_good: bool,
+    ) -> Result<(), Error> {
+        let is_good_position = Self::is_good_position(env, who, mb_account_data, is_good)?;
+        if !is_good_position {
+            return Err(Error::BadPosition);
+        }
 
         Ok(())
     }

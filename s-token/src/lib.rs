@@ -44,19 +44,19 @@ impl STokenTrait for SToken {
         underlying_asset: Address,
     ) {
         if decimal > u8::MAX.into() {
-            panic!("Decimal must fit in a u8");
+            panic!("s-token: decimal must fit in a u8");
         }
 
         if name.is_empty() {
-            panic!("no name");
+            panic!("s-token: no name");
         }
 
         if symbol.is_empty() {
-            panic!("no symbol");
+            panic!("s-token: no symbol");
         }
 
         if has_pool(&e) {
-            panic!("already initialized")
+            panic!("s-token: already initialized")
         }
 
         write_pool(&e, &pool);
@@ -504,7 +504,7 @@ impl SToken {
                 &amount,
                 &from_balance_prev,
                 &to_balance_prev,
-            )
+            );
         }
 
         event::transfer(e, from, to, amount)

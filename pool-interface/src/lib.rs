@@ -16,24 +16,27 @@ pub struct Spec;
 pub enum Error {
     AlreadyInitialized = 0,
     Uninitialized = 1,
-    ReserveAlreadyInitialized = 2,
+    NoPriceFeed = 2,
+    ReserveAlreadyInitialized = 3,
+    Paused = 4,
 
-    NoReserveExistForAsset = 3,
-    InvalidAmount = 4,
-    NoActiveReserve = 5,
-    ReserveFrozen = 6,
+    NoReserveExistForAsset = 5,
+    InvalidAmount = 6,
+    NoActiveReserve = 7,
+    ReserveFrozen = 8,
 
-    UserConfigInvalidIndex = 7,
-    NotEnoughAvailableUserBalance = 8,
-    UserConfigNotExists = 9,
+    UserConfigInvalidIndex = 9,
+    NotEnoughAvailableUserBalance = 10,
+    UserConfigNotExists = 11,
 
-    BorrowingNotEnabled = 11,
-    HealthFactorLowerThanLiqThreshold = 12,
-    CollateralIsZero = 13,
-    CollateralNotCoverNewBorrow = 14,
+    BorrowingNotEnabled = 12,
+    HealthFactorLowerThanLiqThreshold = 13,
+    CollateralIsZero = 14,
+    CollateralNotCoverNewBorrow = 15,
+    BadPosition = 16,
 
-    InvalidReserveParams = 15,
-    ReserveLiquidityNotZero = 16,
+    InvalidReserveParams = 17,
+    ReserveLiquidityNotZero = 18,
 
     ReservesMaxCapacityExceeded = 19,
     NoPriceForAsset = 20,
@@ -69,13 +72,14 @@ pub trait LendingPoolTrait {
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn finalize_transfer(
+        env: Env,
         _asset: Address,
         _from: Address,
         _to: Address,
         _amount: i128,
         _balance_from_before: i128,
         _balance_to_before: i128,
-    );
+    ) -> Result<(), Error>;
 
     fn withdraw(
         env: Env,
@@ -89,4 +93,8 @@ pub trait LendingPoolTrait {
     fn set_liq_index(env: Env, asset: Address, value: i128) -> Result<(), Error>;
 
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
+
+    fn set_pause(env: Env, value: bool) -> Result<(), Error>;
+
+    fn paused(env: Env) -> bool;
 }
