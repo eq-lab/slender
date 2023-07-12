@@ -3,8 +3,7 @@ use debt_token_interface::DebtTokenClient;
 use price_feed_interface::PriceFeedClient;
 use s_token_interface::STokenClient;
 use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
-use soroban_sdk::{token, vec, IntoVal, Symbol};
-use token::Client as TokenClient;
+use soroban_sdk::{token::Client as TokenClient, vec, IntoVal, Symbol};
 
 extern crate std;
 
@@ -686,7 +685,7 @@ fn borrow_collateral_is_zero() {
     sut.pool.withdraw(
         &borrower,
         &sut.reserves[1].token.address,
-        &i128::MAX,
+        &deposit_amount,
         &borrower,
     );
 
