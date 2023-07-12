@@ -308,9 +308,7 @@ impl LendingPoolTrait for LendingPool {
         read_reserve(&env, asset)?.s_token_address.require_auth();
         Self::require_no_pause(&env)?;
         // TODO
-        if !Self::is_good_position(&env, from, None, true)? {
-            return Err(Error::BadPosition);
-        }
+        Self::require_good_position(&env, from, None, true)?;
 
         Ok(())
     }
@@ -537,13 +535,9 @@ impl LendingPool {
             Error::CollateralNotCoverNewBorrow
         );
 
-        assert_with_error!(
-            env,
-            Self::is_good_position(env, who, Some(account_data), true)?,
-            Error::BadPosition
-        );
-
         //TODO: complete validation after rate implementation
+        Self::require_good_position(env, who, None, true)?;
+
         Ok(())
     }
 
@@ -739,6 +733,20 @@ impl LendingPool {
         };
 
         Ok(value)
+    }
+
+    fn require_good_position(
+        env: &Env,
+        who: Address,
+        mb_account_data: Option<AccountData>,
+        value: bool,
+    ) -> Result<(), Error> {
+        let is_good_position = Self::is_good_position(env, who, mb_account_data, value)?;
+        if !is_good_position {
+            return Err(Error::BadPosition);
+        }
+
+        Ok(())
     }
 }
 
