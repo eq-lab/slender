@@ -263,7 +263,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
-        Self::require_no_pause(&env)?;
+        Self::require_not_paused(&env)?;
 
         let mut reserve = read_reserve(&env, asset.clone())?;
         Self::validate_deposit(&env, &reserve, amount);
@@ -306,7 +306,7 @@ impl LendingPoolTrait for LendingPool {
         _balance_to_before: i128,
     ) -> Result<(), Error> {
         read_reserve(&env, asset)?.s_token_address.require_auth();
-        Self::require_no_pause(&env)?;
+        Self::require_not_paused(&env)?;
         // TODO
         Self::require_good_position(&env, from, None, true)?;
 
@@ -341,7 +341,7 @@ impl LendingPoolTrait for LendingPool {
         to: Address,
     ) -> Result<(), Error> {
         who.require_auth();
-        Self::require_no_pause(&env)?;
+        Self::require_not_paused(&env)?;
 
         let mut reserve = read_reserve(&env, asset.clone())?;
 
@@ -395,7 +395,7 @@ impl LendingPoolTrait for LendingPool {
     /// - Panics if user balance doesn't meet requirements for borrowing an amount of asset
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
-        Self::require_no_pause(&env)?;
+        Self::require_not_paused(&env)?;
 
         let mut reserve = read_reserve(&env, asset.clone())?;
         let user_config = read_user_config(&env, who.clone())?;
@@ -427,6 +427,10 @@ impl LendingPoolTrait for LendingPool {
         Self::require_admin(&env)?;
         write_pause(&env, value);
         Ok(())
+    }
+
+    fn paused(env: Env) -> bool {
+        paused(&env)
     }
 
     #[cfg(any(test, feature = "testutils"))]
@@ -709,7 +713,7 @@ impl LendingPool {
         Ok(())
     }
 
-    fn require_no_pause(env: &Env) -> Result<(), Error> {
+    fn require_not_paused(env: &Env) -> Result<(), Error> {
         if paused(env) {
             return Err(Error::Paused);
         }
@@ -721,9 +725,8 @@ impl LendingPool {
         env: &Env,
         who: Address,
         mb_account_data: Option<AccountData>,
-        value: bool,
+        is_good: bool,
     ) -> Result<bool, Error> {
-        // TODO
         let _account_data = if let Some(account_data) = mb_account_data {
             account_data
         } else {
@@ -732,16 +735,16 @@ impl LendingPool {
             Self::calc_account_data(env, who, &user_config, &reserves)?
         };
 
-        Ok(value)
+        Ok(is_good)
     }
 
     fn require_good_position(
         env: &Env,
         who: Address,
         mb_account_data: Option<AccountData>,
-        value: bool,
+        is_good: bool,
     ) -> Result<(), Error> {
-        let is_good_position = Self::is_good_position(env, who, mb_account_data, value)?;
+        let is_good_position = Self::is_good_position(env, who, mb_account_data, is_good)?;
         if !is_good_position {
             return Err(Error::BadPosition);
         }

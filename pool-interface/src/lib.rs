@@ -95,4 +95,6 @@ pub trait LendingPoolTrait {
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn set_pause(env: Env, value: bool) -> Result<(), Error>;
+
+    fn paused(env: Env) -> bool;
 }
