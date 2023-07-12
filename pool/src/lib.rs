@@ -300,19 +300,56 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
+    /// Validates and finalize a sToken transfer.
+    /// 
+    /// # Arguments
+    ///
+    /// - asset - The address of the underlying asset of the sToken
+    /// - from - The address from which sTokens are transferred
+    /// - to - The address receiving sTokens
+    /// - amount - The amount being trasferred
+    /// - balance_from_before - The sToken balance of the `from` before the transfer
+    /// - balance_to_before - The sToken balance of the `to` before the transfer
+    ///
+    /// # Errors
+    ///
+    /// Returns `NoReserveExistForAsset` if no reserve exists for the specified asset.
+    /// Returns `Paused` if contract is paused
+    /// Returns `BadPostion` if the `from` address is subject to liquidation after the transfer
+    /// Returns `MathOverflowError' if an overflow occurs when calculating the `from` position.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the caller is not the sToken contract.
     fn finalize_transfer(
         env: Env,
         asset: Address,
         from: Address,
-        _to: Address,
-        _amount: i128,
-        _balance_from_before: i128,
-        _balance_to_before: i128,
+        to: Address,
+        amount: i128,
+        balance_from_before: i128,
+        balance_to_before: i128,
     ) -> Result<(), Error> {
-        read_reserve(&env, asset)?.s_token_address.require_auth();
+        // TODO: maybe check with callstack?
+        read_reserve(&env, asset.clone())?.s_token_address.require_auth();
         Self::require_not_paused(&env)?;
-        // TODO
-        Self::require_good_position(&env, from, None, true)?;
+        Self::require_good_position(&env, from.clone(), None, true)?;
+
+        if from.clone() != to.clone() {
+            let reserve_id = read_reserve(&env, asset.clone())?.get_id();
+            if balance_from_before.checked_sub(amount) == Some(0) {
+                let mut user_config = read_user_config(&env, from.clone())?;
+                user_config.set_using_as_collateral(&env, reserve_id, false);
+
+                event::reserve_used_as_collateral_disabled(&env, from, asset.clone());
+            }
+      
+            if balance_to_before == 0 && amount != 0 {
+                let mut user_config = read_user_config(&env, to.clone())?;
+                user_config.set_using_as_collateral(&env, reserve_id, true);
+                event::reserve_used_as_collateral_enabled(&env, to, asset);
+            }
+          }
 
         Ok(())
     }
@@ -435,6 +472,11 @@ impl LendingPoolTrait for LendingPool {
 
     fn paused(env: Env) -> bool {
         paused(&env)
+    }
+
+    fn liquidate(env: Env, who: Address) -> Result<(), Error> {
+        
+        Ok(())
     }
 
     #[cfg(any(test, feature = "testutils"))]

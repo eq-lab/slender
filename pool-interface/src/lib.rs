@@ -98,4 +98,6 @@ pub trait LendingPoolTrait {
     fn set_pause(env: Env, value: bool) -> Result<(), Error>;
 
     fn paused(env: Env) -> bool;
+
+    fn liquidate(env: Env, who: Address) -> Result<(), Error>;
 }
