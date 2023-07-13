@@ -1,5 +1,6 @@
 #![deny(warnings)]
 #![no_std]
+
 use crate::price_provider::PriceProvider;
 use common::{percentage_math::*, rate_math::*, FixedPoint};
 use debt_token_interface::DebtTokenClient;
@@ -11,6 +12,7 @@ use soroban_sdk::{
 
 mod event;
 mod price_provider;
+mod rate;
 mod storage;
 
 use crate::storage::*;
