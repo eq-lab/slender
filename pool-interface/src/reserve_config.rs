@@ -22,6 +22,8 @@ pub struct ReserveConfigurationMap {
     pub reserved: BytesN<1>,
     //bit 64-79: reserve factor
     pub reserve_factor: u32,
+    // A value between 0 and 100 % specifies what fraction of the underlying asset counts toward the portfolio collateral value.
+    pub discount: u32,
 }
 
 impl ReserveConfigurationMap {
@@ -36,6 +38,7 @@ impl ReserveConfigurationMap {
             borrowing_enabled: false,
             reserved: zero_bytes(env),
             reserve_factor: Default::default(),
+            discount: Default::default(),
         }
     }
 }
@@ -109,6 +112,7 @@ impl ReserveData {
         self.configuration.ltv = config.ltv;
         self.configuration.liq_threshold = config.liq_threshold;
         self.configuration.liq_bonus = config.liq_bonus;
+        self.configuration.discount = config.discount;
     }
 
     pub fn get_id(&self) -> u8 {
@@ -137,4 +141,6 @@ pub struct CollateralParamsInput {
     pub liq_bonus: u32,
     ///The loan to value of the asset when used as collateral
     pub ltv: u32,
+    /// A value between 0 and 100% specifies what fraction of the underlying asset counts toward the portfolio collateral value.
+    pub discount: u32,
 }

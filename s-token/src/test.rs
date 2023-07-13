@@ -3,13 +3,23 @@ extern crate std;
 
 use crate::SToken;
 use s_token_interface::STokenClient;
-use soroban_sdk::{testutils::Address as _, Address, Env, IntoVal, Symbol};
+use soroban_sdk::{
+    testutils::Address as _, token::Client as TokenClient, vec, Address, Env, IntoVal, Symbol,
+};
+
+use self::pool::InitReserveInput;
 
 mod pool {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/pool.wasm");
 }
 
-fn create_token<'a>(e: &Env) -> (STokenClient<'a>, pool::Client<'a>) {
+mod oracle {
+    soroban_sdk::contractimport!(
+        file = "../target/wasm32-unknown-unknown/release/price_feed_mock.wasm"
+    );
+}
+
+fn create_token<'a>(e: &Env) -> (STokenClient<'a>, pool::Client<'a>, TokenClient) {
     let pool = pool::Client::new(e, &e.register_contract_wasm(None, pool::WASM));
     let pool_admin = Address::random(e);
     pool.initialize(&pool_admin);
@@ -17,7 +27,11 @@ fn create_token<'a>(e: &Env) -> (STokenClient<'a>, pool::Client<'a>) {
     let token = STokenClient::new(e, &e.register_contract(None, SToken {}));
 
     let treasury = Address::random(&e);
-    let underlying_asset = Address::random(&e);
+    let underlying_asset =
+        TokenClient::new(e, &e.register_stellar_asset_contract(pool_admin.clone()));
+
+    let oracle = oracle::Client::new(e, &e.register_contract_wasm(None, oracle::WASM));
+    pool.set_price_feed(&oracle.address, &vec![e, underlying_asset.address.clone()]);
 
     token.initialize(
         &7,
@@ -25,10 +39,10 @@ fn create_token<'a>(e: &Env) -> (STokenClient<'a>, pool::Client<'a>) {
         &"symbol".into_val(e),
         &pool.address,
         &treasury,
-        &underlying_asset,
+        &underlying_asset.address,
     );
 
-    (token, pool)
+    (token, pool, underlying_asset)
 }
 
 #[test]
@@ -36,11 +50,24 @@ fn test() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let (token, pool) = create_token(&e);
+    let (token, pool, underlying) = create_token(&e);
+    let debt_token_address = Address::random(&e);
+    let init_reserve_input = InitReserveInput {
+        s_token_address: token.address.clone(),
+        debt_token_address,
+    };
+    pool.init_reserve(&underlying.address, &init_reserve_input);
 
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
     let user3 = Address::random(&e);
+
+    // pool.deposit needed to make transfers
+    underlying.mint(&user1, &1000);
+    pool.deposit(&user1, &underlying.address, &1);
+
+    underlying.mint(&user2, &1000);
+    pool.deposit(&user2, &underlying.address, &1);
 
     token.mint(&user1, &1000);
     assert_eq!(
@@ -52,8 +79,8 @@ fn test() {
             (&user1, 1000_i128).into_val(&e),
         )]
     );
-    assert_eq!(token.balance(&user1), 1000);
-    assert_eq!(token.total_supply(), 1000);
+    assert_eq!(token.balance(&user1), 1001);
+    assert_eq!(token.total_supply(), 1002);
 
     token.increase_allowance(&user2, &user3, &500);
     assert_eq!(
@@ -77,8 +104,8 @@ fn test() {
             (&user1, &user2, 600_i128).into_val(&e),
         )]
     );
-    assert_eq!(token.balance(&user1), 400);
-    assert_eq!(token.balance(&user2), 600);
+    assert_eq!(token.balance(&user1), 401);
+    assert_eq!(token.balance(&user2), 601);
 
     token.transfer_from(&user3, &user2, &user1, &400);
     assert_eq!(
@@ -90,11 +117,11 @@ fn test() {
             (&user3, &user2, &user1, 400_i128).into_val(&e),
         )]
     );
-    assert_eq!(token.balance(&user1), 800);
-    assert_eq!(token.balance(&user2), 200);
+    assert_eq!(token.balance(&user1), 801);
+    assert_eq!(token.balance(&user2), 201);
 
     token.transfer(&user1, &user3, &300);
-    assert_eq!(token.balance(&user1), 500);
+    assert_eq!(token.balance(&user1), 501);
     assert_eq!(token.balance(&user3), 300);
 
     token.set_authorized(&user2, &false);
@@ -123,7 +150,7 @@ fn test() {
         )]
     );
     assert_eq!(token.balance(&user3), 200);
-    assert_eq!(token.total_supply(), 900);
+    assert_eq!(token.total_supply(), 902);
 
     // Increase by 400, with an existing 100 = 500
     token.increase_allowance(&user2, &user3, &400);
@@ -149,7 +176,7 @@ fn test_burn() {
 
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
-    let (token, _pool) = create_token(&e);
+    let (token, _pool, _) = create_token(&e);
 
     token.mint(&user1, &1000);
     assert_eq!(token.balance(&user1), 1000);
@@ -169,7 +196,7 @@ fn transfer_insufficient_balance() {
 
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
-    let (token, _pool) = create_token(&e);
+    let (token, _pool, _) = create_token(&e);
 
     token.mint(&user1, &1000);
     assert_eq!(token.balance(&user1), 1000);
@@ -185,7 +212,7 @@ fn transfer_receive_deauthorized() {
 
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
-    let (token, _pool) = create_token(&e);
+    let (token, _pool, _) = create_token(&e);
 
     token.mint(&user1, &1000);
     assert_eq!(token.balance(&user1), 1000);
@@ -202,7 +229,7 @@ fn transfer_spend_deauthorized() {
 
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
-    let (token, _pool) = create_token(&e);
+    let (token, _pool, _) = create_token(&e);
 
     token.mint(&user1, &1000);
     assert_eq!(token.balance(&user1), 1000);
@@ -220,7 +247,7 @@ fn transfer_from_insufficient_allowance() {
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
     let user3 = Address::random(&e);
-    let (token, _pool) = create_token(&e);
+    let (token, _pool, _) = create_token(&e);
 
     token.mint(&user1, &1000);
     assert_eq!(token.balance(&user1), 1000);
@@ -232,10 +259,11 @@ fn transfer_from_insufficient_allowance() {
 }
 
 #[test]
-#[should_panic(expected = "already initialized")]
+#[should_panic(expected = "s-token: already initialized")]
 fn initialize_already_initialized() {
     let e = Env::default();
-    let (token, _pool) = create_token(&e);
+    e.mock_all_auths();
+    let (token, _pool, _) = create_token(&e);
 
     let pool = Address::random(&e);
     let treasury = Address::random(&e);
@@ -252,7 +280,7 @@ fn initialize_already_initialized() {
 }
 
 #[test]
-#[should_panic(expected = "Decimal must fit in a u8")]
+#[should_panic(expected = "s-token: decimal must fit in a u8")]
 fn decimal_is_over_max() {
     let e = Env::default();
     let token = STokenClient::new(&e, &e.register_contract(None, SToken {}));

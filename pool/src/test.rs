@@ -3,8 +3,7 @@ use debt_token_interface::DebtTokenClient;
 use price_feed_interface::PriceFeedClient;
 use s_token_interface::STokenClient;
 use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
-use soroban_sdk::{token, vec, IntoVal, Symbol};
-use token::Client as TokenClient;
+use soroban_sdk::{token::Client as TokenClient, vec, IntoVal, Symbol};
 
 extern crate std;
 
@@ -132,6 +131,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
             let ltv = 500; // 5%
             let liq_threshold = 1000; // 10%,
             let liq_bonus = 11000; //110%
+            let discount = 6000; //60%
 
             pool.configure_as_collateral(
                 &token.address,
@@ -139,6 +139,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
                     ltv,
                     liq_threshold,
                     liq_bonus,
+                    discount,
                 },
             );
 
@@ -686,7 +687,7 @@ fn borrow_collateral_is_zero() {
     sut.pool.withdraw(
         &borrower,
         &sut.reserves[1].token.address,
-        &i128::MAX,
+        &deposit_amount,
         &borrower,
     );
 
