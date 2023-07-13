@@ -1,5 +1,7 @@
 use fixed_point_math::FixedPoint;
 
+use crate::percentage_math::PERCENTAGE_FACTOR;
+
 /// Fixed type with inner type of i128 and fixed denominator 10e9
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
 pub struct FixedI128(i128);
@@ -25,6 +27,11 @@ impl FixedI128 {
             .checked_mul(nom.into())?
             .checked_div(denom.into())
             .map(FixedI128)
+    }
+
+    /// Construct fixed value as percentage
+    pub fn from_percentage<T: Into<i128>>(percentage: T) -> Option<FixedI128> {
+        Self::from_rational(percentage, PERCENTAGE_FACTOR)
     }
 
     /// Construct fixed from int value
@@ -82,5 +89,23 @@ impl FixedI128 {
     /// Div inner value of fixed
     pub fn div_inner<T: Into<i128>>(self, value: T) -> Option<FixedI128> {
         self.0.checked_div(value.into()).map(FixedI128)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::{percentage_math::PERCENTAGE_FACTOR, FixedI128};
+
+    #[test]
+    fn percent_mul() {
+        let percent = 500; // 5%
+        let value = 1000;
+        assert_eq!(
+            FixedI128::from_rational(percent, PERCENTAGE_FACTOR)
+                .unwrap()
+                .mul_int(value)
+                .unwrap(),
+            50
+        );
     }
 }
