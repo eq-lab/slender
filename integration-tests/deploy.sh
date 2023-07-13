@@ -14,7 +14,7 @@ deploy() {
     local address=$(soroban contract deploy \
         --wasm $1 \
         --source $2 \
-        --rpc-url http://localhost:8000/soroban/rpc \
+        --rpc-url "$SOROBAN_RPC_URL" \
         --network-passphrase "$PASSPHRASE")
     echo $address
 }
@@ -23,7 +23,7 @@ install() {
     local hash=$(soroban contract install \
         --wasm $1 \
         --source $2 \
-        --rpc-url http://localhost:8000/soroban/rpc \
+        --rpc-url "$SOROBAN_RPC_URL" \
         --network-passphrase "$PASSPHRASE")
     echo $hash
 }
@@ -32,7 +32,7 @@ invoke() {
     local result=$(soroban contract invoke \
         --id $1 \
         --source $2 \
-        --rpc-url http://localhost:8000/soroban/rpc \
+        --rpc-url "$SOROBAN_RPC_URL" \
         --network-passphrase "$PASSPHRASE" \
         -- \
         $3)
