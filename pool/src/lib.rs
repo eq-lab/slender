@@ -2,7 +2,7 @@
 #![no_std]
 
 use crate::price_provider::PriceProvider;
-use common::{percentage_math::*, rate_math::*, FixedI128, FixedPoint, ALPHA_DENOMINATOR};
+use common::{percentage_math::*, rate_math::*, FixedPoint};
 use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
 use s_token_interface::STokenClient;
@@ -12,6 +12,7 @@ use soroban_sdk::{
 
 mod event;
 mod price_provider;
+mod rate;
 mod storage;
 
 use crate::storage::*;
@@ -767,58 +768,6 @@ impl LendingPool {
         }
 
         Ok(())
-    }
-
-    /// Calculate interest rate IR = MIN [ max_rate, base_rate / (1 - U)^alpha]
-    /// where
-    /// U - utilization, U = total_debt / total_collateral
-    /// alpha - parameter, by default 1.43 expressed as 143 with denominator 100
-    /// max_rate - maximal value of interest rate, by default 500% expressed as 50000
-    /// base_rate - base interest rate, by default 2%, expressed as 200
-    ///
-    /// For (1-U)^alpha calculation use binomial approximation with three terms
-    /// (1-U)^a = 1 - alpha * U + alpha/2 * (alpha - 1) * U^2 - alpha/6 * (alpha-1) * (alpha-2) * U^3
-    #[allow(dead_code)]
-    fn calc_interest_rate(
-        total_collateral: i128,
-        total_debt: i128,
-        alpha: u32,     // 143 / 100
-        max_rate: u32,  // 50000 / 10000
-        base_rate: u32, // 200 / 10000
-    ) -> Option<FixedI128> {
-        let u = FixedI128::from_rational(total_debt, total_collateral)?;
-        if u >= FixedI128::ONE {
-            return None; // utilization shouldn't be greater or equal one
-        }
-
-        let alpha = FixedI128::from_rational(alpha, ALPHA_DENOMINATOR)?;
-
-        let alpha_minus_one = alpha.sub(FixedI128::ONE)?;
-        let alpha_minus_two = alpha.sub(FixedI128::from_inner(FixedI128::DENOMINATOR * 2))?;
-
-        let u_pow_2 = u.mul(u)?;
-        let u_pow_3 = u_pow_2.mul(u)?;
-
-        let first_term = alpha.mul(u)?;
-        let second_term = alpha.mul(alpha_minus_one)?.mul(u_pow_2)?.div_inner(2)?;
-
-        let third_term = alpha
-            .mul(alpha_minus_one)?
-            .mul(alpha_minus_two)?
-            .mul(u_pow_3)?
-            .div_inner(6)?;
-
-        let denom = FixedI128::ONE
-            .sub(first_term)?
-            .add(second_term)?
-            .sub(third_term)?;
-
-        let base_rate_fixed = FixedI128::from_rational(base_rate, PERCENTAGE_FACTOR)?;
-        let max_rate_fixed = FixedI128::from_rational(max_rate, PERCENTAGE_FACTOR)?;
-
-        let ir = base_rate_fixed.div(denom)?;
-
-        Some(FixedI128::min(ir, max_rate_fixed))
     }
 }
 

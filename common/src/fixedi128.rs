@@ -91,4 +91,14 @@ impl FixedI128 {
     pub fn div_inner<T: Into<i128>>(self, value: T) -> Option<FixedI128> {
         self.0.checked_div(value.into()).map(FixedI128)
     }
+
+    /// Returns true if self is negative, false - when positive or zero
+    pub fn is_negative(self) -> bool {
+        self.0.is_negative()
+    }
+
+    /// Returns true if self is positive, false - when negative or zero
+    pub fn is_positive(self) -> bool {
+        self.0.is_positive()
+    }
 }
