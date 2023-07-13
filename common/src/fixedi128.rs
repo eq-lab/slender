@@ -69,9 +69,9 @@ impl FixedI128 {
     /// Calculates division of non fixed int value and fixed value, e.g.  other / self.
     /// Result is int value
     pub fn recip_mul_int<T: Into<i128>>(self, other: T) -> Option<i128> {
-        self.0
-            .checked_div(other.into())?
-            .checked_mul(Self::DENOMINATOR)
+        Self::DENOMINATOR
+            .checked_mul(other.into())?
+            .checked_div(self.0)
     }
 
     /// Multiply inner value of fixed
