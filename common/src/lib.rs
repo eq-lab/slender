@@ -1,10 +1,11 @@
 #![deny(warnings)]
 #![no_std]
 
+mod fixedi128;
 pub mod percentage_math;
 pub mod rate_math;
-
-mod fixedi128;
+#[cfg(test)]
+mod test;
 
 pub use fixed_point_math::FixedPoint;
 pub use fixedi128::*;

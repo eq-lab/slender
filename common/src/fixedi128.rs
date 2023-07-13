@@ -30,12 +30,13 @@ impl FixedI128 {
     }
 
     /// Construct fixed value as percentage
+    /// percentage expressed as 1% - 100, 100% - 100000
     pub fn from_percentage<T: Into<i128>>(percentage: T) -> Option<FixedI128> {
         Self::from_rational(percentage, PERCENTAGE_FACTOR)
     }
 
     /// Construct fixed from int value
-    pub fn from_value<T: Into<i128>>(value: T) -> Option<FixedI128> {
+    pub fn from_int<T: Into<i128>>(value: T) -> Option<FixedI128> {
         FixedI128::DENOMINATOR
             .checked_mul(value.into())
             .map(FixedI128)
@@ -89,23 +90,5 @@ impl FixedI128 {
     /// Div inner value of fixed
     pub fn div_inner<T: Into<i128>>(self, value: T) -> Option<FixedI128> {
         self.0.checked_div(value.into()).map(FixedI128)
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::{percentage_math::PERCENTAGE_FACTOR, FixedI128};
-
-    #[test]
-    fn percent_mul() {
-        let percent = 500; // 5%
-        let value = 1000;
-        assert_eq!(
-            FixedI128::from_rational(percent, PERCENTAGE_FACTOR)
-                .unwrap()
-                .mul_int(value)
-                .unwrap(),
-            50
-        );
     }
 }
