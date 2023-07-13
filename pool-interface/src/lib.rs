@@ -45,6 +45,7 @@ pub enum Error {
     PriceMathOverflow = 101,
     ValidateBorrowMathError = 102,
     CalcAccountDataMathError = 103,
+    CalcInterestRateMathError = 104,
 }
 
 /// Interface for SToken
