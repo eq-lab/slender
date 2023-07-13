@@ -1,0 +1,14 @@
+{
+    "extensions": [
+        "ts"
+    ],
+    "spec": [
+        "**/*.spec.ts"
+    ],
+    "node-option": [
+        "loader=ts-node/esm"
+    ],
+    "require": [
+        "ts-node/register"
+    ]
+}

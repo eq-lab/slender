@@ -1,14 +1,14 @@
 #!/bin/bash
 
-source scripts/.env
+source .$NODE_ENV.env
 
 TREASURY_SECRET="${TREASURY_SECRET:-SDUQ5O67BWZUAR6GTCFWN6QM7BZBXDD5SRPMWUTIS2N37CVNKPNV3GFY}"
 TREASURY_PUBLIC="${TREASURY_PUBLIC:-GCG4IJLJBBHAAACKB245CSY6HFDQDL3OO4FCNYACQE2S7X4P36FAXT3Q}"
 
 curl -s "$FRIENDBOT_URL?addr=$TOKEN_PUBLIC" 1>/dev/null
 curl -s "$FRIENDBOT_URL?addr=$POOL_PUBLIC" 1>/dev/null
+curl -s "$FRIENDBOT_URL?addr=$USER_PUBLIC" 1>/dev/null
 sleep 10
-
 
 deploy() {
     local address=$(soroban contract deploy \
@@ -47,7 +47,7 @@ addressFromResult() {
     echo $value1
 }
 
-TOKEN=$(deploy "contracts/soroban_token_contract.wasm" $TOKEN_SECRET)
+TOKEN=$(deploy "../contracts/soroban_token_contract.wasm" $TOKEN_SECRET)
 echo "Token contract address: $TOKEN"
 invoke $TOKEN $TOKEN_SECRET "initialize \
     --admin $TOKEN_PUBLIC \
@@ -55,7 +55,7 @@ invoke $TOKEN $TOKEN_SECRET "initialize \
     --name $(echo -n "token" | xxd -p) \
     --symbol $(echo -n "TKN" | xxd -p)"
 
-DEBT_TOKEN=$(deploy "contracts/soroban_token_contract.wasm" $TOKEN_SECRET)
+DEBT_TOKEN=$(deploy "../contracts/soroban_token_contract.wasm" $TOKEN_SECRET)
 echo "Token contract address (debt token): $DEBT_TOKEN"
 invoke $DEBT_TOKEN $TOKEN_SECRET "initialize \
     --admin $TOKEN_PUBLIC \
@@ -63,13 +63,13 @@ invoke $DEBT_TOKEN $TOKEN_SECRET "initialize \
     --name $(echo -n "debt-token" | xxd -p) \
     --symbol $(echo -n "DTKN" | xxd -p)"
 
-deployer=$(deploy "target/wasm32-unknown-unknown/release/deployer.wasm" $TOKEN_SECRET)
+deployer=$(deploy "../target/wasm32-unknown-unknown/release/deployer.wasm" $TOKEN_SECRET)
 echo "Deployer contract address: $deployer"
 
-stokenHash=$(install "target/wasm32-unknown-unknown/release/s_token.wasm" $TOKEN_SECRET)
+stokenHash=$(install "../target/wasm32-unknown-unknown/release/s_token.wasm" $TOKEN_SECRET)
 echo "S-token wasm hash: $stokenHash"
 
-poolHash=$(install "target/wasm32-unknown-unknown/release/pool.wasm" $TOKEN_SECRET)
+poolHash=$(install "../target/wasm32-unknown-unknown/release/pool.wasm" $TOKEN_SECRET)
 echo "Pool wasm hash: $poolHash"
 
 deployPoolResult=$(invoke $deployer $POOL_SECRET "deploy_pool \
@@ -88,15 +88,14 @@ deployStokenResult=$(invoke $deployer $TOKEN_SECRET "deploy_s_token \
     --pool $POOL \
     --treasury $TREASURY_PUBLIC \
     --underlying_asset $TOKEN")
-echo "$deployStokenResult"
 STOKEN=$(addressFromResult $deployStokenResult)
 echo "Stoken contract address: $STOKEN"
 
-priceFeed=$(deploy "target/wasm32-unknown-unknown/release/price_feed_mock.wasm" $POOL_SECRET)
+priceFeed=$(deploy "../target/wasm32-unknown-unknown/release/price_feed_mock.wasm" $POOL_SECRET)
 PRICE_FEED=$(addressFromResult $priceFeed)
 echo "Price feed contract address: $PRICE_FEED"
 
-contracts="scripts/.contracts"
+contracts=".contracts"
 {
     echo "POOL=$POOL"
     echo "STOKEN=$STOKEN"
