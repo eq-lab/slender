@@ -3,4 +3,5 @@
 
 **/target
 
-scripts/.contracts
+integration-tests/.contracts
+integration-tests/node_modules
