@@ -16,7 +16,7 @@ For building all packages run:
 make
 ```
 
-## Test
+## Unit Tests
 
 In order to run unit tests use command below:
 
@@ -24,54 +24,26 @@ In order to run unit tests use command below:
 make test
 ```
 
-## Deploy and run demo in a local network
+## Deploy and run integration tests
 
-### Prerequisites
-
-To run demo script you need to install **soroban-cli** version 0.8.7
+To run the tests you need to install **soroban-cli** version 0.8.7
 
 ```shell
 cargo install --locked --version 0.8.7 soroban-cli
 ```
 
-Scenario:
-
-1. Deploy pool, sToken, token and debt token
-2. Initialize user with initial balance
-3. Initialize token as a reserve token of a pool
-4. Deposit some amount into a pool. Show balances of user and sToken
-5. Withdraw some amount from a pool. Show balances of user and sToken
-
-Build contracts:
+Run a local standalone (or Futurenet) network with the following command:
 
 ```shell
-make
-```
-
-Run a local standalone network with the following command:
-
-```shell
+# Local environment
 docker run --rm -it \
   -p 8000:8000 \
   --name stellar \
   stellar/quickstart:soroban-dev@sha256:57e8ab498bfa14c65595fbb01cb94b1cdee9637ef2e6634e59d54f6958c05bdb \
   --standalone \
   --enable-soroban-rpc
-```
 
-Run simulation script (stay at root project directory):
-
-```shell
-./scripts/demo.sh
-```
-
-All parameters of demo script could be found in `scripts/.env`
-
-### Futurenet
-
-To deploy and run demo script in the Futurenet network you should run soroban-rpc with command and wait for synchronization
-
-```shell
+# Futurenet (note, you must wait for synchronization)
 docker run --rm -it \
    -p 8000:8000 \
    --name stellar \
@@ -80,7 +52,17 @@ docker run --rm -it \
    --enable-soroban-rpc
 ```
 
-copy all variables from `.futurenet.env` to `.env` file and run `./scripts/demo.sh`
+Run the tests from the root project directory:
+
+```shell
+# Local
+make integration-test env="develop"
+
+# Futurenet
+make integration-test env="futurenet"
+```
+
+Note, all the integration tests parameters can be found in `integration-tests/.${environment}.env`.
 
 ### How to add token to freighter wallet
 
