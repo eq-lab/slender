@@ -12,6 +12,7 @@ use soroban_sdk::{
 
 mod event;
 mod price_provider;
+mod rate;
 mod storage;
 
 use crate::storage::*;
