@@ -1,5 +1,6 @@
 #![deny(warnings)]
 #![no_std]
+
 use crate::price_provider::PriceProvider;
 use common::{percentage_math::*, rate_math::*, FixedPoint};
 use debt_token_interface::DebtTokenClient;
@@ -67,11 +68,10 @@ impl LendingPoolTrait for LendingPool {
     /// - Panics if the caller is not the admin.
     /// - Panics with `ReserveAlreadyInitialized` if the specified asset key already exists in storage.
     ///
+    // TODO: extend + add a separate method to set parameters
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error> {
         Self::require_admin(&env)?;
-        if has_reserve(&env, asset.clone()) {
-            panic_with_error!(&env, Error::ReserveAlreadyInitialized);
-        }
+        Self::require_reserve(&env, &asset)?;
 
         let mut reserve_data = ReserveData::new(&env, input);
         let mut reserves = read_reserves(&env);
@@ -87,6 +87,47 @@ impl LendingPoolTrait for LendingPool {
         reserves.push_back(asset.clone());
 
         write_reserves(&env, &reserves);
+        write_reserve(&env, asset, &reserve_data);
+
+        Ok(())
+    }
+
+    /// Initializes a reserve for a given asset.
+    ///
+    /// # Arguments
+    ///
+    /// - asset - The address of the asset associated with the reserve.
+    /// - input - The input parameters for initializing the reserve.
+    ///
+    /// # Panics
+    ///
+    /// - Panics with `Uninitialized` if the admin key is not exist in storage.
+    /// - Panics if the caller is not the admin.
+    /// - Panics with `ReserveAlreadyInitialized` if the specified asset key already exists in storage.
+    ///
+    fn set_interest_rate_configuration(
+        env: Env,
+        asset: Address,
+        configuration: InterestRateConfiguration,
+    ) -> Result<(), Error> {
+        Self::require_admin(&env)?;
+        Self::require_reserve(&env, &asset)?;
+        assert_with_error!(env, configuration.alpha > 0, Error::TBD);
+        assert_with_error!(env, configuration.rate > 0, Error::TBD);
+        assert_with_error!(env, configuration.max_rate > 0, Error::TBD);
+        assert_with_error!(env, configuration.scaling_coeff > 0, Error::TBD);
+
+        // TODO: add validation
+
+        let mut reserve_data = read_reserve(&env, asset.clone())?;
+        reserve_data.update_interest_rate_config(input);
+
+        assert_with_error!(
+            &env,
+            reserves_len <= u8::MAX as u32,
+            Error::ReservesMaxCapacityExceeded
+        );
+
         write_reserve(&env, asset, &reserve_data);
 
         Ok(())
@@ -436,9 +477,11 @@ impl LendingPoolTrait for LendingPool {
     }
 
     #[cfg(any(test, feature = "testutils"))]
+    // TODO: replace with set_accrued_rates (collat_accruede_rate, debt_accruede_rate)
+    // TODO: do nothing if None
     fn set_liq_index(env: Env, asset: Address, value: i128) -> Result<(), Error> {
         let mut reserve_data = read_reserve(&env, asset.clone())?;
-        reserve_data.liquidity_index = value;
+        reserve_data.liquidity_index = value; // TODO: collat_accrude_rate
         write_reserve(&env, asset, &reserve_data);
 
         Ok(())
@@ -449,6 +492,13 @@ impl LendingPool {
     fn require_admin(env: &Env) -> Result<(), Error> {
         let admin: Address = read_admin(env)?;
         admin.require_auth();
+        Ok(())
+    }
+
+    fn require_reserve(env: &Env, asset: &Address) -> Result<(), Error> {
+        if has_reserve(&env, asset.clone()) {
+            panic_with_error!(&env, Error::ReserveAlreadyInitialized);
+        }
         Ok(())
     }
 
@@ -706,14 +756,14 @@ impl LendingPool {
             .ok_or(Error::MathOverflowError)
     }
 
-    fn get_collateral_coeff(_env: &Env, _reserve: &ReserveData) -> Result<i128, Error> {
-        //TODO: implement rate
-        Ok(RATE_DENOMINATOR)
+    fn get_collateral_coeff(_env: &Env, reserve: &ReserveData) -> Result<i128, Error> {
+        // TODO: implement rate
+        reserve.collat_accrued_rate?
     }
 
-    fn get_debt_coeff(_env: &Env, _reserve: &ReserveData) -> Result<i128, Error> {
-        //TODO: implement accrued
-        Ok(RATE_DENOMINATOR)
+    fn get_debt_coeff(_env: &Env, reserve: &ReserveData) -> Result<i128, Error> {
+        // TODO: implement accrued
+        reserve.debt_accrued_rate?
     }
 
     fn require_no_liquidity(env: &Env, asset: Address) -> Result<(), Error> {

@@ -1,44 +1,56 @@
 use common::rate_math::RATE_DENOMINATOR;
 use soroban_sdk::{contracttype, Address, BytesN, Env};
 
+// TODO: Liquidity (total cap) Cap, Liquidation penalty => ReserveConfigurationMap (rename ReserveConfiguration)
+// TODO: add alpha, IR0 (0.02), maximum interest rate (500%), scaling coefficient (0.9) => add to ReserveData
+// TODO: add method to populate the config above (add alpha, IR0, ...)
+
 #[contracttype]
-pub struct ReserveConfigurationMap {
-    //bit 0-15: LTV
-    pub ltv: u32,
-    //bit 16-31: Liq. threshold
-    pub liq_threshold: u32,
-    //bit 32-47: Liq. bonus
+pub struct ReserveConfiguration {
     pub liq_bonus: u32,
-    //bit 48-55: Decimals
+    pub liquidity_cap: i128,
+    // TODO: added (add validation?)
+    pub liquidation_penalty: i128,
+    // TODO: added (add validation?)
     pub decimals: u32,
-    //bit 56: Reserve is active
     pub is_active: bool,
-    //bit 57: reserve is frozen
     pub is_frozen: bool,
-    //bit 58: borrowing is enabled
-    //bit 59: stable rate borrowing enabled
     pub borrowing_enabled: bool,
-    //bit 60-63: reserved
-    pub reserved: BytesN<1>,
-    //bit 64-79: reserve factor
-    pub reserve_factor: u32,
-    // A value between 0 and 100 % specifies what fraction of the underlying asset counts toward the portfolio collateral value.
+    /// Specifies what fraction of the underlying asset counts toward
+    /// the portfolio collateral value [0%, 100%].
     pub discount: u32,
 }
 
-impl ReserveConfigurationMap {
-    fn default(env: &Env) -> Self {
+impl ReserveConfiguration {
+    fn default() -> Self {
         Self {
-            ltv: Default::default(),
-            liq_threshold: Default::default(),
             liq_bonus: Default::default(),
+            liquidity_cap: Default::default(),
+            liquidation_penalty: Default::default(),
             decimals: Default::default(),
             is_active: true,
             is_frozen: false,
             borrowing_enabled: false,
-            reserved: zero_bytes(env),
-            reserve_factor: Default::default(),
             discount: Default::default(),
+        }
+    }
+}
+
+#[contracttype]
+pub struct InterestRateConfiguration {
+    pub alpha: i128,
+    pub rate: i128,
+    pub max_rate: i128,
+    pub scaling_coeff: i128,
+}
+
+impl InterestRateConfiguration {
+    fn default() -> Self {
+        Self {
+            alpha: Default::default(),
+            rate: Default::default(),
+            max_rate: Default::default(),
+            scaling_coeff: Default::default(),
         }
     }
 }
@@ -50,7 +62,7 @@ pub struct ReserveConfigurationFlags {
     pub borrowing_enabled: bool,
 }
 
-impl ReserveConfigurationMap {
+impl ReserveConfiguration {
     pub fn get_flags(&self) -> ReserveConfigurationFlags {
         ReserveConfigurationFlags {
             is_active: self.is_active,
@@ -62,22 +74,16 @@ impl ReserveConfigurationMap {
 
 #[contracttype]
 pub struct ReserveData {
-    //stores the reserve configuration
-    pub configuration: ReserveConfigurationMap,
-    //the liquidity index. Expressed in ray
-    pub liquidity_index: i128,
-    //variable borrow index. Expressed in ray
-    pub variable_borrow_index: i128,
-    //the current supply rate. Expressed in ray
-    pub current_liquidity_rate: u128,
-    //the current variable borrow rate. Expressed in ray
-    pub current_variable_borrow_rate: u128,
-    pub last_update_timestamp: u64, // u40,
-    // 24 empty bits
-    //tokens addresses
+    pub configuration: ReserveConfiguration,
+    pub interest_rate_configuration: InterestRateConfiguration,
+    pub collat_accrued_rate: i128,
+    // TODO: added (add validation?, replace liquidity_index => collat_accrued_rate for collateral)
+    pub debt_accrued_rate: i128,
+    // TODO: added (add validation?)
+    pub last_update_timestamp: u64,
     pub s_token_address: Address,
     pub debt_token_address: Address,
-    //the id of the reserve. Represents the position in the list of the active reserves
+    /// The id of the reserve (position in the list of the active reserves).
     pub id: BytesN<1>,
 }
 
@@ -88,13 +94,12 @@ impl ReserveData {
             debt_token_address,
         } = input;
         Self {
-            liquidity_index: RATE_DENOMINATOR,
-            variable_borrow_index: RATE_DENOMINATOR,
+            collat_accrued_rate: RATE_DENOMINATOR,
+            debt_accrued_rate: RATE_DENOMINATOR,
             s_token_address,
             debt_token_address,
-            configuration: ReserveConfigurationMap::default(env),
-            current_liquidity_rate: Default::default(),
-            current_variable_borrow_rate: Default::default(),
+            configuration: ReserveConfiguration::default(),
+            interest_rate_configuration: InterestRateConfiguration::default(),
             last_update_timestamp: Default::default(),
             id: zero_bytes(env), // position in reserve list
         }
@@ -113,6 +118,13 @@ impl ReserveData {
         self.configuration.liq_threshold = config.liq_threshold;
         self.configuration.liq_bonus = config.liq_bonus;
         self.configuration.discount = config.discount;
+    }
+
+    pub fn update_interest_rate_config(&mut self, config: InterestRateConfiguration) {
+        self.interest_rate_configuration.alpha = config.alpha;
+        self.interest_rate_configuration.rate = config.rate;
+        self.interest_rate_configuration.max_rate = config.max_rate;
+        self.interest_rate_configuration.scaling_coeff = config.scaling_coeff;
     }
 
     pub fn get_id(&self) -> u8 {

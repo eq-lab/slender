@@ -551,7 +551,7 @@ impl SToken {
 
     fn get_reserve_and_underlying(e: &Env) -> (ReserveData, Address) {
         let pool = read_pool(e);
-        let pool_client = pool_interface::LendingPoolClient::new(e, &pool);
+        let pool_client = LendingPoolClient::new(e, &pool);
 
         let underlying_asset = read_underlying_asset(e);
         let reserve = pool_client
