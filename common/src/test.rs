@@ -53,7 +53,7 @@ mod fixedi128 {
     #[test]
     fn mul() {
         let two = FixedI128::from_int(2).unwrap();
-        let product = two.mul(two).unwrap();
+        let product = two.checked_mul(two).unwrap();
         assert_eq!(product, FixedI128::from_int(4).unwrap());
         assert_eq!(product.into_inner(), 4 * FixedI128::DENOMINATOR);
     }
@@ -62,11 +62,11 @@ mod fixedi128 {
     fn div() {
         let four = FixedI128::from_int(4).unwrap();
         let two = FixedI128::from_int(2).unwrap();
-        let result = four.div(two).unwrap();
+        let result = four.checked_div(two).unwrap();
 
         assert_eq!(result, two);
 
-        let quarter = FixedI128::ONE.div(four).unwrap();
+        let quarter = FixedI128::ONE.checked_div(four).unwrap();
         assert_eq!(quarter, FixedI128::from_rational(1, 4).unwrap());
     }
 
@@ -76,7 +76,7 @@ mod fixedi128 {
         let another = FixedI128::from_rational(5, 7).unwrap();
 
         assert_eq!(
-            half.add(another).unwrap(),
+            half.checked_add(another).unwrap(),
             FixedI128::from_rational(17, 14).unwrap()
         )
     }
@@ -84,7 +84,7 @@ mod fixedi128 {
     #[test]
     fn sub() {
         let quarter = FixedI128::from_rational(1, 4).unwrap();
-        let result = FixedI128::ONE.sub(quarter).unwrap();
+        let result = FixedI128::ONE.checked_sub(quarter).unwrap();
 
         assert_eq!(result, FixedI128::from_rational(3, 4).unwrap());
     }

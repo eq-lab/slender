@@ -5,7 +5,7 @@
 #![deny(warnings)]
 #![no_std]
 
-use soroban_sdk::{contractclient, contractspecfn, contracttype, Env, Address, Vec};
+use soroban_sdk::{contractclient, contractspecfn, contracttype, Address, Env, Vec};
 pub struct Spec;
 
 /// Price data for an asset at a specific timestamp
