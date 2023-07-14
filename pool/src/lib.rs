@@ -71,7 +71,7 @@ impl LendingPoolTrait for LendingPool {
     // TODO: extend + add a separate method to set parameters
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error> {
         Self::require_admin(&env)?;
-        Self::require_reserve(&env, &asset)?;
+        Self::require_reserve(&env, &asset);
 
         let mut reserve_data = ReserveData::new(&env, input);
         let mut reserves = read_reserves(&env);
@@ -182,12 +182,7 @@ impl LendingPoolTrait for LendingPool {
         params: CollateralParamsInput,
     ) -> Result<(), Error> {
         Self::require_admin(&env)?;
-
-        assert_with_error!(
-            &env,
-            params.discount <= PERCENTAGE_FACTOR,
-            Error::InvalidReserveParams
-        );
+        Self::require_lte_10000_bps(&env, params.discount);
 
         //validation of the parameters: the LTV can
         //only be lower or equal than the liquidation threshold
@@ -495,11 +490,16 @@ impl LendingPool {
         Ok(())
     }
 
-    fn require_reserve(env: &Env, asset: &Address) -> Result<(), Error> {
-        if has_reserve(&env, asset.clone()) {
-            panic_with_error!(&env, Error::ReserveAlreadyInitialized);
-        }
-        Ok(())
+    fn require_reserve(env: &Env, asset: &Address) {
+        assert_with_error!(
+            &env,
+            has_reserve(&env, asset.clone()),
+            Error::ReserveAlreadyInitialized
+        );
+    }
+
+    fn require_lte_10000_bps(env: &Env, value: u32) {
+        assert_with_error!(&env, value <= PERCENTAGE_FACTOR, Error::NotInBasicPoints);
     }
 
     fn do_deposit(

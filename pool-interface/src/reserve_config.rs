@@ -7,15 +7,12 @@ use soroban_sdk::{contracttype, Address, BytesN, Env};
 
 #[contracttype]
 pub struct ReserveConfiguration {
-    pub liq_bonus: u32,
-    pub liquidity_cap: i128,
-    // TODO: added (add validation?)
-    pub liquidation_penalty: i128,
-    // TODO: added (add validation?)
     pub decimals: u32,
     pub is_active: bool,
     pub is_frozen: bool,
     pub borrowing_enabled: bool,
+    pub liq_bonus: u32,
+    pub liq_cap: i128,
     /// Specifies what fraction of the underlying asset counts toward
     /// the portfolio collateral value [0%, 100%].
     pub discount: u32,
@@ -25,8 +22,7 @@ impl ReserveConfiguration {
     fn default() -> Self {
         Self {
             liq_bonus: Default::default(),
-            liquidity_cap: Default::default(),
-            liquidation_penalty: Default::default(),
+            liq_cap: Default::default(),
             decimals: Default::default(),
             is_active: true,
             is_frozen: false,
@@ -114,9 +110,8 @@ impl ReserveData {
     }
 
     pub fn update_collateral_config(&mut self, config: CollateralParamsInput) {
-        self.configuration.ltv = config.ltv;
-        self.configuration.liq_threshold = config.liq_threshold;
         self.configuration.liq_bonus = config.liq_bonus;
+        self.configuration.liq_cap = config.liq_cap;
         self.configuration.discount = config.discount;
     }
 
@@ -143,16 +138,15 @@ fn zero_bytes<const N: usize>(env: &Env) -> BytesN<N> {
     BytesN::from_array(env, &[0; N])
 }
 
-///Collateralization parameters
+/// Collateralization parameters
 #[contracttype]
 #[derive(Clone, Copy)]
 pub struct CollateralParamsInput {
-    ///The threshold at which loans using this asset as collateral will be considered undercollateralized
-    pub liq_threshold: u32,
-    ///The bonus liquidators receive to liquidate this asset. The values is always above 100%. A value of 105% means the liquidator will receive a 5% bonus
+    /// The bonus liquidators receive to liquidate this asset. The values is always above 100%. A value of 105% means the liquidator will receive a 5% bonus
     pub liq_bonus: u32,
-    ///The loan to value of the asset when used as collateral
-    pub ltv: u32,
-    /// A value between 0 and 100% specifies what fraction of the underlying asset counts toward the portfolio collateral value.
+    /// The total amount of an asset the protocol accepts into the market.
+    pub liq_cap: i128,
+    /// Specifies what fraction of the underlying asset counts toward
+    /// the portfolio collateral value [0%, 100%].
     pub discount: u32,
 }

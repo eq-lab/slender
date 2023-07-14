@@ -128,17 +128,15 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
                 },
             );
 
-            let ltv = 500; // 5%
-            let liq_threshold = 1000; // 10%,
             let liq_bonus = 11000; //110%
+            let liq_cap = 100_000_000 * DECIMALS; // 100M
             let discount = 6000; //60%
 
             pool.configure_as_collateral(
                 &token.address,
                 &CollateralParamsInput {
-                    ltv,
-                    liq_threshold,
                     liq_bonus,
+                    liq_cap,
                     discount,
                 },
             );
@@ -150,9 +148,9 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
 
             let reserve_config = reserve.unwrap().configuration;
             assert_eq!(reserve_config.borrowing_enabled, true);
-            assert_eq!(reserve_config.ltv, ltv);
             assert_eq!(reserve_config.liq_bonus, liq_bonus);
-            assert_eq!(reserve_config.liq_threshold, liq_threshold);
+            assert_eq!(reserve_config.liq_cap, liq_cap);
+            assert_eq!(reserve_config.discount, discount);
 
             pool.set_price_feed(
                 &price_feed.address,

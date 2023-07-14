@@ -31,9 +31,8 @@ pub(crate) fn collat_config_change(e: &Env, asset: Address, params: CollateralPa
     e.events().publish(
         topics,
         (
-            params.ltv,
-            params.liq_threshold,
             params.liq_bonus,
+            params.liq_cap,
             params.discount,
         ),
     );
