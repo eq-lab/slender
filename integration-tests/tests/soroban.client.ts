@@ -1,4 +1,5 @@
 import { Server, Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc } from "soroban-client";
+import { promisify } from "util";
 import "./soroban.config";
 
 export class SorobanClient {
@@ -48,6 +49,4 @@ export class SorobanClient {
     }
 }
 
-async function delay(ms: number): Promise<void> {
-    await new Promise(res => setTimeout(res, ms));
-}
+let delay = promisify((ms, res) => setTimeout(res, ms))
