@@ -7,14 +7,7 @@ pub struct Spec;
 #[contractspecfn(name = "Spec", export = false)]
 #[contractclient(name = "DebtTokenClient")]
 pub trait DebtTokenTrait {
-    fn initialize(
-        e: Env,
-        decimal: u32,
-        name: Bytes,
-        symbol: Bytes,
-        pool: Address,
-        underlying_asset: Address,
-    );
+    fn initialize(e: Env, name: Bytes, symbol: Bytes, pool: Address, underlying_asset: Address);
 
     fn balance(env: Env, id: Address) -> i128;
 

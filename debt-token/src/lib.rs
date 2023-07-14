@@ -10,7 +10,7 @@ use common_token::{
     verify_caller_is_pool,
 };
 use debt_token_interface::DebtTokenTrait;
-use soroban_sdk::{contractimpl, Address, Bytes, Env};
+use soroban_sdk::{contractimpl, token, Address, Bytes, Env};
 use soroban_token_sdk::TokenMetadata;
 
 pub struct DebtToken;
@@ -33,18 +33,7 @@ impl DebtTokenTrait for DebtToken {
     /// Panics if the contract has already been initialized.
     /// Panics if name or symbol is empty
     ///
-    fn initialize(
-        e: Env,
-        decimal: u32,
-        name: Bytes,
-        symbol: Bytes,
-        pool: Address,
-        underlying_asset: Address,
-    ) {
-        if decimal > u8::MAX.into() {
-            panic!("debt-token: decimal must fit in a u8");
-        }
-
+    fn initialize(e: Env, name: Bytes, symbol: Bytes, pool: Address, underlying_asset: Address) {
         if name.is_empty() {
             panic!("debt-token: no name");
         }
@@ -58,6 +47,9 @@ impl DebtTokenTrait for DebtToken {
         }
 
         write_pool(&e, &pool);
+
+        let token = token::Client::new(&e, &underlying_asset);
+        let decimal = token.decimals();
 
         write_metadata(
             &e,

@@ -21,7 +21,6 @@ impl STokenTrait for SToken {
     ///
     /// # Arguments
     ///
-    /// - decimal - The number of decimal places for the token.
     /// - name - The name of the token.
     /// - symbol - The symbol of the token.
     /// - pool - The address of the pool contract.
@@ -36,17 +35,12 @@ impl STokenTrait for SToken {
     ///
     fn initialize(
         e: Env,
-        decimal: u32,
         name: Bytes,
         symbol: Bytes,
         pool: Address,
         treasury: Address,
         underlying_asset: Address,
     ) {
-        if decimal > u8::MAX.into() {
-            panic!("s-token: decimal must fit in a u8");
-        }
-
         if name.is_empty() {
             panic!("s-token: no name");
         }
@@ -62,6 +56,9 @@ impl STokenTrait for SToken {
         write_pool(&e, &pool);
         write_underlying_asset(&e, &underlying_asset);
         write_treasury(&e, &treasury);
+
+        let token = token::Client::new(&e, &underlying_asset);
+        let decimal = token.decimals();
 
         write_metadata(
             &e,
