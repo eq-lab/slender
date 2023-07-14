@@ -1,6 +1,7 @@
 import { SorobanClient } from "../soroban.client";
 import { expect } from "chai";
 import { addressToScVal, arrayToScVal, parseScVal, i128ToScVal, objectToScVal } from "../soroban.converter";
+import { poolKeys, tokenKeys, userKeys } from "../soroban.config";
 
 describe("LendingPool", function () {
     before(async function () {
@@ -11,8 +12,7 @@ describe("LendingPool", function () {
         const debtTokenResult = await this.client.sendTransaction(
             process.env.TOKEN,
             "mint",
-            process.env.TOKEN_PUBLIC,
-            process.env.TOKEN_SECRET,
+            tokenKeys,
             addressToScVal(process.env.USER_PUBLIC),
             i128ToScVal(BigInt(10000000000n))
         );
@@ -22,8 +22,7 @@ describe("LendingPool", function () {
         const userBalanceResult = await this.client.sendTransaction(
             process.env.TOKEN,
             "balance",
-            process.env.TOKEN_PUBLIC,
-            process.env.TOKEN_SECRET,
+            tokenKeys,
             addressToScVal(process.env.USER_PUBLIC)
         );
 
@@ -37,8 +36,7 @@ describe("LendingPool", function () {
         const initResult = await this.client.sendTransaction(
             process.env.POOL,
             "init_reserve",
-            process.env.POOL_PUBLIC,
-            process.env.POOL_SECRET,
+            poolKeys,
             addressToScVal(process.env.TOKEN),
             objectToScVal({
                 "debt_token_address": addressToScVal(process.env.DEBT_TOKEN),
@@ -51,8 +49,7 @@ describe("LendingPool", function () {
         const reserveResult = await this.client.sendTransaction(
             process.env.POOL,
             "get_reserve",
-            process.env.POOL_PUBLIC,
-            process.env.POOL_SECRET,
+            poolKeys,
             addressToScVal(process.env.TOKEN)
         );
 
@@ -67,8 +64,7 @@ describe("LendingPool", function () {
         const setPriceFeedResult = await this.client.sendTransaction(
             process.env.POOL,
             "set_price_feed",
-            process.env.POOL_PUBLIC,
-            process.env.POOL_SECRET,
+            poolKeys,
             addressToScVal(process.env.PRICE_FEED),
             arrayToScVal([
                 addressToScVal("GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN")
@@ -80,8 +76,7 @@ describe("LendingPool", function () {
         const priceFeedResult = await this.client.sendTransaction(
             process.env.POOL,
             "get_price_feed",
-            process.env.POOL_PUBLIC,
-            process.env.POOL_SECRET,
+            poolKeys,
             addressToScVal("GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN")
         );
 
@@ -95,8 +90,7 @@ describe("LendingPool", function () {
         const depositResult = await this.client.sendTransaction(
             process.env.POOL,
             "deposit",
-            process.env.USER_PUBLIC,
-            process.env.USER_SECRET,
+            userKeys,
             addressToScVal(process.env.USER_PUBLIC),
             addressToScVal(process.env.TOKEN),
             i128ToScVal(BigInt(3000000000n))
@@ -107,8 +101,7 @@ describe("LendingPool", function () {
         const balanceResult = await this.client.sendTransaction(
             process.env.TOKEN,
             "balance",
-            process.env.USER_PUBLIC,
-            process.env.USER_SECRET,
+            userKeys,
             addressToScVal(process.env.USER_PUBLIC),
         );
 
@@ -121,8 +114,7 @@ describe("LendingPool", function () {
         const withdrawResult = await this.client.sendTransaction(
             process.env.POOL,
             "withdraw",
-            process.env.USER_PUBLIC,
-            process.env.USER_SECRET,
+            userKeys,
             addressToScVal(process.env.USER_PUBLIC),
             addressToScVal(process.env.TOKEN),
             i128ToScVal(BigInt(1500000000n)),
@@ -134,8 +126,7 @@ describe("LendingPool", function () {
         const balanceResult = await this.client.sendTransaction(
             process.env.STOKEN,
             "balance",
-            process.env.USER_PUBLIC,
-            process.env.USER_SECRET,
+            userKeys,
             addressToScVal(process.env.USER_PUBLIC),
         );
 

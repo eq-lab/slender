@@ -9,7 +9,7 @@ type ValueType<T> = T extends Map<any, infer V> ? V : never;
 export function scvalToBigInt(scval: xdr.ScVal | undefined): BigInt {
     switch (scval?.switch()) {
         case undefined: {
-            return BigInt(0);
+            return undefined;
         }
         case xdr.ScValType.scvU64(): {
             const { high, low } = scval.u64();
@@ -49,7 +49,7 @@ export function scValToJs<T>(val: xdr.ScVal): T {
         }
         case xdr.ScValType.scvVoid():
         case undefined: {
-            return 0 as unknown as T;
+            return undefined;
         }
         case xdr.ScValType.scvU32(): {
             return val.u32() as unknown as T;

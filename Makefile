@@ -9,7 +9,7 @@ test: build
 	cargo test -p debt-token
 
 integration-test: build
-	npm run --prefix integration-tests test-$(env)
+	yarn --cwd integration-tests test-$(env)
 
 build:
 	cargo build --target wasm32-unknown-unknown --release 

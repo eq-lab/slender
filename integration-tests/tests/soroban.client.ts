@@ -14,11 +14,10 @@ export class SorobanClient {
     async sendTransaction(
         contractId: string,
         method: string,
-        signer: string,
-        secret: string,
+        signer: Keypair,
         ...args: xdr.ScVal[]
     ): Promise<SorobanRpc.GetTransactionResponse> {
-        const source = await this.client.getAccount(signer);
+        const source = await this.client.getAccount(signer.publicKey());
         const contract = new Contract(contractId);
 
         const operation = new TransactionBuilder(source, {
@@ -32,7 +31,7 @@ export class SorobanClient {
             operation,
             process.env.PASSPHRASE);
 
-        transaction.sign(Keypair.fromSecret(secret));
+        transaction.sign(signer);
 
         const response = await this.client.sendTransaction(transaction);
 

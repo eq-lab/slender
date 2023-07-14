@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "test-develop": "npm i && cross-env NODE_ENV=develop ./deploy.sh && cross-env NODE_ENV=develop node_modules/mocha/bin/_mocha --bail --timeout 999999 --colors",
-    "test-futurenet": "npm i && cross-env NODE_ENV=futurenet ./deploy.sh && cross-env NODE_ENV=futurenet node_modules/mocha/bin/_mocha --bail --timeout 999999 --colors"
+    "test-develop": "yarn install && cross-env NODE_ENV=develop ./deploy.sh && cross-env NODE_ENV=develop node_modules/mocha/bin/_mocha --bail --timeout 999999 --colors",
+    "test-futurenet": "yarn install && cross-env NODE_ENV=futurenet ./deploy.sh && cross-env NODE_ENV=futurenet node_modules/mocha/bin/_mocha --bail --timeout 999999 --colors"
   },
   "author": "EQ LAB",
   "license": "ISC",
