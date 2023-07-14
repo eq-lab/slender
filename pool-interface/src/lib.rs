@@ -34,18 +34,21 @@ pub enum Error {
     CollateralIsZero = 14,
     CollateralNotCoverNewBorrow = 15,
     BadPosition = 16,
+    GoodPosition = 17,
+    NotEnoughCollateral = 18,
 
-    InvalidReserveParams = 17,
-    ReserveLiquidityNotZero = 18,
+    InvalidReserveParams = 19,
+    ReserveLiquidityNotZero = 20,
 
-    ReservesMaxCapacityExceeded = 19,
-    NoPriceForAsset = 20,
+    ReservesMaxCapacityExceeded = 21,
+    NoPriceForAsset = 22,
 
     MathOverflowError = 100,
     PriceMathOverflow = 101,
     ValidateBorrowMathError = 102,
     CalcAccountDataMathError = 103,
     CalcInterestRateMathError = 104,
+    LiquidateMathError = 105,
 }
 
 /// Interface for SToken
@@ -99,5 +102,10 @@ pub trait LendingPoolTrait {
 
     fn paused(env: Env) -> bool;
 
-    fn liquidate(env: Env, who: Address) -> Result<(), Error>;
+    fn liquidate(
+        env: Env,
+        liquidator: Address,
+        who: Address,
+        get_stoken: bool,
+    ) -> Result<(), Error>;
 }
