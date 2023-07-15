@@ -177,7 +177,7 @@ impl STokenTrait for SToken {
         let (reserve, _) = Self::get_reserve_and_underlying(&e);
         let balance = read_balance(&e, id);
         balance
-            .mul_rate_floor(reserve.liquidity_index)
+            .mul_rate_floor(reserve.collat_accrued_rate)
             .unwrap_or_else(|| panic!("s-token: overflow error"))
     }
 
@@ -385,7 +385,7 @@ impl STokenTrait for SToken {
         let total_supply = read_total_supply(&e);
 
         total_supply
-            .mul_rate_floor(reserve.liquidity_index)
+            .mul_rate_floor(reserve.collat_accrued_rate)
             .unwrap_or_else(|| panic!("s-token: overflow error"))
     }
 

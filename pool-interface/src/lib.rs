@@ -35,18 +35,20 @@ pub enum Error {
     CollateralNotCoverNewBorrow = 15,
     BadPosition = 16,
 
-    InvalidReserveParams = 17,
-    ReserveLiquidityNotZero = 18,
+    ReserveLiquidityNotZero = 17,
 
-    ReservesMaxCapacityExceeded = 19,
-    NoPriceForAsset = 20,
+    ReservesMaxCapacityExceeded = 18,
+    NoPriceForAsset = 19,
 
     MathOverflowError = 100,
     PriceMathOverflow = 101,
     ValidateBorrowMathError = 102,
     CalcAccountDataMathError = 103,
     CalcInterestRateMathError = 104,
-    NotInBasicPoints = 105,
+    MustBeLte10000Bps = 105,
+    MustBeLt10000Bps = 106,
+    MustBeGt10000Bps = 107,
+    MustBePositive = 108,
 }
 
 /// Interface for SToken
@@ -71,6 +73,12 @@ pub trait LendingPoolTrait {
 
     fn get_price_feed(env: Env, asset: Address) -> Option<Address>;
 
+    fn set_ir_configuration(
+        env: Env,
+        asset: Address,
+        configuration: InterestRateConfiguration,
+    ) -> Result<(), Error>;
+
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn finalize_transfer(
@@ -92,7 +100,12 @@ pub trait LendingPoolTrait {
     ) -> Result<(), Error>;
 
     #[cfg(any(test, feature = "testutils"))]
-    fn set_liq_index(env: Env, asset: Address, value: i128) -> Result<(), Error>;
+    fn set_accrued_rates(
+        env: Env,
+        asset: Address,
+        collat_accrued_rate: Option<i128>,
+        debt_accrued_rate: Option<i128>,
+    ) -> Result<(), Error>;
 
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 

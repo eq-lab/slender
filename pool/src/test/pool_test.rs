@@ -1,4 +1,5 @@
 use crate::*;
+use common::FixedI128;
 use debt_token_interface::DebtTokenClient;
 use price_feed_interface::PriceFeedClient;
 use s_token_interface::STokenClient;
@@ -125,11 +126,17 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
                 &InitReserveInput {
                     s_token_address: s_token.address.clone(),
                     debt_token_address: debt_token.address.clone(),
+                    ir_configuration: InterestRateConfiguration {
+                        alpha: 143,
+                        rate: 200,
+                        max_rate: 50_000,
+                        scaling_coeff: 9_000,
+                    },
                 },
             );
 
             let liq_bonus = 11000; //110%
-            let liq_cap = 100_000_000 * DECIMALS; // 100M
+            let liq_cap = 100_000_000 * FixedI128::DENOMINATOR; // 100M
             let discount = 6000; //60%
 
             pool.configure_as_collateral(
@@ -198,6 +205,12 @@ fn init_reserve() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
+        ir_configuration: InterestRateConfiguration {
+            alpha: 143,
+            rate: 200,
+            max_rate: 50_000,
+            scaling_coeff: 9_000,
+        },
     };
 
     assert_eq!(
@@ -228,6 +241,12 @@ fn init_reserve_second_time() {
     let init_reserve_input = InitReserveInput {
         s_token_address: sut.s_token().address.clone(),
         debt_token_address: sut.debt_token().address.clone(),
+        ir_configuration: InterestRateConfiguration {
+            alpha: 143,
+            rate: 200,
+            max_rate: 50_000,
+            scaling_coeff: 9_000,
+        },
     };
 
     assert_eq!(
@@ -259,6 +278,12 @@ fn init_reserve_when_pool_not_initialized() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
+        ir_configuration: InterestRateConfiguration {
+            alpha: 143,
+            rate: 200,
+            max_rate: 50_000,
+            scaling_coeff: 9_000,
+        },
     };
 
     assert_eq!(
@@ -389,8 +414,9 @@ fn withdraw_interest_rate_less_than_one() {
     token.mint(&user1, &1_000_000_000);
     assert_eq!(token.balance(&user1), initial_balance);
 
-    let liquidity_index = 500_000_000; //0.5
-    sut.pool.set_liq_index(&token.address, &liquidity_index);
+    let collat_accrued_rate: Option<i128> = Some(500_000_000); //0.5
+    sut.pool
+        .set_accrued_rates(&token.address, &collat_accrued_rate, &None);
 
     let deposit_amount = 1000;
     sut.pool.deposit(&user1, &token.address, &deposit_amount);
@@ -421,8 +447,9 @@ fn withdraw_interest_rate_greater_than_one() {
     token.mint(&user1, &1_000_000_000);
     assert_eq!(token.balance(&user1), initial_balance);
 
-    let liquidity_index = 1_200_000_000; //1.2
-    sut.pool.set_liq_index(&token.address, &liquidity_index);
+    let collat_accrued_rate: Option<i128> = Some(1_200_000_000); //0.5
+    sut.pool
+        .set_accrued_rates(&token.address, &collat_accrued_rate, &None);
 
     let deposit_amount = 1000;
     sut.pool.deposit(&user1, &token.address, &deposit_amount);
@@ -526,13 +553,17 @@ fn deposit() {
         assert_eq!(token.balance(&user), initial_balance);
 
         let deposit_amount = 1_000_0;
-        let liq_index = RATE_DENOMINATOR + i * 100_000_000;
-        assert_eq!(sut.pool.set_liq_index(&token.address, &liq_index), ());
+        let collat_accrued_rate = Some(RATE_DENOMINATOR + i * 100_000_000);
+        assert_eq!(
+            sut.pool
+                .set_accrued_rates(&token.address, &collat_accrued_rate, &None),
+            ()
+        );
         sut.pool.deposit(&user, &token.address, &deposit_amount);
 
         assert_eq!(
             s_token.balance(&user),
-            deposit_amount * RATE_DENOMINATOR / liq_index
+            deposit_amount * RATE_DENOMINATOR / collat_accrued_rate.unwrap()
         );
         assert_eq!(token.balance(&user), initial_balance - deposit_amount);
 
@@ -565,7 +596,7 @@ fn deposit_zero_amount() {
     let deposit_amount = 0;
     assert_eq!(
         sut.pool
-            .try_deposit(&user1, &sut.reserves[0].token.address, &deposit_amount,)
+            .try_deposit(&user1, &sut.reserves[0].token.address, &deposit_amount)
             .unwrap_err()
             .unwrap(),
         Error::InvalidAmount
@@ -657,7 +688,7 @@ fn borrow_user_confgig_not_exists() {
     let borrow_amount = 0;
     assert_eq!(
         sut.pool
-            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount,)
+            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount)
             .unwrap_err()
             .unwrap(),
         Error::UserConfigNotExists
@@ -692,7 +723,7 @@ fn borrow_collateral_is_zero() {
     let borrow_amount = 100;
     assert_eq!(
         sut.pool
-            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount,)
+            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount)
             .unwrap_err()
             .unwrap(),
         Error::CollateralIsZero
@@ -735,7 +766,7 @@ fn borrow_collateral_not_cover_new_debt() {
     let borrow_amount = 1000;
     assert_eq!(
         sut.pool
-            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount,)
+            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount)
             .unwrap_err()
             .unwrap(),
         Error::CollateralNotCoverNewBorrow
