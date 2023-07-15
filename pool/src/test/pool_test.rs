@@ -228,7 +228,30 @@ fn init_reserve() {
         ()
     );
 
+    let reserve = pool.get_reserve(&underlying_token.address).unwrap();
+
     assert!(pool.get_reserve(&underlying_token.address).is_some());
+    assert_eq!(init_reserve_input.s_token_address, reserve.s_token_address);
+    assert_eq!(
+        init_reserve_input.debt_token_address,
+        reserve.debt_token_address
+    );
+    assert_eq!(
+        init_reserve_input.ir_configuration.alpha,
+        reserve.ir_configuration.alpha
+    );
+    assert_eq!(
+        init_reserve_input.ir_configuration.rate,
+        reserve.ir_configuration.rate
+    );
+    assert_eq!(
+        init_reserve_input.ir_configuration.max_rate,
+        reserve.ir_configuration.max_rate
+    );
+    assert_eq!(
+        init_reserve_input.ir_configuration.scaling_coeff,
+        reserve.ir_configuration.scaling_coeff
+    );
 }
 
 #[test]
@@ -301,6 +324,37 @@ fn init_reserve_when_pool_not_initialized() {
         .unwrap_err()
         .unwrap(),
         Error::Uninitialized
+    );
+}
+
+#[test]
+fn set_ir_configuration() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+
+    let ir_configuration_input = InterestRateConfiguration {
+        alpha: 144,
+        rate: 201,
+        max_rate: 50_001,
+        scaling_coeff: 9_001,
+    };
+
+    sut.pool
+        .set_ir_configuration(&sut.token().address, &ir_configuration_input);
+
+    let reserve = sut.pool.get_reserve(&sut.token().address).unwrap();
+
+    assert_eq!(ir_configuration_input.alpha, reserve.ir_configuration.alpha);
+    assert_eq!(ir_configuration_input.rate, reserve.ir_configuration.rate);
+    assert_eq!(
+        ir_configuration_input.max_rate,
+        reserve.ir_configuration.max_rate
+    );
+    assert_eq!(
+        ir_configuration_input.scaling_coeff,
+        reserve.ir_configuration.scaling_coeff
     );
 }
 
