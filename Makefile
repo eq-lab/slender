@@ -3,6 +3,7 @@ default: build
 all: test
 
 test: build
+	cargo test -p common
 	cargo test -p deployer
 	cargo test -p s-token --features testutils
 	cargo test -p pool --features testutils
