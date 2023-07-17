@@ -22,7 +22,15 @@ mod oracle {
 fn create_token<'a>(e: &Env) -> (STokenClient<'a>, pool::Client<'a>, TokenClient) {
     let pool = pool::Client::new(e, &e.register_contract_wasm(None, pool::WASM));
     let pool_admin = Address::random(e);
-    pool.initialize(&pool_admin);
+    pool.initialize(
+        &pool_admin,
+        &IRParams {
+            alpha: 143,
+            initial_rate: 200,
+            max_rate: 50_000,
+            scaling_coeff: 9_000,
+        },
+    );
 
     let token = STokenClient::new(e, &e.register_contract(None, SToken {}));
 
@@ -55,12 +63,6 @@ fn test() {
     let init_reserve_input = InitReserveInput {
         s_token_address: token.address.clone(),
         debt_token_address: debt_token_address,
-        ir_params: IRParams {
-            alpha: 143,
-            initial_rate: 200,
-            max_rate: 50_000,
-            scaling_coeff: 9_000,
-        },
     };
     pool.init_reserve(&underlying.address, &init_reserve_input);
 
