@@ -303,6 +303,7 @@ impl LendingPoolTrait for LendingPool {
     }
 
     /// Validates and finalize a sToken transfer.
+    /// Only callable by the aToken.
     ///
     /// # Arguments
     ///

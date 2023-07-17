@@ -3,20 +3,23 @@ extern crate std;
 
 use crate::DebtToken;
 use debt_token_interface::DebtTokenClient;
-use soroban_sdk::{testutils::Address as _, Address, Bytes, Env, IntoVal, Symbol};
+use soroban_sdk::{
+    testutils::Address as _, token::Client as TokenClient, Address, Bytes, Env, IntoVal, Symbol,
+};
 
 fn create_token<'a>(e: &Env) -> (DebtTokenClient<'a>, Address) {
     let pool = Address::random(e);
 
     let token = DebtTokenClient::new(e, &e.register_contract(None, DebtToken {}));
 
-    let underlying_asset = Address::random(&e);
+    let underlying_asset =
+        TokenClient::new(&e, &e.register_stellar_asset_contract(Address::random(&e)));
 
     token.initialize(
         &"name".into_val(e),
         &"symbol".into_val(e),
         &pool,
-        &underlying_asset,
+        &underlying_asset.address,
     );
 
     (token, pool)
@@ -30,13 +33,14 @@ fn initialize() {
 
     let token = DebtTokenClient::new(&e, &e.register_contract(None, DebtToken {}));
 
-    let underlying_asset = Address::random(&e);
+    let underlying_asset =
+        TokenClient::new(&e, &e.register_stellar_asset_contract(Address::random(&e)));
 
     token.initialize(
         &"name".into_val(&e),
         &"symbol".into_val(&e),
         &pool,
-        &underlying_asset,
+        &underlying_asset.address,
     );
 
     assert_eq!(token.decimals(), 7);
