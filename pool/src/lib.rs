@@ -60,7 +60,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// - Panics with `Uninitialized` if the admin key is not exist in storage.
     /// - Panics with `ReserveAlreadyInitialized` if the specified asset key already exists in storage.
-    /// - Panics with `MustBeLte10000Bps` if alpha, rate or max_rate are invalid.
+    /// - Panics with `MustBeLte10000Bps` if alpha, initial_rate or max_rate are invalid.
     /// - Panics with `MustBeLt10000Bps` if scaling_coeff is invalid.
     /// - Panics if the caller is not the admin.
     ///
@@ -100,14 +100,14 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// - Panics with `Uninitialized` if the admin key is not exist in storage.
     /// - Panics with `ReserveAlreadyInitialized` if the specified asset key already exists in storage.
-    /// - Panics with `MustBeLte10000Bps` if alpha, rate or max_rate are invalid.
+    /// - Panics with `MustBeLte10000Bps` if alpha, initial_rate or max_rate are invalid.
     /// - Panics with `MustBeLt10000Bps` if scaling_coeff is invalid.
     /// - Panics if the caller is not the admin.
     ///
     fn set_ir_configuration(
         env: Env,
         asset: Address,
-        configuration: InterestRateConfiguration,
+        configuration: IRConfiguration,
     ) -> Result<(), Error> {
         Self::require_admin(&env)?;
         Self::require_valid_ir_configuration(&env, &configuration);
@@ -456,9 +456,9 @@ impl LendingPool {
         Ok(())
     }
 
-    fn require_valid_ir_configuration(env: &Env, configuration: &InterestRateConfiguration) {
+    fn require_valid_ir_configuration(env: &Env, configuration: &IRConfiguration) {
         Self::require_lte_10000_bps(&env, configuration.alpha);
-        Self::require_lte_10000_bps(&env, configuration.rate);
+        Self::require_lte_10000_bps(&env, configuration.initial_rate);
         Self::require_gt_10000_bps(&env, configuration.max_rate);
         Self::require_lt_10000_bps(&env, configuration.scaling_coeff);
     }

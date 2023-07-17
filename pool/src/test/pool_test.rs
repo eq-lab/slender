@@ -126,9 +126,9 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
                 &InitReserveInput {
                     s_token_address: s_token.address.clone(),
                     debt_token_address: debt_token.address.clone(),
-                    ir_configuration: InterestRateConfiguration {
+                    ir_configuration: IRConfiguration {
                         alpha: 143,
-                        rate: 200,
+                        initial_rate: 200,
                         max_rate: 50_000,
                         scaling_coeff: 9_000,
                     },
@@ -205,9 +205,9 @@ fn init_reserve() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
-        ir_configuration: InterestRateConfiguration {
+        ir_configuration: IRConfiguration {
             alpha: 143,
-            rate: 200,
+            initial_rate: 200,
             max_rate: 50_000,
             scaling_coeff: 9_000,
         },
@@ -241,8 +241,8 @@ fn init_reserve() {
         reserve.ir_configuration.alpha
     );
     assert_eq!(
-        init_reserve_input.ir_configuration.rate,
-        reserve.ir_configuration.rate
+        init_reserve_input.ir_configuration.initial_rate,
+        reserve.ir_configuration.initial_rate
     );
     assert_eq!(
         init_reserve_input.ir_configuration.max_rate,
@@ -264,9 +264,9 @@ fn init_reserve_second_time() {
     let init_reserve_input = InitReserveInput {
         s_token_address: sut.s_token().address.clone(),
         debt_token_address: sut.debt_token().address.clone(),
-        ir_configuration: InterestRateConfiguration {
+        ir_configuration: IRConfiguration {
             alpha: 143,
-            rate: 200,
+            initial_rate: 200,
             max_rate: 50_000,
             scaling_coeff: 9_000,
         },
@@ -301,9 +301,9 @@ fn init_reserve_when_pool_not_initialized() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
-        ir_configuration: InterestRateConfiguration {
+        ir_configuration: IRConfiguration {
             alpha: 143,
-            rate: 200,
+            initial_rate: 200,
             max_rate: 50_000,
             scaling_coeff: 9_000,
         },
@@ -334,9 +334,9 @@ fn set_ir_configuration() {
 
     let sut = init_pool(&env);
 
-    let ir_configuration_input = InterestRateConfiguration {
+    let ir_configuration_input = IRConfiguration {
         alpha: 144,
-        rate: 201,
+        initial_rate: 201,
         max_rate: 50_001,
         scaling_coeff: 9_001,
     };
@@ -347,7 +347,10 @@ fn set_ir_configuration() {
     let reserve = sut.pool.get_reserve(&sut.token().address).unwrap();
 
     assert_eq!(ir_configuration_input.alpha, reserve.ir_configuration.alpha);
-    assert_eq!(ir_configuration_input.rate, reserve.ir_configuration.rate);
+    assert_eq!(
+        ir_configuration_input.initial_rate,
+        reserve.ir_configuration.initial_rate
+    );
     assert_eq!(
         ir_configuration_input.max_rate,
         reserve.ir_configuration.max_rate

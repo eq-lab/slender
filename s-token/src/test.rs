@@ -7,7 +7,7 @@ use soroban_sdk::{
     testutils::Address as _, token::Client as TokenClient, vec, Address, Env, IntoVal, Symbol,
 };
 
-use self::pool::{InitReserveInput, InterestRateConfiguration};
+use self::pool::{IRConfiguration, InitReserveInput};
 
 mod pool {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/pool.wasm");
@@ -55,9 +55,9 @@ fn test() {
     let init_reserve_input = InitReserveInput {
         s_token_address: token.address.clone(),
         debt_token_address: debt_token_address,
-        ir_configuration: InterestRateConfiguration {
+        ir_configuration: IRConfiguration {
             alpha: 143,
-            rate: 200,
+            initial_rate: 200,
             max_rate: 50_000,
             scaling_coeff: 9_000,
         },

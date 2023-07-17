@@ -76,7 +76,7 @@ pub trait LendingPoolTrait {
     fn set_ir_configuration(
         env: Env,
         asset: Address,
-        configuration: InterestRateConfiguration,
+        configuration: IRConfiguration,
     ) -> Result<(), Error>;
 
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;

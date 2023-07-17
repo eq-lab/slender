@@ -30,9 +30,9 @@ impl ReserveConfiguration {
 
 #[contracttype]
 #[derive(Clone)]
-pub struct InterestRateConfiguration {
+pub struct IRConfiguration {
     pub alpha: u32,
-    pub rate: u32,
+    pub initial_rate: u32,
     pub max_rate: u32,
     pub scaling_coeff: u32,
 }
@@ -57,7 +57,7 @@ impl ReserveConfiguration {
 #[contracttype]
 pub struct ReserveData {
     pub configuration: ReserveConfiguration,
-    pub ir_configuration: InterestRateConfiguration,
+    pub ir_configuration: IRConfiguration,
     pub collat_accrued_rate: i128,
     pub debt_accrued_rate: i128,
     pub last_update_timestamp: u64,
@@ -100,9 +100,9 @@ impl ReserveData {
         self.configuration.discount = config.discount;
     }
 
-    pub fn update_ir_config(&mut self, config: InterestRateConfiguration) {
+    pub fn update_ir_config(&mut self, config: IRConfiguration) {
         self.ir_configuration.alpha = config.alpha;
-        self.ir_configuration.rate = config.rate;
+        self.ir_configuration.initial_rate = config.initial_rate;
         self.ir_configuration.max_rate = config.max_rate;
         self.ir_configuration.scaling_coeff = config.scaling_coeff;
     }
@@ -117,7 +117,7 @@ impl ReserveData {
 pub struct InitReserveInput {
     pub s_token_address: Address,
     pub debt_token_address: Address,
-    pub ir_configuration: InterestRateConfiguration,
+    pub ir_configuration: IRConfiguration,
 }
 
 fn zero_bytes<const N: usize>(env: &Env) -> BytesN<N> {
