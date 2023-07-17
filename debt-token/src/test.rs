@@ -13,7 +13,6 @@ fn create_token<'a>(e: &Env) -> (DebtTokenClient<'a>, Address) {
     let underlying_asset = Address::random(&e);
 
     token.initialize(
-        &7,
         &"name".into_val(e),
         &"symbol".into_val(e),
         &pool,
@@ -34,7 +33,6 @@ fn initialize() {
     let underlying_asset = Address::random(&e);
 
     token.initialize(
-        &7,
         &"name".into_val(&e),
         &"symbol".into_val(&e),
         &pool,
@@ -128,25 +126,6 @@ fn initialize_already_initialized() {
     let underlying_asset = Address::random(&e);
 
     token.initialize(
-        &10,
-        &"name".into_val(&e),
-        &"symbol".into_val(&e),
-        &pool,
-        &underlying_asset,
-    );
-}
-
-#[test]
-#[should_panic(expected = "decimal must fit in a u8")]
-fn decimal_is_over_max() {
-    let e = Env::default();
-    let token = DebtTokenClient::new(&e, &e.register_contract(None, DebtToken {}));
-
-    let pool = Address::random(&e);
-    let underlying_asset = Address::random(&e);
-
-    token.initialize(
-        &(u32::from(u8::MAX) + 1),
         &"name".into_val(&e),
         &"symbol".into_val(&e),
         &pool,

@@ -40,7 +40,6 @@ fn create_s_token_contract<'a>(
     let client = STokenClient::new(&e, &e.register_contract_wasm(None, s_token::WASM));
 
     client.initialize(
-        &7,
         &"SToken".into_val(e),
         &"STOKEN".into_val(e),
         &pool,
@@ -60,7 +59,6 @@ fn create_debt_token_contract<'a>(
         DebtTokenClient::new(&e, &e.register_contract_wasm(None, debt_token::WASM));
 
     client.initialize(
-        &7,
         &"DebtToken".into_val(e),
         &"DTOKEN".into_val(e),
         &pool,
