@@ -3,7 +3,7 @@ use pool_interface::IRParams;
 
 use crate::rate::*;
 
-fn get_default_ir_params() -> IRParams {
+pub fn get_default_ir_params() -> IRParams {
     IRParams {
         alpha: 143,          //1.43
         initial_rate: 200,   //2%
@@ -90,5 +90,18 @@ fn calc_ir() {
     assert_eq!(
         ir,
         FixedI128::from_rational(5000000000u64, 1_000_000_000).unwrap()
+    );
+}
+
+#[test]
+fn test_calc_accrued_rate() {
+    let prev_ar = FixedI128::ONE;
+    let ir = FixedI128::from_percentage(2000).unwrap(); // 20%
+    let one_day: u64 = 24 * 60 * 60;
+
+    //ar = 1 * (1 + 20/100 * 24 * 60 * 60/31_557_600) = 1,0005475702
+    assert_eq!(
+        calc_accrued_rate_coeff(prev_ar, ir, one_day),
+        Some(FixedI128::from_inner(1000547570))
     );
 }

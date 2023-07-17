@@ -1,9 +1,10 @@
+use crate::rate::{calc_accrued_rate_coeff, calc_interest_rate};
 use crate::*;
 use common::FixedI128;
 use debt_token_interface::DebtTokenClient;
 use price_feed_interface::PriceFeedClient;
 use s_token_interface::STokenClient;
-use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
+use soroban_sdk::testutils::{Address as _, Events, Ledger, MockAuth, MockAuthInvoke};
 use soroban_sdk::{token::Client as TokenClient, vec, IntoVal, Symbol};
 
 extern crate std;
@@ -902,4 +903,89 @@ fn set_price_feed() {
 
     assert_eq!(pool.get_price_feed(&asset_1).unwrap(), price_feed.address);
     assert_eq!(pool.get_price_feed(&asset_2).unwrap(), price_feed.address);
+}
+
+#[test]
+fn update_accrued_rates_zero_time_elapsed() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let asset = sut.reserves[0].token.address.clone();
+
+    let reserve_data = sut.pool.get_reserve(&asset).unwrap();
+
+    let updated = update_accrued_rates(&env, asset.clone(), reserve_data.clone()).unwrap();
+
+    assert_eq!(
+        updated.collat_accrued_rate,
+        reserve_data.collat_accrued_rate
+    );
+    assert_eq!(updated.debt_accrued_rate, reserve_data.debt_accrued_rate);
+    assert_eq!(
+        reserve_data.last_update_timestamp,
+        updated.last_update_timestamp
+    );
+}
+
+#[test]
+fn update_accrued_rates_test() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let asset = sut.reserves[0].token.address.clone();
+
+    let lender = Address::random(&env);
+    let borrower = Address::random(&env);
+    let borrow_amount = 40_000_000;
+
+    //init pool with one borrower and one lender
+    let initial_amount: i128 = 1_000_000_000;
+    for r in sut.reserves.iter() {
+        r.token.mint(&lender, &initial_amount);
+        r.token.mint(&borrower, &initial_amount);
+    }
+
+    //lender deposit all tokens
+    let deposit_amount = 100_000_000;
+    for r in sut.reserves.iter() {
+        sut.pool.deposit(&lender, &r.token.address, &deposit_amount);
+    }
+
+    sut.pool
+        .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
+
+    env.budget().reset_default();
+
+    sut.pool.borrow(&borrower, &asset, &borrow_amount);
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 24 * 60 * 60 // one day
+    });
+
+    //second deposit by borrower
+    let second_deposit = 10_000;
+    sut.pool
+        .deposit(&borrower, &sut.reserves[0].token.address, &second_deposit);
+
+    let updated = sut.pool.get_reserve(&asset).unwrap();
+
+    let debt_ir =
+        calc_interest_rate(deposit_amount * 2, borrow_amount, &updated.ir_params).unwrap();
+    let lend_ir = debt_ir
+        .checked_mul(FixedI128::from_percentage(updated.ir_params.scaling_coeff).unwrap())
+        .unwrap();
+
+    let elapsed_time = env.ledger().timestamp();
+
+    let coll_ar = calc_accrued_rate_coeff(FixedI128::ONE, lend_ir, elapsed_time)
+        .unwrap()
+        .into_inner();
+    let debt_ar = calc_accrued_rate_coeff(FixedI128::ONE, debt_ir, elapsed_time)
+        .unwrap()
+        .into_inner();
+
+    assert_eq!(updated.collat_accrued_rate, coll_ar);
+    assert_eq!(updated.debt_accrued_rate, debt_ar);
 }

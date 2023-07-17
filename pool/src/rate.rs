@@ -15,7 +15,6 @@ use crate::storage::write_reserve;
 ///
 /// For (1-U)^alpha calculation use binomial approximation with four terms
 /// (1-U)^a = 1 - alpha * U + alpha/2 * (alpha - 1) * U^2 - alpha/6 * (alpha-1) * (alpha-2) * U^3 + alpha/24 * (alpha-1) *(alpha-2) * (alpha-3) * U^4
-#[allow(dead_code)]
 pub fn calc_interest_rate(
     total_collateral: i128,
     total_debt: i128,
