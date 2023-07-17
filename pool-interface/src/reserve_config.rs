@@ -38,15 +38,6 @@ pub struct IRParams {
     pub scaling_coeff: u32,
 }
 
-impl IRParams {
-    pub fn update(&mut self, params: IRParams) {
-        self.alpha = params.alpha;
-        self.initial_rate = params.initial_rate;
-        self.max_rate = params.max_rate;
-        self.scaling_coeff = params.scaling_coeff;
-    }
-}
-
 #[allow(dead_code)]
 pub struct ReserveConfigurationFlags {
     pub is_active: bool,

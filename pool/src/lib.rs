@@ -115,10 +115,7 @@ impl LendingPoolTrait for LendingPool {
         Self::require_admin(&env)?;
         Self::require_valid_ir_params(&env, &input);
 
-        let mut ir_params = read_ir_params(&env)?;
-        ir_params.update(input);
-
-        write_ir_params(&env, &ir_params);
+        write_ir_params(&env, &input);
 
         Ok(())
     }
