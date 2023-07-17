@@ -528,13 +528,13 @@ fn deposit() {
         assert_eq!(token.balance(&user), initial_balance);
 
         let deposit_amount = 1_000_0;
-        let liq_index = FixedI128::DENOMINATOR + i * 100_000_000;
+        let liq_index = FixedI128::ONE.into_inner() + i * 100_000_000;
         assert_eq!(sut.pool.set_liq_index(&token.address, &liq_index), ());
         sut.pool.deposit(&user, &token.address, &deposit_amount);
 
         assert_eq!(
             s_token.balance(&user),
-            deposit_amount * FixedI128::DENOMINATOR / liq_index
+            deposit_amount * FixedI128::ONE.into_inner() / liq_index
         );
         assert_eq!(token.balance(&user), initial_balance - deposit_amount);
 
