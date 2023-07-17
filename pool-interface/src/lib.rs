@@ -38,7 +38,8 @@ pub enum Error {
     ValidateBorrowMathError = 305,
     CalcAccountDataMathError = 306,
     AssetPriceMathError = 307,
-    LiquidateMathError = 308,
+    NotEnoughCollateral = 308,
+    LiquidateMathError = 309,
 
     MathOverflowError = 400,
     MustBeLtePercentageFactor = 401,

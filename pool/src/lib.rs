@@ -333,13 +333,14 @@ impl LendingPoolTrait for LendingPool {
             if balance_from_before.checked_sub(amount) == Some(0) {
                 let mut user_config = read_user_config(&env, from.clone())?;
                 user_config.set_using_as_collateral(&env, reserve_id, false);
-
+                write_user_config(&env, from, &user_config);
                 event::reserve_used_as_collateral_disabled(&env, from, asset.clone());
             }
 
             if balance_to_before == 0 && amount != 0 {
                 let mut user_config = read_user_config(&env, to.clone())?;
                 user_config.set_using_as_collateral(&env, reserve_id, true);
+                write_user_config(&env, to, &user_config);
                 event::reserve_used_as_collateral_enabled(&env, to, asset);
             }
         }
