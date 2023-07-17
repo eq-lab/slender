@@ -75,11 +75,11 @@ pub trait LendingPoolTrait {
 
     fn finalize_transfer(
         env: Env,
-        _asset: Address,
-        _from: Address,
+        asset: Address,
+        from: Address,
         _to: Address,
-        _amount: i128,
-        balance_from_before: (i128, Address),
+        amount: i128,
+        balance_from_before: i128,
         _balance_to_before: i128,
     ) -> Result<(), Error>;
 

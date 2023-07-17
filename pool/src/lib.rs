@@ -47,9 +47,6 @@ impl LendingPoolTrait for LendingPool {
         if has_admin(&env) {
             panic_with_error!(&env, Error::AlreadyInitialized);
         }
-        if has_ir_params(&env) {
-            panic_with_error!(&env, Error::AlreadyInitialized);
-        }
         Self::require_valid_ir_params(&env, &ir_params);
 
         write_admin(&env, admin);
@@ -69,7 +66,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// - Panics with `Uninitialized` if the admin key is not exist in storage.
     /// - Panics with `ReserveAlreadyInitialized` if the specified asset key already exists in storage.
-    /// - Panics with `MustBeLtePercentageFactor` if alpha, initial_rate or max_rate are invalid.
+    /// - Panics with `MustBeLtePercentageFactor` if initial_rate or max_rate are invalid.
     /// - Panics with `MustBeLtPercentageFactor` if scaling_coeff is invalid.
     /// - Panics if the caller is not the admin.
     ///
@@ -304,17 +301,20 @@ impl LendingPoolTrait for LendingPool {
         from: Address,
         _to: Address,
         amount: i128,
-        balance_from_before: (i128, Address),
+        balance_from_before: i128,
         _balance_to_before: i128,
     ) -> Result<(), Error> {
-        read_reserve(&env, asset)?.s_token_address.require_auth();
+        let reserve = read_reserve(&env, asset)?;
+        reserve.s_token_address.require_auth();
         Self::require_not_paused(&env)?;
         // TODO
         Self::require_good_position(
             &env,
             from,
-            Some(balance_from_before.1),
-            Some(amount - balance_from_before.0),
+            Some((
+                reserve.s_token_address,
+                balance_from_before.checked_sub(amount).unwrap(),
+            )),
             None,
             true,
         )?;
@@ -476,7 +476,6 @@ impl LendingPool {
     }
 
     fn require_valid_ir_params(env: &Env, params: &IRParams) {
-        Self::require_lte_percentage_factor(&env, params.alpha);
         Self::require_lte_percentage_factor(&env, params.initial_rate);
         Self::require_gt_percentage_factor(&env, params.max_rate);
         Self::require_lt_percentage_factor(&env, params.scaling_coeff);
@@ -565,7 +564,7 @@ impl LendingPool {
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, amount <= balance, Error::NotEnoughAvailableUserBalance);
 
-        match Self::is_good_position(env, who, None, None, None, true) {
+        match Self::is_good_position(env, who, None, None, true) {
             Ok(good_position) => assert_with_error!(env, good_position, Error::BadPosition),
             Err(e) => assert_with_error!(env, true, e),
         }
@@ -597,8 +596,7 @@ impl LendingPool {
         assert_with_error!(env, flags.borrowing_enabled, Error::BorrowingNotEnabled);
 
         let reserves = &read_reserves(env);
-        let account_data =
-            Self::calc_account_data(env, who.clone(), None, None, user_config, reserves)?;
+        let account_data = Self::calc_account_data(env, who.clone(), None, user_config, reserves)?;
 
         assert_with_error!(
             env,
@@ -607,7 +605,7 @@ impl LendingPool {
         );
 
         //TODO: complete validation after rate implementation
-        Self::require_good_position(env, who, None, None, None, true)?;
+        Self::require_good_position(env, who, None, None, true)?;
 
         Ok(())
     }
@@ -615,8 +613,7 @@ impl LendingPool {
     fn calc_account_data(
         env: &Env,
         who: Address,
-        mb_who_stoken_address: Option<Address>,
-        mb_who_balance: Option<i128>,
+        mb_who_balance: Option<(Address, i128)>,
         user_config: &UserConfiguration,
         reserves: &Vec<Address>,
     ) -> Result<AccountData, Error> {
@@ -648,12 +645,12 @@ impl LendingPool {
             if user_config.is_using_as_collateral(env, i) {
                 let coll_coeff = Self::get_collateral_coeff(env, &curr_reserve)?;
 
-                let who_balance: i128 =
-                    if mb_who_stoken_address == Some(curr_reserve.s_token_address.clone()) {
-                        mb_who_balance.unwrap()
-                    } else {
-                        STokenClient::new(env, &curr_reserve.s_token_address).balance(&who)
-                    };
+                let who_balance: i128 = match mb_who_balance.clone() {
+                    Some((address, balance)) if address == curr_reserve.s_token_address.clone() => {
+                        balance
+                    }
+                    _ => STokenClient::new(env, &curr_reserve.s_token_address).balance(&who),
+                };
 
                 let discount = FixedI128::from_percentage(curr_reserve.configuration.discount)
                     .ok_or(Error::CalcAccountDataMathError)?;
@@ -735,8 +732,7 @@ impl LendingPool {
     fn is_good_position(
         env: &Env,
         who: Address,
-        mb_who_stoken_address: Option<Address>,
-        mb_who_balance: Option<i128>,
+        mb_who_balance: Option<(Address, i128)>,
         mb_account_data: Option<AccountData>,
         is_good: bool,
     ) -> Result<bool, Error> {
@@ -745,14 +741,7 @@ impl LendingPool {
         } else {
             let user_config = read_user_config(env, who.clone())?;
             let reserves = read_reserves(env);
-            Self::calc_account_data(
-                env,
-                who,
-                mb_who_stoken_address,
-                mb_who_balance,
-                &user_config,
-                &reserves,
-            )?
+            Self::calc_account_data(env, who, mb_who_balance, &user_config, &reserves)?
         };
 
         Ok(is_good)
@@ -761,19 +750,12 @@ impl LendingPool {
     fn require_good_position(
         env: &Env,
         who: Address,
-        mb_who_stoken_address: Option<Address>,
-        mb_who_balance: Option<i128>,
+        mb_who_balance: Option<(Address, i128)>,
         mb_account_data: Option<AccountData>,
         is_good: bool,
     ) -> Result<(), Error> {
-        let is_good_position = Self::is_good_position(
-            env,
-            who,
-            mb_who_stoken_address,
-            mb_who_balance,
-            mb_account_data,
-            is_good,
-        )?;
+        let is_good_position =
+            Self::is_good_position(env, who, mb_who_balance, mb_account_data, is_good)?;
         if !is_good_position {
             return Err(Error::BadPosition);
         }

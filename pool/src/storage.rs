@@ -29,10 +29,6 @@ pub fn read_admin(env: &Env) -> Result<Address, Error> {
         .unwrap()
 }
 
-pub fn has_ir_params(env: &Env) -> bool {
-    env.storage().has(&DataKey::IRParams)
-}
-
 pub fn write_ir_params(env: &Env, ir_params: &IRParams) {
     env.storage().set(&DataKey::IRParams, ir_params);
 }
