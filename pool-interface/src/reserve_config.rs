@@ -39,21 +39,6 @@ pub struct IRParams {
 }
 
 impl IRParams {
-    pub fn new(input: IRParams) -> Self {
-        let IRParams {
-            alpha,
-            initial_rate,
-            max_rate,
-            scaling_coeff,
-        } = input;
-        Self {
-            alpha,
-            initial_rate,
-            max_rate,
-            scaling_coeff,
-        }
-    }
-
     pub fn update(&mut self, params: IRParams) {
         self.alpha = params.alpha;
         self.initial_rate = params.initial_rate;
