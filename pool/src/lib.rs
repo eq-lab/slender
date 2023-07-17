@@ -579,6 +579,7 @@ impl LendingPoolTrait for LendingPool {
             user_config.set_borrowing(&env, reserve.get_id(), false);
         }
 
+        write_user_config(&env, who, &user_config);
         event::liquidation(&env, who, account_data.debt, liquidation_debt);
 
         Ok(())
