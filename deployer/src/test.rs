@@ -25,6 +25,12 @@ fn deploy_pool_and_s_token() {
     let client = DeployerClient::new(&env, &env.register_contract(None, Deployer));
 
     // Deploy pool
+    let pool_ir_params = IRParams {
+        alpha: 143,
+        initial_rate: 200,
+        max_rate: 50_000,
+        scaling_coeff: 9_000,
+    };
     let pool_contract_id = {
         // Install the WASM code to be deployed from the deployer contract.
         let pool_wasm_hash = env.install_contract_wasm(pool::WASM);
@@ -33,7 +39,8 @@ fn deploy_pool_and_s_token() {
         let salt = BytesN::from_array(&env, &[0; 32]);
         let pool_admin = Address::random(&env);
 
-        let (contract_id, init_result) = client.deploy_pool(&salt, &pool_wasm_hash, &pool_admin);
+        let (contract_id, init_result) =
+            client.deploy_pool(&salt, &pool_wasm_hash, &pool_admin, &pool_ir_params);
         assert!(init_result.is_void());
 
         contract_id
@@ -90,4 +97,10 @@ fn deploy_pool_and_s_token() {
     };
 
     let _debt_token_client = debt_token::Client::new(&env, &debt_token_contract_id);
+    let ir_params = pool_client.get_ir_params().unwrap();
+
+    assert_eq!(pool_ir_params.alpha, ir_params.alpha);
+    assert_eq!(pool_ir_params.initial_rate, ir_params.initial_rate);
+    assert_eq!(pool_ir_params.max_rate, ir_params.max_rate);
+    assert_eq!(pool_ir_params.scaling_coeff, ir_params.scaling_coeff);
 }

@@ -52,7 +52,7 @@ pub enum Error {
 #[contractspecfn(name = "Spec", export = false)]
 #[contractclient(name = "LendingPoolClient")]
 pub trait LendingPoolTrait {
-    fn initialize(env: Env, admin: Address) -> Result<(), Error>;
+    fn initialize(env: Env, admin: Address, ir_params: IRParams) -> Result<(), Error>;
 
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
 
@@ -70,17 +70,19 @@ pub trait LendingPoolTrait {
 
     fn get_price_feed(env: Env, asset: Address) -> Option<Address>;
 
-    fn set_ir_params(env: Env, asset: Address, params: IRParams) -> Result<(), Error>;
+    fn set_ir_params(env: Env, input: IRParams) -> Result<(), Error>;
+
+    fn get_ir_params(env: Env) -> Option<IRParams>;
 
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn finalize_transfer(
         env: Env,
-        _asset: Address,
-        _from: Address,
+        asset: Address,
+        from: Address,
         _to: Address,
-        _amount: i128,
-        _balance_from_before: i128,
+        amount: i128,
+        balance_from_before: i128,
         _balance_to_before: i128,
     ) -> Result<(), Error>;
 

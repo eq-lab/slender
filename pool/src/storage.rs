@@ -1,5 +1,5 @@
 use crate::Error;
-use pool_interface::{ReserveData, UserConfiguration};
+use pool_interface::{IRParams, ReserveData, UserConfiguration};
 use soroban_sdk::{contracttype, vec, Address, Env, Vec};
 
 #[derive(Clone)]
@@ -8,6 +8,7 @@ pub enum DataKey {
     Admin,
     ReserveAssetKey(Address),
     Reserves,
+    IRParams,
     UserConfig(Address),
     PriceFeed(Address),
     Pause,
@@ -24,6 +25,17 @@ pub fn write_admin(env: &Env, admin: Address) {
 pub fn read_admin(env: &Env) -> Result<Address, Error> {
     env.storage()
         .get(&DataKey::Admin)
+        .ok_or(Error::Uninitialized)?
+        .unwrap()
+}
+
+pub fn write_ir_params(env: &Env, ir_params: &IRParams) {
+    env.storage().set(&DataKey::IRParams, ir_params);
+}
+
+pub fn read_ir_params(env: &Env) -> Result<IRParams, Error> {
+    env.storage()
+        .get(&DataKey::IRParams)
         .ok_or(Error::Uninitialized)?
         .unwrap()
 }

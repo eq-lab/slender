@@ -28,7 +28,15 @@ fn create_token_contract<'a>(e: &Env, admin: &Address) -> TokenClient<'a> {
 
 fn create_pool_contract<'a>(e: &Env, admin: &Address) -> LendingPoolClient<'a> {
     let client = LendingPoolClient::new(e, &e.register_contract(None, LendingPool));
-    client.initialize(&admin);
+    client.initialize(
+        &admin,
+        &IRParams {
+            alpha: 143,
+            initial_rate: 200,
+            max_rate: 50_000,
+            scaling_coeff: 9_000,
+        },
+    );
     client
 }
 
@@ -124,12 +132,6 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
                 &InitReserveInput {
                     s_token_address: s_token.address.clone(),
                     debt_token_address: debt_token.address.clone(),
-                    ir_params: IRParams {
-                        alpha: 143,
-                        initial_rate: 200,
-                        max_rate: 50_000,
-                        scaling_coeff: 9_000,
-                    },
                 },
             );
 
@@ -203,12 +205,6 @@ fn init_reserve() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
-        ir_params: IRParams {
-            alpha: 143,
-            initial_rate: 200,
-            max_rate: 50_000,
-            scaling_coeff: 9_000,
-        },
     };
 
     assert_eq!(
@@ -234,19 +230,6 @@ fn init_reserve() {
         init_reserve_input.debt_token_address,
         reserve.debt_token_address
     );
-    assert_eq!(init_reserve_input.ir_params.alpha, reserve.ir_params.alpha);
-    assert_eq!(
-        init_reserve_input.ir_params.initial_rate,
-        reserve.ir_params.initial_rate
-    );
-    assert_eq!(
-        init_reserve_input.ir_params.max_rate,
-        reserve.ir_params.max_rate
-    );
-    assert_eq!(
-        init_reserve_input.ir_params.scaling_coeff,
-        reserve.ir_params.scaling_coeff
-    );
 }
 
 #[test]
@@ -259,12 +242,6 @@ fn init_reserve_second_time() {
     let init_reserve_input = InitReserveInput {
         s_token_address: sut.s_token().address.clone(),
         debt_token_address: sut.debt_token().address.clone(),
-        ir_params: IRParams {
-            alpha: 143,
-            initial_rate: 200,
-            max_rate: 50_000,
-            scaling_coeff: 9_000,
-        },
     };
 
     assert_eq!(
@@ -296,12 +273,6 @@ fn init_reserve_when_pool_not_initialized() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
-        ir_params: IRParams {
-            alpha: 143,
-            initial_rate: 200,
-            max_rate: 50_000,
-            scaling_coeff: 9_000,
-        },
     };
 
     assert_eq!(
@@ -336,18 +307,14 @@ fn set_ir_params() {
         scaling_coeff: 9_001,
     };
 
-    sut.pool
-        .set_ir_params(&sut.token().address, &ir_params_input);
+    sut.pool.set_ir_params(&ir_params_input);
 
-    let reserve = sut.pool.get_reserve(&sut.token().address).unwrap();
+    let ir_params = sut.pool.get_ir_params().unwrap();
 
-    assert_eq!(ir_params_input.alpha, reserve.ir_params.alpha);
-    assert_eq!(ir_params_input.initial_rate, reserve.ir_params.initial_rate);
-    assert_eq!(ir_params_input.max_rate, reserve.ir_params.max_rate);
-    assert_eq!(
-        ir_params_input.scaling_coeff,
-        reserve.ir_params.scaling_coeff
-    );
+    assert_eq!(ir_params_input.alpha, ir_params.alpha);
+    assert_eq!(ir_params_input.initial_rate, ir_params.initial_rate);
+    assert_eq!(ir_params_input.max_rate, ir_params.max_rate);
+    assert_eq!(ir_params_input.scaling_coeff, ir_params.scaling_coeff);
 }
 
 #[test]
