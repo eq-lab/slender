@@ -30,20 +30,29 @@ pub fn calc_interest_rate(
 
     let alpha = FixedI128::from_rational(alpha, ALPHA_DENOMINATOR)?;
 
-    let alpha_minus_one = alpha.sub(FixedI128::ONE)?;
-    let alpha_minus_two = alpha_minus_one.sub(FixedI128::ONE)?;
-    let alpha_minus_three = alpha_minus_two.sub(FixedI128::ONE)?;
+    let alpha_minus_one = alpha.checked_sub(FixedI128::ONE)?;
+    let alpha_minus_two = alpha_minus_one.checked_sub(FixedI128::ONE)?;
+    let alpha_minus_three = alpha_minus_two.checked_sub(FixedI128::ONE)?;
 
-    let first_term = alpha.mul(u)?;
-    let second_term = first_term.mul(u)?.mul(alpha_minus_one)?.div_inner(2)?;
-    let third_term = second_term.mul(u)?.mul(alpha_minus_two)?.div_inner(3)?;
-    let fourth_term = third_term.mul(u)?.mul(alpha_minus_three)?.div_inner(4)?;
+    let first_term = alpha.checked_mul(u)?;
+    let second_term = first_term
+        .checked_mul(u)?
+        .checked_mul(alpha_minus_one)?
+        .div_inner(2)?;
+    let third_term = second_term
+        .checked_mul(u)?
+        .checked_mul(alpha_minus_two)?
+        .div_inner(3)?;
+    let fourth_term = third_term
+        .checked_mul(u)?
+        .checked_mul(alpha_minus_three)?
+        .div_inner(4)?;
 
     let denom = FixedI128::ONE
-        .sub(first_term)?
-        .add(second_term)?
-        .sub(third_term)?
-        .add(fourth_term)?;
+        .checked_sub(first_term)?
+        .checked_add(second_term)?
+        .checked_sub(third_term)?
+        .checked_add(fourth_term)?;
 
     if denom.is_negative() {
         return Some(max_rate);
@@ -51,7 +60,7 @@ pub fn calc_interest_rate(
 
     let base_rate_fixed = FixedI128::from_percentage(base_rate)?;
 
-    let ir = base_rate_fixed.div(denom)?;
+    let ir = base_rate_fixed.checked_div(denom)?;
 
     Some(FixedI128::min(ir, max_rate))
 }

@@ -1,4 +1,4 @@
-use common::rate_math::RATE_DENOMINATOR;
+use common::FixedI128;
 use soroban_sdk::{contracttype, Address, BytesN, Env};
 
 #[contracttype]
@@ -88,8 +88,8 @@ impl ReserveData {
             debt_token_address,
         } = input;
         Self {
-            liquidity_index: RATE_DENOMINATOR,
-            variable_borrow_index: RATE_DENOMINATOR,
+            liquidity_index: FixedI128::ONE.into_inner(),
+            variable_borrow_index: FixedI128::ONE.into_inner(),
             s_token_address,
             debt_token_address,
             configuration: ReserveConfigurationMap::default(env),

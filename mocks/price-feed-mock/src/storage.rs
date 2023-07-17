@@ -3,7 +3,7 @@ use soroban_sdk::{contracttype, Address, Env};
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
-    Price(Address)
+    Price(Address),
 }
 
 pub fn write_asset_price(env: &Env, asset: Address, price: i128) {
