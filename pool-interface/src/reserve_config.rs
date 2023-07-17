@@ -28,9 +28,10 @@ impl ReserveConfiguration {
     }
 }
 
+/// Interest rate parameters
 #[contracttype]
 #[derive(Clone)]
-pub struct IRConfiguration {
+pub struct IRParams {
     pub alpha: u32,
     pub initial_rate: u32,
     pub max_rate: u32,
@@ -57,7 +58,7 @@ impl ReserveConfiguration {
 #[contracttype]
 pub struct ReserveData {
     pub configuration: ReserveConfiguration,
-    pub ir_configuration: IRConfiguration,
+    pub ir_params: IRParams,
     pub collat_accrued_rate: i128,
     pub debt_accrued_rate: i128,
     pub last_update_timestamp: u64,
@@ -72,14 +73,14 @@ impl ReserveData {
         let InitReserveInput {
             s_token_address,
             debt_token_address,
-            ir_configuration,
+            ir_params,
         } = input;
         Self {
             collat_accrued_rate: FixedI128::ONE.into_inner(),
             debt_accrued_rate: FixedI128::ONE.into_inner(),
             s_token_address,
             debt_token_address,
-            ir_configuration,
+            ir_params,
             configuration: ReserveConfiguration::default(),
             last_update_timestamp: Default::default(),
             id: zero_bytes(env), // position in reserve list
@@ -100,11 +101,11 @@ impl ReserveData {
         self.configuration.discount = config.discount;
     }
 
-    pub fn update_ir_config(&mut self, config: IRConfiguration) {
-        self.ir_configuration.alpha = config.alpha;
-        self.ir_configuration.initial_rate = config.initial_rate;
-        self.ir_configuration.max_rate = config.max_rate;
-        self.ir_configuration.scaling_coeff = config.scaling_coeff;
+    pub fn update_ir_params(&mut self, params: IRParams) {
+        self.ir_params.alpha = params.alpha;
+        self.ir_params.initial_rate = params.initial_rate;
+        self.ir_params.max_rate = params.max_rate;
+        self.ir_params.scaling_coeff = params.scaling_coeff;
     }
 
     pub fn get_id(&self) -> u8 {
@@ -117,7 +118,7 @@ impl ReserveData {
 pub struct InitReserveInput {
     pub s_token_address: Address,
     pub debt_token_address: Address,
-    pub ir_configuration: IRConfiguration,
+    pub ir_params: IRParams,
 }
 
 fn zero_bytes<const N: usize>(env: &Env) -> BytesN<N> {

@@ -63,14 +63,14 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// - Panics with `Uninitialized` if the admin key is not exist in storage.
     /// - Panics with `ReserveAlreadyInitialized` if the specified asset key already exists in storage.
-    /// - Panics with `MustBeLte10000Bps` if alpha, initial_rate or max_rate are invalid.
-    /// - Panics with `MustBeLt10000Bps` if scaling_coeff is invalid.
+    /// - Panics with `MustBeLtePercentageFactor` if alpha, initial_rate or max_rate are invalid.
+    /// - Panics with `MustBeLtPercentageFactor` if scaling_coeff is invalid.
     /// - Panics if the caller is not the admin.
     ///
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error> {
         Self::require_admin(&env)?;
         Self::require_uninitialized_reserve(&env, &asset);
-        Self::require_valid_ir_configuration(&env, &input.ir_configuration);
+        Self::require_valid_ir_params(&env, &input.ir_params);
 
         let mut reserve_data = ReserveData::new(&env, input);
         let mut reserves = read_reserves(&env);
@@ -92,31 +92,27 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
-    /// Updates an interest rate configuration for a given asset.
+    /// Updates an interest rate parameters for a given asset.
     ///
     /// # Arguments
     ///
     /// - asset - The address of the asset associated with the reserve.
-    /// - configuration - The interest rate configuration to set.
+    /// - params - The interest rate parameters to set.
     ///
     /// # Panics
     ///
     /// - Panics with `Uninitialized` if the admin key is not exist in storage.
     /// - Panics with `ReserveAlreadyInitialized` if the specified asset key already exists in storage.
-    /// - Panics with `MustBeLte10000Bps` if alpha, initial_rate or max_rate are invalid.
-    /// - Panics with `MustBeLt10000Bps` if scaling_coeff is invalid.
+    /// - Panics with `MustBeLtePercentageFactor` if alpha, initial_rate or max_rate are invalid.
+    /// - Panics with `MustBeLtPercentageFactor` if scaling_coeff is invalid.
     /// - Panics if the caller is not the admin.
     ///
-    fn set_ir_configuration(
-        env: Env,
-        asset: Address,
-        configuration: IRConfiguration,
-    ) -> Result<(), Error> {
+    fn set_ir_params(env: Env, asset: Address, params: IRparams) -> Result<(), Error> {
         Self::require_admin(&env)?;
-        Self::require_valid_ir_configuration(&env, &configuration);
+        Self::require_valid_ir_params(&env, &params);
 
         let mut reserve_data = read_reserve(&env, asset.clone())?;
-        reserve_data.update_ir_config(configuration);
+        reserve_data.update_ir_params(params);
 
         write_reserve(&env, asset, &reserve_data);
 
@@ -164,7 +160,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// # Panics
     ///
-    /// - Panics with `MustBeLte10000Bps` if discount or liq_bonus are invalid.
+    /// - Panics with `MustBeLtePercentageFactor` if discount or liq_bonus are invalid.
     /// - Panics with `MustBePositive` if liq_cap is invalid.
     /// - Panics with `NoReserveExistForAsset` if no reserve exists for the specified asset.
     /// - Panics if the caller is not the admin.
@@ -460,11 +456,11 @@ impl LendingPool {
         Ok(())
     }
 
-    fn require_valid_ir_configuration(env: &Env, configuration: &IRConfiguration) {
-        Self::require_lte_10000_bps(&env, configuration.alpha);
-        Self::require_lte_10000_bps(&env, configuration.initial_rate);
-        Self::require_gt_10000_bps(&env, configuration.max_rate);
-        Self::require_lt_10000_bps(&env, configuration.scaling_coeff);
+    fn require_valid_ir_params(env: &Env, params: &IRParams) {
+        Self::require_lte_10000_bps(&env, params.alpha);
+        Self::require_lte_10000_bps(&env, params.initial_rate);
+        Self::require_gt_10000_bps(&env, params.max_rate);
+        Self::require_lt_10000_bps(&env, params.scaling_coeff);
     }
 
     fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
@@ -482,15 +478,15 @@ impl LendingPool {
     }
 
     fn require_lte_10000_bps(env: &Env, value: u32) {
-        assert_with_error!(&env, value <= PERCENTAGE_FACTOR, Error::MustBeLte10000Bps);
+        assert_with_error!(&env, value <= PERCENTAGE_FACTOR, Error::MustBeLtePercentageFactor);
     }
 
     fn require_lt_10000_bps(env: &Env, value: u32) {
-        assert_with_error!(&env, value < PERCENTAGE_FACTOR, Error::MustBeLt10000Bps);
+        assert_with_error!(&env, value < PERCENTAGE_FACTOR, Error::MustBeLtPercentageFactor);
     }
 
     fn require_gt_10000_bps(env: &Env, value: u32) {
-        assert_with_error!(&env, value > PERCENTAGE_FACTOR, Error::MustBeGt10000Bps);
+        assert_with_error!(&env, value > PERCENTAGE_FACTOR, Error::MustBeGtPercentageFactor);
     }
 
     fn require_positive(env: &Env, value: i128) {

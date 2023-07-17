@@ -17,38 +17,32 @@ pub enum Error {
     AlreadyInitialized = 0,
     Uninitialized = 1,
     NoPriceFeed = 2,
-    ReserveAlreadyInitialized = 3,
-    Paused = 4,
+    Paused = 3,
 
-    NoReserveExistForAsset = 5,
-    InvalidAmount = 6,
-    NoActiveReserve = 7,
-    ReserveFrozen = 8,
+    NoReserveExistForAsset = 100,
+    NoActiveReserve = 101,
+    ReserveFrozen = 102,
+    ReservesMaxCapacityExceeded = 103,
+    NoPriceForAsset = 104,
+    ReserveAlreadyInitialized = 105,
 
-    UserConfigInvalidIndex = 9,
-    NotEnoughAvailableUserBalance = 10,
-    UserConfigNotExists = 11,
+    UserConfigInvalidIndex = 200,
+    NotEnoughAvailableUserBalance = 201,
+    UserConfigNotExists = 202,
 
-    BorrowingNotEnabled = 12,
-    HealthFactorLowerThanLiqThreshold = 13,
-    CollateralNotCoverNewBorrow = 14,
-    BadPosition = 15,
+    BorrowingNotEnabled = 300,
+    CollateralNotCoverNewBorrow = 301,
+    BadPosition = 302,
+    InvalidAmount = 303,
+    ValidateBorrowMathError = 304,
+    CalcAccountDataMathError = 305,
+    AssetPriceMathError = 306,
 
-    ReserveLiquidityNotZero = 16,
-    ReservesMaxCapacityExceeded = 17,
-    NoPriceForAsset = 18,
-
-    MathOverflowError = 100,
-    PriceMathOverflow = 101,
-    ValidateBorrowMathError = 102,
-    CalcAccountDataMathError = 103,
-    CalcInterestRateMathError = 104,
-    AssetPriceMathError = 105,
-
-    MustBeLte10000Bps = 106,
-    MustBeLt10000Bps = 107,
-    MustBeGt10000Bps = 108,
-    MustBePositive = 109,
+    MathOverflowError = 400,
+    MustBeLtePercentageFactor = 401,
+    MustBeLtPercentageFactor = 402,
+    MustBeGtPercentageFactor = 403,
+    MustBePositive = 404,
 }
 
 /// Interface for SToken
@@ -73,11 +67,7 @@ pub trait LendingPoolTrait {
 
     fn get_price_feed(env: Env, asset: Address) -> Option<Address>;
 
-    fn set_ir_configuration(
-        env: Env,
-        asset: Address,
-        configuration: IRConfiguration,
-    ) -> Result<(), Error>;
+    fn set_ir_params(env: Env, asset: Address, params: IRParams) -> Result<(), Error>;
 
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 

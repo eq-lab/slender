@@ -126,7 +126,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
                 &InitReserveInput {
                     s_token_address: s_token.address.clone(),
                     debt_token_address: debt_token.address.clone(),
-                    ir_configuration: IRConfiguration {
+                    ir_params: IRParams {
                         alpha: 143,
                         initial_rate: 200,
                         max_rate: 50_000,
@@ -205,7 +205,7 @@ fn init_reserve() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
-        ir_configuration: IRConfiguration {
+        ir_params: IRParams {
             alpha: 143,
             initial_rate: 200,
             max_rate: 50_000,
@@ -237,20 +237,20 @@ fn init_reserve() {
         reserve.debt_token_address
     );
     assert_eq!(
-        init_reserve_input.ir_configuration.alpha,
-        reserve.ir_configuration.alpha
+        init_reserve_input.ir_params.alpha,
+        reserve.ir_params.alpha
     );
     assert_eq!(
-        init_reserve_input.ir_configuration.initial_rate,
-        reserve.ir_configuration.initial_rate
+        init_reserve_input.ir_params.initial_rate,
+        reserve.ir_params.initial_rate
     );
     assert_eq!(
-        init_reserve_input.ir_configuration.max_rate,
-        reserve.ir_configuration.max_rate
+        init_reserve_input.ir_params.max_rate,
+        reserve.ir_params.max_rate
     );
     assert_eq!(
-        init_reserve_input.ir_configuration.scaling_coeff,
-        reserve.ir_configuration.scaling_coeff
+        init_reserve_input.ir_params.scaling_coeff,
+        reserve.ir_params.scaling_coeff
     );
 }
 
@@ -264,7 +264,7 @@ fn init_reserve_second_time() {
     let init_reserve_input = InitReserveInput {
         s_token_address: sut.s_token().address.clone(),
         debt_token_address: sut.debt_token().address.clone(),
-        ir_configuration: IRConfiguration {
+        ir_params: IRParams {
             alpha: 143,
             initial_rate: 200,
             max_rate: 50_000,
@@ -301,7 +301,7 @@ fn init_reserve_when_pool_not_initialized() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
-        ir_configuration: IRConfiguration {
+        ir_params: IRParams {
             alpha: 143,
             initial_rate: 200,
             max_rate: 50_000,
@@ -328,13 +328,13 @@ fn init_reserve_when_pool_not_initialized() {
 }
 
 #[test]
-fn set_ir_configuration() {
+fn set_ir_params() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
 
-    let ir_configuration_input = IRConfiguration {
+    let ir_params_input = IRParams {
         alpha: 144,
         initial_rate: 201,
         max_rate: 50_001,
@@ -342,22 +342,22 @@ fn set_ir_configuration() {
     };
 
     sut.pool
-        .set_ir_configuration(&sut.token().address, &ir_configuration_input);
+        .set_ir_params(&sut.token().address, &ir_params_input);
 
     let reserve = sut.pool.get_reserve(&sut.token().address).unwrap();
 
-    assert_eq!(ir_configuration_input.alpha, reserve.ir_configuration.alpha);
+    assert_eq!(ir_params_input.alpha, reserve.ir_params.alpha);
     assert_eq!(
-        ir_configuration_input.initial_rate,
-        reserve.ir_configuration.initial_rate
+        ir_params_input.initial_rate,
+        reserve.ir_params.initial_rate
     );
     assert_eq!(
-        ir_configuration_input.max_rate,
-        reserve.ir_configuration.max_rate
+        ir_params_input.max_rate,
+        reserve.ir_params.max_rate
     );
     assert_eq!(
-        ir_configuration_input.scaling_coeff,
-        reserve.ir_configuration.scaling_coeff
+        ir_params_input.scaling_coeff,
+        reserve.ir_params.scaling_coeff
     );
 }
 
