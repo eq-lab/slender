@@ -234,10 +234,7 @@ fn init_reserve() {
         init_reserve_input.debt_token_address,
         reserve.debt_token_address
     );
-    assert_eq!(
-        init_reserve_input.ir_params.alpha,
-        reserve.ir_params.alpha
-    );
+    assert_eq!(init_reserve_input.ir_params.alpha, reserve.ir_params.alpha);
     assert_eq!(
         init_reserve_input.ir_params.initial_rate,
         reserve.ir_params.initial_rate
@@ -345,14 +342,8 @@ fn set_ir_params() {
     let reserve = sut.pool.get_reserve(&sut.token().address).unwrap();
 
     assert_eq!(ir_params_input.alpha, reserve.ir_params.alpha);
-    assert_eq!(
-        ir_params_input.initial_rate,
-        reserve.ir_params.initial_rate
-    );
-    assert_eq!(
-        ir_params_input.max_rate,
-        reserve.ir_params.max_rate
-    );
+    assert_eq!(ir_params_input.initial_rate, reserve.ir_params.initial_rate);
+    assert_eq!(ir_params_input.max_rate, reserve.ir_params.max_rate);
     assert_eq!(
         ir_params_input.scaling_coeff,
         reserve.ir_params.scaling_coeff

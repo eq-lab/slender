@@ -28,14 +28,8 @@ pub(crate) fn borrow(e: &Env, who: Address, asset: Address, amount: i128) {
 
 pub(crate) fn collat_config_change(e: &Env, asset: Address, params: CollateralParamsInput) {
     let topics = (Symbol::new(e, "collat_config_change"), asset);
-    e.events().publish(
-        topics,
-        (
-            params.liq_bonus,
-            params.liq_cap,
-            params.discount,
-        ),
-    );
+    e.events()
+        .publish(topics, (params.liq_bonus, params.liq_cap, params.discount));
 }
 
 pub(crate) fn borrowing_enabled(e: &Env, asset: Address) {
