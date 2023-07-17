@@ -43,6 +43,8 @@ pub enum Error {
     MustBeLtPercentageFactor = 402,
     MustBeGtPercentageFactor = 403,
     MustBePositive = 404,
+
+    AccruedRateMathError = 500,
 }
 
 /// Interface for SToken

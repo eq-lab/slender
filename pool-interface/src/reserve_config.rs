@@ -82,7 +82,7 @@ impl ReserveData {
             debt_token_address,
             ir_params,
             configuration: ReserveConfiguration::default(),
-            last_update_timestamp: Default::default(),
+            last_update_timestamp: env.ledger().timestamp(),
             id: zero_bytes(env), // position in reserve list
         }
     }

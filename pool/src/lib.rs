@@ -5,6 +5,7 @@ use crate::price_provider::PriceProvider;
 use common::{FixedI128, PERCENTAGE_FACTOR};
 use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
+use rate::update_accrued_rates;
 use s_token_interface::STokenClient;
 use soroban_sdk::{
     assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec,
@@ -14,6 +15,8 @@ mod event;
 mod price_provider;
 mod rate;
 mod storage;
+#[cfg(test)]
+mod test;
 
 use crate::storage::*;
 
@@ -256,7 +259,7 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = read_reserve(&env, asset.clone())?;
+        let mut reserve = get_actual_reserve_data(&env, asset.clone())?;
         Self::validate_deposit(&env, &reserve, amount);
 
         // Updates the reserve indexes and the timestamp of the update.
@@ -335,7 +338,7 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = read_reserve(&env, asset.clone())?;
+        let mut reserve = get_actual_reserve_data(&env, asset.clone())?;
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
         let who_balance = s_token.balance(&who);
@@ -391,7 +394,7 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = read_reserve(&env, asset.clone())?;
+        let mut reserve = get_actual_reserve_data(&env, asset.clone())?;
         let user_config = read_user_config(&env, who.clone())?;
 
         Self::validate_borrow(&env, who.clone(), &asset, &reserve, &user_config, amount)?;
@@ -458,29 +461,29 @@ impl LendingPool {
     }
 
     fn require_valid_ir_params(env: &Env, params: &IRParams) {
-        Self::require_lte_10000_bps(&env, params.alpha);
-        Self::require_lte_10000_bps(&env, params.initial_rate);
-        Self::require_gt_10000_bps(&env, params.max_rate);
-        Self::require_lt_10000_bps(&env, params.scaling_coeff);
+        Self::require_lte_10000_bps(env, params.alpha);
+        Self::require_lte_10000_bps(env, params.initial_rate);
+        Self::require_gt_10000_bps(env, params.max_rate);
+        Self::require_lt_10000_bps(env, params.scaling_coeff);
     }
 
     fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
-        Self::require_lte_10000_bps(&env, params.discount);
-        Self::require_gt_10000_bps(&env, params.liq_bonus);
-        Self::require_positive(&env, params.liq_cap);
+        Self::require_lte_10000_bps(env, params.discount);
+        Self::require_gt_10000_bps(env, params.liq_bonus);
+        Self::require_positive(env, params.liq_cap);
     }
 
     fn require_uninitialized_reserve(env: &Env, asset: &Address) {
         assert_with_error!(
-            &env,
-            !has_reserve(&env, asset.clone()),
+            env,
+            !has_reserve(env, asset.clone()),
             Error::ReserveAlreadyInitialized
         );
     }
 
     fn require_lte_10000_bps(env: &Env, value: u32) {
         assert_with_error!(
-            &env,
+            env,
             value <= PERCENTAGE_FACTOR,
             Error::MustBeLtePercentageFactor
         );
@@ -488,7 +491,7 @@ impl LendingPool {
 
     fn require_lt_10000_bps(env: &Env, value: u32) {
         assert_with_error!(
-            &env,
+            env,
             value < PERCENTAGE_FACTOR,
             Error::MustBeLtPercentageFactor
         );
@@ -496,14 +499,14 @@ impl LendingPool {
 
     fn require_gt_10000_bps(env: &Env, value: u32) {
         assert_with_error!(
-            &env,
+            env,
             value > PERCENTAGE_FACTOR,
             Error::MustBeGtPercentageFactor
         );
     }
 
     fn require_positive(env: &Env, value: i128) {
-        assert_with_error!(&env, value > 0, Error::MustBePositive);
+        assert_with_error!(env, value > 0, Error::MustBePositive);
     }
 
     fn do_deposit(
@@ -744,5 +747,8 @@ impl LendingPool {
     }
 }
 
-#[cfg(test)]
-mod test;
+/// Returns reserve data with updated accrued coeffisients
+pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData, Error> {
+    let reserve = read_reserve(env, asset.clone())?;
+    update_accrued_rates(env, asset, reserve)
+}
