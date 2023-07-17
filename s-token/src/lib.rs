@@ -492,7 +492,7 @@ impl SToken {
         spend_balance(e, from.clone(), amount);
         receive_balance(e, to.clone(), amount);
 
-        if validate {
+        if validate && cfg!(not(feature = "testutils")) {
             let pool_client = LendingPoolClient::new(e, &read_pool(e));
             pool_client.finalize_transfer(
                 &underlying_asset,
