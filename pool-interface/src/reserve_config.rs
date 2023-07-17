@@ -2,45 +2,40 @@ use common::FixedI128;
 use soroban_sdk::{contracttype, Address, BytesN, Env};
 
 #[contracttype]
-pub struct ReserveConfigurationMap {
-    //bit 0-15: LTV
-    pub ltv: u32,
-    //bit 16-31: Liq. threshold
-    pub liq_threshold: u32,
-    //bit 32-47: Liq. bonus
-    pub liq_bonus: u32,
-    //bit 48-55: Decimals
+pub struct ReserveConfiguration {
     pub decimals: u32,
-    //bit 56: Reserve is active
     pub is_active: bool,
-    //bit 57: reserve is frozen
     pub is_frozen: bool,
-    //bit 58: borrowing is enabled
-    //bit 59: stable rate borrowing enabled
     pub borrowing_enabled: bool,
-    //bit 60-63: reserved
-    pub reserved: BytesN<1>,
-    //bit 64-79: reserve factor
-    pub reserve_factor: u32,
-    // A value between 0 and 100 % specifies what fraction of the underlying asset counts toward the portfolio collateral value.
+    pub liq_bonus: u32,
+    pub liq_cap: i128,
+    /// Specifies what fraction of the underlying asset counts toward
+    /// the portfolio collateral value [0%, 100%].
     pub discount: u32,
 }
 
-impl ReserveConfigurationMap {
-    fn default(env: &Env) -> Self {
+impl ReserveConfiguration {
+    fn default() -> Self {
         Self {
-            ltv: Default::default(),
-            liq_threshold: Default::default(),
             liq_bonus: Default::default(),
+            liq_cap: Default::default(),
             decimals: Default::default(),
             is_active: true,
             is_frozen: false,
             borrowing_enabled: false,
-            reserved: zero_bytes(env),
-            reserve_factor: Default::default(),
             discount: Default::default(),
         }
     }
+}
+
+/// Interest rate parameters
+#[contracttype]
+#[derive(Clone)]
+pub struct IRParams {
+    pub alpha: u32,
+    pub initial_rate: u32,
+    pub max_rate: u32,
+    pub scaling_coeff: u32,
 }
 
 #[allow(dead_code)]
@@ -50,7 +45,7 @@ pub struct ReserveConfigurationFlags {
     pub borrowing_enabled: bool,
 }
 
-impl ReserveConfigurationMap {
+impl ReserveConfiguration {
     pub fn get_flags(&self) -> ReserveConfigurationFlags {
         ReserveConfigurationFlags {
             is_active: self.is_active,
@@ -62,22 +57,14 @@ impl ReserveConfigurationMap {
 
 #[contracttype]
 pub struct ReserveData {
-    //stores the reserve configuration
-    pub configuration: ReserveConfigurationMap,
-    //the liquidity index. Expressed in ray
-    pub liquidity_index: i128,
-    //variable borrow index. Expressed in ray
-    pub variable_borrow_index: i128,
-    //the current supply rate. Expressed in ray
-    pub current_liquidity_rate: u128,
-    //the current variable borrow rate. Expressed in ray
-    pub current_variable_borrow_rate: u128,
-    pub last_update_timestamp: u64, // u40,
-    // 24 empty bits
-    //tokens addresses
+    pub configuration: ReserveConfiguration,
+    pub ir_params: IRParams,
+    pub collat_accrued_rate: i128,
+    pub debt_accrued_rate: i128,
+    pub last_update_timestamp: u64,
     pub s_token_address: Address,
     pub debt_token_address: Address,
-    //the id of the reserve. Represents the position in the list of the active reserves
+    /// The id of the reserve (position in the list of the active reserves).
     pub id: BytesN<1>,
 }
 
@@ -86,15 +73,15 @@ impl ReserveData {
         let InitReserveInput {
             s_token_address,
             debt_token_address,
+            ir_params,
         } = input;
         Self {
-            liquidity_index: FixedI128::ONE.into_inner(),
-            variable_borrow_index: FixedI128::ONE.into_inner(),
+            collat_accrued_rate: FixedI128::ONE.into_inner(),
+            debt_accrued_rate: FixedI128::ONE.into_inner(),
             s_token_address,
             debt_token_address,
-            configuration: ReserveConfigurationMap::default(env),
-            current_liquidity_rate: Default::default(),
-            current_variable_borrow_rate: Default::default(),
+            ir_params,
+            configuration: ReserveConfiguration::default(),
             last_update_timestamp: Default::default(),
             id: zero_bytes(env), // position in reserve list
         }
@@ -109,10 +96,16 @@ impl ReserveData {
     }
 
     pub fn update_collateral_config(&mut self, config: CollateralParamsInput) {
-        self.configuration.ltv = config.ltv;
-        self.configuration.liq_threshold = config.liq_threshold;
         self.configuration.liq_bonus = config.liq_bonus;
+        self.configuration.liq_cap = config.liq_cap;
         self.configuration.discount = config.discount;
+    }
+
+    pub fn update_ir_params(&mut self, params: IRParams) {
+        self.ir_params.alpha = params.alpha;
+        self.ir_params.initial_rate = params.initial_rate;
+        self.ir_params.max_rate = params.max_rate;
+        self.ir_params.scaling_coeff = params.scaling_coeff;
     }
 
     pub fn get_id(&self) -> u8 {
@@ -125,22 +118,22 @@ impl ReserveData {
 pub struct InitReserveInput {
     pub s_token_address: Address,
     pub debt_token_address: Address,
+    pub ir_params: IRParams,
 }
 
 fn zero_bytes<const N: usize>(env: &Env) -> BytesN<N> {
     BytesN::from_array(env, &[0; N])
 }
 
-///Collateralization parameters
+/// Collateralization parameters
 #[contracttype]
 #[derive(Clone, Copy)]
 pub struct CollateralParamsInput {
-    ///The threshold at which loans using this asset as collateral will be considered undercollateralized
-    pub liq_threshold: u32,
-    ///The bonus liquidators receive to liquidate this asset. The values is always above 100%. A value of 105% means the liquidator will receive a 5% bonus
+    /// The bonus liquidators receive to liquidate this asset. The values is always above 100%. A value of 105% means the liquidator will receive a 5% bonus
     pub liq_bonus: u32,
-    ///The loan to value of the asset when used as collateral
-    pub ltv: u32,
-    /// A value between 0 and 100% specifies what fraction of the underlying asset counts toward the portfolio collateral value.
+    /// The total amount of an asset the protocol accepts into the market.
+    pub liq_cap: i128,
+    /// Specifies what fraction of the underlying asset counts toward
+    /// the portfolio collateral value [0%, 100%].
     pub discount: u32,
 }

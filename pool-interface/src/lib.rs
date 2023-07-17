@@ -17,35 +17,32 @@ pub enum Error {
     AlreadyInitialized = 0,
     Uninitialized = 1,
     NoPriceFeed = 2,
-    ReserveAlreadyInitialized = 3,
-    Paused = 4,
+    Paused = 3,
 
-    NoReserveExistForAsset = 5,
-    InvalidAmount = 6,
-    NoActiveReserve = 7,
-    ReserveFrozen = 8,
+    NoReserveExistForAsset = 100,
+    NoActiveReserve = 101,
+    ReserveFrozen = 102,
+    ReservesMaxCapacityExceeded = 103,
+    NoPriceForAsset = 104,
+    ReserveAlreadyInitialized = 105,
 
-    UserConfigInvalidIndex = 9,
-    NotEnoughAvailableUserBalance = 10,
-    UserConfigNotExists = 11,
+    UserConfigInvalidIndex = 200,
+    NotEnoughAvailableUserBalance = 201,
+    UserConfigNotExists = 202,
 
-    BorrowingNotEnabled = 12,
-    HealthFactorLowerThanLiqThreshold = 13,
-    CollateralNotCoverNewBorrow = 14,
-    BadPosition = 15,
+    BorrowingNotEnabled = 300,
+    CollateralNotCoverNewBorrow = 301,
+    BadPosition = 302,
+    InvalidAmount = 303,
+    ValidateBorrowMathError = 304,
+    CalcAccountDataMathError = 305,
+    AssetPriceMathError = 306,
 
-    InvalidReserveParams = 16,
-    ReserveLiquidityNotZero = 17,
-
-    ReservesMaxCapacityExceeded = 18,
-    NoPriceForAsset = 19,
-
-    MathOverflowError = 100,
-    PriceMathOverflow = 101,
-    ValidateBorrowMathError = 102,
-    CalcAccountDataMathError = 103,
-    CalcInterestRateMathError = 104,
-    AssetPriceMathError = 105,
+    MathOverflowError = 400,
+    MustBeLtePercentageFactor = 401,
+    MustBeLtPercentageFactor = 402,
+    MustBeGtPercentageFactor = 403,
+    MustBePositive = 404,
 }
 
 /// Interface for SToken
@@ -70,6 +67,8 @@ pub trait LendingPoolTrait {
 
     fn get_price_feed(env: Env, asset: Address) -> Option<Address>;
 
+    fn set_ir_params(env: Env, asset: Address, params: IRParams) -> Result<(), Error>;
+
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn finalize_transfer(
@@ -91,7 +90,12 @@ pub trait LendingPoolTrait {
     ) -> Result<(), Error>;
 
     #[cfg(any(test, feature = "testutils"))]
-    fn set_liq_index(env: Env, asset: Address, value: i128) -> Result<(), Error>;
+    fn set_accrued_rates(
+        env: Env,
+        asset: Address,
+        collat_accrued_rate: Option<i128>,
+        debt_accrued_rate: Option<i128>,
+    ) -> Result<(), Error>;
 
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 

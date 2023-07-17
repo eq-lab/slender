@@ -1,4 +1,5 @@
 use crate::*;
+use common::FixedI128;
 use debt_token_interface::DebtTokenClient;
 use price_feed_interface::PriceFeedClient;
 use s_token_interface::STokenClient;
@@ -125,20 +126,24 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
                 &InitReserveInput {
                     s_token_address: s_token.address.clone(),
                     debt_token_address: debt_token.address.clone(),
+                    ir_params: IRParams {
+                        alpha: 143,
+                        initial_rate: 200,
+                        max_rate: 50_000,
+                        scaling_coeff: 9_000,
+                    },
                 },
             );
 
-            let ltv = 500; // 5%
-            let liq_threshold = 1000; // 10%,
             let liq_bonus = 11000; //110%
+            let liq_cap = 100_000_000 * FixedI128::DENOMINATOR; // 100M
             let discount = 6000; //60%
 
             pool.configure_as_collateral(
                 &token.address,
                 &CollateralParamsInput {
-                    ltv,
-                    liq_threshold,
                     liq_bonus,
+                    liq_cap,
                     discount,
                 },
             );
@@ -150,9 +155,9 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
 
             let reserve_config = reserve.unwrap().configuration;
             assert_eq!(reserve_config.borrowing_enabled, true);
-            assert_eq!(reserve_config.ltv, ltv);
             assert_eq!(reserve_config.liq_bonus, liq_bonus);
-            assert_eq!(reserve_config.liq_threshold, liq_threshold);
+            assert_eq!(reserve_config.liq_cap, liq_cap);
+            assert_eq!(reserve_config.discount, discount);
 
             pool.set_price_feed(
                 &price_feed.address,
@@ -200,6 +205,12 @@ fn init_reserve() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
+        ir_params: IRParams {
+            alpha: 143,
+            initial_rate: 200,
+            max_rate: 50_000,
+            scaling_coeff: 9_000,
+        },
     };
 
     assert_eq!(
@@ -217,7 +228,30 @@ fn init_reserve() {
         ()
     );
 
+    let reserve = pool.get_reserve(&underlying_token.address).unwrap();
+
     assert!(pool.get_reserve(&underlying_token.address).is_some());
+    assert_eq!(init_reserve_input.s_token_address, reserve.s_token_address);
+    assert_eq!(
+        init_reserve_input.debt_token_address,
+        reserve.debt_token_address
+    );
+    assert_eq!(
+        init_reserve_input.ir_params.alpha,
+        reserve.ir_params.alpha
+    );
+    assert_eq!(
+        init_reserve_input.ir_params.initial_rate,
+        reserve.ir_params.initial_rate
+    );
+    assert_eq!(
+        init_reserve_input.ir_params.max_rate,
+        reserve.ir_params.max_rate
+    );
+    assert_eq!(
+        init_reserve_input.ir_params.scaling_coeff,
+        reserve.ir_params.scaling_coeff
+    );
 }
 
 #[test]
@@ -230,6 +264,12 @@ fn init_reserve_second_time() {
     let init_reserve_input = InitReserveInput {
         s_token_address: sut.s_token().address.clone(),
         debt_token_address: sut.debt_token().address.clone(),
+        ir_params: IRParams {
+            alpha: 143,
+            initial_rate: 200,
+            max_rate: 50_000,
+            scaling_coeff: 9_000,
+        },
     };
 
     assert_eq!(
@@ -261,6 +301,12 @@ fn init_reserve_when_pool_not_initialized() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
+        ir_params: IRParams {
+            alpha: 143,
+            initial_rate: 200,
+            max_rate: 50_000,
+            scaling_coeff: 9_000,
+        },
     };
 
     assert_eq!(
@@ -278,6 +324,40 @@ fn init_reserve_when_pool_not_initialized() {
         .unwrap_err()
         .unwrap(),
         Error::Uninitialized
+    );
+}
+
+#[test]
+fn set_ir_params() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+
+    let ir_params_input = IRParams {
+        alpha: 144,
+        initial_rate: 201,
+        max_rate: 50_001,
+        scaling_coeff: 9_001,
+    };
+
+    sut.pool
+        .set_ir_params(&sut.token().address, &ir_params_input);
+
+    let reserve = sut.pool.get_reserve(&sut.token().address).unwrap();
+
+    assert_eq!(ir_params_input.alpha, reserve.ir_params.alpha);
+    assert_eq!(
+        ir_params_input.initial_rate,
+        reserve.ir_params.initial_rate
+    );
+    assert_eq!(
+        ir_params_input.max_rate,
+        reserve.ir_params.max_rate
+    );
+    assert_eq!(
+        ir_params_input.scaling_coeff,
+        reserve.ir_params.scaling_coeff
     );
 }
 
@@ -391,8 +471,9 @@ fn withdraw_interest_rate_less_than_one() {
     token.mint(&user1, &1_000_000_000);
     assert_eq!(token.balance(&user1), initial_balance);
 
-    let liquidity_index = 500_000_000; //0.5
-    sut.pool.set_liq_index(&token.address, &liquidity_index);
+    let collat_accrued_rate: Option<i128> = Some(500_000_000); //0.5
+    sut.pool
+        .set_accrued_rates(&token.address, &collat_accrued_rate, &None);
 
     let deposit_amount = 1000;
     sut.pool.deposit(&user1, &token.address, &deposit_amount);
@@ -423,8 +504,9 @@ fn withdraw_interest_rate_greater_than_one() {
     token.mint(&user1, &1_000_000_000);
     assert_eq!(token.balance(&user1), initial_balance);
 
-    let liquidity_index = 1_200_000_000; //1.2
-    sut.pool.set_liq_index(&token.address, &liquidity_index);
+    let collat_accrued_rate: Option<i128> = Some(1_200_000_000); //0.5
+    sut.pool
+        .set_accrued_rates(&token.address, &collat_accrued_rate, &None);
 
     let deposit_amount = 1000;
     sut.pool.deposit(&user1, &token.address, &deposit_amount);
@@ -528,13 +610,18 @@ fn deposit() {
         assert_eq!(token.balance(&user), initial_balance);
 
         let deposit_amount = 1_000_0;
-        let liq_index = FixedI128::ONE.into_inner() + i * 100_000_000;
-        assert_eq!(sut.pool.set_liq_index(&token.address, &liq_index), ());
+        let collat_accrued_rate = Some(FixedI128::ONE.into_inner() + i * 100_000_000);
+
+        assert_eq!(
+            sut.pool
+                .set_accrued_rates(&token.address, &collat_accrued_rate, &None),
+            ()
+        );
         sut.pool.deposit(&user, &token.address, &deposit_amount);
 
         assert_eq!(
             s_token.balance(&user),
-            deposit_amount * FixedI128::ONE.into_inner() / liq_index
+            deposit_amount * FixedI128::ONE.into_inner() / collat_accrued_rate.unwrap()
         );
         assert_eq!(token.balance(&user), initial_balance - deposit_amount);
 
@@ -567,7 +654,7 @@ fn deposit_zero_amount() {
     let deposit_amount = 0;
     assert_eq!(
         sut.pool
-            .try_deposit(&user1, &sut.reserves[0].token.address, &deposit_amount,)
+            .try_deposit(&user1, &sut.reserves[0].token.address, &deposit_amount)
             .unwrap_err()
             .unwrap(),
         Error::InvalidAmount
@@ -659,7 +746,7 @@ fn borrow_user_confgig_not_exists() {
     let borrow_amount = 0;
     assert_eq!(
         sut.pool
-            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount,)
+            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount)
             .unwrap_err()
             .unwrap(),
         Error::UserConfigNotExists
@@ -694,7 +781,7 @@ fn borrow_collateral_is_zero() {
     let borrow_amount = 100;
     assert_eq!(
         sut.pool
-            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount,)
+            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount)
             .unwrap_err()
             .unwrap(),
         Error::CollateralNotCoverNewBorrow
@@ -732,7 +819,7 @@ fn borrow_collateral_not_cover_new_debt() {
     let borrow_amount = 1000;
     assert_eq!(
         sut.pool
-            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount,)
+            .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount)
             .unwrap_err()
             .unwrap(),
         Error::CollateralNotCoverNewBorrow

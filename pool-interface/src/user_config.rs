@@ -11,13 +11,6 @@ const BORROWING_MASK: u128 = 0x55555555555555555555555555555555;
 pub struct UserConfiguration(u128);
 
 impl UserConfiguration {
-    fn require_reserve_index(env: &Env, reserve_index: u8) {
-        assert_with_error!(
-            env,
-            reserve_index < core::mem::size_of::<u128>() as u8 / 2,
-            Error::UserConfigInvalidIndex
-        );
-    }
     pub fn set_borrowing(&mut self, env: &Env, reserve_index: u8, borrowing: bool) {
         Self::require_reserve_index(env, reserve_index);
 
@@ -65,5 +58,13 @@ impl UserConfiguration {
 
     pub fn is_empty(&self) -> bool {
         self.0 == 0
+    }
+
+    fn require_reserve_index(env: &Env, reserve_index: u8) {
+        assert_with_error!(
+            env,
+            reserve_index < core::mem::size_of::<u128>() as u8 / 2,
+            Error::UserConfigInvalidIndex
+        );
     }
 }
