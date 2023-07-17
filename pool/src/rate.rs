@@ -1,4 +1,5 @@
 use common::{FixedI128, ALPHA_DENOMINATOR};
+use debt_token_interface::DebtTokenClient;
 use pool_interface::{Error, IRParams, ReserveData};
 use s_token_interface::STokenClient;
 use soroban_sdk::{Address, Env};
@@ -100,7 +101,7 @@ pub fn update_accrued_rates(
     let s_token = STokenClient::new(env, &reserve_data.s_token_address);
     let total_collateral = s_token.total_supply();
 
-    let debt_token = STokenClient::new(env, &reserve_data.debt_token_address);
+    let debt_token = DebtTokenClient::new(env, &reserve_data.debt_token_address);
     let total_debt = debt_token.total_supply();
 
     let debt_ir = calc_interest_rate(total_collateral, total_debt, &reserve_data.ir_params)
