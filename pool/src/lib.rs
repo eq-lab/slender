@@ -308,13 +308,14 @@ impl LendingPoolTrait for LendingPool {
         reserve.s_token_address.require_auth();
         Self::require_not_paused(&env)?;
         // TODO
+        let balance_from_after = balance_from_before
+            .checked_sub(amount)
+            .ok_or(Error::AlreadyInitialized)?;
+
         Self::require_good_position(
             &env,
             from,
-            Some((
-                reserve.s_token_address,
-                balance_from_before.checked_sub(amount).unwrap(),
-            )),
+            Some((reserve.s_token_address, balance_from_after)),
             None,
             true,
         )?;
