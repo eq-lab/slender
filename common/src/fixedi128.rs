@@ -1,6 +1,6 @@
 use fixed_point_math::FixedPoint;
 
-use crate::percentage_math::PERCENTAGE_FACTOR;
+use crate::PERCENTAGE_FACTOR;
 
 /// Fixed type with inner type of i128 and fixed denominator 10e9
 #[derive(Default, Debug, Clone, Copy, Eq, PartialEq, PartialOrd, Ord)]
@@ -43,26 +43,26 @@ impl FixedI128 {
     }
 
     /// Multiplication of two fixed values
-    pub fn mul(self, value: FixedI128) -> Option<FixedI128> {
+    pub fn checked_mul(self, value: FixedI128) -> Option<FixedI128> {
         self.0
             .fixed_mul_floor(value.0, Self::DENOMINATOR)
             .map(FixedI128)
     }
 
     /// Division of two FixedI128 values
-    pub fn div(self, value: FixedI128) -> Option<FixedI128> {
+    pub fn checked_div(self, value: FixedI128) -> Option<FixedI128> {
         self.0
             .fixed_div_floor(value.0, Self::DENOMINATOR)
             .map(FixedI128)
     }
 
     /// Sum of two fixed values
-    pub fn add(self, value: FixedI128) -> Option<FixedI128> {
+    pub fn checked_add(self, value: FixedI128) -> Option<FixedI128> {
         self.0.checked_add(value.0).map(FixedI128)
     }
 
     /// Subtraction of two fixed values
-    pub fn sub(self, other: FixedI128) -> Option<FixedI128> {
+    pub fn checked_sub(self, other: FixedI128) -> Option<FixedI128> {
         self.0.checked_sub(other.0).map(FixedI128)
     }
 

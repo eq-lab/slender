@@ -7,6 +7,8 @@ use soroban_sdk::{
     testutils::Address as _, token::Client as TokenClient, Address, Env, IntoVal, Symbol,
 };
 
+use self::pool::{IRParams, InitReserveInput};
+
 mod pool {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/pool.wasm");
 }
@@ -38,7 +40,19 @@ fn test() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let (token, pool) = create_token(&e);
+    let (token, pool, underlying) = create_token(&e);
+    let debt_token_address = Address::random(&e);
+    let init_reserve_input = InitReserveInput {
+        s_token_address: token.address.clone(),
+        debt_token_address: debt_token_address,
+        ir_params: IRParams {
+            alpha: 143,
+            initial_rate: 200,
+            max_rate: 50_000,
+            scaling_coeff: 9_000,
+        },
+    };
+    pool.init_reserve(&underlying.address, &init_reserve_input);
 
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);

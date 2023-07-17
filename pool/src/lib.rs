@@ -2,7 +2,7 @@
 #![no_std]
 
 use crate::price_provider::PriceProvider;
-use common::{percentage_math::*, rate_math::*, FixedPoint};
+use common::{FixedI128, PERCENTAGE_FACTOR};
 use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
 use s_token_interface::STokenClient;
@@ -21,18 +21,15 @@ use crate::storage::*;
 #[allow(dead_code)] //TODO: remove after full implement validate_borrow
 #[derive(Debug, Clone, Copy)]
 struct AccountData {
+    /// Total collateral expresed in XLM
     collateral: i128,
+    /// Total debt expressed in XLM
     debt: i128,
+    /// Debt with liquidation penalty
     liquidation_debt: Option<i128>,
-    ltv: i128,
-    liq_threshold: i128,
-    health_factor: i128,
-    /// Net position value
+    /// Net position value in XLM
     npv: i128,
 }
-
-//TODO: set right value for liquidation threshold
-const HEALTH_FACTOR_LIQUIDATION_THRESHOLD: i128 = 1;
 
 pub struct LendingPool;
 
@@ -68,18 +65,20 @@ impl LendingPoolTrait for LendingPool {
     /// # Panics
     ///
     /// - Panics with `Uninitialized` if the admin key is not exist in storage.
-    /// - Panics if the caller is not the admin.
     /// - Panics with `ReserveAlreadyInitialized` if the specified asset key already exists in storage.
+    /// - Panics with `MustBeLtePercentageFactor` if alpha, initial_rate or max_rate are invalid.
+    /// - Panics with `MustBeLtPercentageFactor` if scaling_coeff is invalid.
+    /// - Panics if the caller is not the admin.
     ///
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error> {
         Self::require_admin(&env)?;
-        if has_reserve(&env, asset.clone()) {
-            panic_with_error!(&env, Error::ReserveAlreadyInitialized);
-        }
+        Self::require_uninitialized_reserve(&env, &asset);
+        Self::require_valid_ir_params(&env, &input.ir_params);
 
         let mut reserve_data = ReserveData::new(&env, input);
         let mut reserves = read_reserves(&env);
         let reserves_len = reserves.len();
+
         assert_with_error!(
             &env,
             reserves_len <= u8::MAX as u32,
@@ -91,6 +90,33 @@ impl LendingPoolTrait for LendingPool {
         reserves.push_back(asset.clone());
 
         write_reserves(&env, &reserves);
+        write_reserve(&env, asset, &reserve_data);
+
+        Ok(())
+    }
+
+    /// Updates an interest rate parameters for a given asset.
+    ///
+    /// # Arguments
+    ///
+    /// - asset - The address of the asset associated with the reserve.
+    /// - params - The interest rate parameters to set.
+    ///
+    /// # Panics
+    ///
+    /// - Panics with `Uninitialized` if the admin key is not exist in storage.
+    /// - Panics with `ReserveAlreadyInitialized` if the specified asset key already exists in storage.
+    /// - Panics with `MustBeLtePercentageFactor` if alpha, initial_rate or max_rate are invalid.
+    /// - Panics with `MustBeLtPercentageFactor` if scaling_coeff is invalid.
+    /// - Panics if the caller is not the admin.
+    ///
+    fn set_ir_params(env: Env, asset: Address, params: IRParams) -> Result<(), Error> {
+        Self::require_admin(&env)?;
+        Self::require_valid_ir_params(&env, &params);
+
+        let mut reserve_data = read_reserve(&env, asset.clone())?;
+        reserve_data.update_ir_params(params);
+
         write_reserve(&env, asset, &reserve_data);
 
         Ok(())
@@ -132,69 +158,31 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// # Arguments
     ///
-    /// - asset The address of asset that should be set as collateral
-    /// - config Collateral parameters
+    /// - asset - The address of asset that should be set as collateral
+    /// - params - Collateral parameters
     ///
     /// # Panics
     ///
-    /// - Panics with `InvalidReserveParams` when wrong collateral params provided.
+    /// - Panics with `MustBeLtePercentageFactor` if discount is invalid.
+    /// - Panics with `MustBeGtPercentageFactor` if liq_bonus is invalid.
+    /// - Panics with `MustBePositive` if liq_cap is invalid.
+    /// - Panics with `NoReserveExistForAsset` if no reserve exists for the specified asset.
     /// - Panics if the caller is not the admin.
+    ///
     fn configure_as_collateral(
         env: Env,
         asset: Address,
         params: CollateralParamsInput,
     ) -> Result<(), Error> {
         Self::require_admin(&env)?;
-
-        assert_with_error!(
-            &env,
-            params.discount <= PERCENTAGE_FACTOR,
-            Error::InvalidReserveParams
-        );
-
-        //validation of the parameters: the LTV can
-        //only be lower or equal than the liquidation threshold
-        //(otherwise a loan against the asset would cause instantaneous liquidation)
-        assert_with_error!(
-            &env,
-            params.ltv <= params.liq_threshold,
-            Error::InvalidReserveParams
-        );
-
-        if params.liq_threshold != 0 {
-            //liquidation bonus must be bigger than 100.00%, otherwise the liquidator would receive less
-            //collateral than needed to cover the debt
-            assert_with_error!(
-                &env,
-                params.liq_bonus > PERCENTAGE_FACTOR,
-                Error::InvalidReserveParams
-            );
-
-            //if threshold * bonus is less than or equal to PERCENTAGE_FACTOR, it's guaranteed that at the moment
-            //a loan is taken there is enough collateral available to cover the liquidation bonus
-            assert_with_error!(
-                env,
-                params
-                    .liq_threshold
-                    .percent_mul(params.liq_bonus)
-                    .ok_or(Error::MathOverflowError)?
-                    <= PERCENTAGE_FACTOR as i128,
-                Error::InvalidReserveParams
-            );
-        } else {
-            assert_with_error!(&env, params.liq_bonus == 0, Error::InvalidReserveParams);
-
-            //if the liquidation threshold is being set to 0,
-            // the reserve is being disabled as collateral. To do so,
-            //we need to ensure no liquidity is deposited
-            Self::require_no_liquidity(&env, asset.clone())?;
-        }
+        Self::require_valid_collateral_params(&env, &params);
 
         let mut reserve = read_reserve(&env, asset.clone())?;
         reserve.update_collateral_config(params);
-        write_reserve(&env, asset.clone(), &reserve);
 
+        write_reserve(&env, asset.clone(), &reserve);
         event::collat_config_change(&env, asset, params);
+
         Ok(())
     }
 
@@ -285,7 +273,7 @@ impl LendingPoolTrait for LendingPool {
             &reserve.s_token_address,
             &asset,
             amount,
-            reserve.liquidity_index,
+            reserve.collat_accrued_rate,
         )?;
 
         if is_first_deposit {
@@ -338,7 +326,7 @@ impl LendingPoolTrait for LendingPool {
             .s_token_address
             .require_auth();
         Self::require_not_paused(&env)?;
-        Self::require_good_position(&env, from.clone(), None)?;
+        Self::require_good_position(&env, from.clone(), Some(balance_from_before), None)?;
 
         if from != to {
             let reserve_id = read_reserve(&env, asset.clone())?.get_id();
@@ -379,6 +367,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// Panics if the caller is not authorized.
     /// Panics if the withdrawal amount is invalid or does not meet the reserve requirements.
+    ///
     fn withdraw(
         env: Env,
         who: Address,
@@ -391,7 +380,7 @@ impl LendingPoolTrait for LendingPool {
 
         let mut reserve = read_reserve(&env, asset.clone())?;
 
-        let s_token = s_token_interface::STokenClient::new(&env, &reserve.s_token_address);
+        let s_token = STokenClient::new(&env, &reserve.s_token_address);
         let who_balance = s_token.balance(&who);
         let amount_to_withdraw = if amount == i128::MAX {
             who_balance
@@ -419,8 +408,9 @@ impl LendingPoolTrait for LendingPool {
             event::reserve_used_as_collateral_disabled(&env, who.clone(), asset.clone());
         }
 
-        let amount_to_burn = amount_to_withdraw
-            .div_rate_floor(reserve.liquidity_index)
+        // amount_to_burn = amount_to_withdraw / liquidity_index
+        let amount_to_burn = FixedI128::from_inner(reserve.collat_accrued_rate)
+            .recip_mul_int(amount_to_withdraw)
             .ok_or(Error::MathOverflowError)?;
         s_token.burn(&who, &amount_to_burn, &amount_to_withdraw, &to);
 
@@ -439,6 +429,7 @@ impl LendingPoolTrait for LendingPool {
     /// # Panics
     /// - Panics when caller is not authorized as who
     /// - Panics if user balance doesn't meet requirements for borrowing an amount of asset
+    ///
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
         Self::require_not_paused(&env)?;
@@ -489,8 +480,8 @@ impl LendingPoolTrait for LendingPool {
         let reserves = read_reserves(&env);
         let mut user_config = read_user_config(&env, who.clone())?;
         let account_data =
-            Self::calc_account_data(&env, who.clone(), &user_config, &reserves, true)?;
-        if Self::is_good_position(&env, who.clone(), Some(account_data))? {
+            Self::calc_account_data(&env, who.clone(), None, &user_config, &reserves, true)?;
+        if Self::is_good_position(&env, who.clone(), None, Some(account_data))? {
             return Err(Error::GoodPosition);
         }
 
@@ -594,9 +585,22 @@ impl LendingPoolTrait for LendingPool {
     }
 
     #[cfg(any(test, feature = "testutils"))]
-    fn set_liq_index(env: Env, asset: Address, value: i128) -> Result<(), Error> {
+    fn set_accrued_rates(
+        env: Env,
+        asset: Address,
+        collat_accrued_rate: Option<i128>,
+        debt_accrued_rate: Option<i128>,
+    ) -> Result<(), Error> {
         let mut reserve_data = read_reserve(&env, asset.clone())?;
-        reserve_data.liquidity_index = value;
+
+        if !collat_accrued_rate.is_none() {
+            reserve_data.collat_accrued_rate = collat_accrued_rate.unwrap();
+        }
+
+        if !debt_accrued_rate.is_none() {
+            reserve_data.debt_accrued_rate = debt_accrued_rate.unwrap();
+        }
+
         write_reserve(&env, asset, &reserve_data);
 
         Ok(())
@@ -610,21 +614,72 @@ impl LendingPool {
         Ok(())
     }
 
+    fn require_valid_ir_params(env: &Env, params: &IRParams) {
+        Self::require_lte_10000_bps(&env, params.alpha);
+        Self::require_lte_10000_bps(&env, params.initial_rate);
+        Self::require_gt_10000_bps(&env, params.max_rate);
+        Self::require_lt_10000_bps(&env, params.scaling_coeff);
+    }
+
+    fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
+        Self::require_lte_10000_bps(&env, params.discount);
+        Self::require_gt_10000_bps(&env, params.liq_bonus);
+        Self::require_positive(&env, params.liq_cap);
+    }
+
+    fn require_uninitialized_reserve(env: &Env, asset: &Address) {
+        assert_with_error!(
+            &env,
+            !has_reserve(&env, asset.clone()),
+            Error::ReserveAlreadyInitialized
+        );
+    }
+
+    fn require_lte_10000_bps(env: &Env, value: u32) {
+        assert_with_error!(
+            &env,
+            value <= PERCENTAGE_FACTOR,
+            Error::MustBeLtePercentageFactor
+        );
+    }
+
+    fn require_lt_10000_bps(env: &Env, value: u32) {
+        assert_with_error!(
+            &env,
+            value < PERCENTAGE_FACTOR,
+            Error::MustBeLtPercentageFactor
+        );
+    }
+
+    fn require_gt_10000_bps(env: &Env, value: u32) {
+        assert_with_error!(
+            &env,
+            value > PERCENTAGE_FACTOR,
+            Error::MustBeGtPercentageFactor
+        );
+    }
+
+    fn require_positive(env: &Env, value: i128) {
+        assert_with_error!(&env, value > 0, Error::MustBePositive);
+    }
+
     fn do_deposit(
         env: &Env,
         who: &Address,
         s_token_address: &Address,
         asset: &Address,
         amount: i128,
-        liquidity_index: i128,
+        collat_accrued_rate: i128,
     ) -> Result<bool, Error> {
         let token = token::Client::new(env, asset);
         token.transfer(who, s_token_address, &amount);
 
         let s_token = s_token_interface::STokenClient::new(env, s_token_address);
         let is_first_deposit = s_token.balance(who) == 0;
-        let amount_to_mint = amount
-            .div_rate_floor(liquidity_index)
+
+        // amount_to_mint = amount / collat_accrued_rate
+        let amount_to_mint = FixedI128::from_inner(collat_accrued_rate)
+            .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
         s_token.mint(who, &amount_to_mint);
         Ok(is_first_deposit)
@@ -649,7 +704,7 @@ impl LendingPool {
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, amount <= balance, Error::NotEnoughAvailableUserBalance);
 
-        match Self::is_good_position(env, who, None) {
+        match Self::is_good_position(env, who, None, None) {
             Ok(good_position) => assert_with_error!(env, good_position, Error::BadPosition),
             Err(e) => assert_with_error!(env, true, e),
         }
@@ -663,28 +718,25 @@ impl LendingPool {
         asset: &Address,
         reserve: &ReserveData,
         user_config: &UserConfiguration,
-        amount: i128,
+        amount_to_borrow: i128,
     ) -> Result<(), Error> {
-        let (asset_price, denominator) = Self::get_asset_price(env, asset.clone())?;
-        let amount_in_xlm = amount
-            .fixed_mul_floor(asset_price, denominator)
+        let asset_price = Self::get_asset_price(env, asset.clone())?;
+        let amount_in_xlm = asset_price
+            .mul_int(amount_to_borrow)
             .ok_or(Error::ValidateBorrowMathError)?;
 
-        assert_with_error!(env, amount > 0 && amount_in_xlm > 0, Error::InvalidAmount);
+        assert_with_error!(
+            env,
+            amount_to_borrow > 0 && amount_in_xlm > 0,
+            Error::InvalidAmount
+        );
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, !flags.is_frozen, Error::ReserveFrozen);
         assert_with_error!(env, flags.borrowing_enabled, Error::BorrowingNotEnabled);
 
         let reserves = &read_reserves(env);
-        let account_data = Self::calc_account_data(env, who.clone(), user_config, reserves, false)?;
-
-        assert_with_error!(env, account_data.collateral > 0, Error::CollateralIsZero);
-        assert_with_error!(
-            env,
-            account_data.health_factor > HEALTH_FACTOR_LIQUIDATION_THRESHOLD,
-            Error::HealthFactorLowerThanLiqThreshold
-        );
+        let account_data = Self::calc_account_data(env, who.clone(), None, user_config, reserves, false)?;
 
         assert_with_error!(
             env,
@@ -692,21 +744,8 @@ impl LendingPool {
             Error::CollateralNotCoverNewBorrow
         );
 
-        let amount_of_collateral_needed_xlm = account_data
-            .debt
-            .checked_add(amount_in_xlm)
-            .ok_or(Error::ValidateBorrowMathError)?
-            .percent_div(account_data.ltv)
-            .ok_or(Error::ValidateBorrowMathError)?;
-
-        assert_with_error!(
-            env,
-            amount_of_collateral_needed_xlm <= account_data.collateral,
-            Error::CollateralNotCoverNewBorrow
-        );
-
         //TODO: complete validation after rate implementation
-        Self::require_good_position(env, who, None)?;
+        Self::require_good_position(env, who, None, None)?;
 
         Ok(())
     }
@@ -714,6 +753,7 @@ impl LendingPool {
     fn calc_account_data(
         env: &Env,
         who: Address,
+        mb_who_balance: Option<i128>,
         user_config: &UserConfiguration,
         reserves: &Vec<Address>,
         liquidation: bool,
@@ -723,9 +763,6 @@ impl LendingPool {
                 collateral: 0,
                 debt: 0,
                 liquidation_debt: liquidation.then_some(0),
-                ltv: 0,
-                liq_threshold: 0,
-                health_factor: i128::MAX,
                 npv: 0,
             });
         }
@@ -733,8 +770,6 @@ impl LendingPool {
         let mut total_collateral_in_xlm: i128 = 0;
         let mut total_debt_in_xlm: i128 = 0;
         let mut total_liquidation_debt_in_xlm: i128 = 0;
-        let mut avg_ltv: i128 = 0;
-        let mut avg_liq_threshold: i128 = 0;
         let reserves_len =
             u8::try_from(reserves.len()).map_err(|_| Error::ReservesMaxCapacityExceeded)?;
 
@@ -748,47 +783,31 @@ impl LendingPool {
             let curr_reserve_asset = reserves.get(i.into()).unwrap().unwrap();
             let curr_reserve = read_reserve(env, curr_reserve_asset.clone())?;
 
-            let (reserve_price, price_denominator) =
-                Self::get_asset_price(env, curr_reserve_asset.clone())?;
+            let reserve_price = Self::get_asset_price(env, curr_reserve_asset.clone())?;
 
-            if curr_reserve.configuration.liq_threshold != 0
-                && user_config.is_using_as_collateral(env, i)
-            {
+            if user_config.is_using_as_collateral(env, i) {
                 let coll_coeff = Self::get_collateral_coeff(env, &curr_reserve)?;
 
-                // compounded balance of sToken
-                let s_token =
-                    s_token_interface::STokenClient::new(env, &curr_reserve.s_token_address);
+                let who_balance: i128 = mb_who_balance.unwrap_or_else(|| {
+                    STokenClient::new(env, &curr_reserve.s_token_address).balance(&who)
+                });
 
-                let compounded_balance = s_token
-                    .balance(&who)
-                    .mul_rate_floor(coll_coeff)
-                    .ok_or(Error::CalcAccountDataMathError)?
-                    .percent_mul(curr_reserve.configuration.discount)
+                let discount = FixedI128::from_percentage(curr_reserve.configuration.discount)
+                    .ok_or(Error::CalcAccountDataMathError)?;
+                let compounded_balance = discount
+                    .mul_int(
+                        coll_coeff
+                            .mul_int(who_balance)
+                            .ok_or(Error::CalcAccountDataMathError)?,
+                    )
                     .ok_or(Error::CalcAccountDataMathError)?;
 
-                let liquidity_balance_in_xlm = compounded_balance
-                    .fixed_mul_floor(reserve_price, price_denominator)
+                let liquidity_balance_in_xlm = reserve_price
+                    .mul_int(compounded_balance)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
                 total_collateral_in_xlm = total_collateral_in_xlm
                     .checked_add(liquidity_balance_in_xlm)
-                    .ok_or(Error::CalcAccountDataMathError)?;
-
-                avg_ltv = avg_ltv
-                    .checked_add(
-                        i128::from(curr_reserve.configuration.ltv)
-                            .checked_mul(liquidity_balance_in_xlm)
-                            .ok_or(Error::CalcAccountDataMathError)?,
-                    )
-                    .ok_or(Error::CalcAccountDataMathError)?;
-
-                avg_liq_threshold = avg_liq_threshold
-                    .checked_add(
-                        i128::from(curr_reserve.configuration.liq_threshold)
-                            .checked_mul(liquidity_balance_in_xlm)
-                            .ok_or(Error::CalcAccountDataMathError)?,
-                    )
                     .ok_or(Error::CalcAccountDataMathError)?;
             }
 
@@ -796,13 +815,12 @@ impl LendingPool {
                 let debt_coeff = Self::get_debt_coeff(env, &curr_reserve)?;
 
                 let debt_token = token::Client::new(env, &curr_reserve.debt_token_address);
-                let compounded_balance = debt_token
-                    .balance(&who)
-                    .mul_rate_floor(debt_coeff)
+                let compounded_balance = debt_coeff
+                    .mul_int(debt_token.balance(&who))
                     .ok_or(Error::CalcAccountDataMathError)?;
 
-                let debt_balance_in_xlm = compounded_balance
-                    .fixed_div_floor(reserve_price, price_denominator)
+                let debt_balance_in_xlm = reserve_price
+                    .mul_int(compounded_balance)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
                 total_debt_in_xlm = total_debt_in_xlm
@@ -820,11 +838,6 @@ impl LendingPool {
             }
         }
 
-        avg_ltv = avg_ltv.checked_div(total_collateral_in_xlm).unwrap_or(0);
-        avg_liq_threshold = avg_liq_threshold
-            .checked_div(total_collateral_in_xlm)
-            .unwrap_or(0);
-
         let npv = total_collateral_in_xlm
             .checked_sub(total_debt_in_xlm)
             .ok_or(Error::CalcAccountDataMathError)?;
@@ -833,71 +846,29 @@ impl LendingPool {
             collateral: total_collateral_in_xlm,
             debt: total_debt_in_xlm,
             liquidation_debt: liquidation.then_some(total_liquidation_debt_in_xlm),
-            ltv: avg_ltv,
-            liq_threshold: avg_liq_threshold,
-            health_factor: Self::calc_health_factor(
-                total_collateral_in_xlm,
-                total_debt_in_xlm,
-                avg_liq_threshold,
-            )?,
             npv,
         })
     }
 
     /// Returns price of asset expressed in XLM token and denominator 10^decimals
-    fn get_asset_price(env: &Env, asset: Address) -> Result<(i128, i128), Error> {
+    fn get_asset_price(env: &Env, asset: Address) -> Result<FixedI128, Error> {
         let price_feed = read_price_feed(env, asset.clone())?;
         let provider = PriceProvider::new(env, &price_feed);
         provider
             .get_price(&asset)
             .ok_or(Error::NoPriceForAsset)
             .map(|price_data| {
-                Ok((
-                    price_data.price,
-                    10_i128
-                        .checked_pow(price_data.decimals)
-                        .ok_or(Error::PriceMathOverflow)?,
-                ))
+                FixedI128::from_rational(price_data.price, price_data.decimals)
+                    .ok_or(Error::AssetPriceMathError)
             })?
     }
 
-    fn calc_health_factor(
-        total_collateral: i128,
-        total_debt: i128,
-        liquidation_threshold: i128,
-    ) -> Result<i128, Error> {
-        if total_debt == 0 {
-            return Ok(i128::MAX);
-        }
-
-        total_collateral
-            .percent_mul(liquidation_threshold)
-            .ok_or(Error::MathOverflowError)?
-            .checked_div(total_debt)
-            .ok_or(Error::MathOverflowError)
+    fn get_collateral_coeff(_env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+        Ok(FixedI128::from_inner(reserve.collat_accrued_rate))
     }
 
-    fn get_collateral_coeff(_env: &Env, _reserve: &ReserveData) -> Result<i128, Error> {
-        //TODO: implement rate
-        Ok(RATE_DENOMINATOR)
-    }
-
-    fn get_debt_coeff(_env: &Env, _reserve: &ReserveData) -> Result<i128, Error> {
-        //TODO: implement accrued
-        Ok(RATE_DENOMINATOR)
-    }
-
-    fn require_no_liquidity(env: &Env, asset: Address) -> Result<(), Error> {
-        let reserve = read_reserve(env, asset.clone())?;
-        let token = token::Client::new(env, &asset);
-
-        assert_with_error!(
-            env,
-            token.balance(&reserve.s_token_address) == 0 && reserve.current_liquidity_rate == 0,
-            Error::ReserveLiquidityNotZero
-        );
-
-        Ok(())
+    fn get_debt_coeff(_env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+        Ok(FixedI128::from_inner(reserve.debt_accrued_rate))
     }
 
     fn require_not_paused(env: &Env) -> Result<(), Error> {
@@ -911,6 +882,7 @@ impl LendingPool {
     fn is_good_position(
         env: &Env,
         who: Address,
+        mb_who_balance: Option<i128>,
         mb_account_data: Option<AccountData>,
     ) -> Result<bool, Error> {
         let account_data = if let Some(account_data) = mb_account_data {
@@ -918,7 +890,7 @@ impl LendingPool {
         } else {
             let user_config = read_user_config(env, who.clone())?;
             let reserves = read_reserves(env);
-            Self::calc_account_data(env, who, &user_config, &reserves, false)?
+            Self::calc_account_data(env, who, mb_who_balance, &user_config, &reserves, false)?
         };
 
         Ok(account_data.npv > 0)
@@ -927,9 +899,10 @@ impl LendingPool {
     fn require_good_position(
         env: &Env,
         who: Address,
+        mb_who_balance: Option<i128>,
         mb_account_data: Option<AccountData>,
     ) -> Result<(), Error> {
-        let is_good_position = Self::is_good_position(env, who, mb_account_data)?;
+        let is_good_position = Self::is_good_position(env, who, mb_who_balance, mb_account_data)?;
         if !is_good_position {
             return Err(Error::BadPosition);
         }

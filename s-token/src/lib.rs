@@ -6,7 +6,7 @@ mod storage;
 mod test;
 
 use crate::storage::*;
-use common::rate_math::RateMath;
+use common::FixedI128;
 use common_token::{balance::*, require_nonnegative_amount, storage::*, verify_caller_is_pool};
 use pool_interface::{LendingPoolClient, ReserveData};
 use s_token_interface::STokenTrait;
@@ -173,8 +173,8 @@ impl STokenTrait for SToken {
     fn underlying_balance(e: Env, id: Address) -> i128 {
         let (reserve, _) = Self::get_reserve_and_underlying(&e);
         let balance = read_balance(&e, id);
-        balance
-            .mul_rate_floor(reserve.liquidity_index)
+        FixedI128::from_inner(reserve.collat_accrued_rate)
+            .mul_int(balance)
             .unwrap_or_else(|| panic!("s-token: overflow error"))
     }
 
@@ -381,8 +381,8 @@ impl STokenTrait for SToken {
         let (reserve, _) = Self::get_reserve_and_underlying(&e);
         let total_supply = read_total_supply(&e);
 
-        total_supply
-            .mul_rate_floor(reserve.liquidity_index)
+        FixedI128::from_inner(reserve.collat_accrued_rate)
+            .mul_int(total_supply)
             .unwrap_or_else(|| panic!("s-token: overflow error"))
     }
 
@@ -548,7 +548,7 @@ impl SToken {
 
     fn get_reserve_and_underlying(e: &Env) -> (ReserveData, Address) {
         let pool = read_pool(e);
-        let pool_client = pool_interface::LendingPoolClient::new(e, &pool);
+        let pool_client = LendingPoolClient::new(e, &pool);
 
         let underlying_asset = read_underlying_asset(e);
         let reserve = pool_client
