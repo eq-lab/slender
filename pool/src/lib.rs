@@ -488,6 +488,23 @@ impl LendingPoolTrait for LendingPool {
         paused(&env)
     }
 
+    fn get_account_data(env: Env, who: Address) -> Result<(i128, i128, i128), Error> {
+        let AccountData {
+            collateral,
+            debt,
+            npv,
+            liquidation_debt: _,
+        } = Self::calc_account_data(
+            &env,
+            who.clone(),
+            None,
+            &read_user_config(&env, who)?,
+            &read_reserves(&env),
+            false,
+        )?;
+        Ok((collateral, debt, npv))
+    }
+
     fn liquidate(
         env: Env,
         liquidator: Address,

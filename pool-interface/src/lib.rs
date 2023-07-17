@@ -108,6 +108,8 @@ pub trait LendingPoolTrait {
 
     fn paused(env: Env) -> bool;
 
+    fn get_account_data(env: Env, who: Address) -> Result<(i128, i128, i128), Error>;
+
     fn liquidate(
         env: Env,
         liquidator: Address,
