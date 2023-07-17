@@ -310,7 +310,7 @@ impl LendingPoolTrait for LendingPool {
         // TODO
         let balance_from_after = balance_from_before
             .checked_sub(amount)
-            .ok_or(Error::AlreadyInitialized)?;
+            .ok_or(Error::InvalidAmount)?;
 
         Self::require_good_position(
             &env,
