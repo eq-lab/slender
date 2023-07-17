@@ -87,6 +87,7 @@ pub fn update_accrued_rates(
     env: &Env,
     asset: Address,
     reserve_data: ReserveData,
+    ir_params: IRParams,
 ) -> Result<ReserveData, Error> {
     let current_time = env.ledger().timestamp();
     let elapsed_time = current_time
@@ -103,11 +104,11 @@ pub fn update_accrued_rates(
     let debt_token = DebtTokenClient::new(env, &reserve_data.debt_token_address);
     let total_debt = debt_token.total_supply();
 
-    let debt_ir = calc_interest_rate(total_collateral, total_debt, &reserve_data.ir_params)
+    let debt_ir = calc_interest_rate(total_collateral, total_debt, &ir_params)
         .ok_or(Error::AccruedRateMathError)?;
 
-    let scale_coeff = FixedI128::from_percentage(reserve_data.ir_params.scaling_coeff)
-        .ok_or(Error::AccruedRateMathError)?;
+    let scale_coeff =
+        FixedI128::from_percentage(ir_params.scaling_coeff).ok_or(Error::AccruedRateMathError)?;
     let lend_ir = debt_ir
         .checked_mul(scale_coeff)
         .ok_or(Error::AccruedRateMathError)?;

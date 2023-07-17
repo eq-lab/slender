@@ -60,7 +60,6 @@ impl ReserveConfiguration {
 #[derive(Clone)]
 pub struct ReserveData {
     pub configuration: ReserveConfiguration,
-    pub ir_params: IRParams,
     pub collat_accrued_rate: i128,
     pub debt_accrued_rate: i128,
     pub last_update_timestamp: u64,
@@ -75,14 +74,12 @@ impl ReserveData {
         let InitReserveInput {
             s_token_address,
             debt_token_address,
-            ir_params,
         } = input;
         Self {
             collat_accrued_rate: FixedI128::ONE.into_inner(),
             debt_accrued_rate: FixedI128::ONE.into_inner(),
             s_token_address,
             debt_token_address,
-            ir_params,
             configuration: ReserveConfiguration::default(),
             last_update_timestamp: env.ledger().timestamp(),
             id: zero_bytes(env), // position in reserve list
@@ -103,13 +100,6 @@ impl ReserveData {
         self.configuration.discount = config.discount;
     }
 
-    pub fn update_ir_params(&mut self, params: IRParams) {
-        self.ir_params.alpha = params.alpha;
-        self.ir_params.initial_rate = params.initial_rate;
-        self.ir_params.max_rate = params.max_rate;
-        self.ir_params.scaling_coeff = params.scaling_coeff;
-    }
-
     pub fn get_id(&self) -> u8 {
         self.id.get(0).unwrap()
     }
@@ -120,7 +110,6 @@ impl ReserveData {
 pub struct InitReserveInput {
     pub s_token_address: Address,
     pub debt_token_address: Address,
-    pub ir_params: IRParams,
 }
 
 fn zero_bytes<const N: usize>(env: &Env) -> BytesN<N> {
