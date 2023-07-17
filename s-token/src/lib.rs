@@ -502,7 +502,7 @@ impl SToken {
                 &from,
                 &to,
                 &amount,
-                &from_balance_prev,
+                &(from_balance_prev, e.current_contract_address()),
                 &to_balance_prev,
             );
         }

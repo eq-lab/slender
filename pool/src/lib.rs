@@ -37,17 +37,23 @@ impl LendingPoolTrait for LendingPool {
     /// # Arguments
     ///
     /// - admin - The address of the admin for the contract.
+    /// - ir_params - The interest rate parameters to set.
     ///
     /// # Panics
     ///
     /// Panics with `AlreadyInitialized` if the admin key already exists in storage.
     ///
-    fn initialize(env: Env, admin: Address) -> Result<(), Error> {
+    fn initialize(env: Env, admin: Address, ir_params: IRParams) -> Result<(), Error> {
         if has_admin(&env) {
             panic_with_error!(&env, Error::AlreadyInitialized);
         }
+        if has_ir_params(&env) {
+            panic_with_error!(&env, Error::AlreadyInitialized);
+        }
+        Self::require_valid_ir_params(&env, &ir_params);
 
         write_admin(&env, admin);
+        write_ir_params(&env, &ir_params);
 
         Ok(())
     }
@@ -70,7 +76,6 @@ impl LendingPoolTrait for LendingPool {
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error> {
         Self::require_admin(&env)?;
         Self::require_uninitialized_reserve(&env, &asset);
-        Self::require_valid_ir_params(&env, &input.ir_params);
 
         let mut reserve_data = ReserveData::new(&env, input);
         let mut reserves = read_reserves(&env);
@@ -92,31 +97,40 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
-    /// Updates an interest rate parameters for a given asset.
+    /// Updates an interest rate parameters.
     ///
     /// # Arguments
     ///
-    /// - asset - The address of the asset associated with the reserve.
-    /// - params - The interest rate parameters to set.
+    /// - input - The interest rate parameters to set.
     ///
     /// # Panics
     ///
-    /// - Panics with `Uninitialized` if the admin key is not exist in storage.
-    /// - Panics with `ReserveAlreadyInitialized` if the specified asset key already exists in storage.
-    /// - Panics with `MustBeLtePercentageFactor` if alpha, initial_rate or max_rate are invalid.
+    /// - Panics with `Uninitialized` if the admin or ir_params key are not exist in storage.
+    /// - Panics with `MustBeLtePercentageFactor` if alpha or initial_rate are invalid.
+    /// - Panics with `MustBeGtPercentageFactor` if max_rate is invalid.
     /// - Panics with `MustBeLtPercentageFactor` if scaling_coeff is invalid.
     /// - Panics if the caller is not the admin.
     ///
-    fn set_ir_params(env: Env, asset: Address, params: IRParams) -> Result<(), Error> {
+    fn set_ir_params(env: Env, input: IRParams) -> Result<(), Error> {
         Self::require_admin(&env)?;
-        Self::require_valid_ir_params(&env, &params);
+        Self::require_valid_ir_params(&env, &input);
 
-        let mut reserve_data = read_reserve(&env, asset.clone())?;
-        reserve_data.update_ir_params(params);
+        let mut ir_params = read_ir_params(&env)?;
+        ir_params.update(input);
 
-        write_reserve(&env, asset, &reserve_data);
+        write_ir_params(&env, &ir_params);
 
         Ok(())
+    }
+
+    /// Retrieves the interest rate parameters.
+    ///
+    /// # Returns
+    ///
+    /// Returns the interest rate parameters if set, or None otherwise.
+    ///
+    fn get_ir_params(env: Env) -> Option<IRParams> {
+        read_ir_params(&env).ok()
     }
 
     /// Enable borrowing
@@ -292,14 +306,21 @@ impl LendingPoolTrait for LendingPool {
         asset: Address,
         from: Address,
         _to: Address,
-        _amount: i128,
-        balance_from_before: i128,
+        amount: i128,
+        balance_from_before: (i128, Address),
         _balance_to_before: i128,
     ) -> Result<(), Error> {
         read_reserve(&env, asset)?.s_token_address.require_auth();
         Self::require_not_paused(&env)?;
         // TODO
-        Self::require_good_position(&env, from, Some(balance_from_before), None, true)?;
+        Self::require_good_position(
+            &env,
+            from,
+            Some(balance_from_before.1),
+            Some(amount - balance_from_before.0),
+            None,
+            true,
+        )?;
 
         Ok(())
     }
@@ -458,15 +479,15 @@ impl LendingPool {
     }
 
     fn require_valid_ir_params(env: &Env, params: &IRParams) {
-        Self::require_lte_10000_bps(&env, params.alpha);
-        Self::require_lte_10000_bps(&env, params.initial_rate);
-        Self::require_gt_10000_bps(&env, params.max_rate);
-        Self::require_lt_10000_bps(&env, params.scaling_coeff);
+        Self::require_lte_percentage_factor(&env, params.alpha);
+        Self::require_lte_percentage_factor(&env, params.initial_rate);
+        Self::require_gt_percentage_factor(&env, params.max_rate);
+        Self::require_lt_percentage_factor(&env, params.scaling_coeff);
     }
 
     fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
-        Self::require_lte_10000_bps(&env, params.discount);
-        Self::require_gt_10000_bps(&env, params.liq_bonus);
+        Self::require_lte_percentage_factor(&env, params.discount);
+        Self::require_gt_percentage_factor(&env, params.liq_bonus);
         Self::require_positive(&env, params.liq_cap);
     }
 
@@ -478,7 +499,7 @@ impl LendingPool {
         );
     }
 
-    fn require_lte_10000_bps(env: &Env, value: u32) {
+    fn require_lte_percentage_factor(env: &Env, value: u32) {
         assert_with_error!(
             &env,
             value <= PERCENTAGE_FACTOR,
@@ -486,7 +507,7 @@ impl LendingPool {
         );
     }
 
-    fn require_lt_10000_bps(env: &Env, value: u32) {
+    fn require_lt_percentage_factor(env: &Env, value: u32) {
         assert_with_error!(
             &env,
             value < PERCENTAGE_FACTOR,
@@ -494,7 +515,7 @@ impl LendingPool {
         );
     }
 
-    fn require_gt_10000_bps(env: &Env, value: u32) {
+    fn require_gt_percentage_factor(env: &Env, value: u32) {
         assert_with_error!(
             &env,
             value > PERCENTAGE_FACTOR,
@@ -547,7 +568,7 @@ impl LendingPool {
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, amount <= balance, Error::NotEnoughAvailableUserBalance);
 
-        match Self::is_good_position(env, who, None, None, true) {
+        match Self::is_good_position(env, who, None, None, None, true) {
             Ok(good_position) => assert_with_error!(env, good_position, Error::BadPosition),
             Err(e) => assert_with_error!(env, true, e),
         }
@@ -579,7 +600,8 @@ impl LendingPool {
         assert_with_error!(env, flags.borrowing_enabled, Error::BorrowingNotEnabled);
 
         let reserves = &read_reserves(env);
-        let account_data = Self::calc_account_data(env, who.clone(), None, user_config, reserves)?;
+        let account_data =
+            Self::calc_account_data(env, who.clone(), None, None, user_config, reserves)?;
 
         assert_with_error!(
             env,
@@ -588,7 +610,7 @@ impl LendingPool {
         );
 
         //TODO: complete validation after rate implementation
-        Self::require_good_position(env, who, None, None, true)?;
+        Self::require_good_position(env, who, None, None, None, true)?;
 
         Ok(())
     }
@@ -596,6 +618,7 @@ impl LendingPool {
     fn calc_account_data(
         env: &Env,
         who: Address,
+        mb_who_stoken_address: Option<Address>,
         mb_who_balance: Option<i128>,
         user_config: &UserConfiguration,
         reserves: &Vec<Address>,
@@ -628,9 +651,12 @@ impl LendingPool {
             if user_config.is_using_as_collateral(env, i) {
                 let coll_coeff = Self::get_collateral_coeff(env, &curr_reserve)?;
 
-                let who_balance: i128 = mb_who_balance.unwrap_or_else(|| {
-                    STokenClient::new(env, &curr_reserve.s_token_address).balance(&who)
-                });
+                let who_balance: i128 =
+                    if mb_who_stoken_address == Some(curr_reserve.s_token_address.clone()) {
+                        mb_who_balance.unwrap()
+                    } else {
+                        STokenClient::new(env, &curr_reserve.s_token_address).balance(&who)
+                    };
 
                 let discount = FixedI128::from_percentage(curr_reserve.configuration.discount)
                     .ok_or(Error::CalcAccountDataMathError)?;
@@ -712,6 +738,7 @@ impl LendingPool {
     fn is_good_position(
         env: &Env,
         who: Address,
+        mb_who_stoken_address: Option<Address>,
         mb_who_balance: Option<i128>,
         mb_account_data: Option<AccountData>,
         is_good: bool,
@@ -721,7 +748,14 @@ impl LendingPool {
         } else {
             let user_config = read_user_config(env, who.clone())?;
             let reserves = read_reserves(env);
-            Self::calc_account_data(env, who, mb_who_balance, &user_config, &reserves)?
+            Self::calc_account_data(
+                env,
+                who,
+                mb_who_stoken_address,
+                mb_who_balance,
+                &user_config,
+                &reserves,
+            )?
         };
 
         Ok(is_good)
@@ -730,12 +764,19 @@ impl LendingPool {
     fn require_good_position(
         env: &Env,
         who: Address,
+        mb_who_stoken_address: Option<Address>,
         mb_who_balance: Option<i128>,
         mb_account_data: Option<AccountData>,
         is_good: bool,
     ) -> Result<(), Error> {
-        let is_good_position =
-            Self::is_good_position(env, who, mb_who_balance, mb_account_data, is_good)?;
+        let is_good_position = Self::is_good_position(
+            env,
+            who,
+            mb_who_stoken_address,
+            mb_who_balance,
+            mb_account_data,
+            is_good,
+        )?;
         if !is_good_position {
             return Err(Error::BadPosition);
         }
