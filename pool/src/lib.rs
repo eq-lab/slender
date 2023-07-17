@@ -2,7 +2,7 @@
 #![no_std]
 
 use crate::price_provider::PriceProvider;
-use common::{percentage_math::*, rate_math::*, FixedPoint};
+use common::{FixedI128, PERCENTAGE_FACTOR};
 use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
 use s_token_interface::STokenClient;
@@ -20,8 +20,11 @@ use crate::storage::*;
 #[allow(dead_code)] //TODO: remove after full implement validate_borrow
 #[derive(Debug, Clone, Copy)]
 struct AccountData {
+    /// Total collateral expresed in XLM
     collateral: i128,
+    /// Total debt expressed in XLM
     debt: i128,
+    /// Net position value in XLM
     npv: i128,
 }
 
@@ -365,8 +368,9 @@ impl LendingPoolTrait for LendingPool {
             event::reserve_used_as_collateral_disabled(&env, who.clone(), asset.clone());
         }
 
-        let amount_to_burn = amount_to_withdraw
-            .div_rate_floor(reserve.collat_accrued_rate)
+        // amount_to_burn = amount_to_withdraw / liquidity_index
+        let amount_to_burn = FixedI128::from_inner(reserve.collat_accrued_rate)
+            .recip_mul_int(amount_to_withdraw)
             .ok_or(Error::MathOverflowError)?;
         s_token.burn(&who, &amount_to_burn, &amount_to_withdraw, &to);
 
@@ -506,8 +510,10 @@ impl LendingPool {
 
         let s_token = s_token_interface::STokenClient::new(env, s_token_address);
         let is_first_deposit = s_token.balance(who) == 0;
-        let amount_to_mint = amount
-            .div_rate_floor(collat_accrued_rate)
+
+        // amount_to_mint = amount / collat_accrued_rate
+        let amount_to_mint = FixedI128::from_inner(collat_accrued_rate)
+            .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
         s_token.mint(who, &amount_to_mint);
         Ok(is_first_deposit)
@@ -546,14 +552,18 @@ impl LendingPool {
         asset: &Address,
         reserve: &ReserveData,
         user_config: &UserConfiguration,
-        amount: i128,
+        amount_to_borrow: i128,
     ) -> Result<(), Error> {
-        let (asset_price, denominator) = Self::get_asset_price(env, asset.clone())?;
-        let amount_in_xlm = amount
-            .fixed_mul_floor(asset_price, denominator)
+        let asset_price = Self::get_asset_price(env, asset.clone())?;
+        let amount_in_xlm = asset_price
+            .mul_int(amount_to_borrow)
             .ok_or(Error::ValidateBorrowMathError)?;
 
-        assert_with_error!(env, amount > 0 && amount_in_xlm > 0, Error::InvalidAmount);
+        assert_with_error!(
+            env,
+            amount_to_borrow > 0 && amount_in_xlm > 0,
+            Error::InvalidAmount
+        );
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, !flags.is_frozen, Error::ReserveFrozen);
@@ -561,8 +571,6 @@ impl LendingPool {
 
         let reserves = &read_reserves(env);
         let account_data = Self::calc_account_data(env, who.clone(), None, user_config, reserves)?;
-
-        assert_with_error!(env, account_data.collateral > 0, Error::CollateralIsZero);
 
         assert_with_error!(
             env,
@@ -606,8 +614,7 @@ impl LendingPool {
             let curr_reserve_asset = reserves.get(i.into()).unwrap().unwrap();
             let curr_reserve = read_reserve(env, curr_reserve_asset.clone())?;
 
-            let (reserve_price, price_denominator) =
-                Self::get_asset_price(env, curr_reserve_asset.clone())?;
+            let reserve_price = Self::get_asset_price(env, curr_reserve_asset.clone())?;
 
             if user_config.is_using_as_collateral(env, i) {
                 let coll_coeff = Self::get_collateral_coeff(env, &curr_reserve)?;
@@ -619,14 +626,18 @@ impl LendingPool {
                     who_balance.unwrap()
                 };
 
-                let compounded_balance = who_balance
-                    .mul_rate_floor(coll_coeff)
-                    .ok_or(Error::CalcAccountDataMathError)?
-                    .percent_mul(curr_reserve.configuration.discount)
+                let discount = FixedI128::from_percentage(curr_reserve.configuration.discount)
+                    .ok_or(Error::CalcAccountDataMathError)?;
+                let compounded_balance = discount
+                    .mul_int(
+                        coll_coeff
+                            .mul_int(who_balance)
+                            .ok_or(Error::CalcAccountDataMathError)?,
+                    )
                     .ok_or(Error::CalcAccountDataMathError)?;
 
-                let liquidity_balance_in_xlm = compounded_balance
-                    .fixed_mul_floor(reserve_price, price_denominator)
+                let liquidity_balance_in_xlm = reserve_price
+                    .mul_int(compounded_balance)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
                 total_collateral_in_xlm = total_collateral_in_xlm
@@ -638,13 +649,12 @@ impl LendingPool {
                 let debt_coeff = Self::get_debt_coeff(env, &curr_reserve)?;
 
                 let debt_token = token::Client::new(env, &curr_reserve.debt_token_address);
-                let compounded_balance = debt_token
-                    .balance(&who)
-                    .mul_rate_floor(debt_coeff)
+                let compounded_balance = debt_coeff
+                    .mul_int(debt_token.balance(&who))
                     .ok_or(Error::CalcAccountDataMathError)?;
 
-                let debt_balance_in_xlm = compounded_balance
-                    .fixed_div_floor(reserve_price, price_denominator)
+                let debt_balance_in_xlm = reserve_price
+                    .mul_int(compounded_balance)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
                 total_debt_in_xlm = total_debt_in_xlm
@@ -665,28 +675,24 @@ impl LendingPool {
     }
 
     /// Returns price of asset expressed in XLM token and denominator 10^decimals
-    fn get_asset_price(env: &Env, asset: Address) -> Result<(i128, i128), Error> {
+    fn get_asset_price(env: &Env, asset: Address) -> Result<FixedI128, Error> {
         let price_feed = read_price_feed(env, asset.clone())?;
         let provider = PriceProvider::new(env, &price_feed);
         provider
             .get_price(&asset)
             .ok_or(Error::NoPriceForAsset)
             .map(|price_data| {
-                Ok((
-                    price_data.price,
-                    10_i128
-                        .checked_pow(price_data.decimals)
-                        .ok_or(Error::PriceMathOverflow)?,
-                ))
+                FixedI128::from_rational(price_data.price, price_data.decimals)
+                    .ok_or(Error::AssetPriceMathError)
             })?
     }
 
-    fn get_collateral_coeff(_env: &Env, reserve: &ReserveData) -> Result<i128, Error> {
-        Ok(reserve.collat_accrued_rate)
+    fn get_collateral_coeff(_env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+        Ok(FixedI128::from_inner(reserve.collat_accrued_rate))
     }
 
-    fn get_debt_coeff(_env: &Env, reserve: &ReserveData) -> Result<i128, Error> {
-        Ok(reserve.debt_accrued_rate)
+    fn get_debt_coeff(_env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+        Ok(FixedI128::from_inner(reserve.debt_accrued_rate))
     }
 
     fn require_not_paused(env: &Env) -> Result<(), Error> {

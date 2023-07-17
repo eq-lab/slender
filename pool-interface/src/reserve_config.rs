@@ -1,4 +1,4 @@
-use common::rate_math::RATE_DENOMINATOR;
+use common::FixedI128;
 use soroban_sdk::{contracttype, Address, BytesN, Env};
 
 #[contracttype]
@@ -75,8 +75,8 @@ impl ReserveData {
             ir_configuration,
         } = input;
         Self {
-            collat_accrued_rate: RATE_DENOMINATOR,
-            debt_accrued_rate: RATE_DENOMINATOR,
+            collat_accrued_rate: FixedI128::ONE.into_inner(),
+            debt_accrued_rate: FixedI128::ONE.into_inner(),
             s_token_address,
             debt_token_address,
             ir_configuration,

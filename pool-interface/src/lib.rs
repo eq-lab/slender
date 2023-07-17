@@ -31,24 +31,24 @@ pub enum Error {
 
     BorrowingNotEnabled = 12,
     HealthFactorLowerThanLiqThreshold = 13,
-    CollateralIsZero = 14,
-    CollateralNotCoverNewBorrow = 15,
-    BadPosition = 16,
+    CollateralNotCoverNewBorrow = 14,
+    BadPosition = 15,
 
-    ReserveLiquidityNotZero = 17,
-
-    ReservesMaxCapacityExceeded = 18,
-    NoPriceForAsset = 19,
+    ReserveLiquidityNotZero = 16,
+    ReservesMaxCapacityExceeded = 17,
+    NoPriceForAsset = 18,
 
     MathOverflowError = 100,
     PriceMathOverflow = 101,
     ValidateBorrowMathError = 102,
     CalcAccountDataMathError = 103,
     CalcInterestRateMathError = 104,
-    MustBeLte10000Bps = 105,
-    MustBeLt10000Bps = 106,
-    MustBeGt10000Bps = 107,
-    MustBePositive = 108,
+    AssetPriceMathError = 105,
+
+    MustBeLte10000Bps = 106,
+    MustBeLt10000Bps = 107,
+    MustBeGt10000Bps = 108,
+    MustBePositive = 109,
 }
 
 /// Interface for SToken

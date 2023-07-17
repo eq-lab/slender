@@ -610,7 +610,8 @@ fn deposit() {
         assert_eq!(token.balance(&user), initial_balance);
 
         let deposit_amount = 1_000_0;
-        let collat_accrued_rate = Some(RATE_DENOMINATOR + i * 100_000_000);
+        let collat_accrued_rate = Some(FixedI128::ONE.into_inner() + i * 100_000_000);
+
         assert_eq!(
             sut.pool
                 .set_accrued_rates(&token.address, &collat_accrued_rate, &None),
@@ -620,7 +621,7 @@ fn deposit() {
 
         assert_eq!(
             s_token.balance(&user),
-            deposit_amount * RATE_DENOMINATOR / collat_accrued_rate.unwrap()
+            deposit_amount * FixedI128::ONE.into_inner() / collat_accrued_rate.unwrap()
         );
         assert_eq!(token.balance(&user), initial_balance - deposit_amount);
 
@@ -783,13 +784,8 @@ fn borrow_collateral_is_zero() {
             .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount)
             .unwrap_err()
             .unwrap(),
-        Error::CollateralIsZero
+        Error::CollateralNotCoverNewBorrow
     )
-}
-
-#[test]
-fn borrow_bad_health_factor() {
-    //TODO: implement
 }
 
 #[test]
@@ -798,7 +794,7 @@ fn borrow_no_active_reserve() {
 }
 
 #[test]
-fn borrow_reserve_is_forzen() {
+fn borrow_reserve_is_frozen() {
     //TODO: implement
 }
 
