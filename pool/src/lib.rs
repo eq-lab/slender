@@ -293,13 +293,13 @@ impl LendingPoolTrait for LendingPool {
         from: Address,
         _to: Address,
         _amount: i128,
-        _balance_from_before: i128,
+        balance_from_before: i128,
         _balance_to_before: i128,
     ) -> Result<(), Error> {
         read_reserve(&env, asset)?.s_token_address.require_auth();
         Self::require_not_paused(&env)?;
         // TODO
-        Self::require_good_position(&env, from, None, true)?;
+        Self::require_good_position(&env, from, Some(balance_from_before), None, true)?;
 
         Ok(())
     }
@@ -532,7 +532,7 @@ impl LendingPool {
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, amount <= balance, Error::NotEnoughAvailableUserBalance);
 
-        match Self::is_good_position(env, who, None, true) {
+        match Self::is_good_position(env, who, None, None, true) {
             Ok(good_position) => assert_with_error!(env, good_position, Error::BadPosition),
             Err(e) => assert_with_error!(env, true, e),
         }
@@ -560,7 +560,7 @@ impl LendingPool {
         assert_with_error!(env, flags.borrowing_enabled, Error::BorrowingNotEnabled);
 
         let reserves = &read_reserves(env);
-        let account_data = Self::calc_account_data(env, who.clone(), user_config, reserves)?;
+        let account_data = Self::calc_account_data(env, who.clone(), None, user_config, reserves)?;
 
         assert_with_error!(env, account_data.collateral > 0, Error::CollateralIsZero);
 
@@ -571,7 +571,7 @@ impl LendingPool {
         );
 
         //TODO: complete validation after rate implementation
-        Self::require_good_position(env, who, None, true)?;
+        Self::require_good_position(env, who, None, None, true)?;
 
         Ok(())
     }
@@ -579,6 +579,7 @@ impl LendingPool {
     fn calc_account_data(
         env: &Env,
         who: Address,
+        who_balance: Option<i128>,
         user_config: &UserConfiguration,
         reserves: &Vec<Address>,
     ) -> Result<AccountData, Error> {
@@ -612,10 +613,13 @@ impl LendingPool {
                 let coll_coeff = Self::get_collateral_coeff(env, &curr_reserve)?;
 
                 // compounded balance of sToken
-                let s_token = STokenClient::new(env, &curr_reserve.s_token_address);
+                let who_balance: i128 = if who_balance.is_none() {
+                    STokenClient::new(env, &curr_reserve.s_token_address).balance(&who)
+                } else {
+                    who_balance.unwrap()
+                };
 
-                let compounded_balance = s_token
-                    .balance(&who)
+                let compounded_balance = who_balance
                     .mul_rate_floor(coll_coeff)
                     .ok_or(Error::CalcAccountDataMathError)?
                     .percent_mul(curr_reserve.configuration.discount)
@@ -696,6 +700,7 @@ impl LendingPool {
     fn is_good_position(
         env: &Env,
         who: Address,
+        who_balance: Option<i128>,
         mb_account_data: Option<AccountData>,
         is_good: bool,
     ) -> Result<bool, Error> {
@@ -704,7 +709,7 @@ impl LendingPool {
         } else {
             let user_config = read_user_config(env, who.clone())?;
             let reserves = read_reserves(env);
-            Self::calc_account_data(env, who, &user_config, &reserves)?
+            Self::calc_account_data(env, who, who_balance, &user_config, &reserves)?
         };
 
         Ok(is_good)
@@ -713,10 +718,12 @@ impl LendingPool {
     fn require_good_position(
         env: &Env,
         who: Address,
+        who_balance: Option<i128>,
         mb_account_data: Option<AccountData>,
         is_good: bool,
     ) -> Result<(), Error> {
-        let is_good_position = Self::is_good_position(env, who, mb_account_data, is_good)?;
+        let is_good_position =
+            Self::is_good_position(env, who, who_balance, mb_account_data, is_good)?;
         if !is_good_position {
             return Err(Error::BadPosition);
         }
