@@ -47,6 +47,7 @@ impl DebtTokenTrait for DebtToken {
 
         write_pool(&e, &pool);
 
+        // it can be optimized by passing decimals as argument
         let token = token::Client::new(&e, &underlying_asset);
         let decimal = token.decimals();
 
