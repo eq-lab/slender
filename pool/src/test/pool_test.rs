@@ -127,7 +127,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
             let token = create_token_contract(&env, &token_admin);
             let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
             let s_token = create_s_token_contract(&env, &pool.address, &token.address, &treasury);
-
+            let decimals = s_token.decimals();
             assert!(pool.get_reserve(&s_token.address).is_none());
 
             pool.init_reserve(
@@ -139,7 +139,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
             );
 
             let liq_bonus = 11000; //110%
-            let liq_cap = 100_000_000 * FixedI128::DENOMINATOR; // 100M
+            let liq_cap = 100_000_000 * 10_i128.pow(decimals); // 100M
             let discount = 6000; //60%
 
             pool.configure_as_collateral(
@@ -873,32 +873,7 @@ fn set_price_feed() {
 }
 
 #[test]
-fn update_accrued_rates_zero_time_elapsed() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env);
-    let asset = sut.reserves[0].token.address.clone();
-
-    let reserve_data = sut.pool.get_reserve(&asset).unwrap();
-    let ir_params = sut.pool.get_ir_params().unwrap();
-
-    let updated =
-        update_accrued_rates(&env, asset.clone(), reserve_data.clone(), ir_params).unwrap();
-
-    assert_eq!(
-        updated.collat_accrued_rate,
-        reserve_data.collat_accrued_rate
-    );
-    assert_eq!(updated.debt_accrued_rate, reserve_data.debt_accrued_rate);
-    assert_eq!(
-        reserve_data.last_update_timestamp,
-        updated.last_update_timestamp
-    );
-}
-
-#[test]
-fn update_accrued_rates_test() {
+fn user_operation_should_update_ar_coeffs() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -927,8 +902,26 @@ fn update_accrued_rates_test() {
 
     env.budget().reset_default();
 
-    sut.pool.borrow(&borrower, &asset, &borrow_amount);
+    // ensure that zero elapsed time doesn't change AR coefficients
+    {
+        let reserve_before = sut.pool.get_reserve(&asset).unwrap();
+        sut.pool.borrow(&borrower, &asset, &borrow_amount);
+        let updated_reserve = sut.pool.get_reserve(&asset).unwrap();
+        assert_eq!(
+            updated_reserve.collat_accrued_rate,
+            reserve_before.collat_accrued_rate
+        );
+        assert_eq!(
+            updated_reserve.debt_accrued_rate,
+            reserve_before.debt_accrued_rate
+        );
+        assert_eq!(
+            reserve_before.last_update_timestamp,
+            updated_reserve.last_update_timestamp
+        );
+    }
 
+    // shift time to
     env.ledger().with_mut(|li| {
         li.timestamp = 24 * 60 * 60 // one day
     });

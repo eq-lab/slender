@@ -771,6 +771,29 @@ impl LendingPool {
 /// Returns reserve data with updated accrued coeffiсients
 pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData, Error> {
     let reserve = read_reserve(env, asset.clone())?;
+    let current_time = env.ledger().timestamp();
+    let elapsed_time = current_time
+        .checked_sub(reserve.last_update_timestamp)
+        .ok_or(Error::AccruedRateMathError)?;
+    if elapsed_time == 0 {
+        return Ok(reserve);
+    }
+
+    let s_token = STokenClient::new(env, &reserve.s_token_address);
+    let total_collateral = s_token.total_supply();
+
+    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
+    let total_debt = debt_token.total_supply();
     let ir_params = read_ir_params(env)?;
-    update_accrued_rates(env, asset, reserve, ir_params)
+    let updated_reserve = update_accrued_rates(
+        total_collateral,
+        total_debt,
+        elapsed_time,
+        ir_params,
+        reserve,
+    )
+    .ok_or(Error::AccruedRateMathError)?;
+
+    write_reserve(env, asset, &updated_reserve);
+    Ok(updated_reserve)
 }

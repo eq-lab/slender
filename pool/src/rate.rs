@@ -1,10 +1,5 @@
 use common::{FixedI128, ALPHA_DENOMINATOR};
-use debt_token_interface::DebtTokenClient;
-use pool_interface::{Error, IRParams, ReserveData};
-use s_token_interface::STokenClient;
-use soroban_sdk::{Address, Env};
-
-use crate::storage::write_reserve;
+use pool_interface::{IRParams, ReserveData};
 
 /// Calculate interest rate IR = MIN [ max_rate, base_rate / (1 - U)^alpha]
 /// where
@@ -84,57 +79,37 @@ pub fn calc_accrued_rate_coeff(
 
 /// Calculates collateral and debt accrued coefficients and updates reserve data
 pub fn update_accrued_rates(
-    env: &Env,
-    asset: Address,
-    reserve_data: ReserveData,
+    total_collateral: i128,
+    total_debt: i128,
+    elapsed_time: u64,
     ir_params: IRParams,
-) -> Result<ReserveData, Error> {
-    let current_time = env.ledger().timestamp();
-    let elapsed_time = current_time
-        .checked_sub(reserve_data.last_update_timestamp)
-        .ok_or(Error::AccruedRateMathError)?;
+    reserve_data: ReserveData,
+) -> Option<ReserveData> {
+    let debt_ir = calc_interest_rate(total_collateral, total_debt, &ir_params)?;
 
-    if elapsed_time == 0 {
-        return Ok(reserve_data);
-    }
-
-    let s_token = STokenClient::new(env, &reserve_data.s_token_address);
-    let total_collateral = s_token.total_supply();
-
-    let debt_token = DebtTokenClient::new(env, &reserve_data.debt_token_address);
-    let total_debt = debt_token.total_supply();
-
-    let debt_ir = calc_interest_rate(total_collateral, total_debt, &ir_params)
-        .ok_or(Error::AccruedRateMathError)?;
-
-    let scale_coeff =
-        FixedI128::from_percentage(ir_params.scaling_coeff).ok_or(Error::AccruedRateMathError)?;
-    let lend_ir = debt_ir
-        .checked_mul(scale_coeff)
-        .ok_or(Error::AccruedRateMathError)?;
+    let scale_coeff = FixedI128::from_percentage(ir_params.scaling_coeff)?;
+    let lend_ir = debt_ir.checked_mul(scale_coeff)?;
 
     let debt_accrued_rate = calc_accrued_rate_coeff(
         FixedI128::from_inner(reserve_data.debt_accrued_rate),
         debt_ir,
         elapsed_time,
-    )
-    .ok_or(Error::AccruedRateMathError)?
+    )?
     .into_inner();
 
     let collat_accrued_rate = calc_accrued_rate_coeff(
         FixedI128::from_inner(reserve_data.collat_accrued_rate),
         lend_ir,
         elapsed_time,
-    )
-    .ok_or(Error::AccruedRateMathError)?
+    )?
     .into_inner();
 
     let mut reserve_data = reserve_data;
     reserve_data.collat_accrued_rate = collat_accrued_rate;
     reserve_data.debt_accrued_rate = debt_accrued_rate;
-    reserve_data.last_update_timestamp = current_time;
+    reserve_data.last_update_timestamp = reserve_data
+        .last_update_timestamp
+        .checked_add(elapsed_time)?;
 
-    write_reserve(env, asset, &reserve_data);
-
-    Ok(reserve_data)
+    Some(reserve_data)
 }
