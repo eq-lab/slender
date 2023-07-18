@@ -477,28 +477,28 @@ impl LendingPool {
     }
 
     fn require_valid_ir_params(env: &Env, params: &IRParams) {
-        Self::require_lte_percentage_factor(&env, params.initial_rate);
-        Self::require_gt_percentage_factor(&env, params.max_rate);
-        Self::require_lt_percentage_factor(&env, params.scaling_coeff);
+        Self::require_lte_percentage_factor(env, params.initial_rate);
+        Self::require_gt_percentage_factor(env, params.max_rate);
+        Self::require_lt_percentage_factor(env, params.scaling_coeff);
     }
 
     fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
-        Self::require_lte_percentage_factor(&env, params.discount);
-        Self::require_gt_percentage_factor(&env, params.liq_bonus);
-        Self::require_positive(&env, params.liq_cap);
+        Self::require_lte_percentage_factor(env, params.discount);
+        Self::require_gt_percentage_factor(env, params.liq_bonus);
+        Self::require_positive(env, params.liq_cap);
     }
 
     fn require_uninitialized_reserve(env: &Env, asset: &Address) {
         assert_with_error!(
-            &env,
-            !has_reserve(&env, asset.clone()),
+            env,
+            !has_reserve(env, asset.clone()),
             Error::ReserveAlreadyInitialized
         );
     }
 
     fn require_lte_percentage_factor(env: &Env, value: u32) {
         assert_with_error!(
-            &env,
+            env,
             value <= PERCENTAGE_FACTOR,
             Error::MustBeLtePercentageFactor
         );
@@ -506,7 +506,7 @@ impl LendingPool {
 
     fn require_lt_percentage_factor(env: &Env, value: u32) {
         assert_with_error!(
-            &env,
+            env,
             value < PERCENTAGE_FACTOR,
             Error::MustBeLtPercentageFactor
         );
@@ -514,14 +514,14 @@ impl LendingPool {
 
     fn require_gt_percentage_factor(env: &Env, value: u32) {
         assert_with_error!(
-            &env,
+            env,
             value > PERCENTAGE_FACTOR,
             Error::MustBeGtPercentageFactor
         );
     }
 
     fn require_positive(env: &Env, value: i128) {
-        assert_with_error!(&env, value > 0, Error::MustBePositive);
+        assert_with_error!(env, value > 0, Error::MustBePositive);
     }
 
     fn do_deposit(
