@@ -267,13 +267,8 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = get_actual_reserve_data(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, asset.clone())?;
         Self::validate_deposit(&env, &reserve, amount);
-
-        // Updates the reserve indexes and the timestamp of the update.
-        // Implement later with rates.
-        reserve.update_state();
-        // TODO: write reserve into storage
 
         let is_first_deposit = Self::do_deposit(
             &env,
@@ -357,7 +352,7 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = get_actual_reserve_data(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, asset.clone())?;
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
         let who_balance = s_token.balance(&who);
@@ -370,16 +365,6 @@ impl LendingPoolTrait for LendingPool {
         Self::validate_withdraw(&env, who.clone(), &reserve, amount_to_withdraw, who_balance);
 
         let mut user_config: UserConfiguration = read_user_config(&env, who.clone())?;
-
-        reserve.update_state();
-        //TODO: update interest rates
-        // reserve.update_interest_rates(
-        //     asset.clone(),
-        //     reserve.s_token_address.clone(),
-        //     -amount_to_withdraw,
-        // );
-
-        //TODO: save new reserve
 
         if amount_to_withdraw == who_balance {
             user_config.set_using_as_collateral(&env, reserve.get_id(), false);
@@ -413,7 +398,7 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = get_actual_reserve_data(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, asset.clone())?;
         let user_config = read_user_config(&env, who.clone())?;
 
         Self::validate_borrow(&env, who.clone(), &asset, &reserve, &user_config, amount)?;
@@ -427,9 +412,6 @@ impl LendingPoolTrait for LendingPool {
             user_config.set_borrowing(&env, reserve.get_id(), true);
             write_user_config(&env, who.clone(), &user_config);
         }
-
-        reserve.update_interest_rate();
-        write_reserve(&env, asset.clone(), &reserve);
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
         s_token.transfer_underlying_to(&who, &amount);

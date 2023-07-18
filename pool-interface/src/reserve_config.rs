@@ -90,14 +90,6 @@ impl ReserveData {
         }
     }
 
-    pub fn update_state(&mut self) {
-        // TODO
-    }
-
-    pub fn update_interest_rate(&mut self) {
-        //TODO: not implemented
-    }
-
     pub fn update_collateral_config(&mut self, config: CollateralParamsInput) {
         self.configuration.liq_bonus = config.liq_bonus;
         self.configuration.liq_cap = config.liq_cap;
