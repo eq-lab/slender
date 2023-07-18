@@ -62,7 +62,7 @@ fn test() {
     let debt_token_address = Address::random(&e);
     let init_reserve_input = InitReserveInput {
         s_token_address: token.address.clone(),
-        debt_token_address: debt_token_address,
+        debt_token_address,
     };
     pool.init_reserve(&underlying.address, &init_reserve_input);
 
