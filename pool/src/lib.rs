@@ -5,7 +5,7 @@ use crate::price_provider::PriceProvider;
 use common::{FixedI128, PERCENTAGE_FACTOR};
 use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
-use rate::{calc_accrued_rate_coeff, update_accrued_rates};
+use rate::{calc_accrued_rate_coeff, calc_accrued_rates};
 use s_token_interface::STokenClient;
 use soroban_sdk::{
     assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec,
@@ -806,15 +806,22 @@ pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData,
     let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
     let total_debt = debt_token.total_supply();
     let ir_params = read_ir_params(env)?;
-    let updated_reserve = update_accrued_rates(
+    let accrued_rates = calc_accrued_rates(
         total_collateral,
         total_debt,
         elapsed_time,
         ir_params,
-        reserve,
+        &reserve,
     )
     .ok_or(Error::AccruedRateMathError)?;
 
-    write_reserve(env, asset, &updated_reserve);
-    Ok(updated_reserve)
+    let mut reserve = reserve;
+    reserve.collat_accrued_rate = accrued_rates.collat_accrued_rate.into_inner();
+    reserve.debt_accrued_rate = accrued_rates.debt_accrued_rate.into_inner();
+    reserve.debt_ir = accrued_rates.debt_ir.into_inner();
+    reserve.lend_ir = accrued_rates.lend_ir.into_inner();
+    reserve.last_update_timestamp = current_time;
+
+    write_reserve(env, asset, &reserve);
+    Ok(reserve)
 }

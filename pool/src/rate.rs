@@ -77,14 +77,22 @@ pub fn calc_accrued_rate_coeff(
     prev_ar.checked_mul(FixedI128::ONE.checked_add(ir.checked_mul(delta_time)?)?)
 }
 
+#[derive(Debug, Clone, Copy)]
+pub struct AccruedRates {
+    pub collat_accrued_rate: FixedI128,
+    pub debt_accrued_rate: FixedI128,
+    pub lend_ir: FixedI128,
+    pub debt_ir: FixedI128,
+}
+
 /// Calculates collateral and debt accrued coefficients and updates reserve data
-pub fn update_accrued_rates(
+pub fn calc_accrued_rates(
     total_collateral: i128,
     total_debt: i128,
     elapsed_time: u64,
     ir_params: IRParams,
-    reserve_data: ReserveData,
-) -> Option<ReserveData> {
+    reserve_data: &ReserveData,
+) -> Option<AccruedRates> {
     let debt_ir = calc_interest_rate(total_collateral, total_debt, &ir_params)?;
 
     let scale_coeff = FixedI128::from_percentage(ir_params.scaling_coeff)?;
@@ -94,24 +102,18 @@ pub fn update_accrued_rates(
         FixedI128::from_inner(reserve_data.debt_accrued_rate),
         debt_ir,
         elapsed_time,
-    )?
-    .into_inner();
+    )?;
 
     let collat_accrued_rate = calc_accrued_rate_coeff(
         FixedI128::from_inner(reserve_data.collat_accrued_rate),
         lend_ir,
         elapsed_time,
-    )?
-    .into_inner();
+    )?;
 
-    let mut reserve_data = reserve_data;
-    reserve_data.collat_accrued_rate = collat_accrued_rate;
-    reserve_data.debt_accrued_rate = debt_accrued_rate;
-    reserve_data.debt_ir = debt_ir.into_inner();
-    reserve_data.lend_ir = lend_ir.into_inner();
-    reserve_data.last_update_timestamp = reserve_data
-        .last_update_timestamp
-        .checked_add(elapsed_time)?;
-
-    Some(reserve_data)
+    Some(AccruedRates {
+        collat_accrued_rate,
+        debt_accrued_rate,
+        lend_ir,
+        debt_ir,
+    })
 }
