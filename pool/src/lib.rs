@@ -717,6 +717,7 @@ impl LendingPool {
             })?
     }
 
+    /// Returns collateral_accrued_rate corrected for current time
     fn get_collateral_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
         let current_time = env.ledger().timestamp();
         let elapsed_time = current_time
@@ -732,6 +733,7 @@ impl LendingPool {
         }
     }
 
+    /// Returns debt_accrued_rate corrected for current time
     fn get_debt_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
         let current_time = env.ledger().timestamp();
         let elapsed_time = current_time
