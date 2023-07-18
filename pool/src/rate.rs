@@ -132,6 +132,8 @@ pub fn update_accrued_rates(
     let mut reserve_data = reserve_data;
     reserve_data.collat_accrued_rate = collat_accrued_rate;
     reserve_data.debt_accrued_rate = debt_accrued_rate;
+    reserve_data.debt_ir = debt_ir.into_inner();
+    reserve_data.lend_ir = lend_ir.into_inner();
     reserve_data.last_update_timestamp = current_time;
 
     write_reserve(env, asset, &reserve_data);

@@ -5,7 +5,7 @@ use crate::price_provider::PriceProvider;
 use common::{FixedI128, PERCENTAGE_FACTOR};
 use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
-use rate::update_accrued_rates;
+use rate::{calc_accrued_rate_coeff, update_accrued_rates};
 use s_token_interface::STokenClient;
 use soroban_sdk::{
     assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec,
@@ -717,12 +717,33 @@ impl LendingPool {
             })?
     }
 
-    fn get_collateral_coeff(_env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
-        Ok(FixedI128::from_inner(reserve.collat_accrued_rate))
+    fn get_collateral_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+        let current_time = env.ledger().timestamp();
+        let elapsed_time = current_time
+            .checked_sub(reserve.last_update_timestamp)
+            .ok_or(Error::CollateralCoeffMathError)?;
+        let prev_ar = FixedI128::from_inner(reserve.collat_accrued_rate);
+        if elapsed_time == 0 {
+            Ok(prev_ar)
+        } else {
+            let lend_ir = FixedI128::from_inner(reserve.lend_ir);
+            calc_accrued_rate_coeff(prev_ar, lend_ir, elapsed_time)
+                .ok_or(Error::CollateralCoeffMathError)
+        }
     }
 
     fn get_debt_coeff(_env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
-        Ok(FixedI128::from_inner(reserve.debt_accrued_rate))
+        let current_time = env.ledger().timestamp();
+        let elapsed_time = current_time
+            .checked_sub(reserve.last_update_timestamp)
+            .ok_or(Error::DebtCoeffMathError)?;
+        let prev_ar = FixedI128::from_inner(reserve.debt_accrued_rate);
+        if elapsed_time == 0 {
+            Ok(prev_ar)
+        } else {
+            let debt_ir = FixedI128::from_inner(reserve.debt_ir);
+            calc_accrued_rate_coeff(prev_ar, debt_ir, elapsed_time).ok_or(Error::DebtCoeffMathError)
+        }
     }
 
     fn require_not_paused(env: &Env) -> Result<(), Error> {
