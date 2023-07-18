@@ -480,15 +480,15 @@ impl LendingPool {
     }
 
     fn require_valid_ir_params(env: &Env, params: &IRParams) {
-        Self::require_lte_percentage_factor(&env, params.initial_rate);
-        Self::require_gt_percentage_factor(&env, params.max_rate);
-        Self::require_lt_percentage_factor(&env, params.scaling_coeff);
+        Self::require_lte_percentage_factor(env, params.initial_rate);
+        Self::require_gt_percentage_factor(env, params.max_rate);
+        Self::require_lt_percentage_factor(env, params.scaling_coeff);
     }
 
     fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
-        Self::require_lte_percentage_factor(&env, params.discount);
-        Self::require_gt_percentage_factor(&env, params.liq_bonus);
-        Self::require_positive(&env, params.liq_cap);
+        Self::require_lte_percentage_factor(env, params.discount);
+        Self::require_gt_percentage_factor(env, params.liq_bonus);
+        Self::require_positive(env, params.liq_cap);
     }
 
     fn require_uninitialized_reserve(env: &Env, asset: &Address) {
@@ -732,7 +732,7 @@ impl LendingPool {
         }
     }
 
-    fn get_debt_coeff(_env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+    fn get_debt_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
         let current_time = env.ledger().timestamp();
         let elapsed_time = current_time
             .checked_sub(reserve.last_update_timestamp)
@@ -792,6 +792,29 @@ impl LendingPool {
 /// Returns reserve data with updated accrued coeffiсients
 pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData, Error> {
     let reserve = read_reserve(env, asset.clone())?;
+    let current_time = env.ledger().timestamp();
+    let elapsed_time = current_time
+        .checked_sub(reserve.last_update_timestamp)
+        .ok_or(Error::AccruedRateMathError)?;
+    if elapsed_time == 0 {
+        return Ok(reserve);
+    }
+
+    let s_token = STokenClient::new(env, &reserve.s_token_address);
+    let total_collateral = s_token.total_supply();
+
+    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
+    let total_debt = debt_token.total_supply();
     let ir_params = read_ir_params(env)?;
-    update_accrued_rates(env, asset, reserve, ir_params)
+    let updated_reserve = update_accrued_rates(
+        total_collateral,
+        total_debt,
+        elapsed_time,
+        ir_params,
+        reserve,
+    )
+    .ok_or(Error::AccruedRateMathError)?;
+
+    write_reserve(env, asset, &updated_reserve);
+    Ok(updated_reserve)
 }

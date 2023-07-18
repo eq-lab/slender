@@ -1,5 +1,7 @@
 use common::FixedI128;
-use pool_interface::IRParams;
+use pool_interface::{IRParams, InitReserveInput, ReserveData};
+use soroban_sdk::testutils::Address as _;
+use soroban_sdk::{Address, Env};
 
 use crate::rate::*;
 
@@ -104,4 +106,59 @@ fn test_calc_accrued_rate() {
         calc_accrued_rate_coeff(prev_ar, ir, one_day),
         Some(FixedI128::from_inner(1000547570))
     );
+}
+
+#[test]
+fn test_update_accrued_rates() {
+    let env = &Env::default();
+    let total_collateral = 100;
+    let total_debt = 20;
+    let one_day = 24 * 60 * 60;
+
+    let input = InitReserveInput {
+        s_token_address: Address::random(env),
+        debt_token_address: Address::random(env),
+    };
+    let reserve_data = ReserveData::new(env, input);
+    let ir_params = get_default_ir_params();
+
+    let updated = update_accrued_rates(
+        total_collateral,
+        total_debt,
+        one_day,
+        ir_params,
+        reserve_data.clone(),
+    )
+    .unwrap();
+
+    assert_eq!(updated.last_update_timestamp, one_day);
+    // collat_ar = 1*(1 + 0,0275176482 * 24*60*60/31_557_600) = 1,0000753392
+    assert_eq!(updated.debt_accrued_rate, 1000075339);
+
+    // debt_ar = 1*(1 + 0.9*0,0275176482 * 24*60*60/31_557_600) = 1,0000678053
+    assert_eq!(updated.collat_accrued_rate, 1000067805);
+}
+
+#[test]
+fn update_accrued_rates_should_fail() {
+    let env = &Env::default();
+    let total_collateral = 0;
+    let total_debt = 0;
+    let one_day = 24 * 60 * 60;
+
+    let input = InitReserveInput {
+        s_token_address: Address::random(env),
+        debt_token_address: Address::random(env),
+    };
+    let reserve_data = ReserveData::new(env, input);
+    let ir_params = get_default_ir_params();
+
+    let updated = update_accrued_rates(
+        total_collateral,
+        total_debt,
+        one_day,
+        ir_params,
+        reserve_data.clone(),
+    );
+    assert!(updated.is_none());
 }
