@@ -480,15 +480,15 @@ impl LendingPool {
     }
 
     fn require_valid_ir_params(env: &Env, params: &IRParams) {
-        Self::require_lte_percentage_factor(&env, params.initial_rate);
-        Self::require_gt_percentage_factor(&env, params.max_rate);
-        Self::require_lt_percentage_factor(&env, params.scaling_coeff);
+        Self::require_lte_percentage_factor(env, params.initial_rate);
+        Self::require_gt_percentage_factor(env, params.max_rate);
+        Self::require_lt_percentage_factor(env, params.scaling_coeff);
     }
 
     fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
-        Self::require_lte_percentage_factor(&env, params.discount);
-        Self::require_gt_percentage_factor(&env, params.liq_bonus);
-        Self::require_positive(&env, params.liq_cap);
+        Self::require_lte_percentage_factor(env, params.discount);
+        Self::require_gt_percentage_factor(env, params.liq_bonus);
+        Self::require_positive(env, params.liq_cap);
     }
 
     fn require_uninitialized_reserve(env: &Env, asset: &Address) {
