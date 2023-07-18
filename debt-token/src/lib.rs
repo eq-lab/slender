@@ -21,7 +21,6 @@ impl DebtTokenTrait for DebtToken {
     ///
     /// # Arguments
     ///
-    /// - decimal - The number of decimal places for the token.
     /// - name - The name of the token.
     /// - symbol - The symbol of the token.
     /// - pool - The address of the pool contract.
