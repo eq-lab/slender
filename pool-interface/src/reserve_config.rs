@@ -2,6 +2,7 @@ use common::FixedI128;
 use soroban_sdk::{contracttype, Address, BytesN, Env};
 
 #[contracttype]
+#[derive(Clone)]
 pub struct ReserveConfiguration {
     pub decimals: u32,
     pub is_active: bool,
@@ -56,6 +57,7 @@ impl ReserveConfiguration {
 }
 
 #[contracttype]
+#[derive(Clone)]
 pub struct ReserveData {
     pub configuration: ReserveConfiguration,
     pub collat_accrued_rate: i128,
@@ -79,7 +81,7 @@ impl ReserveData {
             s_token_address,
             debt_token_address,
             configuration: ReserveConfiguration::default(),
-            last_update_timestamp: Default::default(),
+            last_update_timestamp: env.ledger().timestamp(),
             id: zero_bytes(env), // position in reserve list
         }
     }

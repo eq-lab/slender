@@ -5,6 +5,7 @@ use crate::price_provider::PriceProvider;
 use common::{FixedI128, PERCENTAGE_FACTOR};
 use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
+use rate::update_accrued_rates;
 use s_token_interface::STokenClient;
 use soroban_sdk::{
     assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec,
@@ -14,6 +15,8 @@ mod event;
 mod price_provider;
 mod rate;
 mod storage;
+#[cfg(test)]
+mod test;
 
 use crate::storage::*;
 
@@ -266,7 +269,7 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let reserve = read_reserve(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, asset.clone())?;
         Self::validate_deposit(&env, &reserve, amount);
 
         let (remaining_amount, is_repayed) = Self::do_repay(&env, &who, &asset, amount, &reserve)?;
@@ -354,7 +357,7 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = read_reserve(&env, asset.clone())?;
+        let mut reserve = get_actual_reserve_data(&env, asset.clone())?;
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
         let who_balance = s_token.balance(&who);
@@ -410,7 +413,7 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = read_reserve(&env, asset.clone())?;
+        let mut reserve = get_actual_reserve_data(&env, asset.clone())?;
         let user_config = read_user_config(&env, who.clone())?;
 
         Self::validate_borrow(&env, who.clone(), &asset, &reserve, &user_config, amount)?;
@@ -809,5 +812,32 @@ impl LendingPool {
     }
 }
 
-#[cfg(test)]
-mod test;
+/// Returns reserve data with updated accrued coeffiсients
+pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData, Error> {
+    let reserve = read_reserve(env, asset.clone())?;
+    let current_time = env.ledger().timestamp();
+    let elapsed_time = current_time
+        .checked_sub(reserve.last_update_timestamp)
+        .ok_or(Error::AccruedRateMathError)?;
+    if elapsed_time == 0 {
+        return Ok(reserve);
+    }
+
+    let s_token = STokenClient::new(env, &reserve.s_token_address);
+    let total_collateral = s_token.total_supply();
+
+    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
+    let total_debt = debt_token.total_supply();
+    let ir_params = read_ir_params(env)?;
+    let updated_reserve = update_accrued_rates(
+        total_collateral,
+        total_debt,
+        elapsed_time,
+        ir_params,
+        reserve,
+    )
+    .ok_or(Error::AccruedRateMathError)?;
+
+    write_reserve(env, asset, &updated_reserve);
+    Ok(updated_reserve)
+}
