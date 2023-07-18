@@ -272,6 +272,8 @@ impl LendingPoolTrait for LendingPool {
         reserve.update_state();
         // TODO: write reserve into storage
 
+        Self::do_repay(&env, &who, amount, &reserve);
+
         let is_first_deposit = Self::do_deposit(
             &env,
             &who,
@@ -535,7 +537,7 @@ impl LendingPool {
         let token = token::Client::new(env, asset);
         token.transfer(who, s_token_address, &amount);
 
-        let s_token = s_token_interface::STokenClient::new(env, s_token_address);
+        let s_token = STokenClient::new(env, s_token_address);
         let is_first_deposit = s_token.balance(who) == 0;
 
         // amount_to_mint = amount / collat_accrued_rate
@@ -544,6 +546,53 @@ impl LendingPool {
             .ok_or(Error::MathOverflowError)?;
         s_token.mint(who, &amount_to_mint);
         Ok(is_first_deposit)
+    }
+
+    fn do_repay(
+        env: &Env,
+        who: &Address,
+        amount: i128,
+        reserve: &ReserveData,
+    ) -> Result<(), Error> {
+        // TODO: if amount > who_debt => ??? /Artur
+        let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
+        let who_debt = debt_token.balance(&who);
+
+        if who_debt == 0 {
+            return Ok(());
+        }
+
+        let repayment_amount = if amount > who_debt || amount == i128::MAX {
+            who_debt
+        } else {
+            amount
+        };
+
+        debt_token.burn(&who, &repayment_amount);
+
+        if who_debt.checked_sub(repayment_amount) == Some(0) {
+            let mut user_config: UserConfiguration = read_user_config(&env, who.clone())?;
+
+            user_config.set_borrowing(&env, reserve.get_id(), false);
+            write_user_config(&env, who.clone(), &user_config);
+        }
+
+        let token = token::Client::new(env, asset);
+        token.transfer(who, &reserve.s_token_address, &repayment_amount);
+
+        let s_token = STokenClient::new(&env, &reserve.s_token_address);
+
+        // TODO: reserve.update_interest_rate(); ??? /Artur
+        // TODO: write_reserve(&env, asset.clone(), &reserve); ??? /Artur
+
+        // TODO: event /Artur
+
+        // // amount_to_mint = amount / collat_accrued_rate
+        // let amount_to_mint = FixedI128::from_inner(collat_accrued_rate)
+        //     .recip_mul_int(amount)
+        //     .ok_or(Error::MathOverflowError)?;
+        // s_token.mint(who, &amount_to_mint);
+        // Ok(is_first_deposit)
     }
 
     fn validate_deposit(env: &Env, reserve: &ReserveData, amount: i128) {
