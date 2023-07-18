@@ -768,7 +768,7 @@ impl LendingPool {
     }
 }
 
-/// Returns reserve data with updated accrued coeffisients
+/// Returns reserve data with updated accrued coeffiсients
 pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData, Error> {
     let reserve = read_reserve(env, asset.clone())?;
     let ir_params = read_ir_params(env)?;
