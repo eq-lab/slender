@@ -275,24 +275,19 @@ impl LendingPoolTrait for LendingPool {
         let (remaining_amount, is_repayed) = Self::do_repay(&env, &who, &asset, amount, &reserve)?;
         let is_first_deposit = Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?;
 
-        let user_config = if is_repayed || is_first_deposit {
-            Some(read_user_config(&env, who.clone()).unwrap_or_default())
-        } else {
-            None
-        };
+        if is_repayed || is_first_deposit {
+            let mut user_config = read_user_config(&env, who.clone()).unwrap_or_default();
 
-        if is_repayed {
-            let mut user_config = user_config.clone().unwrap();
-            user_config.set_borrowing(&env, reserve.get_id(), false);
-            write_user_config(&env, who.clone(), &user_config);
-        }
+            if is_repayed {
+                user_config.set_borrowing(&env, reserve.get_id(), false);
+            }
 
-        if is_first_deposit {
-            let mut user_config = user_config.unwrap();
-            user_config.set_using_as_collateral(&env, reserve.get_id(), true);
-            write_user_config(&env, who.clone(), &user_config);
+            if is_first_deposit {
+                user_config.set_using_as_collateral(&env, reserve.get_id(), true);
+                event::reserve_used_as_collateral_enabled(&env, who.clone(), asset);
+            }
 
-            event::reserve_used_as_collateral_enabled(&env, who, asset);
+            write_user_config(&env, who, &user_config);
         }
 
         Ok(())
@@ -541,6 +536,7 @@ impl LendingPool {
         let collat_coeff = Self::get_collateral_coeff(env, reserve)?;
         let underlying_asset = token::Client::new(env, asset);
         let s_token = STokenClient::new(env, &reserve.s_token_address);
+        let is_first_deposit = s_token.balance(who) == 0;
 
         let amount_to_mint = collat_coeff
             .recip_mul_int(amount)
@@ -551,7 +547,7 @@ impl LendingPool {
 
         event::deposit(env, who.clone(), asset.clone(), amount);
 
-        Ok(s_token.balance(who) == 0)
+        Ok(is_first_deposit)
     }
 
     fn do_repay(
@@ -586,9 +582,15 @@ impl LendingPool {
 
         event::repay(env, who.clone(), asset.clone(), amount);
 
-        let remaning_amount = asset_debt
-            .checked_sub(asset_debt.min(amount))
+        let remaning_amount = amount
+            .checked_sub(asset_debt)
             .ok_or(Error::MathOverflowError)?;
+
+        let remaning_amount = if remaning_amount > 0 {
+            remaning_amount
+        } else {
+            0
+        };
 
         Ok((remaning_amount, compounded_debt == payback_amount))
     }
