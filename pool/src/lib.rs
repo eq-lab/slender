@@ -879,21 +879,21 @@ impl LendingPool {
         liquidation_debt: i128,
         get_stoken: bool,
     ) -> Result<(), Error> {
-        let mut sorted_collat_reserves = Vec::new(&env);
-        let mut debt_reserves = Vec::new(&env);
+        let mut sorted_collat_reserves = Vec::new(env);
+        let mut debt_reserves = Vec::new(env);
         // soroban_sdk::Vec doesn't have built-in sort or something like binary_search_by_key
         // so here a little hack that uses second Vec with discounts that tracks indexes for `collat_reserves`
-        let mut sorted_discounts = Vec::new(&env);
+        let mut sorted_discounts = Vec::new(env);
         for i in 0..reserves.len() {
             let asset = reserves.get_unchecked(i).unwrap_optimized();
-            if user_config.is_using_as_collateral_or_borrowing(&env, i as u8) {
-                let reserve = read_reserve(&env, asset.clone())?;
+            if user_config.is_using_as_collateral_or_borrowing(env, i as u8) {
+                let reserve = read_reserve(env, asset.clone())?;
                 if !reserve.configuration.is_active {
                     return Err(Error::NoActiveReserve);
                 }
-                if user_config.is_borrowing(&env, i as u8) {
+                if user_config.is_borrowing(env, i as u8) {
                     debt_reserves.push_back(reserve);
-                } else if user_config.is_using_as_collateral(&env, i as u8) {
+                } else if user_config.is_using_as_collateral(env, i as u8) {
                     let idx = match sorted_discounts.binary_search(reserve.configuration.discount) {
                         Ok(exists) => exists,
                         Err(new) => new,
@@ -919,7 +919,7 @@ impl LendingPool {
                 .mul_int(s_token_balance)
                 .ok_or(Error::LiquidateMathError)?;
 
-            let price = Self::get_asset_price(&env, underlying_asset.clone())?;
+            let price = Self::get_asset_price(env, underlying_asset.clone())?;
             let collateral_in_xlm = price
                 .mul_int(compounded_balance)
                 .ok_or(Error::LiquidateMathError)?;
@@ -948,8 +948,8 @@ impl LendingPool {
             }
 
             if s_token_balance == s_token_amount {
-                user_config.set_using_as_collateral(&env, reserve.get_id(), false);
-                event::reserve_used_as_collateral_disabled(&env, who.clone(), underlying_asset);
+                user_config.set_using_as_collateral(env, reserve.get_id(), false);
+                event::reserve_used_as_collateral_disabled(env, who.clone(), underlying_asset);
             }
         }
 
@@ -963,12 +963,12 @@ impl LendingPool {
             let underlying_asset = token::Client::new(env, &s_token.underlying_asset());
             let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
             let debt_amount = &debt_token.balance(&who);
-            underlying_asset.transfer(&liquidator, &reserve.s_token_address, &debt_amount);
+            underlying_asset.transfer(&liquidator, &reserve.s_token_address, debt_amount);
             debt_token.burn(&who, debt_amount);
             user_config.set_borrowing(env, reserve.get_id(), false);
         }
 
-        write_user_config(env, who, &user_config);
+        write_user_config(env, who, user_config);
 
         Ok(())
     }
