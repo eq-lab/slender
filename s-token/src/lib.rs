@@ -57,6 +57,7 @@ impl STokenTrait for SToken {
         write_underlying_asset(&e, &underlying_asset);
         write_treasury(&e, &treasury);
 
+        // it can be optimized by passing decimals as argument
         let token = token::Client::new(&e, &underlying_asset);
         let decimal = token.decimals();
 

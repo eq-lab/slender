@@ -31,6 +31,12 @@ struct AccountData {
     npv: i128,
 }
 
+impl AccountData {
+    pub fn is_good_position(&self) -> bool {
+        self.npv > 0
+    }
+}
+
 pub struct LendingPool;
 
 #[contractimpl]
@@ -333,24 +339,27 @@ impl LendingPoolTrait for LendingPool {
         let reserve = read_reserve(&env, asset.clone())?;
         reserve.s_token_address.require_auth();
         Self::require_not_paused(&env)?;
-        // TODO
         let balance_from_after = balance_from_before
             .checked_sub(amount)
             .ok_or(Error::InvalidAmount)?;
 
-        Self::require_good_position(
+        let mut from_config = read_user_config(&env, from.clone())?;
+        let reserves = read_reserves(&env);
+        let account_data = Self::calc_account_data(
             &env,
             from.clone(),
             Some((reserve.s_token_address, balance_from_after)),
-            None,
+            &from_config,
+            &reserves,
+            false,
         )?;
+        Self::require_good_position(account_data)?;
 
         if from != to {
             let reserve_id = read_reserve(&env, asset.clone())?.get_id();
             if balance_from_before.checked_sub(amount) == Some(0) {
-                let mut user_config = read_user_config(&env, from.clone())?;
-                user_config.set_using_as_collateral(&env, reserve_id, false);
-                write_user_config(&env, from.clone(), &user_config);
+                from_config.set_using_as_collateral(&env, reserve_id, false);
+                write_user_config(&env, from.clone(), &from_config);
                 event::reserve_used_as_collateral_disabled(&env, from, asset.clone());
             }
 
@@ -406,9 +415,15 @@ impl LendingPoolTrait for LendingPool {
             amount
         };
 
-        Self::validate_withdraw(&env, who.clone(), &reserve, amount_to_withdraw, who_balance);
-
         let mut user_config: UserConfiguration = read_user_config(&env, who.clone())?;
+        Self::validate_withdraw(
+            &env,
+            who.clone(),
+            &reserve,
+            &user_config,
+            amount_to_withdraw,
+            who_balance,
+        );
 
         reserve.update_state();
         //TODO: update interest rates
@@ -505,18 +520,28 @@ impl LendingPoolTrait for LendingPool {
         Ok((collateral, debt, npv))
     }
 
+    /// Liqudate a bad position with NPV less or equal to 0.
+    /// The caller (liquidator) covers amount of debt of the user getting liquidated, and receives
+    /// a proportionally amount of the `collateralAsset` plus a bonus to cover market risk.
+    ///
+    /// # Arguments
+    ///
+    /// - liquidator The caller, that covers debt and take collateral with bonus
+    /// - who The address of the user whose position will be liquidated
+    /// - receive_stoken `true` if the liquidators wants to receive the collateral sTokens, `false` if he wants
+    /// to receive the underlying asset
     fn liquidate(
         env: Env,
         liquidator: Address,
         who: Address,
-        get_stoken: bool,
+        receive_stoken: bool,
     ) -> Result<(), Error> {
         liquidator.require_auth();
         let reserves = read_reserves(&env);
         let mut user_config = read_user_config(&env, who.clone())?;
         let account_data =
             Self::calc_account_data(&env, who.clone(), None, &user_config, &reserves, true)?;
-        if Self::is_good_position(&env, who.clone(), None, Some(account_data))? {
+        if account_data.is_good_position() {
             return Err(Error::GoodPosition);
         }
 
@@ -531,7 +556,7 @@ impl LendingPoolTrait for LendingPool {
             reserves,
             &mut user_config,
             liquidation_debt,
-            get_stoken,
+            receive_stoken,
         )?;
         event::liquidation(&env, who, account_data.debt, liquidation_debt);
 
@@ -649,6 +674,7 @@ impl LendingPool {
         env: &Env,
         who: Address,
         reserve: &ReserveData,
+        user_config: &UserConfiguration,
         amount: i128,
         balance: i128,
     ) {
@@ -657,8 +683,14 @@ impl LendingPool {
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, amount <= balance, Error::NotEnoughAvailableUserBalance);
 
-        match Self::is_good_position(env, who, None, None) {
-            Ok(good_position) => assert_with_error!(env, good_position, Error::BadPosition),
+        let reserves = read_reserves(env);
+        // TODO: fix calc_account_data with balance after withdraw
+        let mb_account_data =
+            Self::calc_account_data(env, who, None, user_config, &reserves, false);
+        match mb_account_data {
+            Ok(account_data) => {
+                assert_with_error!(env, account_data.is_good_position(), Error::BadPosition)
+            }
             Err(e) => assert_with_error!(env, true, e),
         }
 
@@ -689,8 +721,9 @@ impl LendingPool {
         assert_with_error!(env, flags.borrowing_enabled, Error::BorrowingNotEnabled);
 
         let reserves = &read_reserves(env);
+        // TODO: check calc_account_data with balances after borrow
         let account_data =
-            Self::calc_account_data(env, who.clone(), None, user_config, reserves, false)?;
+            Self::calc_account_data(env, who, None, user_config, reserves, false)?;
 
         assert_with_error!(
             env,
@@ -699,7 +732,7 @@ impl LendingPool {
         );
 
         //TODO: complete validation after rate implementation
-        Self::require_good_position(env, who, None, None)?;
+        Self::require_good_position(account_data)?;
 
         Ok(())
     }
@@ -839,31 +872,8 @@ impl LendingPool {
         Ok(())
     }
 
-    fn is_good_position(
-        env: &Env,
-        who: Address,
-        mb_who_balance: Option<(Address, i128)>,
-        mb_account_data: Option<AccountData>,
-    ) -> Result<bool, Error> {
-        let account_data = if let Some(account_data) = mb_account_data {
-            account_data
-        } else {
-            let user_config = read_user_config(env, who.clone())?;
-            let reserves = read_reserves(env);
-            Self::calc_account_data(env, who, mb_who_balance, &user_config, &reserves, false)?
-        };
-
-        Ok(account_data.npv > 0)
-    }
-
-    fn require_good_position(
-        env: &Env,
-        who: Address,
-        mb_who_balance: Option<(Address, i128)>,
-        mb_account_data: Option<AccountData>,
-    ) -> Result<(), Error> {
-        let is_good_position = Self::is_good_position(env, who, mb_who_balance, mb_account_data)?;
-        if !is_good_position {
+    fn require_good_position(account_data: AccountData) -> Result<(), Error> {
+        if !account_data.is_good_position() {
             return Err(Error::BadPosition);
         }
 
