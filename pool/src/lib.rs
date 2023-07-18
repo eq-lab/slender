@@ -962,11 +962,9 @@ impl LendingPool {
             let s_token = STokenClient::new(env, &reserve.s_token_address);
             let underlying_asset = token::Client::new(env, &s_token.underlying_asset());
             let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-            underlying_asset.transfer(
-                &liquidator,
-                &reserve.s_token_address,
-                &debt_token.balance(&who),
-            );
+            let debt_amount = &debt_token.balance(&who);
+            underlying_asset.transfer(&liquidator, &reserve.s_token_address, &debt_amount);
+            debt_token.burn(&who, debt_amount);
             user_config.set_borrowing(env, reserve.get_id(), false);
         }
 
