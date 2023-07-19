@@ -40,20 +40,29 @@ impl LendingPoolTrait for LendingPool {
     /// # Arguments
     ///
     /// - admin - The address of the admin for the contract.
+    /// - treasury - The address of the treasury contract.
     /// - ir_params - The interest rate parameters to set.
     ///
     /// # Panics
     ///
     /// Panics with `AlreadyInitialized` if the admin key already exists in storage.
     ///
-    fn initialize(env: Env, admin: Address, ir_params: IRParams) -> Result<(), Error> {
+    fn initialize(
+        env: Env,
+        admin: Address,
+        treasury: Address,
+        ir_params: IRParams,
+    ) -> Result<(), Error> {
         if has_admin(&env) {
             panic_with_error!(&env, Error::AlreadyInitialized);
         }
         Self::require_valid_ir_params(&env, &ir_params);
 
-        write_admin(&env, admin);
+        write_admin(&env, admin.clone());
+        write_treasury(&env, &treasury);
         write_ir_params(&env, &ir_params);
+
+        event::initialized(&env, admin, treasury, ir_params);
 
         Ok(())
     }
@@ -441,6 +450,16 @@ impl LendingPoolTrait for LendingPool {
         paused(&env)
     }
 
+    /// Retrieves the address of the treasury.
+    ///
+    /// # Returns
+    ///
+    /// The address of the treasury.
+    ///
+    fn treasury(e: Env) -> Address {
+        read_treasury(&e)
+    }
+
     #[cfg(any(test, feature = "testutils"))]
     fn set_accrued_rates(
         env: Env,
@@ -564,12 +583,17 @@ impl LendingPool {
 
         let underlying_asset = token::Client::new(env, asset);
         let debt_coeff = Self::get_debt_coeff(env, reserve)?;
+        let collat_coeff = Self::get_collateral_coeff(env, reserve)?;
 
         let compounded_debt = debt_coeff
             .mul_int(asset_debt)
             .ok_or(Error::MathOverflowError)?;
+        let compounded_collat = collat_coeff
+            .mul_int(asset_debt)
+            .ok_or(Error::MathOverflowError)?;
 
         let payback_amount = amount.min(compounded_debt);
+        let spread_amount = payback_amount.checked_sub(compounded_collat);
 
         let payback_debt = if payback_amount == compounded_debt {
             asset_debt

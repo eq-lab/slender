@@ -14,7 +14,6 @@ pub trait STokenTrait {
         name: Bytes,
         symbol: Bytes,
         pool: Address,
-        treasury: Address,
         underlying_asset: Address,
     );
 
@@ -52,15 +51,11 @@ pub trait STokenTrait {
 
     fn total_supply(e: Env) -> i128;
 
-    fn mint_to_treasury(e: Env, amount: i128);
-
     fn transfer_on_liquidation(e: Env, from: Address, to: Address, amount: i128);
 
     fn transfer_underlying_to(e: Env, to: Address, amount: i128);
 
     fn underlying_asset(e: Env) -> Address;
-
-    fn treasury(e: Env) -> Address;
 
     fn pool(e: Env) -> Address;
 
