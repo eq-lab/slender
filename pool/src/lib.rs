@@ -8,7 +8,7 @@ use pool_interface::*;
 use s_token_interface::STokenClient;
 use soroban_sdk::{
     assert_with_error, contractimpl, panic_with_error, token, unwrap::UnwrapOptimized, Address,
-    BytesN, Env, Vec,
+    BytesN, Env, Map, Vec, contracttype,
 };
 
 mod event;
@@ -22,11 +22,11 @@ use crate::storage::*;
 #[derive(Debug, Clone, Copy)]
 struct AccountData {
     /// Total collateral expresed in XLM
-    collateral: i128,
+    discounted_collateral: i128,
     /// Total debt expressed in XLM
     debt: i128,
     /// Debt with liquidation penalty
-    liquidation_debt: Option<i128>,
+    debt_with_penalty: Option<i128>,
     /// Net position value in XLM
     npv: i128,
 }
@@ -34,6 +34,18 @@ struct AccountData {
 impl AccountData {
     pub fn is_good_position(&self) -> bool {
         self.npv > 0
+    }
+}
+
+#[contracttype]
+struct AssetBalance {
+    asset: Address,
+    balance: i128
+}
+
+impl AssetBalance {
+    fn new(asset: Address, balance: i128) -> Self {
+        Self {asset, balance}
     }
 }
 
@@ -505,10 +517,10 @@ impl LendingPoolTrait for LendingPool {
 
     fn get_account_data(env: Env, who: Address) -> Result<(i128, i128, i128), Error> {
         let AccountData {
-            collateral,
+            discounted_collateral,
             debt,
             npv,
-            liquidation_debt: _,
+            debt_with_penalty: _,
         } = Self::calc_account_data(
             &env,
             who.clone(),
@@ -546,7 +558,7 @@ impl LendingPoolTrait for LendingPool {
         }
 
         let liquidation_debt = account_data
-            .liquidation_debt
+            .debt_with_penalty
             .expect("pool: liquidation flag in calc_account_data");
 
         Self::do_liquidate(
@@ -722,8 +734,7 @@ impl LendingPool {
 
         let reserves = &read_reserves(env);
         // TODO: check calc_account_data with balances after borrow
-        let account_data =
-            Self::calc_account_data(env, who, None, user_config, reserves, false)?;
+        let account_data = Self::calc_account_data(env, who, None, user_config, reserves, false)?;
 
         assert_with_error!(
             env,
@@ -747,16 +758,19 @@ impl LendingPool {
     ) -> Result<AccountData, Error> {
         if user_config.is_empty() {
             return Ok(AccountData {
-                collateral: 0,
+                discounted_collateral: 0,
                 debt: 0,
-                liquidation_debt: liquidation.then_some(0),
+                debt_with_penalty: liquidation.then_some(0),
                 npv: 0,
             });
         }
 
+        let mut total_discounted_collateral_in_xlm: i128 = 0;
         let mut total_collateral_in_xlm: i128 = 0;
         let mut total_debt_in_xlm: i128 = 0;
-        let mut total_liquidation_debt_in_xlm: i128 = 0;
+        let mut total_debt_with_penalty_in_xlm: i128 = 0;
+        let mut debt_to_cover = Vec::new(env);
+        let mut sorted_collateral_reserves = Map::new(&env);
         let reserves_len =
             u8::try_from(reserves.len()).map_err(|_| Error::ReservesMaxCapacityExceeded)?;
 
@@ -766,9 +780,12 @@ impl LendingPool {
                 continue;
             }
 
-            //TODO: avoid unwrap
-            let curr_reserve_asset = reserves.get(i.into()).unwrap().unwrap();
+            let curr_reserve_asset = reserves.get_unchecked(i.into()).unwrap_optimized();
             let curr_reserve = read_reserve(env, curr_reserve_asset.clone())?;
+
+            if !curr_reserve.configuration.is_active && liquidation {
+                return Err(Error::NoActiveReserve);
+            }
 
             let reserve_price = Self::get_asset_price(env, curr_reserve_asset.clone())?;
 
@@ -784,29 +801,43 @@ impl LendingPool {
 
                 let discount = FixedI128::from_percentage(curr_reserve.configuration.discount)
                     .ok_or(Error::CalcAccountDataMathError)?;
-                let compounded_balance = discount
-                    .mul_int(
-                        coll_coeff
-                            .mul_int(who_balance)
-                            .ok_or(Error::CalcAccountDataMathError)?,
-                    )
+                
+                let compounded_balance = coll_coeff
+                    .mul_int(who_balance)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
-                let liquidity_balance_in_xlm = reserve_price
+                let compounded_balance_in_xlm = reserve_price
                     .mul_int(compounded_balance)
                     .ok_or(Error::CalcAccountDataMathError)?;
-
-                total_collateral_in_xlm = total_collateral_in_xlm
-                    .checked_add(liquidity_balance_in_xlm)
+                
+                let discounted_balance_in_xlm = discount
+                    .mul_int(compounded_balance_in_xlm)
                     .ok_or(Error::CalcAccountDataMathError)?;
-            }
 
-            if user_config.is_borrowing(env, i) {
+                total_discounted_collateral_in_xlm = total_discounted_collateral_in_xlm
+                    .checked_add(discounted_balance_in_xlm)
+                    .ok_or(Error::CalcAccountDataMathError)?;
+
+                if liquidation {
+                    total_collateral_in_xlm = total_collateral_in_xlm
+                        .checked_add(compounded_balance_in_xlm)
+                        .ok_or(Error::CalcAccountDataMathError)?;
+                    let curr_discount = curr_reserve.configuration.discount;
+                    let mut reserves = sorted_collateral_reserves
+                        .get(curr_discount)
+                        .unwrap_or(Ok(Vec::new(env)))
+                        .expect("sorted");
+                    // TODO: as struct
+                    reserves.push_back((curr_reserve.s_token_address, compounded_balance_in_xlm, reserve_price.into_inner()));
+                    sorted_collateral_reserves.set(curr_discount, reserves);
+                }
+            } else if user_config.is_borrowing(env, i) {
                 let debt_coeff = Self::get_debt_coeff(env, &curr_reserve)?;
 
                 let debt_token = token::Client::new(env, &curr_reserve.debt_token_address);
+                let debt_token_balance = debt_token.balance(&who);
                 let compounded_balance = debt_coeff
-                    .mul_int(debt_token.balance(&who))
+                    .mul_int(debt_token_balance)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
                 let debt_balance_in_xlm = reserve_price
@@ -824,21 +855,28 @@ impl LendingPool {
                     let liquidation_debt = liq_bonus
                         .mul_int(debt_balance_in_xlm)
                         .ok_or(Error::CalcAccountDataMathError)?;
-                    total_liquidation_debt_in_xlm = total_liquidation_debt_in_xlm
+                    total_debt_with_penalty_in_xlm = total_debt_with_penalty_in_xlm
                         .checked_add(liquidation_debt)
                         .ok_or(Error::CalcAccountDataMathError)?;
+
+                    let underlying_asset =
+                        STokenClient::new(env, &curr_reserve.s_token_address).underlying_asset();
+                    debt_to_cover.push_back((
+                        AssetBalance::new(underlying_asset, compounded_balance),
+                        AssetBalance::new(debt_token.address,debt_token_balance),
+                    ));
                 }
             }
         }
 
-        let npv = total_collateral_in_xlm
+        let npv = total_discounted_collateral_in_xlm
             .checked_sub(total_debt_in_xlm)
             .ok_or(Error::CalcAccountDataMathError)?;
 
         Ok(AccountData {
-            collateral: total_collateral_in_xlm,
+            discounted_collateral: total_discounted_collateral_in_xlm,
             debt: total_debt_in_xlm,
-            liquidation_debt: liquidation.then_some(total_liquidation_debt_in_xlm),
+            debt_with_penalty: liquidation.then_some(total_debt_with_penalty_in_xlm),
             npv,
         })
     }
@@ -886,7 +924,7 @@ impl LendingPool {
         who: Address,
         reserves: Vec<Address>,
         user_config: &mut UserConfiguration,
-        liquidation_debt: i128,
+        debt_with_penalty: i128,
         get_stoken: bool,
     ) -> Result<(), Error> {
         let mut sorted_collat_reserves = Vec::new(env);
@@ -895,8 +933,8 @@ impl LendingPool {
         // so here a little hack that uses second Vec with discounts that tracks indexes for `collat_reserves`
         let mut sorted_discounts = Vec::new(env);
         for i in 0..reserves.len() {
-            let asset = reserves.get_unchecked(i).unwrap_optimized();
             if user_config.is_using_as_collateral_or_borrowing(env, i as u8) {
+                let asset = reserves.get_unchecked(i).unwrap_optimized();
                 let reserve = read_reserve(env, asset.clone())?;
                 if !reserve.configuration.is_active {
                     return Err(Error::NoActiveReserve);
@@ -914,9 +952,9 @@ impl LendingPool {
             }
         }
 
-        let mut debt_to_cover = liquidation_debt;
+        let mut debt_with_penalty = debt_with_penalty;
         for reserve in sorted_collat_reserves {
-            if debt_to_cover == 0 {
+            if debt_with_penalty == 0 {
                 break;
             }
 
@@ -934,9 +972,9 @@ impl LendingPool {
                 .mul_int(compounded_balance)
                 .ok_or(Error::LiquidateMathError)?;
 
-            let withdraw_amount_in_xlm = collateral_in_xlm.min(debt_to_cover);
+            let withdraw_amount_in_xlm = collateral_in_xlm.min(debt_with_penalty);
             // no overflow as withdraw_amount_in_xlm guaranteed less or equal than debt_to_cover
-            debt_to_cover -= withdraw_amount_in_xlm;
+            debt_with_penalty -= withdraw_amount_in_xlm;
 
             let (s_token_amount, underlying_amount) = if withdraw_amount_in_xlm != collateral_in_xlm
             {
@@ -963,7 +1001,7 @@ impl LendingPool {
             }
         }
 
-        if debt_to_cover != 0 {
+        if debt_with_penalty != 0 {
             return Err(Error::NotEnoughCollateral);
         }
 
@@ -979,6 +1017,8 @@ impl LendingPool {
         }
 
         write_user_config(env, who, user_config);
+
+        // TODO: recalc ir and ar
 
         Ok(())
     }
