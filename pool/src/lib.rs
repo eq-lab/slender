@@ -243,7 +243,7 @@ impl LendingPoolTrait for LendingPool {
         read_price_feed(&env, asset).ok()
     }
 
-    /// Repays a borrowed amount on a specific reserve, burning the equivalent debt tokens owned.
+    /// Repays a borrowed amount on a specific reserve, burning the equivalent debt tokens owned when debt exists.
     /// Deposits a specified amount of an asset into the reserve associated with the asset.
     /// Depositor receives s-tokens according to the current index value.
     ///
@@ -251,7 +251,7 @@ impl LendingPoolTrait for LendingPool {
     /// # Arguments
     ///
     /// - who - The address of the user making the deposit.
-    /// - asset - The address of the asset to be repayed/deposited.
+    /// - asset - The address of the asset to be deposited for lend or repay.
     /// - amount - The amount to be repayed/deposited.
     ///
     /// # Errors
@@ -574,9 +574,13 @@ impl LendingPool {
 
         let payback_amount = amount.min(compounded_debt);
 
-        let payback_debt = debt_coeff
-            .recip_mul_int(payback_amount)
-            .ok_or(Error::MathOverflowError)?;
+        let payback_debt = if payback_amount == compounded_debt {
+            asset_debt
+        } else {
+            debt_coeff
+                .recip_mul_int(payback_amount)
+                .ok_or(Error::MathOverflowError)?
+        };
 
         underlying_asset.transfer(who, &reserve.s_token_address, &payback_amount);
         debt_token.burn(who, &payback_debt);
@@ -584,7 +588,7 @@ impl LendingPool {
         event::repay(env, who.clone(), asset.clone(), amount);
 
         let remaning_amount = amount
-            .checked_sub(asset_debt)
+            .checked_sub(payback_amount)
             .ok_or(Error::MathOverflowError)?;
 
         let remaning_amount = if remaning_amount > 0 {
