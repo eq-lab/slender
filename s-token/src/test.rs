@@ -8,7 +8,7 @@ use soroban_sdk::{
     testutils::Address as _, token::Client as TokenClient, vec, Address, Env, IntoVal, Symbol,
 };
 
-use self::pool::{IRParams, InitReserveInput};
+use self::pool::{CollateralParamsInput, IRParams, InitReserveInput};
 
 mod pool {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/pool.wasm");
@@ -87,6 +87,21 @@ fn test() {
         debt_token_address: debt_token.address.clone(),
     };
     pool.init_reserve(&underlying.address, &init_reserve_input);
+    {
+        let underlying_decimals = underlying.decimals();
+        let liq_bonus = 11000; //110%
+        let liq_cap = 100_000_000 * 10_i128.pow(underlying_decimals); // 100M
+        let discount = 6000; //60%
+
+        pool.configure_as_collateral(
+            &underlying.address,
+            &CollateralParamsInput {
+                liq_bonus,
+                liq_cap,
+                discount,
+            },
+        );
+    }
 
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);

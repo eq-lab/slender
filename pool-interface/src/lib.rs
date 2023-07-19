@@ -37,6 +37,7 @@ pub enum Error {
     ValidateBorrowMathError = 304,
     CalcAccountDataMathError = 305,
     AssetPriceMathError = 306,
+    LiqCapExceeded = 307,
 
     MathOverflowError = 400,
     MustBeLtePercentageFactor = 401,

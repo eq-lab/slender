@@ -631,6 +631,33 @@ fn deposit_frozen_() {
 }
 
 #[test]
+fn deposit_should_fail_when_exceeded_liq_cap() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+
+    let token = &sut.reserves[0].token;
+    let s_token = &sut.reserves[0].s_token;
+    let decimals = s_token.decimals();
+
+    let user = Address::random(&env);
+    let initial_balance = 1_000_000_000 * 10i128.pow(decimals);
+
+    token.mint(&user, &initial_balance);
+    assert_eq!(token.balance(&user), initial_balance);
+
+    let deposit_amount = initial_balance;
+    assert_eq!(
+        sut.pool
+            .try_deposit(&user, &token.address, &deposit_amount)
+            .unwrap_err()
+            .unwrap(),
+        Error::LiqCapExceeded
+    )
+}
+
+#[test]
 fn borrow() {
     let env = Env::default();
     env.mock_all_auths();

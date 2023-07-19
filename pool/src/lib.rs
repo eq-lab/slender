@@ -519,6 +519,14 @@ impl LendingPool {
         assert_with_error!(env, value > 0, Error::MustBePositive);
     }
 
+    fn require_liq_cap_not_exceeded(env: &Env, reserve: &ReserveData, balance: i128) {
+        assert_with_error!(
+            env,
+            balance <= reserve.configuration.liq_cap,
+            Error::LiqCapExceeded
+        );
+    }
+
     fn do_deposit(
         env: &Env,
         who: &Address,
@@ -533,8 +541,16 @@ impl LendingPool {
         let collat_coeff = Self::get_collateral_coeff(env, reserve)?;
         let underlying_asset = token::Client::new(env, asset);
         let s_token = STokenClient::new(env, &reserve.s_token_address);
-        let is_first_deposit = s_token.balance(who) == 0;
 
+        let s_token_supply = s_token.total_supply();
+        let underlying_balance_after = collat_coeff
+            .mul_int(s_token_supply)
+            .ok_or(Error::MathOverflowError)?
+            .checked_add(amount)
+            .ok_or(Error::MathOverflowError)?;
+        Self::require_liq_cap_not_exceeded(env, reserve, underlying_balance_after);
+
+        let is_first_deposit = s_token.balance(who) == 0;
         let amount_to_mint = collat_coeff
             .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
