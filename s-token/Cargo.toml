@@ -17,7 +17,6 @@ soroban-token-sdk = { version = "0.8.4" }
 fixed-point-math = { workspace = true }
 s-token-interface={ path="../s-token-interface", version="0.1.0", package="s-token-interface" }
 pool-interface={ path="../pool-interface", version="0.1.0", package="pool-interface" }
-debt-token-interface={ path="../debt-token-interface", version="0.1.0", package="debt-token-interface" }
 common = { path = "../common", version="0.1.0", package = "common"}
 common-token = { path = "../common-token", version="0.1.0", package = "common-token"}
 
@@ -25,3 +24,4 @@ common-token = { path = "../common-token", version="0.1.0", package = "common-to
 soroban-sdk = { version = "0.8.4", features = ["testutils"] }
 fixed-point-math = { version="0.0.2" }
 s-token-interface={path="../s-token-interface"}
+debt-token-interface={ path="../debt-token-interface", version="0.1.0", package="debt-token-interface" }
