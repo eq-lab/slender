@@ -58,7 +58,6 @@ impl ReserveConfiguration {
 
 #[derive(Debug, Clone)]
 #[contracttype]
-#[derive(Clone)]
 pub struct ReserveData {
     pub configuration: ReserveConfiguration,
     pub collat_accrued_rate: i128,

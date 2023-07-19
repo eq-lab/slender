@@ -2,7 +2,7 @@
 #![no_std]
 
 pub use reserve_config::*;
-use soroban_sdk::{contractclient, contracterror, contractspecfn, Address, Env, Vec};
+use soroban_sdk::{contractclient, contracterror, contractspecfn, contracttype, Address, Env, Vec};
 pub use user_config::*;
 
 mod reserve_config;
@@ -50,6 +50,13 @@ pub enum Error {
     AccruedRateMathError = 500,
     CollateralCoeffMathError = 501,
     DebtCoeffMathError = 502,
+}
+
+#[contracttype]
+pub struct AccountPosition {
+    pub discounted_collateral: i128,
+    pub debt: i128,
+    pub npv: i128,
 }
 
 /// Interface for SToken
@@ -112,7 +119,7 @@ pub trait LendingPoolTrait {
 
     fn paused(env: Env) -> bool;
 
-    fn get_account_data(env: Env, who: Address) -> Result<(i128, i128, i128), Error>;
+    fn get_account_position(env: Env, who: Address) -> Result<AccountPosition, Error>;
 
     fn liquidate(
         env: Env,

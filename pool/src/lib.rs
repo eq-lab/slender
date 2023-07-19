@@ -28,15 +28,23 @@ struct AccountData {
     discounted_collateral: i128,
     /// Total debt expressed in XLM
     debt: i128,
-    /// Debt with liquidation penalty
-    liquidation: Option<LiquidationData>,
     /// Net position value in XLM
     npv: i128,
+    /// Liquidation data
+    liquidation: Option<LiquidationData>,
 }
 
 impl AccountData {
     pub fn is_good_position(&self) -> bool {
         self.npv > 0
+    }
+
+    pub fn get_position(&self) -> AccountPosition {
+        AccountPosition {
+            discounted_collateral: self.discounted_collateral,
+            debt: self.debt,
+            npv: self.npv,
+        }
     }
 }
 
@@ -355,7 +363,7 @@ impl LendingPoolTrait for LendingPool {
         balance_to_before: i128,
     ) -> Result<(), Error> {
         // TODO: maybe check with callstack?
-        let reserve = get_actual_reserve_data(&env, asset)?;
+        let reserve = get_actual_reserve_data(&env, asset.clone())?;
         reserve.s_token_address.require_auth();
         Self::require_not_paused(&env)?;
         let balance_from_after = balance_from_before
@@ -512,13 +520,8 @@ impl LendingPoolTrait for LendingPool {
         paused(&env)
     }
 
-    fn get_account_data(env: Env, who: Address) -> Result<(i128, i128, i128), Error> {
-        let AccountData {
-            discounted_collateral,
-            debt,
-            npv,
-            liquidation: _,
-        } = Self::calc_account_data(
+    fn get_account_position(env: Env, who: Address) -> Result<AccountPosition, Error> {
+        let account_data = Self::calc_account_data(
             &env,
             who.clone(),
             None,
@@ -526,7 +529,7 @@ impl LendingPoolTrait for LendingPool {
             &read_reserves(&env),
             false,
         )?;
-        Ok((discounted_collateral, debt, npv))
+        Ok(account_data.get_position())
     }
 
     /// Liqudate a bad position with NPV less or equal to 0.

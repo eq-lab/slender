@@ -1064,6 +1064,8 @@ fn test_liquidate_get_stoken() {
     );
     // TODO
     // assert_eq!(stoken.balance(&borrower), stoken_balance_before - debt);
+}
+
 #[test]
 fn user_operation_should_update_ar_coeffs() {
     let env = Env::default();
