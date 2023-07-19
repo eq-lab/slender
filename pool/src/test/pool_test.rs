@@ -1,9 +1,10 @@
+use crate::rate::{calc_accrued_rate_coeff, calc_interest_rate};
 use crate::*;
 use common::FixedI128;
 use debt_token_interface::DebtTokenClient;
 use price_feed_interface::PriceFeedClient;
 use s_token_interface::STokenClient;
-use soroban_sdk::testutils::{Address as _, Events, MockAuth, MockAuthInvoke};
+use soroban_sdk::testutils::{Address as _, Events, Ledger, MockAuth, MockAuthInvoke};
 use soroban_sdk::{token::Client as TokenClient, vec, IntoVal, Symbol};
 
 extern crate std;
@@ -124,7 +125,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
             let token = create_token_contract(&env, &token_admin);
             let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
             let s_token = create_s_token_contract(&env, &pool.address, &token.address, &treasury);
-
+            let decimals = s_token.decimals();
             assert!(pool.get_reserve(&s_token.address).is_none());
 
             pool.init_reserve(
@@ -136,7 +137,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
             );
 
             let liq_bonus = 11000; //110%
-            let liq_cap = 100_000_000 * FixedI128::DENOMINATOR; // 100M
+            let liq_cap = 100_000_000 * 10_i128.pow(decimals); // 100M
             let discount = 6000; //60%
 
             pool.configure_as_collateral(
@@ -588,8 +589,8 @@ fn deposit() {
                 &env,
                 (
                     sut.pool.address.clone(),
-                    (Symbol::short("deposit"), user).into_val(&env),
-                    (token.address.clone(), deposit_amount).into_val(&env)
+                    (Symbol::new(&env, "reserve_used_as_coll_enabled"), user).into_val(&env),
+                    (token.address.clone()).into_val(&env)
                 ),
             ]
         );
@@ -1063,4 +1064,188 @@ fn test_liquidate_get_stoken() {
     );
     // TODO
     // assert_eq!(stoken.balance(&borrower), stoken_balance_before - debt);
+#[test]
+fn user_operation_should_update_ar_coeffs() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let debt_asset_1 = sut.reserves[1].token.address.clone();
+
+    let lender = Address::random(&env);
+    let borrower_1 = Address::random(&env);
+    let borrow_amount = 40_000_000;
+
+    //init pool with one borrower and one lender
+    let initial_amount: i128 = 1_000_000_000;
+    for r in sut.reserves.iter() {
+        r.token.mint(&lender, &initial_amount);
+        r.token.mint(&borrower_1, &initial_amount);
+    }
+
+    //lender deposit all tokens
+    let deposit_amount = 100_000_000;
+    for r in sut.reserves.iter() {
+        sut.pool.deposit(&lender, &r.token.address, &deposit_amount);
+    }
+
+    sut.pool
+        .deposit(&borrower_1, &sut.reserves[0].token.address, &deposit_amount);
+
+    env.budget().reset_default();
+
+    // ensure that zero elapsed time doesn't change AR coefficients
+    {
+        let reserve_before = sut.pool.get_reserve(&debt_asset_1).unwrap();
+        sut.pool.borrow(&borrower_1, &debt_asset_1, &borrow_amount);
+        let updated_reserve = sut.pool.get_reserve(&debt_asset_1).unwrap();
+        assert_eq!(
+            updated_reserve.collat_accrued_rate,
+            reserve_before.collat_accrued_rate
+        );
+        assert_eq!(
+            updated_reserve.debt_accrued_rate,
+            reserve_before.debt_accrued_rate
+        );
+        assert_eq!(
+            reserve_before.last_update_timestamp,
+            updated_reserve.last_update_timestamp
+        );
+    }
+
+    // shift time to
+    env.ledger().with_mut(|li| {
+        li.timestamp = 24 * 60 * 60 // one day
+    });
+
+    env.budget().reset_default();
+
+    //second deposit by lender of debt asset
+    sut.pool.deposit(&lender, &debt_asset_1, &deposit_amount);
+
+    let updated = sut.pool.get_reserve(&debt_asset_1).unwrap();
+    let ir_params = sut.pool.get_ir_params().unwrap();
+    let debt_ir = calc_interest_rate(deposit_amount, borrow_amount, &ir_params).unwrap();
+    let lend_ir = debt_ir
+        .checked_mul(FixedI128::from_percentage(ir_params.scaling_coeff).unwrap())
+        .unwrap();
+
+    let elapsed_time = env.ledger().timestamp();
+
+    let coll_ar = calc_accrued_rate_coeff(FixedI128::ONE, lend_ir, elapsed_time)
+        .unwrap()
+        .into_inner();
+    let debt_ar = calc_accrued_rate_coeff(FixedI128::ONE, debt_ir, elapsed_time)
+        .unwrap()
+        .into_inner();
+
+    assert_eq!(updated.collat_accrued_rate, coll_ar);
+    assert_eq!(updated.debt_accrued_rate, debt_ar);
+    assert_eq!(updated.lend_ir, lend_ir.into_inner());
+    assert_eq!(updated.debt_ir, debt_ir.into_inner());
+}
+
+#[test]
+fn repay() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+
+    let initial_amount = 1_000_000_000;
+    let lender = Address::random(&env);
+    let borrower = Address::random(&env);
+
+    for r in sut.reserves.iter() {
+        r.token.mint(&lender, &initial_amount);
+        assert_eq!(r.token.balance(&lender), initial_amount);
+
+        r.token.mint(&borrower, &initial_amount);
+        assert_eq!(r.token.balance(&borrower), initial_amount);
+    }
+
+    //lender deposit all tokens
+    let lending_amount = 100_000_000;
+    for r in sut.reserves.iter() {
+        let pool_balance = r.token.balance(&r.s_token.address);
+        sut.pool.deposit(&lender, &r.token.address, &lending_amount);
+        assert_eq!(r.s_token.balance(&lender), lending_amount);
+        assert_eq!(
+            r.token.balance(&r.s_token.address),
+            pool_balance + lending_amount
+        );
+    }
+
+    env.budget().reset_default();
+
+    // borrower deposits first token and borrow second token
+    let deposit_amount = 10_000;
+    sut.pool
+        .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
+
+    assert_eq!(sut.reserves[0].s_token.balance(&borrower), deposit_amount);
+    assert_eq!(
+        sut.reserves[0].token.balance(&borrower),
+        initial_amount - deposit_amount
+    );
+
+    // borrower borrows second token
+    let borrowing_amount = 3_000;
+    sut.pool
+        .borrow(&borrower, &sut.reserves[1].token.address, &borrowing_amount);
+
+    assert_eq!(
+        sut.reserves[1].debt_token.balance(&borrower),
+        borrowing_amount
+    );
+    assert_eq!(
+        sut.reserves[1].token.balance(&borrower),
+        initial_amount + borrowing_amount
+    );
+    assert_eq!(
+        sut.reserves[1]
+            .token
+            .balance(&sut.reserves[1].s_token.address),
+        lending_amount - borrowing_amount
+    );
+
+    // borrower partially repays second token
+    let repayment_amount = 700;
+    sut.pool
+        .deposit(&borrower, &sut.reserves[1].token.address, &repayment_amount);
+
+    assert_eq!(
+        sut.reserves[1].debt_token.balance(&borrower),
+        borrowing_amount - repayment_amount
+    );
+    assert_eq!(
+        sut.reserves[1].token.balance(&borrower),
+        initial_amount + borrowing_amount - repayment_amount
+    );
+    assert_eq!(
+        sut.reserves[1]
+            .token
+            .balance(&sut.reserves[1].s_token.address),
+        lending_amount - borrowing_amount + repayment_amount
+    );
+
+    // borrower over-repays second token
+    let over_repayment_amount = 3000;
+    sut.pool.deposit(
+        &borrower,
+        &sut.reserves[1].token.address,
+        &over_repayment_amount,
+    );
+
+    assert_eq!(sut.reserves[1].debt_token.balance(&borrower), 0);
+    assert_eq!(
+        sut.reserves[1].token.balance(&borrower),
+        initial_amount + borrowing_amount - repayment_amount - over_repayment_amount
+    );
+    assert_eq!(
+        sut.reserves[1]
+            .token
+            .balance(&sut.reserves[1].s_token.address),
+        lending_amount - borrowing_amount + repayment_amount + over_repayment_amount
+    );
 }

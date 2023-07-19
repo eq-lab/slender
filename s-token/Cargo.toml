@@ -24,3 +24,4 @@ common-token = { path = "../common-token", version="0.1.0", package = "common-to
 soroban-sdk = { version = "0.8.4", features = ["testutils"] }
 fixed-point-math = { version="0.0.2" }
 s-token-interface={path="../s-token-interface"}
+debt-token-interface={ path="../debt-token-interface", version="0.1.0", package="debt-token-interface" }

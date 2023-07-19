@@ -5,6 +5,7 @@ use crate::price_provider::PriceProvider;
 use common::{FixedI128, PERCENTAGE_FACTOR};
 use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
+use rate::{calc_accrued_rate_coeff, calc_accrued_rates};
 use s_token_interface::STokenClient;
 use soroban_sdk::{
     assert_with_error, contractimpl, contracttype, panic_with_error, token,
@@ -15,6 +16,8 @@ mod event;
 mod price_provider;
 mod rate;
 mod storage;
+#[cfg(test)]
+mod test;
 
 use crate::storage::*;
 
@@ -279,19 +282,21 @@ impl LendingPoolTrait for LendingPool {
         read_price_feed(&env, asset).ok()
     }
 
+    /// Repays a borrowed amount on a specific reserve, burning the equivalent debt tokens owned when debt exists.
     /// Deposits a specified amount of an asset into the reserve associated with the asset.
     /// Depositor receives s-tokens according to the current index value.
+    ///
     ///
     /// # Arguments
     ///
     /// - who - The address of the user making the deposit.
-    /// - asset - The address of the asset to be deposited.
-    /// - amount - The amount to be deposited.
+    /// - asset - The address of the asset to be deposited for lend or repay.
+    /// - amount - The amount to be repayed/deposited.
     ///
     /// # Errors
     ///
     /// Returns `NoReserveExistForAsset` if no reserve exists for the specified asset.
-    /// Returns `MathOverflowError' if an overflow occurs when calculating the amount of the s-token to be minted.
+    /// Returns `MathOverflowError' if an overflow occurs when calculating the amount of tokens.
     ///
     /// # Panics
     ///
@@ -303,56 +308,40 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = read_reserve(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, asset.clone())?;
         Self::validate_deposit(&env, &reserve, amount);
 
-        // Updates the reserve indexes and the timestamp of the update.
-        // Implement later with rates.
-        reserve.update_state();
-        // TODO: write reserve into storage
+        let (remaining_amount, is_repayed) = Self::do_repay(&env, &who, &asset, amount, &reserve)?;
+        let is_first_deposit = Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?;
 
-        let is_first_deposit = Self::do_deposit(
-            &env,
-            &who,
-            &reserve.s_token_address,
-            &asset,
-            amount,
-            reserve.collat_accrued_rate,
-        )?;
+        if is_repayed || is_first_deposit {
+            let mut user_config = read_user_config(&env, who.clone()).unwrap_or_default();
 
-        if is_first_deposit {
-            let mut user_config: UserConfiguration =
-                read_user_config(&env, who.clone()).unwrap_or_default();
+            if is_repayed {
+                user_config.set_borrowing(&env, reserve.get_id(), false);
+            }
 
-            user_config.set_using_as_collateral(&env, reserve.get_id(), true);
-            write_user_config(&env, who.clone(), &user_config);
-            event::reserve_used_as_collateral_enabled(&env, who.clone(), asset.clone());
+            if is_first_deposit {
+                user_config.set_using_as_collateral(&env, reserve.get_id(), true);
+                event::reserve_used_as_collateral_enabled(&env, who.clone(), asset);
+            }
+
+            write_user_config(&env, who, &user_config);
         }
-
-        event::deposit(&env, who, asset, amount);
 
         Ok(())
     }
 
-    /// Validates and finalize a sToken transfer.
-    /// Only callable by the aToken.
+    /// Callback that should be called by s-token after transfer to ensure user have good position after transfer
     ///
     /// # Arguments
     ///
-    /// - asset - The address of the underlying asset of the sToken
-    /// - from - The address from which sTokens are transferred
-    /// - to - The address receiving sTokens
-    /// - amount - The amount being trasferred
-    /// - balance_from_before - The sToken balance of the `from` before the transfer
-    /// - balance_to_before - The sToken balance of the `to` before the transfer
-    ///
-    /// # Errors
-    ///
-    /// Returns `NoReserveExistForAsset` if no reserve exists for the specified asset.
-    /// Returns `Paused` if contract is paused
-    /// Returns `BadPostion` if the `from` address is subject to liquidation after the transfer
-    /// Returns `MathOverflowError' if an overflow occurs when calculating the `from` position.
-    ///
+    /// - asset - underlying asset
+    /// - from - address of user who send s-token
+    /// - to - user who receive s-token
+    /// - amount - sended amount of s-token
+    /// - balance_from_before - amount of s-token before transfer on `from` user balance
+    /// - balance_to_before - amount of s-token before transfer on `to` user balance
     /// # Panics
     ///
     /// Panics if the caller is not the sToken contract.
@@ -366,7 +355,7 @@ impl LendingPoolTrait for LendingPool {
         balance_to_before: i128,
     ) -> Result<(), Error> {
         // TODO: maybe check with callstack?
-        let reserve = read_reserve(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, asset)?;
         reserve.s_token_address.require_auth();
         Self::require_not_paused(&env)?;
         let balance_from_after = balance_from_before
@@ -438,7 +427,7 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = read_reserve(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, asset.clone())?;
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
         let who_balance = s_token.balance(&who);
@@ -458,16 +447,6 @@ impl LendingPoolTrait for LendingPool {
             who_balance,
         );
 
-        reserve.update_state();
-        //TODO: update interest rates
-        // reserve.update_interest_rates(
-        //     asset.clone(),
-        //     reserve.s_token_address.clone(),
-        //     -amount_to_withdraw,
-        // );
-
-        //TODO: save new reserve
-
         if amount_to_withdraw == who_balance {
             user_config.set_using_as_collateral(&env, reserve.get_id(), false);
             write_user_config(&env, who.clone(), &user_config);
@@ -475,7 +454,7 @@ impl LendingPoolTrait for LendingPool {
         }
 
         // amount_to_burn = amount_to_withdraw / liquidity_index
-        let amount_to_burn = FixedI128::from_inner(reserve.collat_accrued_rate)
+        let amount_to_burn = Self::get_collateral_coeff(&env, &reserve)?
             .recip_mul_int(amount_to_withdraw)
             .ok_or(Error::MathOverflowError)?;
         s_token.burn(&who, &amount_to_burn, &amount_to_withdraw, &to);
@@ -500,7 +479,7 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = read_reserve(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, asset.clone())?;
         let user_config = read_user_config(&env, who.clone())?;
 
         Self::validate_borrow(&env, who.clone(), &asset, &reserve, &user_config, amount)?;
@@ -514,9 +493,6 @@ impl LendingPoolTrait for LendingPool {
             user_config.set_borrowing(&env, reserve.get_id(), true);
             write_user_config(&env, who.clone(), &user_config);
         }
-
-        reserve.update_interest_rate();
-        write_reserve(&env, asset.clone(), &reserve);
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
         s_token.transfer_underlying_to(&who, &amount);
@@ -684,23 +660,81 @@ impl LendingPool {
     fn do_deposit(
         env: &Env,
         who: &Address,
-        s_token_address: &Address,
         asset: &Address,
         amount: i128,
-        collat_accrued_rate: i128,
+        reserve: &ReserveData,
     ) -> Result<bool, Error> {
-        let token = token::Client::new(env, asset);
-        token.transfer(who, s_token_address, &amount);
+        if amount == 0 {
+            return Ok(false);
+        }
 
-        let s_token = s_token_interface::STokenClient::new(env, s_token_address);
+        let collat_coeff = Self::get_collateral_coeff(env, reserve)?;
+        let underlying_asset = token::Client::new(env, asset);
+        let s_token = STokenClient::new(env, &reserve.s_token_address);
         let is_first_deposit = s_token.balance(who) == 0;
 
-        // amount_to_mint = amount / collat_accrued_rate
-        let amount_to_mint = FixedI128::from_inner(collat_accrued_rate)
+        let amount_to_mint = collat_coeff
             .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
+
+        underlying_asset.transfer(who, &reserve.s_token_address, &amount);
         s_token.mint(who, &amount_to_mint);
+
+        event::deposit(env, who.clone(), asset.clone(), amount);
+
         Ok(is_first_deposit)
+    }
+
+    /// Returns (i128: the remaining amount after repayment, bool: the flag indicating the debt is fully repayed)
+    fn do_repay(
+        env: &Env,
+        who: &Address,
+        asset: &Address,
+        amount: i128,
+        reserve: &ReserveData,
+    ) -> Result<(i128, bool), Error> {
+        let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
+        let asset_debt = debt_token.balance(who);
+
+        if asset_debt == 0 {
+            return Ok((amount, false));
+        }
+
+        let underlying_asset = token::Client::new(env, asset);
+        let debt_coeff = Self::get_debt_coeff(env, reserve)?;
+
+        let compounded_debt = debt_coeff
+            .mul_int(asset_debt)
+            .ok_or(Error::MathOverflowError)?;
+
+        let payback_amount = amount.min(compounded_debt);
+
+        let payback_debt = if payback_amount == compounded_debt {
+            asset_debt
+        } else {
+            debt_coeff
+                .recip_mul_int(payback_amount)
+                .ok_or(Error::MathOverflowError)?
+        };
+
+        underlying_asset.transfer(who, &reserve.s_token_address, &payback_amount);
+        debt_token.burn(who, &payback_debt);
+
+        event::repay(env, who.clone(), asset.clone(), amount);
+
+        let remaning_amount = amount
+            .checked_sub(payback_amount)
+            .ok_or(Error::MathOverflowError)?;
+
+        let remaning_amount = if remaning_amount > 0 {
+            remaning_amount
+        } else {
+            0
+        };
+
+        let is_repayed = compounded_debt == payback_amount;
+
+        Ok((remaning_amount, is_repayed))
     }
 
     fn validate_deposit(env: &Env, reserve: &ReserveData, amount: i128) {
@@ -935,12 +969,35 @@ impl LendingPool {
             })?
     }
 
-    fn get_collateral_coeff(_env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
-        Ok(FixedI128::from_inner(reserve.collat_accrued_rate))
+    /// Returns collateral_accrued_rate corrected for current time
+    fn get_collateral_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+        let current_time = env.ledger().timestamp();
+        let elapsed_time = current_time
+            .checked_sub(reserve.last_update_timestamp)
+            .ok_or(Error::CollateralCoeffMathError)?;
+        let prev_ar = FixedI128::from_inner(reserve.collat_accrued_rate);
+        if elapsed_time == 0 {
+            Ok(prev_ar)
+        } else {
+            let lend_ir = FixedI128::from_inner(reserve.lend_ir);
+            calc_accrued_rate_coeff(prev_ar, lend_ir, elapsed_time)
+                .ok_or(Error::CollateralCoeffMathError)
+        }
     }
 
-    fn get_debt_coeff(_env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
-        Ok(FixedI128::from_inner(reserve.debt_accrued_rate))
+    /// Returns debt_accrued_rate corrected for current time
+    fn get_debt_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+        let current_time = env.ledger().timestamp();
+        let elapsed_time = current_time
+            .checked_sub(reserve.last_update_timestamp)
+            .ok_or(Error::DebtCoeffMathError)?;
+        let prev_ar = FixedI128::from_inner(reserve.debt_accrued_rate);
+        if elapsed_time == 0 {
+            Ok(prev_ar)
+        } else {
+            let debt_ir = FixedI128::from_inner(reserve.debt_ir);
+            calc_accrued_rate_coeff(prev_ar, debt_ir, elapsed_time).ok_or(Error::DebtCoeffMathError)
+        }
     }
 
     fn require_not_paused(env: &Env) -> Result<(), Error> {
@@ -1039,5 +1096,39 @@ impl LendingPool {
     }
 }
 
-#[cfg(test)]
-mod test;
+/// Returns reserve data with updated accrued coeffiсients
+pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData, Error> {
+    let reserve = read_reserve(env, asset.clone())?;
+    let current_time = env.ledger().timestamp();
+    let elapsed_time = current_time
+        .checked_sub(reserve.last_update_timestamp)
+        .ok_or(Error::AccruedRateMathError)?;
+    if elapsed_time == 0 {
+        return Ok(reserve);
+    }
+
+    let s_token = STokenClient::new(env, &reserve.s_token_address);
+    let total_collateral = s_token.total_supply();
+
+    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
+    let total_debt = debt_token.total_supply();
+    let ir_params = read_ir_params(env)?;
+    let accrued_rates = calc_accrued_rates(
+        total_collateral,
+        total_debt,
+        elapsed_time,
+        ir_params,
+        &reserve,
+    )
+    .ok_or(Error::AccruedRateMathError)?;
+
+    let mut reserve = reserve;
+    reserve.collat_accrued_rate = accrued_rates.collat_accrued_rate.into_inner();
+    reserve.debt_accrued_rate = accrued_rates.debt_accrued_rate.into_inner();
+    reserve.debt_ir = accrued_rates.debt_ir.into_inner();
+    reserve.lend_ir = accrued_rates.lend_ir.into_inner();
+    reserve.last_update_timestamp = current_time;
+
+    write_reserve(env, asset, &reserve);
+    Ok(reserve)
+}

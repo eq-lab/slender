@@ -717,6 +717,7 @@ version = "0.1.0"
 dependencies = [
  "common",
  "common-token",
+ "debt-token-interface",
  "fixed-point-math",
  "pool-interface",
  "s-token-interface",

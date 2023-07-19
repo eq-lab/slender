@@ -46,6 +46,10 @@ pub enum Error {
     MustBeLtPercentageFactor = 402,
     MustBeGtPercentageFactor = 403,
     MustBePositive = 404,
+
+    AccruedRateMathError = 500,
+    CollateralCoeffMathError = 501,
+    DebtCoeffMathError = 502,
 }
 
 /// Interface for SToken
