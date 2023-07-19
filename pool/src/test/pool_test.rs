@@ -591,8 +591,8 @@ fn deposit() {
                 &env,
                 (
                     sut.pool.address.clone(),
-                    (Symbol::short("deposit"), user).into_val(&env),
-                    (token.address.clone(), deposit_amount).into_val(&env)
+                    (Symbol::new(&env, "reserve_used_as_coll_enabled"), user).into_val(&env),
+                    (token.address.clone()).into_val(&env)
                 ),
             ]
         );
@@ -951,4 +951,109 @@ fn user_operation_should_update_ar_coeffs() {
     assert_eq!(updated.debt_accrued_rate, debt_ar);
     assert_eq!(updated.lend_ir, lend_ir.into_inner());
     assert_eq!(updated.debt_ir, debt_ir.into_inner());
+}
+
+#[test]
+fn repay() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+
+    let initial_amount = 1_000_000_000;
+    let lender = Address::random(&env);
+    let borrower = Address::random(&env);
+
+    for r in sut.reserves.iter() {
+        r.token.mint(&lender, &initial_amount);
+        assert_eq!(r.token.balance(&lender), initial_amount);
+
+        r.token.mint(&borrower, &initial_amount);
+        assert_eq!(r.token.balance(&borrower), initial_amount);
+    }
+
+    //lender deposit all tokens
+    let lending_amount = 100_000_000;
+    for r in sut.reserves.iter() {
+        let pool_balance = r.token.balance(&r.s_token.address);
+        sut.pool.deposit(&lender, &r.token.address, &lending_amount);
+        assert_eq!(r.s_token.balance(&lender), lending_amount);
+        assert_eq!(
+            r.token.balance(&r.s_token.address),
+            pool_balance + lending_amount
+        );
+    }
+
+    env.budget().reset_default();
+
+    // borrower deposits first token and borrow second token
+    let deposit_amount = 10_000;
+    sut.pool
+        .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
+
+    assert_eq!(sut.reserves[0].s_token.balance(&borrower), deposit_amount);
+    assert_eq!(
+        sut.reserves[0].token.balance(&borrower),
+        initial_amount - deposit_amount
+    );
+
+    // borrower borrows second token
+    let borrowing_amount = 3_000;
+    sut.pool
+        .borrow(&borrower, &sut.reserves[1].token.address, &borrowing_amount);
+
+    assert_eq!(
+        sut.reserves[1].debt_token.balance(&borrower),
+        borrowing_amount
+    );
+    assert_eq!(
+        sut.reserves[1].token.balance(&borrower),
+        initial_amount + borrowing_amount
+    );
+    assert_eq!(
+        sut.reserves[1]
+            .token
+            .balance(&sut.reserves[1].s_token.address),
+        lending_amount - borrowing_amount
+    );
+
+    // borrower partially repays second token
+    let repayment_amount = 700;
+    sut.pool
+        .deposit(&borrower, &sut.reserves[1].token.address, &repayment_amount);
+
+    assert_eq!(
+        sut.reserves[1].debt_token.balance(&borrower),
+        borrowing_amount - repayment_amount
+    );
+    assert_eq!(
+        sut.reserves[1].token.balance(&borrower),
+        initial_amount + borrowing_amount - repayment_amount
+    );
+    assert_eq!(
+        sut.reserves[1]
+            .token
+            .balance(&sut.reserves[1].s_token.address),
+        lending_amount - borrowing_amount + repayment_amount
+    );
+
+    // borrower over-repays second token
+    let over_repayment_amount = 3000;
+    sut.pool.deposit(
+        &borrower,
+        &sut.reserves[1].token.address,
+        &over_repayment_amount,
+    );
+
+    assert_eq!(sut.reserves[1].debt_token.balance(&borrower), 0);
+    assert_eq!(
+        sut.reserves[1].token.balance(&borrower),
+        initial_amount + borrowing_amount - repayment_amount - over_repayment_amount
+    );
+    assert_eq!(
+        sut.reserves[1]
+            .token
+            .balance(&sut.reserves[1].s_token.address),
+        lending_amount - borrowing_amount + repayment_amount + over_repayment_amount
+    );
 }
