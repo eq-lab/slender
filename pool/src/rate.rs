@@ -85,7 +85,7 @@ pub struct AccruedRates {
     pub debt_ir: FixedI128,
 }
 
-/// Calculates collateral and debt accrued coefficients and updates reserve data
+/// Calculates collateral and debt accrued coefficients, lend and debt rates
 pub fn calc_accrued_rates(
     total_collateral: i128,
     total_debt: i128,
