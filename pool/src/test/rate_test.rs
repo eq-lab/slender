@@ -122,21 +122,24 @@ fn test_update_accrued_rates() {
     let reserve_data = ReserveData::new(env, input);
     let ir_params = get_default_ir_params();
 
-    let updated = update_accrued_rates(
+    let accrued_rates = calc_accrued_rates(
         total_collateral,
         total_debt,
         one_day,
         ir_params,
-        reserve_data.clone(),
+        &reserve_data,
     )
     .unwrap();
 
-    assert_eq!(updated.last_update_timestamp, one_day);
+    //debt_ir = 0,027517810
+    assert_eq!(accrued_rates.debt_ir.into_inner(), 27517810);
     // collat_ar = 1*(1 + 0,0275176482 * 24*60*60/31_557_600) = 1,0000753392
-    assert_eq!(updated.debt_accrued_rate, 1000075339);
+    assert_eq!(accrued_rates.debt_accrued_rate.into_inner(), 1000075339);
 
-    // debt_ar = 1*(1 + 0.9*0,0275176482 * 24*60*60/31_557_600) = 1,0000678053
-    assert_eq!(updated.collat_accrued_rate, 1000067805);
+    //lend_ir = 0,024766029
+    assert_eq!(accrued_rates.lend_ir.into_inner(), 24766029);
+    //collat_ar = 1*(1 + 0.9*0,0275176482 * 24*60*60/31_557_600) = 1,0000678053
+    assert_eq!(accrued_rates.collat_accrued_rate.into_inner(), 1000067805);
 }
 
 #[test]
@@ -153,12 +156,12 @@ fn update_accrued_rates_should_fail() {
     let reserve_data = ReserveData::new(env, input);
     let ir_params = get_default_ir_params();
 
-    let updated = update_accrued_rates(
+    let mb_accrued_rates = calc_accrued_rates(
         total_collateral,
         total_debt,
         one_day,
         ir_params,
-        reserve_data.clone(),
+        &reserve_data,
     );
-    assert!(updated.is_none());
+    assert!(mb_accrued_rates.is_none());
 }

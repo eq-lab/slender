@@ -45,6 +45,8 @@ pub enum Error {
     MustBePositive = 404,
 
     AccruedRateMathError = 500,
+    CollateralCoeffMathError = 501,
+    DebtCoeffMathError = 502,
 }
 
 /// Interface for SToken

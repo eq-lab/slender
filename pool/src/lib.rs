@@ -5,7 +5,7 @@ use crate::price_provider::PriceProvider;
 use common::{FixedI128, PERCENTAGE_FACTOR};
 use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
-use rate::update_accrued_rates;
+use rate::{calc_accrued_rate_coeff, calc_accrued_rates};
 use s_token_interface::STokenClient;
 use soroban_sdk::{
     assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec,
@@ -293,6 +293,16 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
+    /// Callback that should be called by s-token after transfer to ensure user have good position after transfer
+    ///
+    /// # Arguments
+    ///
+    /// - asset - underlying asset
+    /// - from - address of user who send s-token
+    /// - to - user who receive s-token
+    /// - amount - sended amount of s-token
+    /// - balance_from_before - amount of s-token before transfer on `from` user balance
+    /// - balance_to_before - amount of s-token before transfer on `to` user balance
     fn finalize_transfer(
         env: Env,
         asset: Address,
@@ -302,7 +312,7 @@ impl LendingPoolTrait for LendingPool {
         balance_from_before: i128,
         _balance_to_before: i128,
     ) -> Result<(), Error> {
-        let reserve = read_reserve(&env, asset)?;
+        let reserve = get_actual_reserve_data(&env, asset)?;
         reserve.s_token_address.require_auth();
         Self::require_not_paused(&env)?;
         // TODO
@@ -352,7 +362,7 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = get_actual_reserve_data(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, asset.clone())?;
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
         let who_balance = s_token.balance(&who);
@@ -365,16 +375,6 @@ impl LendingPoolTrait for LendingPool {
         Self::validate_withdraw(&env, who.clone(), &reserve, amount_to_withdraw, who_balance);
 
         let mut user_config: UserConfiguration = read_user_config(&env, who.clone())?;
-
-        reserve.update_state();
-        //TODO: update interest rates
-        // reserve.update_interest_rates(
-        //     asset.clone(),
-        //     reserve.s_token_address.clone(),
-        //     -amount_to_withdraw,
-        // );
-
-        //TODO: save new reserve
 
         if amount_to_withdraw == who_balance {
             user_config.set_using_as_collateral(&env, reserve.get_id(), false);
@@ -408,7 +408,7 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = get_actual_reserve_data(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, asset.clone())?;
         let user_config = read_user_config(&env, who.clone())?;
 
         Self::validate_borrow(&env, who.clone(), &asset, &reserve, &user_config, amount)?;
@@ -422,9 +422,6 @@ impl LendingPoolTrait for LendingPool {
             user_config.set_borrowing(&env, reserve.get_id(), true);
             write_user_config(&env, who.clone(), &user_config);
         }
-
-        reserve.update_interest_rate();
-        write_reserve(&env, asset.clone(), &reserve);
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
         s_token.transfer_underlying_to(&who, &amount);
@@ -770,12 +767,35 @@ impl LendingPool {
             })?
     }
 
-    fn get_collateral_coeff(_env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
-        Ok(FixedI128::from_inner(reserve.collat_accrued_rate))
+    /// Returns collateral_accrued_rate corrected for current time
+    fn get_collateral_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+        let current_time = env.ledger().timestamp();
+        let elapsed_time = current_time
+            .checked_sub(reserve.last_update_timestamp)
+            .ok_or(Error::CollateralCoeffMathError)?;
+        let prev_ar = FixedI128::from_inner(reserve.collat_accrued_rate);
+        if elapsed_time == 0 {
+            Ok(prev_ar)
+        } else {
+            let lend_ir = FixedI128::from_inner(reserve.lend_ir);
+            calc_accrued_rate_coeff(prev_ar, lend_ir, elapsed_time)
+                .ok_or(Error::CollateralCoeffMathError)
+        }
     }
 
-    fn get_debt_coeff(_env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
-        Ok(FixedI128::from_inner(reserve.debt_accrued_rate))
+    /// Returns debt_accrued_rate corrected for current time
+    fn get_debt_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+        let current_time = env.ledger().timestamp();
+        let elapsed_time = current_time
+            .checked_sub(reserve.last_update_timestamp)
+            .ok_or(Error::DebtCoeffMathError)?;
+        let prev_ar = FixedI128::from_inner(reserve.debt_accrued_rate);
+        if elapsed_time == 0 {
+            Ok(prev_ar)
+        } else {
+            let debt_ir = FixedI128::from_inner(reserve.debt_ir);
+            calc_accrued_rate_coeff(prev_ar, debt_ir, elapsed_time).ok_or(Error::DebtCoeffMathError)
+        }
     }
 
     fn require_not_paused(env: &Env) -> Result<(), Error> {
@@ -838,15 +858,22 @@ pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData,
     let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
     let total_debt = debt_token.total_supply();
     let ir_params = read_ir_params(env)?;
-    let updated_reserve = update_accrued_rates(
+    let accrued_rates = calc_accrued_rates(
         total_collateral,
         total_debt,
         elapsed_time,
         ir_params,
-        reserve,
+        &reserve,
     )
     .ok_or(Error::AccruedRateMathError)?;
 
-    write_reserve(env, asset, &updated_reserve);
-    Ok(updated_reserve)
+    let mut reserve = reserve;
+    reserve.collat_accrued_rate = accrued_rates.collat_accrued_rate.into_inner();
+    reserve.debt_accrued_rate = accrued_rates.debt_accrued_rate.into_inner();
+    reserve.debt_ir = accrued_rates.debt_ir.into_inner();
+    reserve.lend_ir = accrued_rates.lend_ir.into_inner();
+    reserve.last_update_timestamp = current_time;
+
+    write_reserve(env, asset, &reserve);
+    Ok(reserve)
 }

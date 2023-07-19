@@ -878,17 +878,17 @@ fn user_operation_should_update_ar_coeffs() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let asset = sut.reserves[0].token.address.clone();
+    let debt_asset_1 = sut.reserves[1].token.address.clone();
 
     let lender = Address::random(&env);
-    let borrower = Address::random(&env);
+    let borrower_1 = Address::random(&env);
     let borrow_amount = 40_000_000;
 
     //init pool with one borrower and one lender
     let initial_amount: i128 = 1_000_000_000;
     for r in sut.reserves.iter() {
         r.token.mint(&lender, &initial_amount);
-        r.token.mint(&borrower, &initial_amount);
+        r.token.mint(&borrower_1, &initial_amount);
     }
 
     //lender deposit all tokens
@@ -898,15 +898,15 @@ fn user_operation_should_update_ar_coeffs() {
     }
 
     sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
+        .deposit(&borrower_1, &sut.reserves[0].token.address, &deposit_amount);
 
     env.budget().reset_default();
 
     // ensure that zero elapsed time doesn't change AR coefficients
     {
-        let reserve_before = sut.pool.get_reserve(&asset).unwrap();
-        sut.pool.borrow(&borrower, &asset, &borrow_amount);
-        let updated_reserve = sut.pool.get_reserve(&asset).unwrap();
+        let reserve_before = sut.pool.get_reserve(&debt_asset_1).unwrap();
+        sut.pool.borrow(&borrower_1, &debt_asset_1, &borrow_amount);
+        let updated_reserve = sut.pool.get_reserve(&debt_asset_1).unwrap();
         assert_eq!(
             updated_reserve.collat_accrued_rate,
             reserve_before.collat_accrued_rate
@@ -926,14 +926,14 @@ fn user_operation_should_update_ar_coeffs() {
         li.timestamp = 24 * 60 * 60 // one day
     });
 
-    //second deposit by borrower
-    let second_deposit = 10_000;
-    sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &second_deposit);
+    env.budget().reset_default();
 
-    let updated = sut.pool.get_reserve(&asset).unwrap();
+    //second deposit by lender of debt asset
+    sut.pool.deposit(&lender, &debt_asset_1, &deposit_amount);
+
+    let updated = sut.pool.get_reserve(&debt_asset_1).unwrap();
     let ir_params = sut.pool.get_ir_params().unwrap();
-    let debt_ir = calc_interest_rate(deposit_amount * 2, borrow_amount, &ir_params).unwrap();
+    let debt_ir = calc_interest_rate(deposit_amount, borrow_amount, &ir_params).unwrap();
     let lend_ir = debt_ir
         .checked_mul(FixedI128::from_percentage(ir_params.scaling_coeff).unwrap())
         .unwrap();
@@ -949,6 +949,8 @@ fn user_operation_should_update_ar_coeffs() {
 
     assert_eq!(updated.collat_accrued_rate, coll_ar);
     assert_eq!(updated.debt_accrued_rate, debt_ar);
+    assert_eq!(updated.lend_ir, lend_ir.into_inner());
+    assert_eq!(updated.debt_ir, debt_ir.into_inner());
 }
 
 #[test]
