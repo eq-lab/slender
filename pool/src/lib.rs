@@ -243,19 +243,21 @@ impl LendingPoolTrait for LendingPool {
         read_price_feed(&env, asset).ok()
     }
 
+    /// Repays a borrowed amount on a specific reserve, burning the equivalent debt tokens owned when debt exists.
     /// Deposits a specified amount of an asset into the reserve associated with the asset.
     /// Depositor receives s-tokens according to the current index value.
+    ///
     ///
     /// # Arguments
     ///
     /// - who - The address of the user making the deposit.
-    /// - asset - The address of the asset to be deposited.
-    /// - amount - The amount to be deposited.
+    /// - asset - The address of the asset to be deposited for lend or repay.
+    /// - amount - The amount to be repayed/deposited.
     ///
     /// # Errors
     ///
     /// Returns `NoReserveExistForAsset` if no reserve exists for the specified asset.
-    /// Returns `MathOverflowError' if an overflow occurs when calculating the amount of the s-token to be minted.
+    /// Returns `MathOverflowError' if an overflow occurs when calculating the amount of tokens.
     ///
     /// # Panics
     ///
@@ -267,33 +269,26 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
-        let mut reserve = get_actual_reserve_data(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, asset.clone())?;
         Self::validate_deposit(&env, &reserve, amount);
 
-        // Updates the reserve indexes and the timestamp of the update.
-        // Implement later with rates.
-        reserve.update_state();
-        // TODO: write reserve into storage
+        let (remaining_amount, is_repayed) = Self::do_repay(&env, &who, &asset, amount, &reserve)?;
+        let is_first_deposit = Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?;
 
-        let is_first_deposit = Self::do_deposit(
-            &env,
-            &who,
-            &reserve.s_token_address,
-            &asset,
-            amount,
-            reserve.collat_accrued_rate,
-        )?;
+        if is_repayed || is_first_deposit {
+            let mut user_config = read_user_config(&env, who.clone()).unwrap_or_default();
 
-        if is_first_deposit {
-            let mut user_config: UserConfiguration =
-                read_user_config(&env, who.clone()).unwrap_or_default();
+            if is_repayed {
+                user_config.set_borrowing(&env, reserve.get_id(), false);
+            }
 
-            user_config.set_using_as_collateral(&env, reserve.get_id(), true);
-            write_user_config(&env, who.clone(), &user_config);
-            event::reserve_used_as_collateral_enabled(&env, who.clone(), asset.clone());
+            if is_first_deposit {
+                user_config.set_using_as_collateral(&env, reserve.get_id(), true);
+                event::reserve_used_as_collateral_enabled(&env, who.clone(), asset);
+            }
+
+            write_user_config(&env, who, &user_config);
         }
-
-        event::deposit(&env, who, asset, amount);
 
         Ok(())
     }
@@ -388,7 +383,7 @@ impl LendingPoolTrait for LendingPool {
         }
 
         // amount_to_burn = amount_to_withdraw / liquidity_index
-        let amount_to_burn = FixedI128::from_inner(reserve.collat_accrued_rate)
+        let amount_to_burn = Self::get_collateral_coeff(&env, &reserve)?
             .recip_mul_int(amount_to_withdraw)
             .ok_or(Error::MathOverflowError)?;
         s_token.burn(&who, &amount_to_burn, &amount_to_withdraw, &to);
@@ -530,23 +525,81 @@ impl LendingPool {
     fn do_deposit(
         env: &Env,
         who: &Address,
-        s_token_address: &Address,
         asset: &Address,
         amount: i128,
-        collat_accrued_rate: i128,
+        reserve: &ReserveData,
     ) -> Result<bool, Error> {
-        let token = token::Client::new(env, asset);
-        token.transfer(who, s_token_address, &amount);
+        if amount == 0 {
+            return Ok(false);
+        }
 
-        let s_token = s_token_interface::STokenClient::new(env, s_token_address);
+        let collat_coeff = Self::get_collateral_coeff(env, reserve)?;
+        let underlying_asset = token::Client::new(env, asset);
+        let s_token = STokenClient::new(env, &reserve.s_token_address);
         let is_first_deposit = s_token.balance(who) == 0;
 
-        // amount_to_mint = amount / collat_accrued_rate
-        let amount_to_mint = FixedI128::from_inner(collat_accrued_rate)
+        let amount_to_mint = collat_coeff
             .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
+
+        underlying_asset.transfer(who, &reserve.s_token_address, &amount);
         s_token.mint(who, &amount_to_mint);
+
+        event::deposit(env, who.clone(), asset.clone(), amount);
+
         Ok(is_first_deposit)
+    }
+
+    /// Returns (i128: the remaining amount after repayment, bool: the flag indicating the debt is fully repayed)
+    fn do_repay(
+        env: &Env,
+        who: &Address,
+        asset: &Address,
+        amount: i128,
+        reserve: &ReserveData,
+    ) -> Result<(i128, bool), Error> {
+        let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
+        let asset_debt = debt_token.balance(who);
+
+        if asset_debt == 0 {
+            return Ok((amount, false));
+        }
+
+        let underlying_asset = token::Client::new(env, asset);
+        let debt_coeff = Self::get_debt_coeff(env, reserve)?;
+
+        let compounded_debt = debt_coeff
+            .mul_int(asset_debt)
+            .ok_or(Error::MathOverflowError)?;
+
+        let payback_amount = amount.min(compounded_debt);
+
+        let payback_debt = if payback_amount == compounded_debt {
+            asset_debt
+        } else {
+            debt_coeff
+                .recip_mul_int(payback_amount)
+                .ok_or(Error::MathOverflowError)?
+        };
+
+        underlying_asset.transfer(who, &reserve.s_token_address, &payback_amount);
+        debt_token.burn(who, &payback_debt);
+
+        event::repay(env, who.clone(), asset.clone(), amount);
+
+        let remaning_amount = amount
+            .checked_sub(payback_amount)
+            .ok_or(Error::MathOverflowError)?;
+
+        let remaning_amount = if remaning_amount > 0 {
+            remaning_amount
+        } else {
+            0
+        };
+
+        let is_repayed = compounded_debt == payback_amount;
+
+        Ok((remaning_amount, is_repayed))
     }
 
     fn validate_deposit(env: &Env, reserve: &ReserveData, amount: i128) {
