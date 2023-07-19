@@ -3,6 +3,7 @@
 extern crate std;
 
 use crate::{Deployer, DeployerClient};
+use pool_interface::IRParams;
 use soroban_sdk::{
     testutils::Address as _, token::Client as TokenClient, Address, Bytes, BytesN, Env,
 };
