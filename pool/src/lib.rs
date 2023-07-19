@@ -293,6 +293,16 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
+    /// Callback that should be called by s-token after transfer to ensure user have good position after transfer
+    ///
+    /// # Arguments
+    ///
+    /// - asset - underlying asset
+    /// - from - address of user who send s-token
+    /// - to - user who receive s-token
+    /// - amount - sended amount of s-token
+    /// - balance_from_before - amount of s-token before transfer on `from` user balance
+    /// - balance_to_before - amount of s-token before transfer on `to` user balance
     fn finalize_transfer(
         env: Env,
         asset: Address,
@@ -302,7 +312,7 @@ impl LendingPoolTrait for LendingPool {
         balance_from_before: i128,
         _balance_to_before: i128,
     ) -> Result<(), Error> {
-        let reserve = read_reserve(&env, asset)?;
+        let reserve = get_actual_reserve_data(&env, asset)?;
         reserve.s_token_address.require_auth();
         Self::require_not_paused(&env)?;
         // TODO
