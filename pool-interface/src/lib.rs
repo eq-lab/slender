@@ -80,10 +80,10 @@ pub trait LendingPoolTrait {
         env: Env,
         asset: Address,
         from: Address,
-        _to: Address,
+        to: Address,
         amount: i128,
         balance_from_before: i128,
-        _balance_to_before: i128,
+        balance_to_before: i128,
     ) -> Result<(), Error>;
 
     fn withdraw(
