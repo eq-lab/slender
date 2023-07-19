@@ -550,6 +550,7 @@ impl LendingPool {
         Ok(is_first_deposit)
     }
 
+    /// Returns (i128: the remaining amount after repayment, bool: the flag indicating the debt is fully repayed)
     fn do_repay(
         env: &Env,
         who: &Address,
@@ -592,7 +593,9 @@ impl LendingPool {
             0
         };
 
-        Ok((remaning_amount, compounded_debt == payback_amount))
+        let is_repayed = compounded_debt == payback_amount;
+
+        Ok((remaning_amount, is_repayed))
     }
 
     fn validate_deposit(env: &Env, reserve: &ReserveData, amount: i128) {
