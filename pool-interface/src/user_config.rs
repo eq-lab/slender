@@ -5,7 +5,7 @@ use crate::Error;
 const BORROWING_MASK: u128 = 0x55555555555555555555555555555555;
 
 #[contracttype]
-#[derive(Default, Clone)]
+#[derive(Default)]
 /// Implements the bitmap logic to handle the user configuration.
 /// Even positions is collateral flags and uneven is borrowing flags.
 pub struct UserConfiguration(u128);
