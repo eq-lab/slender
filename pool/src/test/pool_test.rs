@@ -487,11 +487,10 @@ fn withdraw_zero_amount() {
     let token1 = &sut.reserves[0].token;
     let token2 = &sut.reserves[1].token;
 
-    
     let user1 = Address::random(&env);
     token2.mint(&user1, &1);
     sut.pool.deposit(&user1, &token2.address, &1);
-    
+
     let withdraw_amount = 0;
     assert_eq!(
         sut.pool

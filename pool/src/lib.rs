@@ -1075,8 +1075,14 @@ impl LendingPool {
 
             if s_token_balance == s_token_amount {
                 user_config.set_using_as_collateral(env, reserve.get_id(), false);
-                event::reserve_used_as_collateral_disabled(env, who.clone(), underlying_asset);
+                event::reserve_used_as_collateral_disabled(
+                    env,
+                    who.clone(),
+                    underlying_asset.clone(),
+                );
             }
+
+            get_actual_reserve_data(env, underlying_asset)?;
         }
 
         if debt_with_penalty != 0 {
@@ -1091,6 +1097,7 @@ impl LendingPool {
             underlying_asset.transfer(&liquidator, &reserve.s_token_address, &compounded_debt);
             debt_token.burn(&who, &debt_amount);
             user_config.set_borrowing(env, reserve.get_id(), false);
+            get_actual_reserve_data(env, underlying_asset.address)?;
         }
 
         write_user_config(env, who, user_config);
