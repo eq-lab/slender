@@ -208,6 +208,26 @@ impl LendingPoolTrait for LendingPool {
         read_reserve(&env, asset).ok()
     }
 
+    /// Returns collateral accrued rate corrected on current time expressed as inner value of FixedI128
+    ///
+    /// # Arguments
+    ///
+    /// - asset - The address of underlying asset
+    fn get_collat_accrued_rate(env: Env, asset: Address) -> Result<i128, Error> {
+        let reserve = read_reserve(&env, asset)?;
+        Self::get_collateral_coeff(&env, &reserve).map(|fixed| fixed.into_inner())
+    }
+
+    /// Returns debt accrued rate corrected on current time expressed as inner value of FixedI128
+    ///
+    /// # Arguments
+    ///
+    /// - asset - The address of underlying asset
+    fn get_debt_accrued_rate(env: Env, asset: Address) -> Result<i128, Error> {
+        let reserve = read_reserve(&env, asset)?;
+        Self::get_debt_coeff(&env, &reserve).map(|fixed| fixed.into_inner())
+    }
+
     /// Sets the price feed oracle address for a given assets.
     ///
     /// # Arguments
@@ -413,9 +433,14 @@ impl LendingPoolTrait for LendingPool {
 
         Self::validate_borrow(&env, who.clone(), &asset, &reserve, &user_config, amount)?;
 
+        let debt_coeff = Self::get_debt_coeff(&env, &reserve)?;
+        let amount_of_debt_token = debt_coeff
+            .recip_mul_int(amount)
+            .ok_or(Error::MathOverflowError)?;
+
         let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
         let is_first_borrowing = debt_token.balance(&who) == 0;
-        debt_token.mint(&who, &amount);
+        debt_token.mint(&who, &amount_of_debt_token);
 
         if is_first_borrowing {
             let mut user_config = user_config;

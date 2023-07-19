@@ -8,7 +8,7 @@ mod test;
 use crate::storage::*;
 use common::FixedI128;
 use common_token::{balance::*, require_nonnegative_amount, storage::*, verify_caller_is_pool};
-use pool_interface::{LendingPoolClient, ReserveData};
+use pool_interface::LendingPoolClient;
 use s_token_interface::STokenTrait;
 use soroban_sdk::{contractimpl, token, Address, Bytes, Env};
 use soroban_token_sdk::TokenMetadata;
@@ -174,9 +174,9 @@ impl STokenTrait for SToken {
     /// Panics if there is an overflow error during the calculation.
     ///
     fn underlying_balance(e: Env, id: Address) -> i128 {
-        let (reserve, _) = Self::get_reserve_and_underlying(&e);
+        let collat_accrued_rate = Self::get_collat_accrued_rate(&e);
         let balance = read_balance(&e, id);
-        FixedI128::from_inner(reserve.collat_accrued_rate)
+        collat_accrued_rate
             .mul_int(balance)
             .unwrap_or_else(|| panic!("s-token: overflow error"))
     }
@@ -381,10 +381,10 @@ impl STokenTrait for SToken {
     ///
     /// The corresponding total supply of the underlying asset.
     fn underlying_total_supply(e: Env) -> i128 {
-        let (reserve, _) = Self::get_reserve_and_underlying(&e);
+        let collat_accrued_rate = Self::get_collat_accrued_rate(&e);
         let total_supply = read_total_supply(&e);
 
-        FixedI128::from_inner(reserve.collat_accrued_rate)
+        collat_accrued_rate
             .mul_int(total_supply)
             .unwrap_or_else(|| panic!("s-token: overflow error"))
     }
@@ -549,14 +549,11 @@ impl SToken {
         underlying_asset_client.transfer(&e.current_contract_address(), &to, &amount_to_withdraw);
     }
 
-    fn get_reserve_and_underlying(e: &Env) -> (ReserveData, Address) {
+    fn get_collat_accrued_rate(e: &Env) -> FixedI128 {
         let pool = read_pool(e);
         let pool_client = LendingPoolClient::new(e, &pool);
 
         let underlying_asset = read_underlying_asset(e);
-        let reserve = pool_client
-            .get_reserve(&underlying_asset)
-            .unwrap_or_else(|| panic!("s-token: reserve not found for underlying asset"));
-        (reserve, underlying_asset)
+        FixedI128::from_inner(pool_client.get_collat_accrued_rate(&underlying_asset))
     }
 }
