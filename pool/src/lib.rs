@@ -253,7 +253,7 @@ impl LendingPoolTrait for LendingPool {
     /// - who - The address of the user making the deposit.
     /// - asset - The address of the asset to be deposited for lend or repay.
     /// - amount - The amount to be repayed/deposited.
-    /// - is_deposit - The flag indicating the deposit must be performed after repayment.
+    /// - repay_only - The flag indicating the deposit must be performed after repayment.
     ///
     /// # Errors
     ///
@@ -271,7 +271,7 @@ impl LendingPoolTrait for LendingPool {
         who: Address,
         asset: Address,
         amount: i128,
-        is_deposit: bool,
+        repay_only: bool,
     ) -> Result<(), Error> {
         who.require_auth();
         Self::require_not_paused(&env)?;
@@ -281,7 +281,7 @@ impl LendingPoolTrait for LendingPool {
 
         let (remaining_amount, is_repayed) = Self::do_repay(&env, &who, &asset, amount, &reserve)?;
 
-        let is_first_deposit = if is_deposit {
+        let is_first_deposit = if repay_only {
             Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?
         } else {
             false

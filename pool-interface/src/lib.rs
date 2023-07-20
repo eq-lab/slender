@@ -81,7 +81,7 @@ pub trait LendingPoolTrait {
         who: Address,
         asset: Address,
         amount: i128,
-        is_deposit: bool,
+        repay_only: bool,
     ) -> Result<(), Error>;
 
     fn finalize_transfer(
