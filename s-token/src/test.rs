@@ -94,10 +94,10 @@ fn test() {
 
     // pool.deposit needed to make transfers
     underlying.mint(&user1, &1000);
-    pool.deposit(&user1, &underlying.address, &1, &true);
+    pool.deposit(&user1, &underlying.address, &1, &false);
 
     underlying.mint(&user2, &1000);
-    pool.deposit(&user2, &underlying.address, &1, &true);
+    pool.deposit(&user2, &underlying.address, &1, &false);
 
     s_token.mint(&user1, &1000);
     assert_eq!(

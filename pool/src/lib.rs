@@ -281,7 +281,7 @@ impl LendingPoolTrait for LendingPool {
 
         let (remaining_amount, is_repayed) = Self::do_repay(&env, &who, &asset, amount, &reserve)?;
 
-        let is_first_deposit = if repay_only {
+        let is_first_deposit = if !repay_only {
             Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?
         } else {
             false
