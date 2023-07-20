@@ -51,7 +51,9 @@ impl AccountData {
 #[derive(Debug, Clone)]
 struct LiquidationData {
     total_debt_with_penalty_in_xlm: i128,
+    /// reserve data, compounded debt, debtToken balance
     debt_to_cover: Vec<(ReserveData, i128, i128)>,
+    /// reserve data, stoken balance, collateral asset price, AR coefficient
     collateral_to_receive: Vec<(ReserveData, i128, i128, i128)>,
 }
 
@@ -364,7 +366,8 @@ impl LendingPoolTrait for LendingPool {
     ) -> Result<(), Error> {
         // TODO: maybe check with callstack?
         let reserve = get_actual_reserve_data(&env, asset.clone())?;
-        reserve.s_token_address.require_auth();
+        let s_token_address = (reserve.clone()).s_token_address;
+        s_token_address.require_auth();
         Self::require_not_paused(&env)?;
         let balance_from_after = balance_from_before
             .checked_sub(amount)
@@ -375,10 +378,7 @@ impl LendingPoolTrait for LendingPool {
         let account_data = Self::calc_account_data(
             &env,
             from.clone(),
-            Some(AssetBalance::new(
-                reserve.s_token_address,
-                balance_from_after,
-            )),
+            Some(AssetBalance::new(s_token_address, balance_from_after)),
             &from_config,
             &reserves,
             false,
@@ -386,7 +386,7 @@ impl LendingPoolTrait for LendingPool {
         Self::require_good_position(account_data)?;
 
         if from != to {
-            let reserve_id = read_reserve(&env, asset.clone())?.get_id();
+            let reserve_id = reserve.get_id();
             if balance_from_before.checked_sub(amount) == Some(0) {
                 from_config.set_using_as_collateral(&env, reserve_id, false);
                 write_user_config(&env, from.clone(), &from_config);
@@ -520,6 +520,18 @@ impl LendingPoolTrait for LendingPool {
         paused(&env)
     }
 
+    /// Retrieves the account position info.
+    ///
+    /// # Arguments
+    /// - who The address for which the position info is getting
+    ///
+    /// # Panics
+    /// - Panics if position can't be calculated
+    ///
+    /// # Returns
+    ///
+    /// Returns the position info.
+    ///
     fn get_account_position(env: Env, who: Address) -> Result<AccountPosition, Error> {
         let account_data = Self::calc_account_data(
             &env,
@@ -768,7 +780,7 @@ impl LendingPool {
             Ok(account_data) => {
                 assert_with_error!(env, account_data.is_good_position(), Error::BadPosition)
             }
-            Err(e) => assert_with_error!(env, true, e),
+            Err(e) => assert_with_error!(env, false, e),
         }
 
         //balance_decrease_allowed()
@@ -1025,7 +1037,7 @@ impl LendingPool {
         who: Address,
         user_config: &mut UserConfiguration,
         account_data: AccountData,
-        get_stoken: bool,
+        receive_stoken: bool,
     ) -> Result<(), Error> {
         let liquidation_data = account_data
             .liquidation
@@ -1067,7 +1079,7 @@ impl LendingPool {
                     (s_token_balance, compounded_balance)
                 };
 
-            if get_stoken {
+            if receive_stoken {
                 s_token.transfer_on_liquidation(&who, &liquidator, &s_token_amount);
             } else {
                 s_token.burn(&who, &s_token_amount, &underlying_amount, &liquidator);
@@ -1082,7 +1094,7 @@ impl LendingPool {
                 );
             }
 
-            get_actual_reserve_data(env, underlying_asset)?;
+            recalculate_reserve_data(env, underlying_asset, reserve)?;
         }
 
         if debt_with_penalty != 0 {
@@ -1097,7 +1109,7 @@ impl LendingPool {
             underlying_asset.transfer(&liquidator, &reserve.s_token_address, &compounded_debt);
             debt_token.burn(&who, &debt_amount);
             user_config.set_borrowing(env, reserve.get_id(), false);
-            get_actual_reserve_data(env, underlying_asset.address)?;
+            recalculate_reserve_data(env, underlying_asset.address, reserve)?;
         }
 
         write_user_config(env, who, user_config);
@@ -1109,6 +1121,14 @@ impl LendingPool {
 /// Returns reserve data with updated accrued coeffiсients
 pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData, Error> {
     let reserve = read_reserve(env, asset.clone())?;
+    recalculate_reserve_data(env, asset, reserve)
+}
+
+pub fn recalculate_reserve_data(
+    env: &Env,
+    asset: Address,
+    reserve: ReserveData,
+) -> Result<ReserveData, Error> {
     let current_time = env.ledger().timestamp();
     let elapsed_time = current_time
         .checked_sub(reserve.last_update_timestamp)
