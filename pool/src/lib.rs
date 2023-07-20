@@ -316,7 +316,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
-        Self::require_not_paused(&env)?;
+        Self::require_not_paused(&env);
 
         let reserve = get_actual_reserve_data(&env, asset.clone())?;
         Self::validate_deposit(&env, &reserve, amount);
@@ -368,7 +368,7 @@ impl LendingPoolTrait for LendingPool {
         let reserve = get_actual_reserve_data(&env, asset.clone())?;
         let s_token_address = (reserve.clone()).s_token_address;
         s_token_address.require_auth();
-        Self::require_not_paused(&env)?;
+        Self::require_not_paused(&env);
         let balance_from_after = balance_from_before
             .checked_sub(amount)
             .ok_or(Error::InvalidAmount)?;
@@ -433,7 +433,7 @@ impl LendingPoolTrait for LendingPool {
         to: Address,
     ) -> Result<(), Error> {
         who.require_auth();
-        Self::require_not_paused(&env)?;
+        Self::require_not_paused(&env);
 
         let reserve = get_actual_reserve_data(&env, asset.clone())?;
 
@@ -485,7 +485,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
-        Self::require_not_paused(&env)?;
+        Self::require_not_paused(&env);
 
         let reserve = get_actual_reserve_data(&env, asset.clone())?;
         let user_config = read_user_config(&env, who.clone())?;
@@ -1015,12 +1015,8 @@ impl LendingPool {
         }
     }
 
-    fn require_not_paused(env: &Env) -> Result<(), Error> {
-        if paused(env) {
-            return Err(Error::Paused);
-        }
-
-        Ok(())
+    fn require_not_paused(env: &Env) {
+        assert_with_error!(env, paused(env), Error::Paused);
     }
 
     fn require_good_position(account_data: AccountData) -> Result<(), Error> {
