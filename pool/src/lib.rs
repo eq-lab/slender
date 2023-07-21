@@ -258,7 +258,6 @@ impl LendingPoolTrait for LendingPool {
     }
 
     /// Returns collateral coefficient corrected on current time expressed as inner value of FixedI128
-    /// Collateral accrued rate corrected on utilization
     ///
     /// # Arguments
     ///
@@ -269,7 +268,7 @@ impl LendingPoolTrait for LendingPool {
     }
 
     /// Returns debt coefficient corrected on current time expressed as inner value of FixedI128.
-    /// Same as debt accrued rate
+    /// The same as borrower accrued rate
     ///
     /// # Arguments
     ///
@@ -1128,7 +1127,7 @@ impl LendingPool {
         }
     }
 
-    /// Same as borrower accrued rate
+    /// The same as borrower accrued rate
     fn get_debt_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
         Self::get_actual_borrower_accrued_rate(env, reserve)
     }
