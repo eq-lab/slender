@@ -34,8 +34,11 @@ fn create_token<'a>(
 ) {
     let pool = pool::Client::new(e, &e.register_contract_wasm(None, pool::WASM));
     let pool_admin = Address::random(e);
+    let treasury = Address::random(e);
+
     pool.initialize(
         &pool_admin,
+        &treasury,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
@@ -293,7 +296,6 @@ fn initialize_already_initialized() {
     let (token, _, _pool, _) = create_token(&e);
 
     let pool = Address::random(&e);
-    let treasury = Address::random(&e);
     let underlying_asset = Address::random(&e);
 
     token.initialize(
@@ -301,7 +303,6 @@ fn initialize_already_initialized() {
         &"name".into_val(&e),
         &"symbol".into_val(&e),
         &pool,
-        &treasury,
         &underlying_asset,
     );
 }
@@ -313,7 +314,6 @@ fn decimal_is_over_max() {
     let token = STokenClient::new(&e, &e.register_contract(None, SToken {}));
 
     let pool = Address::random(&e);
-    let treasury = Address::random(&e);
     let underlying_asset = Address::random(&e);
 
     token.initialize(
@@ -321,7 +321,6 @@ fn decimal_is_over_max() {
         &"name".into_val(&e),
         &"symbol".into_val(&e),
         &pool,
-        &treasury,
         &underlying_asset,
     );
 }

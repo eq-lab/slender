@@ -16,6 +16,7 @@ impl Deployer {
         salt: BytesN<32>,
         wasm_hash: BytesN<32>,
         admin: Address,
+        treasury: Address,
         ir_params: IRParams,
     ) -> (Address, RawVal) {
         let id = env
@@ -23,7 +24,12 @@ impl Deployer {
             .with_current_contract(&salt)
             .deploy(&wasm_hash);
         let init_fn = Symbol::new(&env, "initialize");
-        let init_args = vec![&env, admin.into_val(&env), ir_params.into_val(&env)];
+        let init_args = vec![
+            &env,
+            admin.into_val(&env),
+            treasury.into_val(&env),
+            ir_params.into_val(&env),
+        ];
         let res: RawVal = env.invoke_contract(&id, &init_fn, init_args);
         (id, res)
     }
@@ -40,7 +46,6 @@ impl Deployer {
         name: Bytes,
         symbol: Bytes,
         pool: Address,
-        treasury: Address,
         underlying_asset: Address,
     ) -> (Address, RawVal) {
         let id = env
@@ -54,7 +59,6 @@ impl Deployer {
             name.into_val(&env),
             symbol.into_val(&env),
             pool.into_val(&env),
-            treasury.into_val(&env),
             underlying_asset.into_val(&env),
         ];
         let res: RawVal = env.invoke_contract(&id, &init_fn, init_args);

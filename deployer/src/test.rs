@@ -33,9 +33,15 @@ fn deploy_pool_and_s_token() {
         // Deploy contract using deployer, and include an init function to call.
         let salt = BytesN::from_array(&env, &[5; 32]);
         let pool_admin = Address::random(&env);
+        let treasury = Address::random(&env);
 
-        let (contract_id, init_result) =
-            client.deploy_pool(&salt, &pool_wasm_hash, &pool_admin, &pool_ir_params);
+        let (contract_id, init_result) = client.deploy_pool(
+            &salt,
+            &pool_wasm_hash,
+            &pool_admin,
+            &treasury,
+            &pool_ir_params,
+        );
         assert!(init_result.is_void());
 
         contract_id
@@ -49,7 +55,6 @@ fn deploy_pool_and_s_token() {
         let s_token_wasm_hash = env.install_contract_wasm(s_token::WASM);
 
         let decimal = 7u32;
-        let treasury = Address::random(&env);
         let underlying_asset = Address::random(&env);
         let name = Bytes::from_slice(&env, b"name");
         let symbol = Bytes::from_slice(&env, b"symbol");
@@ -61,7 +66,6 @@ fn deploy_pool_and_s_token() {
             &name,
             &symbol,
             &pool_client.address,
-            &treasury,
             &underlying_asset,
         );
         assert!(init_result.is_void());
