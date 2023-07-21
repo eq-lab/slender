@@ -2,7 +2,7 @@ use common::FixedI128;
 use soroban_sdk::{contracttype, Address, BytesN, Env};
 
 #[contracttype]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ReserveConfiguration {
     pub decimals: u32,
     pub is_active: bool,
@@ -56,8 +56,8 @@ impl ReserveConfiguration {
     }
 }
 
+#[derive(Debug, Clone)]
 #[contracttype]
-#[derive(Clone)]
 pub struct ReserveData {
     pub configuration: ReserveConfiguration,
     pub collat_accrued_rate: i128,

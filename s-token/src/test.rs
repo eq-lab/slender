@@ -54,7 +54,6 @@ fn create_token<'a>(
     pool.set_price_feed(&oracle.address, &vec![e, underlying_asset.address.clone()]);
 
     s_token.initialize(
-        &7,
         &"name".into_val(e),
         &"symbol".into_val(e),
         &pool.address,
@@ -66,7 +65,6 @@ fn create_token<'a>(
         DebtTokenClient::new(&e, &e.register_contract_wasm(None, debt_token::WASM));
 
     debt_token.initialize(
-        &7,
         &"DebtToken".into_val(e),
         &"DTOKEN".into_val(e),
         &pool.address,
@@ -92,12 +90,9 @@ fn test() {
     let user2 = Address::random(&e);
     let user3 = Address::random(&e);
 
-    // pool.deposit needed to make transfers
     underlying.mint(&user1, &1000);
-    pool.deposit(&user1, &underlying.address, &1, &false);
 
     underlying.mint(&user2, &1000);
-    pool.deposit(&user2, &underlying.address, &1, &false);
 
     s_token.mint(&user1, &1000);
     assert_eq!(
@@ -109,8 +104,8 @@ fn test() {
             (&user1, 1000_i128).into_val(&e),
         )]
     );
-    assert_eq!(s_token.balance(&user1), 1001);
-    assert_eq!(s_token.total_supply(), 1002);
+    assert_eq!(s_token.balance(&user1), 1000);
+    assert_eq!(s_token.total_supply(), 1000);
 
     s_token.increase_allowance(&user2, &user3, &500);
     assert_eq!(
@@ -134,8 +129,8 @@ fn test() {
             (&user1, &user2, 600_i128).into_val(&e),
         )]
     );
-    assert_eq!(s_token.balance(&user1), 401);
-    assert_eq!(s_token.balance(&user2), 601);
+    assert_eq!(s_token.balance(&user1), 400);
+    assert_eq!(s_token.balance(&user2), 600);
 
     s_token.transfer_from(&user3, &user2, &user1, &400);
     assert_eq!(
@@ -147,11 +142,11 @@ fn test() {
             (&user3, &user2, &user1, 400_i128).into_val(&e),
         )]
     );
-    assert_eq!(s_token.balance(&user1), 801);
-    assert_eq!(s_token.balance(&user2), 201);
+    assert_eq!(s_token.balance(&user1), 800);
+    assert_eq!(s_token.balance(&user2), 200);
 
     s_token.transfer(&user1, &user3, &300);
-    assert_eq!(s_token.balance(&user1), 501);
+    assert_eq!(s_token.balance(&user1), 500);
     assert_eq!(s_token.balance(&user3), 300);
 
     s_token.set_authorized(&user2, &false);
@@ -180,19 +175,19 @@ fn test() {
         )]
     );
     assert_eq!(s_token.balance(&user3), 200);
-    assert_eq!(s_token.total_supply(), 902);
+    assert_eq!(s_token.total_supply(), 900);
 
     // Increase by 400, with an existing 100 = 500
     s_token.increase_allowance(&user2, &user3, &400);
     assert_eq!(s_token.allowance(&user2, &user3), 500);
-    s_token.decrease_allowance(&user2, &user3, &501);
+    s_token.decrease_allowance(&user2, &user3, &500);
     assert_eq!(
         e.auths(),
         [(
             user2.clone(),
             s_token.address.clone(),
             Symbol::new(&e, "decrease_allowance"),
-            (&user2, &user3, 501_i128).into_val(&e),
+            (&user2, &user3, 500_i128).into_val(&e),
         )]
     );
     assert_eq!(s_token.allowance(&user2, &user3), 0);
@@ -300,27 +295,6 @@ fn initialize_already_initialized() {
     let underlying_asset = Address::random(&e);
 
     token.initialize(
-        &10,
-        &"name".into_val(&e),
-        &"symbol".into_val(&e),
-        &pool,
-        &treasury,
-        &underlying_asset,
-    );
-}
-
-#[test]
-#[should_panic(expected = "s-token: decimal must fit in a u8")]
-fn decimal_is_over_max() {
-    let e = Env::default();
-    let token = STokenClient::new(&e, &e.register_contract(None, SToken {}));
-
-    let pool = Address::random(&e);
-    let treasury = Address::random(&e);
-    let underlying_asset = Address::random(&e);
-
-    token.initialize(
-        &(u32::from(u8::MAX) + 1),
         &"name".into_val(&e),
         &"symbol".into_val(&e),
         &pool,
