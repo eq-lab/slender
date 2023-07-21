@@ -977,22 +977,23 @@ fn test_liquidate() {
     let debt_token = DebtTokenClient::new(&env, &debt_reserve.debt_token_address);
     let debt_token_supply_before = debt_token.total_supply();
     let borrower_collateral_balance_before = collateral_asset.balance(&borrower);
-    // let stoken = STokenClient::new(
-    //     &env,
-    //     &sut.pool
-    //         .get_reserve(&collateral_asset.address)
-    //         .expect("reserve")
-    //         .s_token_address,
-    // );
-    // let stoken_balance_before = stoken.balance(&borrower);
+    let stoken = STokenClient::new(
+        &env,
+        &sut.pool
+            .get_reserve(&collateral_asset.address)
+            .expect("reserve")
+            .s_token_address,
+    );
+    let stoken_balance_before = stoken.balance(&borrower);
 
     assert_eq!(sut.pool.liquidate(&liquidator, &borrower, &false), ());
 
+    let debt_with_penalty = FixedI128::from_percentage(debt_reserve.configuration.liq_bonus)
+        .unwrap()
+        .mul_int(debt)
+        .unwrap();
     // assume that default price is 1.0 for both assets
-    // assert_eq!(
-    //     collateral_asset.balance(&liquidator),
-    //     FixedI128::from_percentage(debt_reserve.configuration.liq_bonus).unwrap().mul_int(debt).unwrap()
-    // );
+    assert_eq!(collateral_asset.balance(&liquidator), debt_with_penalty);
     assert_eq!(debt_asset.balance(&liquidator), deposit - debt);
     assert_eq!(debt_asset.balance(&borrower), debt);
     assert_eq!(debt_token.balance(&borrower), 0);
@@ -1001,11 +1002,14 @@ fn test_liquidate() {
         collateral_asset.balance(&borrower),
         borrower_collateral_balance_before
     );
-    // assert_eq!(stoken.balance(&borrower), stoken_balance_before - debt);
+    assert_eq!(
+        stoken.balance(&borrower),
+        stoken_balance_before - debt_with_penalty
+    );
 }
 
 #[test]
-fn test_liquidate_get_stoken() {
+fn test_liquidate_receive_stoken() {
     let env = Env::default();
     env.mock_all_auths();
     let sut = init_pool(&env);
@@ -1041,22 +1045,28 @@ fn test_liquidate_get_stoken() {
     let debt_token = DebtTokenClient::new(&env, &debt_reserve.debt_token_address);
     let debt_token_supply_before = debt_token.total_supply();
     let borrower_collateral_balance_before = collateral_asset.balance(&borrower);
-    // let stoken = STokenClient::new(
-    //     &env,
-    //     &sut.pool
-    //         .get_reserve(&collateral_asset.address)
-    //         .expect("reserve")
-    //         .s_token_address,
-    // );
-    // let stoken_balance_before = stoken.balance(&borrower);
+    let liquidator_collateral_balance_before = collateral_asset.balance(&liquidator);
+    let stoken = STokenClient::new(
+        &env,
+        &sut.pool
+            .get_reserve(&collateral_asset.address)
+            .expect("reserve")
+            .s_token_address,
+    );
+    let borrower_stoken_balance_before = stoken.balance(&borrower);
+    let liquidator_stoken_balance_before = stoken.balance(&liquidator);
 
     assert_eq!(sut.pool.liquidate(&liquidator, &borrower, &true), ());
 
+    let debt_with_penalty = FixedI128::from_percentage(debt_reserve.configuration.liq_bonus)
+        .unwrap()
+        .mul_int(debt)
+        .unwrap();
     // assume that default price is 1.0 for both assets
-    // assert_eq!(
-    //     collateral_asset.balance(&liquidator),
-    //     FixedI128::from_percentage(debt_reserve.configuration.liq_bonus).unwrap().mul_int(debt).unwrap()
-    // );
+    assert_eq!(
+        collateral_asset.balance(&liquidator),
+        liquidator_collateral_balance_before
+    );
     assert_eq!(debt_asset.balance(&liquidator), deposit - debt);
     assert_eq!(debt_asset.balance(&borrower), debt);
     assert_eq!(debt_token.balance(&borrower), 0);
@@ -1065,8 +1075,14 @@ fn test_liquidate_get_stoken() {
         collateral_asset.balance(&borrower),
         borrower_collateral_balance_before
     );
-    // TODO
-    // assert_eq!(stoken.balance(&borrower), stoken_balance_before - debt);
+    assert_eq!(
+        stoken.balance(&borrower),
+        borrower_stoken_balance_before - debt_with_penalty
+    );
+    assert_eq!(
+        stoken.balance(&liquidator),
+        liquidator_stoken_balance_before + debt_with_penalty
+    );
 }
 
 #[test]
