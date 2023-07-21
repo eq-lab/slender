@@ -40,6 +40,7 @@ pub enum Error {
     AssetPriceMathError = 307,
     NotEnoughCollateral = 308,
     LiquidateMathError = 309,
+    MustNotBeInCollateralAsset = 310,
 
     MathOverflowError = 400,
     MustBeLtePercentageFactor = 401,
@@ -85,7 +86,13 @@ pub trait LendingPoolTrait {
 
     fn get_ir_params(env: Env) -> Option<IRParams>;
 
-    fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
+    fn deposit(
+        env: Env,
+        who: Address,
+        asset: Address,
+        amount: i128,
+        repay_only: bool,
+    ) -> Result<(), Error>;
 
     fn finalize_transfer(
         env: Env,

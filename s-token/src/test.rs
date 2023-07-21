@@ -90,12 +90,9 @@ fn test() {
     let user2 = Address::random(&e);
     let user3 = Address::random(&e);
 
-    // pool.deposit needed to make transfers
     underlying.mint(&user1, &1000);
-    // pool.deposit(&user1, &underlying.address, &1);
 
     underlying.mint(&user2, &1000);
-    // pool.deposit(&user2, &underlying.address, &1);
 
     s_token.mint(&user1, &1000);
     assert_eq!(
