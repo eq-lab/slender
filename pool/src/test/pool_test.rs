@@ -23,6 +23,8 @@ mod price_feed {
     );
 }
 
+const DAY: u64 = 24 * 60 * 60;
+
 fn create_token_contract<'a>(e: &Env, admin: &Address) -> TokenClient<'a> {
     TokenClient::new(e, &e.register_stellar_asset_contract(admin.clone()))
 }
@@ -1266,4 +1268,62 @@ fn withdraw_should_burn_s_token() {
         debt_config.s_token.total_supply(),
         stoken_supply - expected_burned_stoken
     )
+}
+
+#[test]
+fn collateral_coeff_test() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (_lender, borrower, debt_config) = fill_pool(&env, &sut);
+    let initial_collat_coeff = sut.pool.collat_coeff(&debt_config.token.address);
+    std::println!("initial_collat_coeff={}", initial_collat_coeff);
+
+    env.ledger().with_mut(|l| {
+        l.timestamp = 2 * DAY;
+    });
+
+    let borrow_amount = 50_000;
+    sut.pool
+        .borrow(&borrower, &debt_config.token.address, &borrow_amount);
+    let reserve = sut.pool.get_reserve(&debt_config.token.address).unwrap();
+
+    let collat_ar = FixedI128::from_inner(reserve.collat_accrued_rate);
+    let s_token_supply = debt_config.s_token.total_supply();
+    let balance = debt_config.token.balance(&debt_config.s_token.address);
+    let debt_token_suply = debt_config.debt_token.total_supply();
+
+    let expected_collat_coeff = FixedI128::from_rational(
+        balance + collat_ar.mul_int(debt_token_suply).unwrap(),
+        s_token_supply,
+    )
+    .unwrap()
+    .into_inner();
+
+    let collat_coeff = sut.pool.collat_coeff(&debt_config.token.address);
+    assert_eq!(collat_coeff, expected_collat_coeff);
+
+    // shift time to 8 days
+    env.ledger().with_mut(|l| {
+        l.timestamp = 10 * DAY;
+    });
+
+    let elapsed_time = 8 * DAY;
+    let collat_ar = calc_accrued_rate_coeff(
+        collat_ar,
+        FixedI128::from_inner(reserve.lend_ir),
+        elapsed_time,
+    )
+    .unwrap();
+    let expected_collat_coeff = FixedI128::from_rational(
+        balance + collat_ar.mul_int(debt_token_suply).unwrap(),
+        s_token_supply,
+    )
+    .unwrap()
+    .into_inner();
+
+    let collat_coeff = sut.pool.collat_coeff(&debt_config.token.address);
+    assert_eq!(collat_coeff, expected_collat_coeff);
+    std::println!("collat_coeff={}", collat_coeff);
 }
