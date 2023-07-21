@@ -944,11 +944,11 @@ impl LendingPool {
             if user_config.is_using_as_collateral(env, i) {
                 let collat_coeff = Self::get_collat_coeff(env, &curr_reserve_asset, &curr_reserve)?;
 
-                let who_balance: i128 = match mb_who_balance.clone() {
+                let who_balance: i128 = match &mb_who_balance {
                     Some(AssetBalance { asset, balance })
-                        if asset == curr_reserve.s_token_address.clone() =>
+                        if *asset == curr_reserve.s_token_address =>
                     {
-                        balance
+                        *balance
                     }
                     _ => STokenClient::new(env, &curr_reserve.s_token_address).balance(&who),
                 };
