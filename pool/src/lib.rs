@@ -1016,7 +1016,7 @@ impl LendingPool {
     }
 
     fn require_not_paused(env: &Env) {
-        assert_with_error!(env, paused(env), Error::Paused);
+        assert_with_error!(env, !paused(env), Error::Paused);
     }
 
     fn require_good_position(account_data: AccountData) -> Result<(), Error> {
