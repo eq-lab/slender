@@ -52,7 +52,6 @@ fn create_s_token_contract<'a>(
     let client = STokenClient::new(&e, &e.register_contract_wasm(None, s_token::WASM));
 
     client.initialize(
-        &7,
         &"SToken".into_val(e),
         &"STOKEN".into_val(e),
         &pool,
@@ -72,7 +71,6 @@ fn create_debt_token_contract<'a>(
         DebtTokenClient::new(&e, &e.register_contract_wasm(None, debt_token::WASM));
 
     client.initialize(
-        &7,
         &"DebtToken".into_val(e),
         &"DTOKEN".into_val(e),
         &pool,
@@ -422,14 +420,17 @@ fn withdraw_zero_amount() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let token = &sut.reserves[0].token;
+    let token1 = &sut.reserves[0].token;
+    let token2 = &sut.reserves[1].token;
 
     let user1 = Address::random(&env);
+    token2.mint(&user1, &1);
+    sut.pool.deposit(&user1, &token2.address, &1, &false);
 
     let withdraw_amount = 0;
     assert_eq!(
         sut.pool
-            .try_withdraw(&user1, &token.address, &withdraw_amount, &user1)
+            .try_withdraw(&user1, &token1.address, &withdraw_amount, &user1)
             .unwrap_err()
             .unwrap(),
         Error::InvalidAmount
@@ -859,6 +860,218 @@ fn set_price_feed() {
 
     assert_eq!(pool.get_price_feed(&asset_1).unwrap(), price_feed.address);
     assert_eq!(pool.get_price_feed(&asset_2).unwrap(), price_feed.address);
+}
+
+#[test]
+fn test_liquidate_error_good_position() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let sut = init_pool(&env);
+    let liquidator = Address::random(&env);
+    let user = Address::random(&env);
+    let token = &sut.reserves[0].token;
+    token.mint(&user, &1_000_000_000);
+    sut.pool.deposit(&user, &token.address, &1_000_000_000, &false);
+
+    let position = sut.pool.get_account_position(&user);
+    assert!(position.npv > 0, "test configuration");
+
+    assert_eq!(
+        sut.pool
+            .try_liquidate(&liquidator, &user, &false)
+            .unwrap_err()
+            .unwrap(),
+        Error::GoodPosition
+    );
+}
+
+#[test]
+fn test_liquidate_error_not_enough_collateral() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let sut = init_pool(&env);
+    let liquidator = Address::random(&env);
+    let borrower = Address::random(&env);
+    let lender = Address::random(&env);
+    let token1 = &sut.reserves[0].token;
+    let token2 = &sut.reserves[1].token;
+    let deposit = 1_000_000_000;
+    let discount = sut
+        .pool
+        .get_reserve(&token1.address)
+        .expect("reserve")
+        .configuration
+        .discount;
+    let debt = FixedI128::from_percentage(discount)
+        .unwrap()
+        .mul_int(deposit)
+        .unwrap();
+    token1.mint(&borrower, &deposit);
+    token2.mint(&lender, &deposit);
+    sut.pool.deposit(&borrower, &token1.address, &deposit, &false);
+    sut.pool.deposit(&lender, &token2.address, &deposit, &false);
+    sut.pool.borrow(&borrower, &token2.address, &debt);
+    sut.price_feed.set_price(
+        &token2.address,
+        &(10i128.pow(sut.price_feed.decimals()) * 2),
+    );
+
+    let position = sut.pool.get_account_position(&borrower);
+    assert!(position.npv < 0, "test configuration");
+    env.budget().reset_default();
+
+    assert_eq!(
+        sut.pool
+            .try_liquidate(&liquidator, &borrower, &false)
+            .unwrap_err()
+            .unwrap(),
+        Error::NotEnoughCollateral
+    );
+}
+
+#[test]
+fn test_liquidate() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let sut = init_pool(&env);
+    let liquidator = Address::random(&env);
+    let borrower = Address::random(&env);
+    let lender = Address::random(&env);
+    let collateral_asset = &sut.reserves[0].token;
+    let debt_asset = &sut.reserves[1].token;
+    let deposit = 1_000_000_000;
+    let discount = sut
+        .pool
+        .get_reserve(&collateral_asset.address)
+        .expect("Reserve")
+        .configuration
+        .discount;
+    let debt = FixedI128::from_percentage(discount)
+        .unwrap()
+        .mul_int(deposit)
+        .unwrap();
+    collateral_asset.mint(&borrower, &deposit);
+    debt_asset.mint(&lender, &deposit);
+    debt_asset.mint(&liquidator, &deposit);
+    sut.pool
+        .deposit(&borrower, &collateral_asset.address, &deposit, &false);
+    sut.pool.deposit(&lender, &debt_asset.address, &deposit, &false);
+    sut.pool.borrow(&borrower, &debt_asset.address, &debt);
+
+    let position = sut.pool.get_account_position(&borrower);
+    assert!(position.npv == 0, "test configuration");
+    env.budget().reset_default();
+
+    let debt_reserve = sut.pool.get_reserve(&debt_asset.address).expect("reserve");
+    let debt_token = DebtTokenClient::new(&env, &debt_reserve.debt_token_address);
+    let debt_token_supply_before = debt_token.total_supply();
+    let borrower_collateral_balance_before = collateral_asset.balance(&borrower);
+    let stoken = STokenClient::new(
+        &env,
+        &sut.pool
+            .get_reserve(&collateral_asset.address)
+            .expect("reserve")
+            .s_token_address,
+    );
+    let stoken_balance_before = stoken.balance(&borrower);
+
+    assert_eq!(sut.pool.liquidate(&liquidator, &borrower, &false), ());
+
+    let debt_with_penalty = FixedI128::from_percentage(debt_reserve.configuration.liq_bonus)
+        .unwrap()
+        .mul_int(debt)
+        .unwrap();
+    // assume that default price is 1.0 for both assets
+    assert_eq!(collateral_asset.balance(&liquidator), debt_with_penalty);
+    assert_eq!(debt_asset.balance(&liquidator), deposit - debt);
+    assert_eq!(debt_asset.balance(&borrower), debt);
+    assert_eq!(debt_token.balance(&borrower), 0);
+    assert_eq!(debt_token.total_supply(), debt_token_supply_before - debt);
+    assert_eq!(
+        collateral_asset.balance(&borrower),
+        borrower_collateral_balance_before
+    );
+    assert_eq!(
+        stoken.balance(&borrower),
+        stoken_balance_before - debt_with_penalty
+    );
+}
+
+#[test]
+fn test_liquidate_receive_stoken() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let sut = init_pool(&env);
+    let liquidator = Address::random(&env);
+    let borrower = Address::random(&env);
+    let lender = Address::random(&env);
+    let collateral_asset = &sut.reserves[0].token;
+    let debt_asset = &sut.reserves[1].token;
+    let deposit = 1_000_000_000;
+    let discount = sut
+        .pool
+        .get_reserve(&collateral_asset.address)
+        .expect("Reserve")
+        .configuration
+        .discount;
+    let debt = FixedI128::from_percentage(discount)
+        .unwrap()
+        .mul_int(deposit)
+        .unwrap();
+    collateral_asset.mint(&borrower, &deposit);
+    debt_asset.mint(&lender, &deposit);
+    debt_asset.mint(&liquidator, &deposit);
+    sut.pool
+        .deposit(&borrower, &collateral_asset.address, &deposit, &false);
+    sut.pool.deposit(&lender, &debt_asset.address, &deposit, &false);
+    sut.pool.borrow(&borrower, &debt_asset.address, &debt);
+
+    let position = sut.pool.get_account_position(&borrower);
+    assert!(position.npv == 0, "test configuration");
+    env.budget().reset_default();
+
+    let debt_reserve = sut.pool.get_reserve(&debt_asset.address).expect("reserve");
+    let debt_token = DebtTokenClient::new(&env, &debt_reserve.debt_token_address);
+    let debt_token_supply_before = debt_token.total_supply();
+    let borrower_collateral_balance_before = collateral_asset.balance(&borrower);
+    let liquidator_collateral_balance_before = collateral_asset.balance(&liquidator);
+    let stoken = STokenClient::new(
+        &env,
+        &sut.pool
+            .get_reserve(&collateral_asset.address)
+            .expect("reserve")
+            .s_token_address,
+    );
+    let borrower_stoken_balance_before = stoken.balance(&borrower);
+    let liquidator_stoken_balance_before = stoken.balance(&liquidator);
+
+    assert_eq!(sut.pool.liquidate(&liquidator, &borrower, &true), ());
+
+    let debt_with_penalty = FixedI128::from_percentage(debt_reserve.configuration.liq_bonus)
+        .unwrap()
+        .mul_int(debt)
+        .unwrap();
+    // assume that default price is 1.0 for both assets
+    assert_eq!(
+        collateral_asset.balance(&liquidator),
+        liquidator_collateral_balance_before
+    );
+    assert_eq!(debt_asset.balance(&liquidator), deposit - debt);
+    assert_eq!(debt_asset.balance(&borrower), debt);
+    assert_eq!(debt_token.balance(&borrower), 0);
+    assert_eq!(debt_token.total_supply(), debt_token_supply_before - debt);
+    assert_eq!(
+        collateral_asset.balance(&borrower),
+        borrower_collateral_balance_before
+    );
+    assert_eq!(
+        stoken.balance(&borrower),
+        borrower_stoken_balance_before - debt_with_penalty
+    );
+    assert_eq!(
+        stoken.balance(&liquidator),
+        liquidator_stoken_balance_before + debt_with_penalty
+    );
 }
 
 #[test]

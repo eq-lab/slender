@@ -2,7 +2,7 @@
 #![no_std]
 
 pub use reserve_config::*;
-use soroban_sdk::{contractclient, contracterror, contractspecfn, Address, Env, Vec};
+use soroban_sdk::{contractclient, contracterror, contractspecfn, contracttype, Address, Env, Vec};
 pub use user_config::*;
 
 mod reserve_config;
@@ -33,12 +33,15 @@ pub enum Error {
     BorrowingNotEnabled = 300,
     CollateralNotCoverNewBorrow = 301,
     BadPosition = 302,
-    InvalidAmount = 303,
-    ValidateBorrowMathError = 304,
-    CalcAccountDataMathError = 305,
-    AssetPriceMathError = 306,
-    MustNotBeInCollateralAsset = 307,
-    LiqCapExceeded = 308,
+    GoodPosition = 303,
+    InvalidAmount = 304,
+    ValidateBorrowMathError = 305,
+    CalcAccountDataMathError = 306,
+    AssetPriceMathError = 307,
+    NotEnoughCollateral = 308,
+    LiquidateMathError = 309,
+    MustNotBeInCollateralAsset = 310,
+    LiqCapExceeded = 311,
 
     MathOverflowError = 400,
     MustBeLtePercentageFactor = 401,
@@ -49,6 +52,13 @@ pub enum Error {
     AccruedRateMathError = 500,
     CollateralCoeffMathError = 501,
     DebtCoeffMathError = 502,
+}
+
+#[contracttype]
+pub struct AccountPosition {
+    pub discounted_collateral: i128,
+    pub debt: i128,
+    pub npv: i128,
 }
 
 /// Interface for SToken
@@ -93,10 +103,10 @@ pub trait LendingPoolTrait {
         env: Env,
         asset: Address,
         from: Address,
-        _to: Address,
+        to: Address,
         amount: i128,
         balance_from_before: i128,
-        _balance_to_before: i128,
+        balance_to_before: i128,
     ) -> Result<(), Error>;
 
     fn withdraw(
@@ -120,4 +130,13 @@ pub trait LendingPoolTrait {
     fn set_pause(env: Env, value: bool) -> Result<(), Error>;
 
     fn paused(env: Env) -> bool;
+
+    fn get_account_position(env: Env, who: Address) -> Result<AccountPosition, Error>;
+
+    fn liquidate(
+        env: Env,
+        liquidator: Address,
+        who: Address,
+        receive_stoken: bool,
+    ) -> Result<(), Error>;
 }

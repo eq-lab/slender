@@ -10,7 +10,6 @@ pub struct Spec;
 pub trait STokenTrait {
     fn initialize(
         e: Env,
-        decimal: u32,
         name: Bytes,
         symbol: Bytes,
         pool: Address,
