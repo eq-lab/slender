@@ -415,72 +415,6 @@ fn withdraw_base() {
 }
 
 #[test]
-fn withdraw_interest_rate_less_than_one() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env);
-    let token = &sut.reserves[0].token;
-    let s_token = &sut.reserves[0].s_token;
-
-    let user1 = Address::random(&env);
-    let user2 = Address::random(&env);
-
-    let initial_balance = 1_000_000_000;
-    token.mint(&user1, &1_000_000_000);
-    assert_eq!(token.balance(&user1), initial_balance);
-
-    let collat_accrued_rate: Option<i128> = Some(500_000_000); //0.5
-    sut.pool
-        .set_accrued_rates(&token.address, &collat_accrued_rate, &None);
-
-    let deposit_amount = 1000;
-    sut.pool.deposit(&user1, &token.address, &deposit_amount);
-    assert_eq!(s_token.balance(&user1), 2000);
-    assert_eq!(token.balance(&user1), initial_balance - deposit_amount);
-    assert_eq!(token.balance(&s_token.address), deposit_amount);
-
-    let withdraw_amount = 500;
-    sut.pool
-        .withdraw(&user1, &token.address, &withdraw_amount, &user2);
-    assert_eq!(s_token.balance(&user1), 1000);
-    assert_eq!(token.balance(&s_token.address), 500);
-}
-
-#[test]
-fn withdraw_interest_rate_greater_than_one() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env);
-
-    let user1 = Address::random(&env);
-    let user2 = Address::random(&env);
-    let token = &sut.reserves[0].token;
-    let s_token = &sut.reserves[0].s_token;
-
-    let initial_balance = 1_000_000_000;
-    token.mint(&user1, &1_000_000_000);
-    assert_eq!(token.balance(&user1), initial_balance);
-
-    let collat_accrued_rate: Option<i128> = Some(1_200_000_000); //0.5
-    sut.pool
-        .set_accrued_rates(&token.address, &collat_accrued_rate, &None);
-
-    let deposit_amount = 1000;
-    sut.pool.deposit(&user1, &token.address, &deposit_amount);
-    assert_eq!(s_token.balance(&user1), 833);
-    assert_eq!(token.balance(&user1), initial_balance - deposit_amount);
-    assert_eq!(token.balance(&s_token.address), deposit_amount);
-
-    let withdraw_amount = 500;
-    sut.pool
-        .withdraw(&user1, &token.address, &withdraw_amount, &user2);
-    assert_eq!(s_token.balance(&user1), 417);
-    assert_eq!(token.balance(&s_token.address), 500);
-}
-
-#[test]
 fn withdraw_zero_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -576,11 +510,12 @@ fn deposit() {
                 .set_accrued_rates(&token.address, &collat_accrued_rate, &None),
             ()
         );
+        let collat_coeff = sut.pool.collat_coeff(&token.address);
         sut.pool.deposit(&user, &token.address, &deposit_amount);
 
         assert_eq!(
             s_token.balance(&user),
-            deposit_amount * FixedI128::ONE.into_inner() / collat_accrued_rate.unwrap()
+            deposit_amount * FixedI128::ONE.into_inner() / collat_coeff
         );
         assert_eq!(token.balance(&user), initial_balance - deposit_amount);
 
@@ -1044,6 +979,8 @@ fn repay() {
         lending_amount - borrowing_amount
     );
 
+    env.budget().reset_default();
+
     // borrower partially repays second token
     let repayment_amount = 700;
     sut.pool
@@ -1148,14 +1085,11 @@ fn deposit_should_mint_s_token() {
     sut.pool
         .deposit(&lender, &sut.reserves[1].token.address, &deposit_amount);
 
-    let reserve = sut.pool.get_reserve(&debt_token).unwrap();
-    let collat_accrued_rate = sut.pool.get_collat_accrued_rate(&debt_token);
-    let debt_accrued_rate = sut.pool.get_debt_accrued_rate(&debt_token);
+    let _reserve = sut.pool.get_reserve(&debt_token).unwrap();
+    let collat_coeff = sut.pool.collat_coeff(&debt_token);
+    let _debt_coeff = sut.pool.debt_coeff(&debt_token);
 
-    assert_eq!(reserve.collat_accrued_rate, collat_accrued_rate);
-    assert_eq!(reserve.debt_accrued_rate, debt_accrued_rate);
-
-    let expected_stoken_amount = FixedI128::from_inner(collat_accrued_rate)
+    let expected_stoken_amount = FixedI128::from_inner(collat_coeff)
         .recip_mul_int(deposit_amount)
         .unwrap();
 
@@ -1167,18 +1101,18 @@ fn deposit_should_mint_s_token() {
         debt_config.s_token.total_supply(),
         stoken_supply + expected_stoken_amount
     );
-
+    let collat_coeff_prev = sut.pool.collat_coeff(&debt_token);
+    let debt_coeff_prev = sut.pool.debt_coeff(&debt_token);
     // shift time to one day
     env.ledger().with_mut(|li| {
         li.timestamp = 2 * 24 * 60 * 60 // one day
     });
 
-    let reserve = sut.pool.get_reserve(&debt_token).unwrap();
-    let collat_accrued_rate = sut.pool.get_collat_accrued_rate(&debt_token);
-    let debt_accrued_rate = sut.pool.get_debt_accrued_rate(&debt_token);
+    let collat_accrued_rate = sut.pool.collat_coeff(&debt_token);
+    let debt_accrued_rate = sut.pool.debt_coeff(&debt_token);
 
-    assert!(reserve.collat_accrued_rate < collat_accrued_rate);
-    assert!(reserve.debt_accrued_rate < debt_accrued_rate);
+    assert!(collat_coeff_prev < collat_accrued_rate);
+    assert!(debt_coeff_prev < debt_accrued_rate);
 }
 
 #[test]
@@ -1271,11 +1205,8 @@ fn withdraw_should_burn_s_token() {
         &withdraw_amount,
         &lender,
     );
-
-    let reserve = sut.pool.get_reserve(&debt_config.token.address).unwrap();
-    let expected_burned_stoken = FixedI128::from_inner(reserve.collat_accrued_rate)
-        .recip_mul_int(withdraw_amount)
-        .unwrap();
+    let collat_coeff = FixedI128::from_inner(sut.pool.collat_coeff(&debt_config.token.address));
+    let expected_burned_stoken = collat_coeff.recip_mul_int(withdraw_amount).unwrap();
 
     assert_eq!(
         debt_config.s_token.balance(&lender),

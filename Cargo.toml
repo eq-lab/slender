@@ -32,5 +32,8 @@ debug-assertions = true
 [workspace.dependencies.soroban-sdk]
 version = "0.8.4"
 
+[workspace.dependencies.soroban-token-sdk]
+version = "0.8.4"
+
 [workspace.dependencies.fixed-point-math]
 version = "0.0.2"

@@ -68,9 +68,9 @@ pub trait LendingPoolTrait {
 
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData>;
 
-    fn get_collat_accrued_rate(env: Env, asset: Address) -> Result<i128, Error>;
+    fn collat_coeff(env: Env, asset: Address) -> Result<i128, Error>;
 
-    fn get_debt_accrued_rate(env: Env, asset: Address) -> Result<i128, Error>;
+    fn debt_coeff(env: Env, asset: Address) -> Result<i128, Error>;
 
     fn set_price_feed(env: Env, feed: Address, assets: Vec<Address>) -> Result<(), Error>;
 

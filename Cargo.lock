@@ -598,6 +598,7 @@ dependencies = [
  "price-feed-interface",
  "s-token-interface",
  "soroban-sdk",
+ "soroban-token-sdk",
 ]
 
 [[package]]
@@ -718,7 +719,6 @@ dependencies = [
  "common",
  "common-token",
  "debt-token-interface",
- "fixed-point-math",
  "pool-interface",
  "s-token-interface",
  "soroban-sdk",

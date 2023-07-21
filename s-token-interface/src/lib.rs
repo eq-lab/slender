@@ -34,7 +34,13 @@ pub trait STokenTrait {
 
     fn transfer_from(e: Env, spender: Address, from: Address, to: Address, amount: i128);
 
-    fn burn(e: Env, from: Address, amount_to_burn: i128, amount_to_withdraw: i128, to: Address);
+    fn burn(
+        e: Env,
+        from: Address,
+        amount_to_burn: i128,
+        amount_to_withdraw: i128,
+        to: Address,
+    ) -> i128;
 
     fn burn_from(e: Env, spender: Address, from: Address, amount: i128);
 
@@ -42,7 +48,7 @@ pub trait STokenTrait {
 
     fn set_authorized(e: Env, id: Address, authorize: bool);
 
-    fn mint(e: Env, to: Address, amount: i128);
+    fn mint(e: Env, to: Address, amount: i128) -> i128;
 
     fn decimals(e: Env) -> u32;
 

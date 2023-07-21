@@ -174,7 +174,7 @@ impl STokenTrait for SToken {
     /// Panics if there is an overflow error during the calculation.
     ///
     fn underlying_balance(e: Env, id: Address) -> i128 {
-        let collat_accrued_rate = Self::get_collat_accrued_rate(&e);
+        let collat_accrued_rate = Self::get_collat_coeff(&e);
         let balance = read_balance(&e, id);
         collat_accrued_rate
             .mul_int(balance)
@@ -294,7 +294,7 @@ impl STokenTrait for SToken {
         event::set_authorized(&e, id, authorize);
     }
 
-    /// Mints a specified amount of tokens for a given `id`.
+    /// Mints a specified amount of tokens for a given `id` and returns total supply
     ///
     /// # Arguments
     ///
@@ -306,14 +306,15 @@ impl STokenTrait for SToken {
     /// Panics if the amount is negative.
     /// Panics if the caller is not the pool associated with this token.
     ///
-    fn mint(e: Env, to: Address, amount: i128) {
+    fn mint(e: Env, to: Address, amount: i128) -> i128 {
         let pool = verify_caller_is_pool(&e);
 
-        Self::do_mint(&e, to.clone(), amount);
+        let total_supply = Self::do_mint(&e, to.clone(), amount);
         event::mint(&e, pool, to, amount);
+        total_supply
     }
 
-    /// Burns a specified amount of tokens from the from account.
+    /// Burns a specified amount of tokens from the from account and returns total supply
     ///
     /// # Arguments
     ///
@@ -327,12 +328,18 @@ impl STokenTrait for SToken {
     /// Panics if the amount_to_burn is negative.
     /// Panics if the caller is not the pool associated with this token.
     ///
-    fn burn(e: Env, from: Address, amount_to_burn: i128, amount_to_withdraw: i128, to: Address) {
+    fn burn(
+        e: Env,
+        from: Address,
+        amount_to_burn: i128,
+        amount_to_withdraw: i128,
+        to: Address,
+    ) -> i128 {
         verify_caller_is_pool(&e);
 
-        Self::do_burn(&e, from.clone(), amount_to_burn, amount_to_withdraw, to);
-
+        let total_supply = Self::do_burn(&e, from.clone(), amount_to_burn, amount_to_withdraw, to);
         event::burn(&e, from, amount_to_burn);
+        total_supply
     }
 
     /// Returns the number of decimal places used by the token.
@@ -381,7 +388,7 @@ impl STokenTrait for SToken {
     ///
     /// The corresponding total supply of the underlying asset.
     fn underlying_total_supply(e: Env) -> i128 {
-        let collat_accrued_rate = Self::get_collat_accrued_rate(&e);
+        let collat_accrued_rate = Self::get_collat_coeff(&e);
         let total_supply = read_total_supply(&e);
 
         collat_accrued_rate
@@ -518,28 +525,30 @@ impl SToken {
         write_allowance(e, from, spender, allowance - amount);
     }
 
-    fn do_mint(e: &Env, user: Address, amount: i128) {
+    /// Makes mint and returns updates total supply
+    fn do_mint(e: &Env, user: Address, amount: i128) -> i128 {
         if amount == 0 {
             panic!("s-token: invalid mint amount");
         }
 
         receive_balance(e, user, amount);
-        add_total_supply(e, amount);
+        add_total_supply(e, amount)
     }
 
+    /// Makes burn and returns updates total supply
     fn do_burn(
         e: &Env,
         from: Address,
         amount_to_burn: i128,
         amount_to_withdraw: i128,
         to: Address,
-    ) {
+    ) -> i128 {
         if amount_to_burn == 0 {
             panic!("s-token: invalid burn amount");
         }
 
         spend_balance(e, from, amount_to_burn);
-        add_total_supply(
+        let total_supply = add_total_supply(
             e,
             amount_to_burn.checked_neg().expect("s-token: no overflow"),
         );
@@ -547,13 +556,15 @@ impl SToken {
         let underlying_asset = read_underlying_asset(e);
         let underlying_asset_client = token::Client::new(e, &underlying_asset);
         underlying_asset_client.transfer(&e.current_contract_address(), &to, &amount_to_withdraw);
+
+        total_supply
     }
 
-    fn get_collat_accrued_rate(e: &Env) -> FixedI128 {
+    fn get_collat_coeff(e: &Env) -> FixedI128 {
         let pool = read_pool(e);
         let pool_client = LendingPoolClient::new(e, &pool);
 
         let underlying_asset = read_underlying_asset(e);
-        FixedI128::from_inner(pool_client.get_collat_accrued_rate(&underlying_asset))
+        FixedI128::from_inner(pool_client.collat_coeff(&underlying_asset))
     }
 }

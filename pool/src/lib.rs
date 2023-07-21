@@ -8,7 +8,8 @@ use pool_interface::*;
 use rate::{calc_accrued_rate_coeff, calc_accrued_rates};
 use s_token_interface::STokenClient;
 use soroban_sdk::{
-    assert_with_error, contractimpl, panic_with_error, token, Address, BytesN, Env, Vec,
+    assert_with_error, contractimpl, panic_with_error, token, token::Client as TokenClient,
+    Address, BytesN, Env, Vec,
 };
 
 mod event;
@@ -208,22 +209,24 @@ impl LendingPoolTrait for LendingPool {
         read_reserve(&env, asset).ok()
     }
 
-    /// Returns collateral accrued rate corrected on current time expressed as inner value of FixedI128
+    /// Returns collateral coefficient corrected on current time expressed as inner value of FixedI128
+    /// Collateral accrued rate corrected on utilization
     ///
     /// # Arguments
     ///
     /// - asset - The address of underlying asset
-    fn get_collat_accrued_rate(env: Env, asset: Address) -> Result<i128, Error> {
-        let reserve = read_reserve(&env, asset)?;
-        Self::get_collateral_coeff(&env, &reserve).map(|fixed| fixed.into_inner())
+    fn collat_coeff(env: Env, asset: Address) -> Result<i128, Error> {
+        let reserve = read_reserve(&env, asset.clone())?;
+        Self::get_collat_coeff(&env, &asset, &reserve).map(|fixed| fixed.into_inner())
     }
 
-    /// Returns debt accrued rate corrected on current time expressed as inner value of FixedI128
+    /// Returns debt coefficient corrected on current time expressed as inner value of FixedI128.
+    /// Same as debt accrued rate
     ///
     /// # Arguments
     ///
     /// - asset - The address of underlying asset
-    fn get_debt_accrued_rate(env: Env, asset: Address) -> Result<i128, Error> {
+    fn debt_coeff(env: Env, asset: Address) -> Result<i128, Error> {
         let reserve = read_reserve(&env, asset)?;
         Self::get_debt_coeff(&env, &reserve).map(|fixed| fixed.into_inner())
     }
@@ -403,10 +406,17 @@ impl LendingPoolTrait for LendingPool {
         }
 
         // amount_to_burn = amount_to_withdraw / liquidity_index
-        let amount_to_burn = Self::get_collateral_coeff(&env, &reserve)?
+        let amount_to_burn = Self::get_collat_coeff(&env, &asset, &reserve)?
             .recip_mul_int(amount_to_withdraw)
             .ok_or(Error::MathOverflowError)?;
-        s_token.burn(&who, &amount_to_burn, &amount_to_withdraw, &to);
+        s_token_burn(
+            &env,
+            &s_token,
+            &who,
+            amount_to_burn,
+            amount_to_withdraw,
+            &to,
+        );
 
         event::withdraw(&env, who, asset, to, amount_to_withdraw);
         Ok(())
@@ -563,7 +573,7 @@ impl LendingPool {
             return Ok(false);
         }
 
-        let collat_coeff = Self::get_collateral_coeff(env, reserve)?;
+        let collat_coeff = Self::get_collat_coeff(env, &asset, reserve)?;
         let underlying_asset = token::Client::new(env, asset);
         let s_token = STokenClient::new(env, &reserve.s_token_address);
 
@@ -581,7 +591,7 @@ impl LendingPool {
             .ok_or(Error::MathOverflowError)?;
 
         underlying_asset.transfer(who, &reserve.s_token_address, &amount);
-        s_token.mint(who, &amount_to_mint);
+        s_token_mint(env, &s_token, who, amount_to_mint);
 
         event::deposit(env, who.clone(), asset.clone(), amount);
 
@@ -738,7 +748,7 @@ impl LendingPool {
             let reserve_price = Self::get_asset_price(env, curr_reserve_asset.clone())?;
 
             if user_config.is_using_as_collateral(env, i) {
-                let coll_coeff = Self::get_collateral_coeff(env, &curr_reserve)?;
+                let collat_coeff = Self::get_collat_coeff(env, &curr_reserve_asset, &curr_reserve)?;
 
                 let who_balance: i128 = match mb_who_balance.clone() {
                     Some((address, balance)) if address == curr_reserve.s_token_address.clone() => {
@@ -751,7 +761,7 @@ impl LendingPool {
                     .ok_or(Error::CalcAccountDataMathError)?;
                 let compounded_balance = discount
                     .mul_int(
-                        coll_coeff
+                        collat_coeff
                             .mul_int(who_balance)
                             .ok_or(Error::CalcAccountDataMathError)?,
                     )
@@ -808,8 +818,11 @@ impl LendingPool {
             })?
     }
 
-    /// Returns collateral_accrued_rate corrected for current time
-    fn get_collateral_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+    /// Returns collateral_accrued_coeff corrected for current time
+    fn get_actual_collat_accrued_rate(
+        env: &Env,
+        reserve: &ReserveData,
+    ) -> Result<FixedI128, Error> {
         let current_time = env.ledger().timestamp();
         let elapsed_time = current_time
             .checked_sub(reserve.last_update_timestamp)
@@ -824,8 +837,39 @@ impl LendingPool {
         }
     }
 
+    /// Returns collateral coefficient
+    /// collateral_coeff = [underlying_balance + collat_accrued_rate * total_debt_token]/total_stoken
+    fn get_collat_coeff(
+        env: &Env,
+        asset: &Address,
+        reserve: &ReserveData,
+    ) -> Result<FixedI128, Error> {
+        let stoken_supply = read_stoken_supply(env, reserve.s_token_address.clone());
+        if stoken_supply == 0 {
+            return Ok(FixedI128::ONE);
+        }
+
+        let collat_ar = Self::get_actual_collat_accrued_rate(env, reserve)?;
+
+        let balance = TokenClient::new(env, asset).balance(&reserve.s_token_address);
+        let debt_token_supply =
+            DebtTokenClient::new(env, &reserve.debt_token_address).total_supply();
+
+        FixedI128::from_rational(
+            balance
+                .checked_add(
+                    collat_ar
+                        .mul_int(debt_token_supply)
+                        .ok_or(Error::CollateralCoeffMathError)?,
+                )
+                .ok_or(Error::CollateralCoeffMathError)?,
+            stoken_supply,
+        )
+        .ok_or(Error::CollateralCoeffMathError)
+    }
+
     /// Returns debt_accrued_rate corrected for current time
-    fn get_debt_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+    fn get_actual_debt_accrued_rate(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
         let current_time = env.ledger().timestamp();
         let elapsed_time = current_time
             .checked_sub(reserve.last_update_timestamp)
@@ -837,6 +881,11 @@ impl LendingPool {
             let debt_ir = FixedI128::from_inner(reserve.debt_ir);
             calc_accrued_rate_coeff(prev_ar, debt_ir, elapsed_time).ok_or(Error::DebtCoeffMathError)
         }
+    }
+
+    /// Same as debt_accrued_rate
+    fn get_debt_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+        Self::get_actual_debt_accrued_rate(env, reserve)
     }
 
     fn require_not_paused(env: &Env) -> Result<(), Error> {
@@ -893,15 +942,15 @@ pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData,
         return Ok(reserve);
     }
 
-    let s_token = STokenClient::new(env, &reserve.s_token_address);
-    let total_collateral = s_token.total_supply();
+    let s_token_supply = read_stoken_supply(env, reserve.s_token_address.clone());
 
     let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-    let total_debt = debt_token.total_supply();
+    let debt_token_supply = debt_token.total_supply();
+
     let ir_params = read_ir_params(env)?;
     let accrued_rates = calc_accrued_rates(
-        total_collateral,
-        total_debt,
+        s_token_supply,
+        debt_token_supply,
         elapsed_time,
         ir_params,
         &reserve,
@@ -917,4 +966,25 @@ pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData,
 
     write_reserve(env, asset, &reserve);
     Ok(reserve)
+}
+
+/// WORKAROUND: to avoid reentrancy we keep stoken total supply in the storage and update it on mint/burn
+/// Do mint and update total supply
+pub fn s_token_mint(env: &Env, s_token: &STokenClient, to: &Address, amount: i128) {
+    let total_supply = s_token.mint(&to, &amount);
+    write_stoken_supply(env, s_token.address.clone(), total_supply);
+}
+
+/// WORKAROUND: to avoid reentrancy we keep stoken total supply in the storage and update it on mint/burn
+/// Do burn and update total supply
+pub fn s_token_burn(
+    env: &Env,
+    s_token: &STokenClient,
+    from: &Address,
+    amount_to_burn: i128,
+    amount_to_withdraw: i128,
+    to: &Address,
+) {
+    let total_supply = s_token.burn(from, &amount_to_burn, &amount_to_withdraw, to);
+    write_stoken_supply(env, s_token.address.clone(), total_supply);
 }

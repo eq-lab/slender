@@ -12,6 +12,7 @@ pub enum DataKey {
     UserConfig(Address),
     PriceFeed(Address),
     Pause,
+    STokenSupply(Address),
 }
 
 pub fn has_admin(env: &Env) -> bool {
@@ -105,4 +106,15 @@ pub fn paused(env: &Env) -> bool {
 
 pub fn write_pause(env: &Env, value: bool) {
     env.storage().set(&DataKey::Pause, &value);
+}
+
+//WORKAROUND to avoid reentrancy. Should be removed after soroban implement reentrancy
+pub fn read_stoken_supply(env: &Env, address: Address) -> i128 {
+    let data_key = DataKey::STokenSupply(address);
+    env.storage().get(&data_key).unwrap_or(Ok(0)).unwrap()
+}
+
+//WORKAROUND to avoid reentrancy. Should be removed after soroban implement reentrancy
+pub fn write_stoken_supply(env: &Env, address: Address, value: i128) {
+    env.storage().set(&DataKey::STokenSupply(address), &value)
 }
