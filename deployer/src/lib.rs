@@ -42,7 +42,6 @@ impl Deployer {
         env: Env,
         salt: BytesN<32>,
         wasm_hash: BytesN<32>,
-        decimal: u32,
         name: Bytes,
         symbol: Bytes,
         pool: Address,
@@ -55,7 +54,35 @@ impl Deployer {
         let init_fn = Symbol::new(&env, "initialize");
         let init_args = vec![
             &env,
-            decimal.into_val(&env),
+            name.into_val(&env),
+            symbol.into_val(&env),
+            pool.into_val(&env),
+            underlying_asset.into_val(&env),
+        ];
+        let res: RawVal = env.invoke_contract(&id, &init_fn, init_args);
+        (id, res)
+    }
+
+    /// Deploy the debt token contract wasm and after deployment invoke the `initialize` function
+    /// of the contract with the given arguments. Returns the contract ID and
+    /// result of the `initialize` function.
+    #[allow(clippy::too_many_arguments)]
+    pub fn deploy_debt_token(
+        env: Env,
+        salt: BytesN<32>,
+        wasm_hash: BytesN<32>,
+        name: Bytes,
+        symbol: Bytes,
+        pool: Address,
+        underlying_asset: Address,
+    ) -> (Address, RawVal) {
+        let id = env
+            .deployer()
+            .with_current_contract(&salt)
+            .deploy(&wasm_hash);
+        let init_fn = Symbol::new(&env, "initialize");
+        let init_args = vec![
+            &env,
             name.into_val(&env),
             symbol.into_val(&env),
             pool.into_val(&env),

@@ -51,3 +51,9 @@ pub(crate) fn borrowing_disabled(e: &Env, asset: Address) {
     let topics = (Symbol::new(e, "borrowing_disabled"), asset);
     e.events().publish(topics, ());
 }
+
+pub(crate) fn liquidation(e: &Env, who: Address, covered_debt: i128, liquidated_collateral: i128) {
+    let topics = (Symbol::new(e, "liquidation"), who);
+    e.events()
+        .publish(topics, (covered_debt, liquidated_collateral));
+}
