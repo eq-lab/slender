@@ -339,7 +339,7 @@ impl LendingPoolTrait for LendingPool {
 
         let (remaining_amount, is_repayed) = Self::do_repay(&env, &who, &asset, amount, &reserve)?;
 
-        let is_first_deposit = if !repay_only {
+        let is_first_deposit = if !repay_only && remaining_amount > 0 {
             Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?
         } else {
             false
@@ -721,10 +721,6 @@ impl LendingPool {
         amount: i128,
         reserve: &ReserveData,
     ) -> Result<bool, Error> {
-        if amount == 0 {
-            return Ok(false);
-        }
-
         let collat_coeff = Self::get_collateral_coeff(env, reserve)?;
         let underlying_asset = token::Client::new(env, asset);
         let s_token = STokenClient::new(env, &reserve.s_token_address);
@@ -785,12 +781,10 @@ impl LendingPool {
 
         event::repay(env, who.clone(), asset.clone(), amount);
 
-        let remaning_amount = borrower_actual_debt
-            .checked_sub(borrower_payback_amount)
-            .ok_or(Error::MathOverflowError)?;
-
-        let remaning_amount = if remaning_amount > 0 {
-            remaning_amount
+        let remaning_amount = if amount != i128::MAX && amount > borrower_actual_debt {
+            amount
+                .checked_sub(borrower_actual_debt)
+                .ok_or(Error::MathOverflowError)?
         } else {
             0
         };
