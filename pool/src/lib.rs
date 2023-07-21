@@ -483,8 +483,7 @@ impl LendingPoolTrait for LendingPool {
         read_treasury(&e)
     }
 
-    // TODO: /Artur
-    // #[cfg(any(test, feature = "testutils"))]
+    #[cfg(any(test, feature = "testutils"))]
     fn set_accrued_rates(
         env: Env,
         asset: Address,
@@ -599,68 +598,42 @@ impl LendingPool {
         reserve: &ReserveData,
     ) -> Result<(i128, bool), Error> {
         let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-        let debt_token_balance = debt_token.balance(who);
+        let borrower_total_debt = debt_token.balance(who);
 
-        if debt_token_balance == 0 {
+        if borrower_total_debt == 0 {
             return Ok((amount, false));
         }
 
-        let treasury_address = read_treasury(env);
-        let s_token_token = STokenClient::new(env, &reserve.s_token_address);
-        let s_token_balance = s_token_token.balance(who);
         let underlying_asset = token::Client::new(env, asset);
+        let treasury_address = read_treasury(env);
 
-        // let debt_coeff = Self::get_debt_coeff(env, reserve)?;
-        // let collat_coeff = Self::get_collateral_coeff(env, reserve)?;
-        let debt_coeff = FixedI128::from_inner(1053889343);
-        let collat_coeff = FixedI128::from_inner(1024250204);
-        let delta_coeff = debt_coeff
-            .checked_sub(collat_coeff)
-            .ok_or(Error::MathOverflowError)?;
+        let debt_coeff = Self::get_debt_coeff(env, reserve)?;
+        let collat_coeff = Self::get_collateral_coeff(env, reserve)?;
 
-        let real_supply = collat_coeff // TODO: collat_actual_coeff /Artur
-            .mul_int(s_token_balance)
-            .ok_or(Error::MathOverflowError)?;
-        let real_supply_interest = real_supply
-            .checked_sub(s_token_balance)
-            .ok_or(Error::MathOverflowError)?;
-        let real_debt = debt_coeff
-            .mul_int(debt_token_balance)
-            .ok_or(Error::MathOverflowError)?;
-        let payback_amount = amount.min(real_debt);
-        let protocol_earned = delta_coeff
-            .mul_int(debt_token_balance)
-            .ok_or(Error::MathOverflowError)?;
-        let debt_to_burn = debt_coeff
-            .recip_mul_int(amount)
-            .ok_or(Error::MathOverflowError)?;
-        let fraction_total_debt =
-            FixedI128::from_rational(amount, real_debt).ok_or(Error::MathOverflowError)?;
-        let treasury_amount = fraction_total_debt
-            .mul_int(protocol_earned)
-            .ok_or(Error::MathOverflowError)?;
-        let s_token_transfer = fraction_total_debt
-            .mul_int(real_supply_interest)
+        let borrower_actual_debt = debt_coeff
+            .mul_int(borrower_total_debt)
             .ok_or(Error::MathOverflowError)?;
 
-        // let payback_amount = amount.min(compounded_debt);
+        let borrower_payback_amount = amount.min(borrower_actual_debt);
 
-        // let payback_debt = if payback_amount == compounded_debt {
-        //     s_token_balance
-        // } else {
-        //     debt_coeff
-        //         .recip_mul_int(payback_amount)
-        //         .ok_or(Error::MathOverflowError)?
-        // };
+        let borrower_debt_to_burn = debt_coeff
+            .recip_mul_int(borrower_payback_amount)
+            .ok_or(Error::MathOverflowError)?;
+        let s_token_transfer = collat_coeff
+            .mul_int(borrower_debt_to_burn)
+            .ok_or(Error::MathOverflowError)?;
+        let treasury_amount = borrower_payback_amount
+            .checked_sub(s_token_transfer)
+            .ok_or(Error::MathOverflowError)?;
 
         underlying_asset.transfer(who, &reserve.s_token_address, &s_token_transfer);
         underlying_asset.transfer(who, &treasury_address, &treasury_amount);
-        debt_token.burn(who, &debt_to_burn);
+        debt_token.burn(who, &borrower_debt_to_burn);
 
         event::repay(env, who.clone(), asset.clone(), amount);
 
-        let remaning_amount = amount
-            .checked_sub(payback_amount)
+        let remaning_amount = borrower_actual_debt
+            .checked_sub(borrower_payback_amount)
             .ok_or(Error::MathOverflowError)?;
 
         let remaning_amount = if remaning_amount > 0 {
@@ -669,7 +642,7 @@ impl LendingPool {
             0
         };
 
-        let is_repayed = real_debt == payback_amount;
+        let is_repayed = borrower_actual_debt == borrower_payback_amount;
 
         Ok((remaning_amount, is_repayed))
     }

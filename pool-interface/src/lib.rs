@@ -107,8 +107,7 @@ pub trait LendingPoolTrait {
         to: Address,
     ) -> Result<(), Error>;
 
-    // TODO: /Artur
-    // #[cfg(any(test, feature = "testutils"))]
+    #[cfg(any(test, feature = "testutils"))]
     fn set_accrued_rates(
         env: Env,
         asset: Address,
