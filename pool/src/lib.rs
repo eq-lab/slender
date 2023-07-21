@@ -979,7 +979,7 @@ impl LendingPool {
             .get_price(&asset)
             .ok_or(Error::NoPriceForAsset)
             .map(|price_data| {
-                FixedI128::from_rational(price_data.price, price_data.decimals)
+                FixedI128::from_rational(price_data.price, 10i128.pow(price_data.decimals))
                     .ok_or(Error::AssetPriceMathError)
             })?
     }
