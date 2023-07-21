@@ -596,11 +596,10 @@ impl LendingPool {
             return Ok(false);
         }
 
-        let collat_coeff = Self::get_collat_coeff(env, &asset, reserve)?;
+        let collat_coeff = Self::get_collat_coeff(env, asset, reserve)?;
         let underlying_asset = token::Client::new(env, asset);
-        let s_token = STokenClient::new(env, &reserve.s_token_address);
 
-        let s_token_supply = s_token.total_supply();
+        let s_token_supply = read_stoken_supply(env, reserve.s_token_address.clone());
         let underlying_balance_after = collat_coeff
             .mul_int(s_token_supply)
             .ok_or(Error::MathOverflowError)?
@@ -608,6 +607,7 @@ impl LendingPool {
             .ok_or(Error::MathOverflowError)?;
         Self::require_liq_cap_not_exceeded(env, reserve, underlying_balance_after);
 
+        let s_token = STokenClient::new(env, &reserve.s_token_address);
         let is_first_deposit = s_token.balance(who) == 0;
         let amount_to_mint = collat_coeff
             .recip_mul_int(amount)
@@ -857,14 +857,14 @@ impl LendingPool {
         if elapsed_time == 0 {
             Ok(prev_ar)
         } else {
-            let lend_ir = FixedI128::from_inner(reserve.lend_ir);
-            calc_next_accrued_rate(prev_ar, lend_ir, elapsed_time)
+            let lender_ir = FixedI128::from_inner(reserve.lender_ir);
+            calc_next_accrued_rate(prev_ar, lender_ir, elapsed_time)
                 .ok_or(Error::CollateralCoeffMathError)
         }
     }
 
     /// Returns collateral coefficient
-    /// collateral_coeff = [underlying_balance + collat_accrued_rate * total_debt_token]/total_stoken
+    /// collateral_coeff = [underlying_balance + lender_accrued_rate * total_debt_token]/total_stoken
     fn get_collat_coeff(
         env: &Env,
         asset: &Address,
@@ -990,7 +990,7 @@ pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData,
     reserve.lender_accrued_rate = accrued_rates.lender_accrued_rate.into_inner();
     reserve.borrower_accrued_rate = accrued_rates.borrower_accrued_rate.into_inner();
     reserve.borrower_ir = accrued_rates.borrower_ir.into_inner();
-    reserve.lend_ir = accrued_rates.lend_ir.into_inner();
+    reserve.lender_ir = accrued_rates.lender_ir.into_inner();
     reserve.last_update_timestamp = current_time;
 
     write_reserve(env, asset, &reserve);
@@ -1000,7 +1000,7 @@ pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData,
 /// WORKAROUND: to avoid reentrancy we keep stoken total supply in the storage and update it on mint/burn
 /// Do mint and update total supply
 pub fn s_token_mint(env: &Env, s_token: &STokenClient, to: &Address, amount: i128) {
-    let total_supply = s_token.mint(&to, &amount);
+    let total_supply = s_token.mint(to, &amount);
     write_stoken_supply(env, s_token.address.clone(), total_supply);
 }
 

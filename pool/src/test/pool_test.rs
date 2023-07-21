@@ -929,13 +929,13 @@ fn user_operation_should_update_ar_coeffs() {
     let updated = sut.pool.get_reserve(&debt_asset_1).unwrap();
     let ir_params = sut.pool.get_ir_params().unwrap();
     let debt_ir = calc_interest_rate(deposit_amount, borrow_amount, &ir_params).unwrap();
-    let lend_ir = debt_ir
+    let lender_ir = debt_ir
         .checked_mul(FixedI128::from_percentage(ir_params.scaling_coeff).unwrap())
         .unwrap();
 
     let elapsed_time = env.ledger().timestamp();
 
-    let coll_ar = calc_next_accrued_rate(FixedI128::ONE, lend_ir, elapsed_time)
+    let coll_ar = calc_next_accrued_rate(FixedI128::ONE, lender_ir, elapsed_time)
         .unwrap()
         .into_inner();
     let debt_ar = calc_next_accrued_rate(FixedI128::ONE, debt_ir, elapsed_time)
@@ -944,7 +944,7 @@ fn user_operation_should_update_ar_coeffs() {
 
     assert_eq!(updated.lender_accrued_rate, coll_ar);
     assert_eq!(updated.borrower_accrued_rate, debt_ar);
-    assert_eq!(updated.lend_ir, lend_ir.into_inner());
+    assert_eq!(updated.lender_ir, lender_ir.into_inner());
     assert_eq!(updated.borrower_ir, debt_ir.into_inner());
 }
 
@@ -1312,7 +1312,7 @@ fn collateral_coeff_test() {
     let elapsed_time = 8 * DAY;
     let collat_ar = calc_next_accrued_rate(
         collat_ar,
-        FixedI128::from_inner(reserve.lend_ir),
+        FixedI128::from_inner(reserve.lender_ir),
         elapsed_time,
     )
     .unwrap();

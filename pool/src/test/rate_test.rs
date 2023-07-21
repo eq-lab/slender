@@ -136,8 +136,8 @@ fn test_update_accrued_rates() {
     // collat_ar = 1*(1 + 0,0275176482 * 24*60*60/31_557_600) = 1,0000753392
     assert_eq!(accrued_rates.borrower_accrued_rate.into_inner(), 1000075339);
 
-    //lend_ir = 0,024766029
-    assert_eq!(accrued_rates.lend_ir.into_inner(), 24766029);
+    //lender_ir = 0,024766029
+    assert_eq!(accrued_rates.lender_ir.into_inner(), 24766029);
     //collat_ar = 1*(1 + 0.9*0,0275176482 * 24*60*60/31_557_600) = 1,0000678053
     assert_eq!(accrued_rates.lender_accrued_rate.into_inner(), 1000067805);
 }
