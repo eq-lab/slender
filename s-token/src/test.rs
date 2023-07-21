@@ -45,8 +45,6 @@ fn create_token<'a>(
     );
 
     let s_token = STokenClient::new(e, &e.register_contract(None, SToken {}));
-
-    let treasury = Address::random(&e);
     let underlying_asset =
         TokenClient::new(e, &e.register_stellar_asset_contract(pool_admin.clone()));
 
@@ -58,7 +56,6 @@ fn create_token<'a>(
         &"name".into_val(e),
         &"symbol".into_val(e),
         &pool.address,
-        &treasury,
         &underlying_asset.address,
     );
 

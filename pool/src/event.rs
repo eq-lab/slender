@@ -2,7 +2,7 @@ use pool_interface::{CollateralParamsInput, IRParams};
 use soroban_sdk::{Address, Env, Symbol};
 
 pub(crate) fn initialized(e: &Env, admin: Address, treasury: Address, ir_params: IRParams) {
-    let topics = (Symbol::short("initialize"), admin, treasury);
+    let topics = (Symbol::new(e, "initialize"), admin, treasury);
     e.events().publish(topics, ir_params);
 }
 
