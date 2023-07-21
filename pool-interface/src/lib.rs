@@ -111,8 +111,8 @@ pub trait LendingPoolTrait {
     fn set_accrued_rates(
         env: Env,
         asset: Address,
-        collat_accrued_rate: Option<i128>,
-        debt_accrued_rate: Option<i128>,
+        lender_accrued_rate: Option<i128>,
+        borrower_accrued_rate: Option<i128>,
     ) -> Result<(), Error>;
 
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;

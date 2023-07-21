@@ -1,4 +1,4 @@
-use crate::rate::{calc_accrued_rate_coeff, calc_interest_rate};
+use crate::rate::{calc_interest_rate, calc_next_accrued_rate};
 use crate::*;
 use common::FixedI128;
 use debt_token_interface::DebtTokenClient;
@@ -506,11 +506,11 @@ fn deposit() {
         assert_eq!(token.balance(&user), initial_balance);
 
         let deposit_amount = 1_000_0;
-        let collat_accrued_rate = Some(FixedI128::ONE.into_inner() + i * 100_000_000);
+        let lender_accrued_rate = Some(FixedI128::ONE.into_inner() + i * 100_000_000);
 
         assert_eq!(
             sut.pool
-                .set_accrued_rates(&token.address, &collat_accrued_rate, &None),
+                .set_accrued_rates(&token.address, &lender_accrued_rate, &None),
             ()
         );
         let collat_coeff = sut.pool.collat_coeff(&token.address);
@@ -902,12 +902,12 @@ fn user_operation_should_update_ar_coeffs() {
         sut.pool.borrow(&borrower_1, &debt_asset_1, &borrow_amount);
         let updated_reserve = sut.pool.get_reserve(&debt_asset_1).unwrap();
         assert_eq!(
-            updated_reserve.collat_accrued_rate,
-            reserve_before.collat_accrued_rate
+            updated_reserve.lender_accrued_rate,
+            reserve_before.lender_accrued_rate
         );
         assert_eq!(
-            updated_reserve.debt_accrued_rate,
-            reserve_before.debt_accrued_rate
+            updated_reserve.borrower_accrued_rate,
+            reserve_before.borrower_accrued_rate
         );
         assert_eq!(
             reserve_before.last_update_timestamp,
@@ -935,17 +935,17 @@ fn user_operation_should_update_ar_coeffs() {
 
     let elapsed_time = env.ledger().timestamp();
 
-    let coll_ar = calc_accrued_rate_coeff(FixedI128::ONE, lend_ir, elapsed_time)
+    let coll_ar = calc_next_accrued_rate(FixedI128::ONE, lend_ir, elapsed_time)
         .unwrap()
         .into_inner();
-    let debt_ar = calc_accrued_rate_coeff(FixedI128::ONE, debt_ir, elapsed_time)
+    let debt_ar = calc_next_accrued_rate(FixedI128::ONE, debt_ir, elapsed_time)
         .unwrap()
         .into_inner();
 
-    assert_eq!(updated.collat_accrued_rate, coll_ar);
-    assert_eq!(updated.debt_accrued_rate, debt_ar);
+    assert_eq!(updated.lender_accrued_rate, coll_ar);
+    assert_eq!(updated.borrower_accrued_rate, debt_ar);
     assert_eq!(updated.lend_ir, lend_ir.into_inner());
-    assert_eq!(updated.debt_ir, debt_ir.into_inner());
+    assert_eq!(updated.borrower_ir, debt_ir.into_inner());
 }
 
 #[test]
@@ -1160,11 +1160,11 @@ fn deposit_should_mint_s_token() {
         li.timestamp = 2 * 24 * 60 * 60 // one day
     });
 
-    let collat_accrued_rate = sut.pool.collat_coeff(&debt_token);
-    let debt_accrued_rate = sut.pool.debt_coeff(&debt_token);
+    let collat_coeff = sut.pool.collat_coeff(&debt_token);
+    let debt_coeff = sut.pool.debt_coeff(&debt_token);
 
-    assert!(collat_coeff_prev < collat_accrued_rate);
-    assert!(debt_coeff_prev < debt_accrued_rate);
+    assert!(collat_coeff_prev < collat_coeff);
+    assert!(debt_coeff_prev < debt_coeff);
 }
 
 #[test]
@@ -1187,7 +1187,7 @@ fn borrow_should_mint_debt_token() {
     sut.pool.borrow(&borrower, &debt_token, &borrow_amount);
 
     let reserve = sut.pool.get_reserve(&debt_token).unwrap();
-    let expected_minted_debt_token = FixedI128::from_inner(reserve.debt_accrued_rate)
+    let expected_minted_debt_token = FixedI128::from_inner(reserve.borrower_accrued_rate)
         .recip_mul_int(borrow_amount)
         .unwrap();
 
@@ -1221,7 +1221,7 @@ fn repay_should_burn_debt_token() {
         .deposit(&borrower, &debt_config.token.address, &repay_amount, &false);
 
     let reserve = sut.pool.get_reserve(&debt_config.token.address).unwrap();
-    let expected_burned_debt_token = FixedI128::from_inner(reserve.debt_accrued_rate)
+    let expected_burned_debt_token = FixedI128::from_inner(reserve.borrower_accrued_rate)
         .recip_mul_int(repay_amount)
         .unwrap();
 
@@ -1289,7 +1289,7 @@ fn collateral_coeff_test() {
         .borrow(&borrower, &debt_config.token.address, &borrow_amount);
     let reserve = sut.pool.get_reserve(&debt_config.token.address).unwrap();
 
-    let collat_ar = FixedI128::from_inner(reserve.collat_accrued_rate);
+    let collat_ar = FixedI128::from_inner(reserve.lender_accrued_rate);
     let s_token_supply = debt_config.s_token.total_supply();
     let balance = debt_config.token.balance(&debt_config.s_token.address);
     let debt_token_suply = debt_config.debt_token.total_supply();
@@ -1310,7 +1310,7 @@ fn collateral_coeff_test() {
     });
 
     let elapsed_time = 8 * DAY;
-    let collat_ar = calc_accrued_rate_coeff(
+    let collat_ar = calc_next_accrued_rate(
         collat_ar,
         FixedI128::from_inner(reserve.lend_ir),
         elapsed_time,

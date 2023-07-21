@@ -103,7 +103,7 @@ fn test_calc_accrued_rate() {
 
     //ar = 1 * (1 + 20/100 * 24 * 60 * 60/31_557_600) = 1,0005475702
     assert_eq!(
-        calc_accrued_rate_coeff(prev_ar, ir, one_day),
+        calc_next_accrued_rate(prev_ar, ir, one_day),
         Some(FixedI128::from_inner(1000547570))
     );
 }
@@ -132,14 +132,14 @@ fn test_update_accrued_rates() {
     .unwrap();
 
     //debt_ir = 0,027517810
-    assert_eq!(accrued_rates.debt_ir.into_inner(), 27517810);
+    assert_eq!(accrued_rates.borrower_ir.into_inner(), 27517810);
     // collat_ar = 1*(1 + 0,0275176482 * 24*60*60/31_557_600) = 1,0000753392
-    assert_eq!(accrued_rates.debt_accrued_rate.into_inner(), 1000075339);
+    assert_eq!(accrued_rates.borrower_accrued_rate.into_inner(), 1000075339);
 
     //lend_ir = 0,024766029
     assert_eq!(accrued_rates.lend_ir.into_inner(), 24766029);
     //collat_ar = 1*(1 + 0.9*0,0275176482 * 24*60*60/31_557_600) = 1,0000678053
-    assert_eq!(accrued_rates.collat_accrued_rate.into_inner(), 1000067805);
+    assert_eq!(accrued_rates.lender_accrued_rate.into_inner(), 1000067805);
 }
 
 #[test]

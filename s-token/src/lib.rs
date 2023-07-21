@@ -174,9 +174,9 @@ impl STokenTrait for SToken {
     /// Panics if there is an overflow error during the calculation.
     ///
     fn underlying_balance(e: Env, id: Address) -> i128 {
-        let collat_accrued_rate = Self::get_collat_coeff(&e);
+        let collat_coeff = Self::get_collat_coeff(&e);
         let balance = read_balance(&e, id);
-        collat_accrued_rate
+        collat_coeff
             .mul_int(balance)
             .unwrap_or_else(|| panic!("s-token: overflow error"))
     }
@@ -388,10 +388,10 @@ impl STokenTrait for SToken {
     ///
     /// The corresponding total supply of the underlying asset.
     fn underlying_total_supply(e: Env) -> i128 {
-        let collat_accrued_rate = Self::get_collat_coeff(&e);
+        let collat_coeff = Self::get_collat_coeff(&e);
         let total_supply = read_total_supply(&e);
 
-        collat_accrued_rate
+        collat_coeff
             .mul_int(total_supply)
             .unwrap_or_else(|| panic!("s-token: overflow error"))
     }

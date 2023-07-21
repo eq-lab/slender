@@ -63,12 +63,12 @@ pub fn calc_interest_rate(
     Some(FixedI128::min(ir, max_rate))
 }
 
-/// Calculate accrued rate coefficient AR(t) = AR(t-1)*(1 + r(t-1)*elapsed_time)
+/// Calculate accrued rate on time `t` AR(t) = AR(t-1)*(1 + r(t-1)*elapsed_time)
 /// where:
 ///     AR(t-1) - prev value of accrued rate
 ///     r(t-1) - prev value of interest rate
-///     elapsed_time - elapsed time from last accrued rate update
-pub fn calc_accrued_rate_coeff(
+///     elapsed_time - elapsed time in seconds from last accrued rate update
+pub fn calc_next_accrued_rate(
     prev_ar: FixedI128,
     ir: FixedI128,
     elapsed_time: u64,
@@ -79,13 +79,13 @@ pub fn calc_accrued_rate_coeff(
 
 #[derive(Debug, Clone, Copy)]
 pub struct AccruedRates {
-    pub collat_accrued_rate: FixedI128,
-    pub debt_accrued_rate: FixedI128,
+    pub lender_accrued_rate: FixedI128,
+    pub borrower_accrued_rate: FixedI128,
     pub lend_ir: FixedI128,
-    pub debt_ir: FixedI128,
+    pub borrower_ir: FixedI128,
 }
 
-/// Calculates collateral and debt accrued coefficients, lend and debt rates
+/// Calculates lender and borrower accrued rates, lend and borrower interest rates
 pub fn calc_accrued_rates(
     total_collateral: i128,
     total_debt: i128,
@@ -93,27 +93,27 @@ pub fn calc_accrued_rates(
     ir_params: IRParams,
     reserve_data: &ReserveData,
 ) -> Option<AccruedRates> {
-    let debt_ir = calc_interest_rate(total_collateral, total_debt, &ir_params)?;
+    let borrower_ir = calc_interest_rate(total_collateral, total_debt, &ir_params)?;
 
     let scale_coeff = FixedI128::from_percentage(ir_params.scaling_coeff)?;
-    let lend_ir = debt_ir.checked_mul(scale_coeff)?;
+    let lend_ir = borrower_ir.checked_mul(scale_coeff)?;
 
-    let debt_accrued_rate = calc_accrued_rate_coeff(
-        FixedI128::from_inner(reserve_data.debt_accrued_rate),
-        debt_ir,
+    let borrower_accrued_rate = calc_next_accrued_rate(
+        FixedI128::from_inner(reserve_data.borrower_accrued_rate),
+        borrower_ir,
         elapsed_time,
     )?;
 
-    let collat_accrued_rate = calc_accrued_rate_coeff(
-        FixedI128::from_inner(reserve_data.collat_accrued_rate),
+    let lender_accrued_rate = calc_next_accrued_rate(
+        FixedI128::from_inner(reserve_data.lender_accrued_rate),
         lend_ir,
         elapsed_time,
     )?;
 
     Some(AccruedRates {
-        collat_accrued_rate,
-        debt_accrued_rate,
+        lender_accrued_rate,
+        borrower_accrued_rate,
         lend_ir,
-        debt_ir,
+        borrower_ir,
     })
 }

@@ -60,9 +60,9 @@ impl ReserveConfiguration {
 #[derive(Clone)]
 pub struct ReserveData {
     pub configuration: ReserveConfiguration,
-    pub collat_accrued_rate: i128,
-    pub debt_accrued_rate: i128,
-    pub debt_ir: i128,
+    pub lender_accrued_rate: i128,
+    pub borrower_accrued_rate: i128,
+    pub borrower_ir: i128,
     pub lend_ir: i128,
     pub last_update_timestamp: u64,
     pub s_token_address: Address,
@@ -78,9 +78,9 @@ impl ReserveData {
             debt_token_address,
         } = input;
         Self {
-            collat_accrued_rate: FixedI128::ONE.into_inner(),
-            debt_accrued_rate: FixedI128::ONE.into_inner(),
-            debt_ir: Default::default(),
+            lender_accrued_rate: FixedI128::ONE.into_inner(),
+            borrower_accrued_rate: FixedI128::ONE.into_inner(),
+            borrower_ir: Default::default(),
             lend_ir: Default::default(),
             s_token_address,
             debt_token_address,

@@ -5,7 +5,7 @@ use crate::price_provider::PriceProvider;
 use common::{FixedI128, PERCENTAGE_FACTOR};
 use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
-use rate::{calc_accrued_rate_coeff, calc_accrued_rates};
+use rate::{calc_accrued_rates, calc_next_accrued_rate};
 use s_token_interface::STokenClient;
 use soroban_sdk::{
     assert_with_error, contractimpl, panic_with_error, token, token::Client as TokenClient,
@@ -503,17 +503,17 @@ impl LendingPoolTrait for LendingPool {
     fn set_accrued_rates(
         env: Env,
         asset: Address,
-        collat_accrued_rate: Option<i128>,
-        debt_accrued_rate: Option<i128>,
+        mb_lender_accrued_rate: Option<i128>,
+        mb_borrower_accrued_rate: Option<i128>,
     ) -> Result<(), Error> {
         let mut reserve_data = read_reserve(&env, asset.clone())?;
 
-        if !collat_accrued_rate.is_none() {
-            reserve_data.collat_accrued_rate = collat_accrued_rate.unwrap();
+        if let Some(value) = mb_lender_accrued_rate {
+            reserve_data.lender_accrued_rate = value;
         }
 
-        if !debt_accrued_rate.is_none() {
-            reserve_data.debt_accrued_rate = debt_accrued_rate.unwrap();
+        if let Some(value) = mb_borrower_accrued_rate {
+            reserve_data.borrower_accrued_rate = value;
         }
 
         write_reserve(&env, asset, &reserve_data);
@@ -844,8 +844,8 @@ impl LendingPool {
             })?
     }
 
-    /// Returns collateral_accrued_coeff corrected for current time
-    fn get_actual_collat_accrued_rate(
+    /// Returns lender accrued rate corrected for the current time
+    fn get_actual_lender_accrued_rate(
         env: &Env,
         reserve: &ReserveData,
     ) -> Result<FixedI128, Error> {
@@ -853,12 +853,12 @@ impl LendingPool {
         let elapsed_time = current_time
             .checked_sub(reserve.last_update_timestamp)
             .ok_or(Error::CollateralCoeffMathError)?;
-        let prev_ar = FixedI128::from_inner(reserve.collat_accrued_rate);
+        let prev_ar = FixedI128::from_inner(reserve.lender_accrued_rate);
         if elapsed_time == 0 {
             Ok(prev_ar)
         } else {
             let lend_ir = FixedI128::from_inner(reserve.lend_ir);
-            calc_accrued_rate_coeff(prev_ar, lend_ir, elapsed_time)
+            calc_next_accrued_rate(prev_ar, lend_ir, elapsed_time)
                 .ok_or(Error::CollateralCoeffMathError)
         }
     }
@@ -875,7 +875,7 @@ impl LendingPool {
             return Ok(FixedI128::ONE);
         }
 
-        let collat_ar = Self::get_actual_collat_accrued_rate(env, reserve)?;
+        let collat_ar = Self::get_actual_lender_accrued_rate(env, reserve)?;
 
         let balance = TokenClient::new(env, asset).balance(&reserve.s_token_address);
         let debt_token_supply =
@@ -894,24 +894,27 @@ impl LendingPool {
         .ok_or(Error::CollateralCoeffMathError)
     }
 
-    /// Returns debt_accrued_rate corrected for current time
-    fn get_actual_debt_accrued_rate(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
+    /// Returns borrower accrued rate corrected for the current time
+    fn get_actual_borrower_accrued_rate(
+        env: &Env,
+        reserve: &ReserveData,
+    ) -> Result<FixedI128, Error> {
         let current_time = env.ledger().timestamp();
         let elapsed_time = current_time
             .checked_sub(reserve.last_update_timestamp)
             .ok_or(Error::DebtCoeffMathError)?;
-        let prev_ar = FixedI128::from_inner(reserve.debt_accrued_rate);
+        let prev_ar = FixedI128::from_inner(reserve.borrower_accrued_rate);
         if elapsed_time == 0 {
             Ok(prev_ar)
         } else {
-            let debt_ir = FixedI128::from_inner(reserve.debt_ir);
-            calc_accrued_rate_coeff(prev_ar, debt_ir, elapsed_time).ok_or(Error::DebtCoeffMathError)
+            let debt_ir = FixedI128::from_inner(reserve.borrower_ir);
+            calc_next_accrued_rate(prev_ar, debt_ir, elapsed_time).ok_or(Error::DebtCoeffMathError)
         }
     }
 
-    /// Same as debt_accrued_rate
+    /// Same as borrower accrued rate
     fn get_debt_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
-        Self::get_actual_debt_accrued_rate(env, reserve)
+        Self::get_actual_borrower_accrued_rate(env, reserve)
     }
 
     fn require_not_paused(env: &Env) -> Result<(), Error> {
@@ -984,9 +987,9 @@ pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData,
     .ok_or(Error::AccruedRateMathError)?;
 
     let mut reserve = reserve;
-    reserve.collat_accrued_rate = accrued_rates.collat_accrued_rate.into_inner();
-    reserve.debt_accrued_rate = accrued_rates.debt_accrued_rate.into_inner();
-    reserve.debt_ir = accrued_rates.debt_ir.into_inner();
+    reserve.lender_accrued_rate = accrued_rates.lender_accrued_rate.into_inner();
+    reserve.borrower_accrued_rate = accrued_rates.borrower_accrued_rate.into_inner();
+    reserve.borrower_ir = accrued_rates.borrower_ir.into_inner();
     reserve.lend_ir = accrued_rates.lend_ir.into_inner();
     reserve.last_update_timestamp = current_time;
 
