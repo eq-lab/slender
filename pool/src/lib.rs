@@ -276,6 +276,7 @@ impl LendingPoolTrait for LendingPool {
     /// - who - The address of the user making the deposit.
     /// - asset - The address of the asset to be deposited for lend or repay.
     /// - amount - The amount to be repayed/deposited.
+    /// - repay_only - The flag indicating the deposit must be performed after repayment.
     ///
     /// # Errors
     ///
@@ -288,7 +289,13 @@ impl LendingPoolTrait for LendingPool {
     /// If the deposit amount is invalid or does not meet the reserve requirements.
     /// If the reserve data cannot be retrieved from storage.
     ///
-    fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
+    fn deposit(
+        env: Env,
+        who: Address,
+        asset: Address,
+        amount: i128,
+        repay_only: bool,
+    ) -> Result<(), Error> {
         who.require_auth();
         Self::require_not_paused(&env)?;
 
@@ -296,7 +303,12 @@ impl LendingPoolTrait for LendingPool {
         Self::validate_deposit(&env, &reserve, amount);
 
         let (remaining_amount, is_repayed) = Self::do_repay(&env, &who, &asset, amount, &reserve)?;
-        let is_first_deposit = Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?;
+
+        let is_first_deposit = if !repay_only {
+            Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?
+        } else {
+            false
+        };
 
         if is_repayed || is_first_deposit {
             let mut user_config = read_user_config(&env, who.clone()).unwrap_or_default();
@@ -433,6 +445,7 @@ impl LendingPoolTrait for LendingPool {
     /// # Panics
     /// - Panics when caller is not authorized as who
     /// - Panics if user balance doesn't meet requirements for borrowing an amount of asset
+    /// - Panics with `MustNotBeInCollateralAsset` if there is a collateral in borrowing asset.
     ///
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
@@ -441,7 +454,23 @@ impl LendingPoolTrait for LendingPool {
         let reserve = get_actual_reserve_data(&env, asset.clone())?;
         let user_config = read_user_config(&env, who.clone())?;
 
-        Self::validate_borrow(&env, who.clone(), &asset, &reserve, &user_config, amount)?;
+        let s_token = STokenClient::new(&env, &reserve.s_token_address);
+        let s_token_balance = s_token.balance(&who);
+
+        Self::validate_borrow(
+            &env,
+            who.clone(),
+            &asset,
+            &reserve,
+            &user_config,
+            amount,
+            s_token_balance,
+        )?;
+
+        let debt_coeff = Self::get_debt_coeff(&env, &reserve)?;
+        let amount_of_debt_token = debt_coeff
+            .recip_mul_int(amount)
+            .ok_or(Error::MathOverflowError)?;
 
         let debt_coeff = Self::get_debt_coeff(&env, &reserve)?;
         let amount_of_debt_token = debt_coeff
@@ -450,7 +479,7 @@ impl LendingPoolTrait for LendingPool {
 
         let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
         let is_first_borrowing = debt_token.balance(&who) == 0;
-        debt_token.mint(&who, &amount_of_debt_token);
+
 
         if is_first_borrowing {
             let mut user_config = user_config;
@@ -458,7 +487,7 @@ impl LendingPoolTrait for LendingPool {
             write_user_config(&env, who.clone(), &user_config);
         }
 
-        let s_token = STokenClient::new(&env, &reserve.s_token_address);
+        debt_token.mint(&who, &amount_of_debt_token);
         s_token.transfer_underlying_to(&who, &amount);
 
         event::borrow(&env, who, asset, amount);
@@ -684,7 +713,10 @@ impl LendingPool {
         reserve: &ReserveData,
         user_config: &UserConfiguration,
         amount_to_borrow: i128,
+        s_token_balance: i128,
     ) -> Result<(), Error> {
+        assert_with_error!(env, s_token_balance == 0, Error::MustNotBeInCollateralAsset);
+
         let asset_price = Self::get_asset_price(env, asset.clone())?;
         let amount_in_xlm = asset_price
             .mul_int(amount_to_borrow)
