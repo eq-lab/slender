@@ -512,7 +512,8 @@ fn deposit() {
             ()
         );
         let collat_coeff = sut.pool.collat_coeff(&token.address);
-        sut.pool.deposit(&user, &token.address, &deposit_amount);
+        sut.pool
+            .deposit(&user, &token.address, &deposit_amount, &false);
 
         assert_eq!(
             s_token.balance(&user),
@@ -591,7 +592,7 @@ fn deposit_should_fail_when_exceeded_liq_cap() {
     let deposit_amount = initial_balance;
     assert_eq!(
         sut.pool
-            .try_deposit(&user, &token.address, &deposit_amount)
+            .try_deposit(&user, &token.address, &deposit_amount, &false)
             .unwrap_err()
             .unwrap(),
         Error::LiqCapExceeded
@@ -1083,7 +1084,8 @@ fn fill_pool<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Address, &'a Reser
     let deposit_amount = 100_000_000;
     for r in sut.reserves.iter() {
         let pool_balance = r.token.balance(&r.s_token.address);
-        sut.pool.deposit(&lender, &r.token.address, &deposit_amount);
+        sut.pool
+            .deposit(&lender, &r.token.address, &deposit_amount, &false);
         assert_eq!(r.s_token.balance(&lender), deposit_amount);
         assert_eq!(
             r.token.balance(&r.s_token.address),
@@ -1094,8 +1096,12 @@ fn fill_pool<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Address, &'a Reser
     env.budget().reset_default();
 
     //borrower deposit first token and borrow second token
-    sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
+    sut.pool.deposit(
+        &borrower,
+        &sut.reserves[0].token.address,
+        &deposit_amount,
+        &false,
+    );
     assert_eq!(sut.reserves[0].s_token.balance(&borrower), deposit_amount);
 
     let borrow_amount = 40_000_000;
@@ -1122,8 +1128,12 @@ fn deposit_should_mint_s_token() {
     let stoken_supply = debt_config.s_token.total_supply();
     let lender_stoken_balance_before = debt_config.s_token.balance(&lender);
     let deposit_amount = 10_000;
-    sut.pool
-        .deposit(&lender, &sut.reserves[1].token.address, &deposit_amount);
+    sut.pool.deposit(
+        &lender,
+        &sut.reserves[1].token.address,
+        &deposit_amount,
+        &false,
+    );
 
     let _reserve = sut.pool.get_reserve(&debt_token).unwrap();
     let collat_coeff = sut.pool.collat_coeff(&debt_token);
@@ -1206,7 +1216,7 @@ fn repay_should_burn_debt_token() {
     let borrower_debt_token_balance_before = debt_config.debt_token.balance(&borrower);
     let repay_amount = 100_000;
     sut.pool
-        .deposit(&borrower, &debt_config.token.address, &repay_amount);
+        .deposit(&borrower, &debt_config.token.address, &repay_amount, &false);
 
     let reserve = sut.pool.get_reserve(&debt_config.token.address).unwrap();
     let expected_burned_debt_token = FixedI128::from_inner(reserve.debt_accrued_rate)

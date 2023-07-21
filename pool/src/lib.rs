@@ -472,15 +472,9 @@ impl LendingPoolTrait for LendingPool {
             .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
 
-        let debt_coeff = Self::get_debt_coeff(&env, &reserve)?;
-        let amount_of_debt_token = debt_coeff
-            .recip_mul_int(amount)
-            .ok_or(Error::MathOverflowError)?;
-
         let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
+
         let is_first_borrowing = debt_token.balance(&who) == 0;
-
-
         if is_first_borrowing {
             let mut user_config = user_config;
             user_config.set_borrowing(&env, reserve.get_id(), true);
