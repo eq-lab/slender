@@ -569,7 +569,14 @@ impl LendingPoolTrait for LendingPool {
     /// Returns the position info.
     ///
     fn get_account_position(env: Env, who: Address) -> Result<AccountPosition, Error> {
-        let account_data = Self::calc_account_data( &env, who.clone(), None, &read_user_config(&env, who)?, &read_reserves(&env), false)?;
+        let account_data = Self::calc_account_data(
+            &env,
+            who.clone(),
+            None,
+            &read_user_config(&env, who)?,
+            &read_reserves(&env),
+            false,
+        )?;
         Ok(account_data.get_position())
     }
 
