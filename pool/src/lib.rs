@@ -379,17 +379,14 @@ impl LendingPoolTrait for LendingPool {
         balance_to_before: i128,
     ) -> Result<(), Error> {
         // TODO: maybe check with callstack?
+        Self::require_not_paused(&env);
 
         let reserve = get_actual_reserve_data(&env, asset.clone())?;
-
-        let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
-        if debt_token.balance(&to) > 0 {
-            return Err(Error::MustNotBeInDebtAsset);
-        }
-
         let s_token_address = (reserve.clone()).s_token_address;
         s_token_address.require_auth();
-        Self::require_not_paused(&env);
+
+        Self::require_zero_debt(&env, to.clone(), reserve.debt_token_address.clone())?;
+
         let balance_from_after = balance_from_before
             .checked_sub(amount)
             .ok_or(Error::InvalidAmount)?;
@@ -1052,6 +1049,18 @@ impl LendingPool {
 
     fn require_not_paused(env: &Env) {
         assert_with_error!(env, !paused(env), Error::Paused);
+    }
+
+    fn require_zero_debt(
+        env: &Env,
+        recipient: Address,
+        debt_token_address: Address,
+    ) -> Result<(), Error> {
+        let debt_token = DebtTokenClient::new(&env, &debt_token_address);
+        if debt_token.balance(&recipient) > 0 {
+            return Err(Error::MustNotHaveDebt);
+        }
+        Ok(())
     }
 
     fn require_good_position(account_data: AccountData) -> Result<(), Error> {
