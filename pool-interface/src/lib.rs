@@ -41,6 +41,7 @@ pub enum Error {
     NotEnoughCollateral = 308,
     LiquidateMathError = 309,
     MustNotBeInCollateralAsset = 310,
+    UtilizationExceeded = 311,
 
     MathOverflowError = 400,
     MustBeLtePercentageFactor = 401,

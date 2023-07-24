@@ -10,6 +10,7 @@ pub struct ReserveConfiguration {
     pub borrowing_enabled: bool,
     pub liq_bonus: u32,
     pub liq_cap: i128,
+    pub util_cap: u32,
     /// Specifies what fraction of the underlying asset counts toward
     /// the portfolio collateral value [0%, 100%].
     pub discount: u32,
@@ -20,6 +21,7 @@ impl ReserveConfiguration {
         Self {
             liq_bonus: Default::default(),
             liq_cap: Default::default(),
+            util_cap: Default::default(),
             decimals: Default::default(),
             is_active: true,
             is_frozen: false,
@@ -93,6 +95,7 @@ impl ReserveData {
     pub fn update_collateral_config(&mut self, config: CollateralParamsInput) {
         self.configuration.liq_bonus = config.liq_bonus;
         self.configuration.liq_cap = config.liq_cap;
+        self.configuration.util_cap = config.util_cap;
         self.configuration.discount = config.discount;
     }
 
@@ -120,6 +123,7 @@ pub struct CollateralParamsInput {
     pub liq_bonus: u32,
     /// The total amount of an asset the protocol accepts into the market.
     pub liq_cap: i128,
+    pub util_cap: u32,
     /// Specifies what fraction of the underlying asset counts toward
     /// the portfolio collateral value [0%, 100%].
     pub discount: u32,
