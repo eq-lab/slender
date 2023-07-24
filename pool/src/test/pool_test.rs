@@ -1318,3 +1318,8 @@ fn repay() {
     assert_eq!(treasury_balance, 500000000);
     assert_eq!(borrower_stoken_balance, 3090909090);
 }
+
+#[test]
+fn fail() {
+    assert!(false);
+}
