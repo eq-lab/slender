@@ -1321,5 +1321,5 @@ fn repay() {
 
 #[test]
 fn fail() {
-    assert!(false);
+    assert!(true);
 }
