@@ -761,15 +761,15 @@ impl LendingPool {
         let borrower_debt_to_burn = debt_coeff
             .recip_mul_int(borrower_payback_amount)
             .ok_or(Error::MathOverflowError)?;
-        let s_token_transfer = collat_coeff
+        let lender_part = collat_coeff
             .mul_int(borrower_debt_to_burn)
             .ok_or(Error::MathOverflowError)?;
-        let treasury_amount = borrower_payback_amount
-            .checked_sub(s_token_transfer)
+        let treasury_part = borrower_payback_amount
+            .checked_sub(lender_part)
             .ok_or(Error::MathOverflowError)?;
 
-        underlying_asset.transfer(who, &reserve.s_token_address, &s_token_transfer);
-        underlying_asset.transfer(who, &treasury_address, &treasury_amount);
+        underlying_asset.transfer(who, &reserve.s_token_address, &lender_part);
+        underlying_asset.transfer(who, &treasury_address, &treasury_part);
         debt_token.burn(who, &borrower_debt_to_burn);
 
         event::repay(env, who.clone(), asset.clone(), amount);
