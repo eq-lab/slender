@@ -364,9 +364,11 @@ impl LendingPoolTrait for LendingPool {
     /// - amount - sended amount of s-token
     /// - balance_from_before - amount of s-token before transfer on `from` user balance
     /// - balance_to_before - amount of s-token before transfer on `to` user balance
+    ///
     /// # Panics
     ///
     /// Panics if the caller is not the sToken contract.
+    ///
     fn finalize_transfer(
         env: Env,
         asset: Address,
@@ -377,7 +379,14 @@ impl LendingPoolTrait for LendingPool {
         balance_to_before: i128,
     ) -> Result<(), Error> {
         // TODO: maybe check with callstack?
+
         let reserve = get_actual_reserve_data(&env, asset.clone())?;
+
+        let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
+        if debt_token.balance(&to) > 0 {
+            return Err(Error::MustNotBeInDebtAsset);
+        }
+
         let s_token_address = (reserve.clone()).s_token_address;
         s_token_address.require_auth();
         Self::require_not_paused(&env);
