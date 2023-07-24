@@ -27,9 +27,9 @@ fn create_token_contract<'a>(e: &Env, admin: &Address) -> TokenClient<'a> {
     TokenClient::new(e, &e.register_stellar_asset_contract(admin.clone()))
 }
 
-fn create_pool_contract<'a>(e: &Env, admin: &Address, treasury: &Address) -> LendingPoolClient<'a> {
+fn create_pool_contract<'a>(e: &Env, admin: &Address) -> LendingPoolClient<'a> {
     let client = LendingPoolClient::new(e, &e.register_contract(None, LendingPool));
-
+    let treasury = Address::random(e);
     client.initialize(
         &admin,
         &treasury,
@@ -95,7 +95,6 @@ struct Sut<'a> {
     price_feed: PriceFeedClient<'a>,
     pool_admin: Address,
     token_admin: Address,
-    treasury_address: Address,
     reserves: std::vec::Vec<ReserveConfig<'a>>,
 }
 
@@ -116,9 +115,8 @@ impl<'a> Sut<'a> {
 fn init_pool<'a>(env: &Env) -> Sut<'a> {
     let admin = Address::random(&env);
     let token_admin = Address::random(&env);
-    let treasury = Address::random(&env);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, &treasury);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
 
     let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..3)
@@ -187,7 +185,6 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
         price_feed,
         pool_admin: admin,
         token_admin: token_admin,
-        treasury_address: treasury,
         reserves,
     }
 }
@@ -198,13 +195,13 @@ fn init_reserve() {
 
     let admin = Address::random(&env);
     let token_admin = Address::random(&env);
-    let treasury = Address::random(&env);
 
     let underlying_token = create_token_contract(&env, &token_admin);
     let debt_token = create_token_contract(&env, &token_admin);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, &treasury);
-    let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
+    let s_token =
+        create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
     let init_reserve_input = InitReserveInput {
@@ -270,7 +267,8 @@ fn init_reserve_when_pool_not_initialized() {
 
     let pool: LendingPoolClient<'_> =
         LendingPoolClient::new(&env, &env.register_contract(None, LendingPool));
-    let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
+    let s_token =
+        create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
     let init_reserve_input = InitReserveInput {
@@ -435,7 +433,8 @@ fn withdraw_interest_rate_less_than_one() {
         .set_accrued_rates(&token.address, &collat_accrued_rate, &None);
 
     let deposit_amount = 1000;
-    sut.pool.deposit(&user1, &token.address, &deposit_amount);
+    sut.pool
+        .deposit(&user1, &token.address, &deposit_amount);
     assert_eq!(s_token.balance(&user1), 2000);
     assert_eq!(token.balance(&user1), initial_balance - deposit_amount);
     assert_eq!(token.balance(&s_token.address), deposit_amount);
@@ -468,7 +467,8 @@ fn withdraw_interest_rate_greater_than_one() {
         .set_accrued_rates(&token.address, &collat_accrued_rate, &None);
 
     let deposit_amount = 1000;
-    sut.pool.deposit(&user1, &token.address, &deposit_amount);
+    sut.pool
+        .deposit(&user1, &token.address, &deposit_amount);
     assert_eq!(s_token.balance(&user1), 833);
     assert_eq!(token.balance(&user1), initial_balance - deposit_amount);
     assert_eq!(token.balance(&s_token.address), deposit_amount);
@@ -518,7 +518,8 @@ fn withdraw_more_than_balance() {
     assert_eq!(token.balance(&user1), initial_balance);
 
     let deposit_amount = 1000;
-    sut.pool.deposit(&user1, &token.address, &deposit_amount);
+    sut.pool
+        .deposit(&user1, &token.address, &deposit_amount);
 
     let withdraw_amount = 2000;
     assert_eq!(
@@ -579,7 +580,8 @@ fn deposit() {
                 .set_accrued_rates(&token.address, &collat_accrued_rate, &None),
             ()
         );
-        sut.pool.deposit(&user, &token.address, &deposit_amount);
+        sut.pool
+            .deposit(&user, &token.address, &deposit_amount);
 
         assert_eq!(
             s_token.balance(&user),
@@ -616,7 +618,11 @@ fn deposit_zero_amount() {
     let deposit_amount = 0;
     assert_eq!(
         sut.pool
-            .try_deposit(&user1, &sut.reserves[0].token.address, &deposit_amount,)
+            .try_deposit(
+                &user1,
+                &sut.reserves[0].token.address,
+                &deposit_amount,
+            )
             .unwrap_err()
             .unwrap(),
         Error::InvalidAmount
@@ -656,7 +662,8 @@ fn borrow() {
     let deposit_amount = 100_000_000;
     for r in sut.reserves.iter() {
         let pool_balance = r.token.balance(&r.s_token.address);
-        sut.pool.deposit(&lender, &r.token.address, &deposit_amount);
+        sut.pool
+            .deposit(&lender, &r.token.address, &deposit_amount);
         assert_eq!(r.s_token.balance(&lender), deposit_amount);
         assert_eq!(
             r.token.balance(&r.s_token.address),
@@ -667,8 +674,11 @@ fn borrow() {
     env.budget().reset_default();
 
     //borrower deposit first token and borrow second token
-    sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
+    sut.pool.deposit(
+        &borrower,
+        &sut.reserves[0].token.address,
+        &deposit_amount,
+    );
     assert_eq!(sut.reserves[0].s_token.balance(&borrower), deposit_amount);
 
     //borrower borrow second token
@@ -713,11 +723,17 @@ fn borrow_utilization_exceeded() {
 
     let deposit_amount = 1_000_000_000;
 
-    sut.pool
-        .deposit(&lender, &sut.reserves[0].token.address, &deposit_amount);
+    sut.pool.deposit(
+        &lender,
+        &sut.reserves[0].token.address,
+        &deposit_amount,
+    );
 
-    sut.pool
-        .deposit(&borrower, &sut.reserves[1].token.address, &deposit_amount);
+    sut.pool.deposit(
+        &borrower,
+        &sut.reserves[1].token.address,
+        &deposit_amount,
+    );
 
     assert_eq!(
         sut.pool
@@ -765,11 +781,17 @@ fn borrow_collateral_is_zero() {
 
     let deposit_amount = 1000;
 
-    sut.pool
-        .deposit(&lender, &sut.reserves[0].token.address, &deposit_amount);
+    sut.pool.deposit(
+        &lender,
+        &sut.reserves[0].token.address,
+        &deposit_amount,
+    );
 
-    sut.pool
-        .deposit(&borrower, &sut.reserves[1].token.address, &deposit_amount);
+    sut.pool.deposit(
+        &borrower,
+        &sut.reserves[1].token.address,
+        &deposit_amount,
+    );
 
     sut.pool.withdraw(
         &borrower,
@@ -863,7 +885,8 @@ fn borrow_disabled_for_borrowing_asset() {
     let deposit_amount = 100_000_000;
     for r in sut.reserves.iter() {
         let pool_balance = r.token.balance(&r.s_token.address);
-        sut.pool.deposit(&lender, &r.token.address, &deposit_amount);
+        sut.pool
+            .deposit(&lender, &r.token.address, &deposit_amount);
         assert_eq!(r.s_token.balance(&lender), deposit_amount);
         assert_eq!(
             r.token.balance(&r.s_token.address),
@@ -872,8 +895,11 @@ fn borrow_disabled_for_borrowing_asset() {
     }
 
     //borrower deposit first token and borrow second token
-    sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
+    sut.pool.deposit(
+        &borrower,
+        &sut.reserves[0].token.address,
+        &deposit_amount,
+    );
     assert_eq!(sut.reserves[0].s_token.balance(&borrower), deposit_amount);
 
     //borrower borrow second token
@@ -898,11 +924,10 @@ fn set_price_feed() {
     let env = Env::default();
 
     let admin = Address::random(&env);
-    let treasury = Address::random(&env);
     let asset_1 = Address::random(&env);
     let asset_2 = Address::random(&env);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, &treasury);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
     let assets = vec![&env, asset_1.clone(), asset_2.clone()];
 
@@ -937,7 +962,8 @@ fn test_liquidate_error_good_position() {
     let user = Address::random(&env);
     let token = &sut.reserves[0].token;
     token.mint(&user, &1_000_000_000);
-    sut.pool.deposit(&user, &token.address, &1_000_000_000);
+    sut.pool
+        .deposit(&user, &token.address, &1_000_000_000);
 
     let position = sut.pool.get_account_position(&user);
     assert!(position.npv > 0, "test configuration");
@@ -974,7 +1000,8 @@ fn test_liquidate_error_not_enough_collateral() {
         .unwrap();
     token1.mint(&borrower, &deposit);
     token2.mint(&lender, &deposit);
-    sut.pool.deposit(&borrower, &token1.address, &deposit);
+    sut.pool
+        .deposit(&borrower, &token1.address, &deposit);
     sut.pool.deposit(&lender, &token2.address, &deposit);
     sut.pool.borrow(&borrower, &token2.address, &debt);
     sut.price_feed.set_price(
@@ -1021,7 +1048,8 @@ fn test_liquidate() {
     debt_asset.mint(&liquidator, &deposit);
     sut.pool
         .deposit(&borrower, &collateral_asset.address, &deposit);
-    sut.pool.deposit(&lender, &debt_asset.address, &deposit);
+    sut.pool
+        .deposit(&lender, &debt_asset.address, &deposit);
     sut.pool.borrow(&borrower, &debt_asset.address, &debt);
 
     let position = sut.pool.get_account_position(&borrower);
@@ -1089,7 +1117,8 @@ fn test_liquidate_receive_stoken() {
     debt_asset.mint(&liquidator, &deposit);
     sut.pool
         .deposit(&borrower, &collateral_asset.address, &deposit);
-    sut.pool.deposit(&lender, &debt_asset.address, &deposit);
+    sut.pool
+        .deposit(&lender, &debt_asset.address, &deposit);
     sut.pool.borrow(&borrower, &debt_asset.address, &debt);
 
     let position = sut.pool.get_account_position(&borrower);
@@ -1162,11 +1191,15 @@ fn user_operation_should_update_ar_coeffs() {
     //lender deposit all tokens
     let deposit_amount = 100_000_000;
     for r in sut.reserves.iter() {
-        sut.pool.deposit(&lender, &r.token.address, &deposit_amount);
+        sut.pool
+            .deposit(&lender, &r.token.address, &deposit_amount);
     }
 
-    sut.pool
-        .deposit(&borrower_1, &sut.reserves[0].token.address, &deposit_amount);
+    sut.pool.deposit(
+        &borrower_1,
+        &sut.reserves[0].token.address,
+        &deposit_amount,
+    );
 
     env.budget().reset_default();
 
@@ -1197,7 +1230,8 @@ fn user_operation_should_update_ar_coeffs() {
     env.budget().reset_default();
 
     //second deposit by lender of debt asset
-    sut.pool.deposit(&lender, &debt_asset_1, &deposit_amount);
+    sut.pool
+        .deposit(&lender, &debt_asset_1, &deposit_amount);
 
     let updated = sut.pool.get_reserve(&debt_asset_1).unwrap();
     let ir_params = sut.pool.get_ir_params().unwrap();
@@ -1228,22 +1262,11 @@ fn repay() {
 
     let sut = init_pool(&env);
 
+    let initial_amount = 1_000_000_000;
     let lender = Address::random(&env);
     let borrower = Address::random(&env);
 
-    let second_stoken_address = &sut.reserves[1].s_token.address;
-
-    let initial_amount = 100_000_000_000;
-    let collat_accrued_rate = FixedI128::from_percentage(11000);
-    let debt_accrued_rate = FixedI128::from_percentage(12000);
-
     for r in sut.reserves.iter() {
-        sut.pool.set_accrued_rates(
-            &r.token.address,
-            &collat_accrued_rate.map(|f| f.into_inner()),
-            &debt_accrued_rate.map(|f| f.into_inner()),
-        );
-
         r.token.mint(&lender, &initial_amount);
         assert_eq!(r.token.balance(&lender), initial_amount);
 
@@ -1252,69 +1275,94 @@ fn repay() {
     }
 
     //lender deposit all tokens
-    let lending_amount = 10_000_000_000;
+    let lending_amount = 100_000_000;
     for r in sut.reserves.iter() {
-        sut.pool.deposit(&lender, &r.token.address, &lending_amount);
+        let pool_balance = r.token.balance(&r.s_token.address);
+        sut.pool
+            .deposit(&lender, &r.token.address, &lending_amount);
+        assert_eq!(r.s_token.balance(&lender), lending_amount);
+        assert_eq!(
+            r.token.balance(&r.s_token.address),
+            pool_balance + lending_amount
+        );
     }
 
     env.budget().reset_default();
 
     // borrower deposits first token and borrow second token
-    let deposit_amount = 10_000_000_000;
-    sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
+    let deposit_amount = 10_000;
+    sut.pool.deposit(
+        &borrower,
+        &sut.reserves[0].token.address,
+        &deposit_amount,
+    );
 
-    let borrower_stoken_balance = sut.reserves[0].s_token.balance(&borrower);
-    let borrower_token_balance = sut.reserves[0].token.balance(&borrower);
-
-    assert_eq!(borrower_stoken_balance, 9090909090);
-    assert_eq!(borrower_token_balance, 90000000000);
+    assert_eq!(sut.reserves[0].s_token.balance(&borrower), deposit_amount);
+    assert_eq!(
+        sut.reserves[0].token.balance(&borrower),
+        initial_amount - deposit_amount
+    );
 
     // borrower borrows second token
-    let borrowing_amount = 5_000_000_000;
+    let borrowing_amount = 3_000;
     sut.pool
         .borrow(&borrower, &sut.reserves[1].token.address, &borrowing_amount);
 
-    let borrower_debt_amount = sut.reserves[1].debt_token.balance(&borrower);
-    let borrower_token_amount = sut.reserves[1].token.balance(&borrower);
-    let second_stoken_balance = sut.reserves[1].token.balance(&second_stoken_address);
-
-    assert_eq!(borrower_debt_amount, 5000000000);
-    assert_eq!(borrower_token_amount, 105000000000);
-    assert_eq!(second_stoken_balance, 5000000000);
+    assert_eq!(
+        sut.reserves[1].debt_token.balance(&borrower),
+        borrowing_amount
+    );
+    assert_eq!(
+        sut.reserves[1].token.balance(&borrower),
+        initial_amount + borrowing_amount
+    );
+    assert_eq!(
+        sut.reserves[1]
+            .token
+            .balance(&sut.reserves[1].s_token.address),
+        lending_amount - borrowing_amount
+    );
 
     // borrower partially repays second token
-    let repayment_amount = debt_accrued_rate.unwrap().mul_int(2_000_000_000).unwrap();
-    sut.pool
-        .deposit(&borrower, &sut.reserves[1].token.address, &repayment_amount);
+    let repayment_amount = 700;
+    sut.pool.deposit(
+        &borrower,
+        &sut.reserves[1].token.address,
+        &repayment_amount,
+    );
 
-    let borrower_debt_amount = sut.reserves[1].debt_token.balance(&borrower);
-    let borrower_token_amount = sut.reserves[1].token.balance(&borrower);
-    let second_stoken_balance = sut.reserves[1].token.balance(&second_stoken_address);
-    let treasury_balance = sut.reserves[1].token.balance(&sut.treasury_address);
-
-    assert_eq!(borrower_debt_amount, 3000000000);
-    assert_eq!(borrower_token_amount, 102600000000);
-    assert_eq!(second_stoken_balance, 7200000000);
-    assert_eq!(treasury_balance, 200000000);
+    assert_eq!(
+        sut.reserves[1].debt_token.balance(&borrower),
+        borrowing_amount - repayment_amount
+    );
+    assert_eq!(
+        sut.reserves[1].token.balance(&borrower),
+        initial_amount + borrowing_amount - repayment_amount
+    );
+    assert_eq!(
+        sut.reserves[1]
+            .token
+            .balance(&sut.reserves[1].s_token.address),
+        lending_amount - borrowing_amount + repayment_amount
+    );
 
     // borrower over-repays second token
-    let over_repayment_amount = 7_000_000_000;
+    let over_repayment_amount = 3000;
     sut.pool.deposit(
         &borrower,
         &sut.reserves[1].token.address,
         &over_repayment_amount,
     );
 
-    let borrower_debt_amount = sut.reserves[1].debt_token.balance(&borrower);
-    let borrower_token_amount = sut.reserves[1].token.balance(&borrower);
-    let second_stoken_balance = sut.reserves[1].token.balance(&second_stoken_address);
-    let treasury_balance = sut.reserves[1].token.balance(&sut.treasury_address);
-    let borrower_stoken_balance = sut.reserves[1].s_token.balance(&borrower);
-
-    assert_eq!(borrower_debt_amount, 0);
-    assert_eq!(borrower_token_amount, 95600000000);
-    assert_eq!(second_stoken_balance, 13900000000);
-    assert_eq!(treasury_balance, 500000000);
-    assert_eq!(borrower_stoken_balance, 3090909090);
+    assert_eq!(sut.reserves[1].debt_token.balance(&borrower), 0);
+    assert_eq!(
+        sut.reserves[1].token.balance(&borrower),
+        initial_amount + borrowing_amount - repayment_amount - over_repayment_amount
+    );
+    assert_eq!(
+        sut.reserves[1]
+            .token
+            .balance(&sut.reserves[1].s_token.address),
+        lending_amount - borrowing_amount + repayment_amount + over_repayment_amount
+    );
 }
