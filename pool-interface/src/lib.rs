@@ -99,6 +99,7 @@ pub trait LendingPoolTrait {
         repay_only: bool,
     ) -> Result<(), Error>;
 
+    #[allow(clippy::too_many_arguments)]
     fn finalize_transfer(
         env: Env,
         asset: Address,

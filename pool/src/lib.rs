@@ -388,6 +388,7 @@ impl LendingPoolTrait for LendingPool {
     /// # Panics
     ///
     /// Panics if the caller is not the sToken contract.
+    #[allow(clippy::too_many_arguments)]
     fn finalize_transfer(
         env: Env,
         asset: Address,
@@ -776,7 +777,7 @@ impl LendingPool {
         let underlying_asset = token::Client::new(env, asset);
 
         //TODO: use own aggregate instead of token.balance
-        let balance = underlying_asset.balance(&reserve.s_token_address); 
+        let balance = underlying_asset.balance(&reserve.s_token_address);
 
         Self::require_liq_cap_not_exceeded(env, reserve, balance, amount)?;
 
