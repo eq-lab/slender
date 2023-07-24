@@ -24,7 +24,6 @@ impl STokenTrait for SToken {
     /// - name - The name of the token.
     /// - symbol - The symbol of the token.
     /// - pool - The address of the pool contract.
-    /// - treasury - The address of the treasury contract.
     /// - underlying_asset - The address of the underlying asset associated with the token.
     ///
     /// # Panics
@@ -38,7 +37,6 @@ impl STokenTrait for SToken {
         name: Bytes,
         symbol: Bytes,
         pool: Address,
-        treasury: Address,
         underlying_asset: Address,
     ) {
         if name.is_empty() {
@@ -55,7 +53,6 @@ impl STokenTrait for SToken {
 
         write_pool(&e, &pool);
         write_underlying_asset(&e, &underlying_asset);
-        write_treasury(&e, &treasury);
 
         // it can be optimized by passing decimals as argument
         let token = token::Client::new(&e, &underlying_asset);
@@ -70,7 +67,7 @@ impl STokenTrait for SToken {
             },
         );
 
-        event::initialized(&e, underlying_asset, pool, treasury, decimal, name, symbol);
+        event::initialized(&e, underlying_asset, pool, decimal, name, symbol);
     }
 
     /// Returns the amount of tokens that the `spender` is allowed to withdraw from the `from` address.
@@ -387,28 +384,6 @@ impl STokenTrait for SToken {
             .unwrap_or_else(|| panic!("s-token: overflow error"))
     }
 
-    /// Mints tokens and transfers them to the treasury.
-    ///
-    /// # Arguments
-    ///
-    /// - amount - The amount of tokens to mint.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the amount is negative.
-    /// Panics if caller is not associated pool.
-    ///
-    fn mint_to_treasury(e: Env, amount: i128) {
-        let pool = verify_caller_is_pool(&e);
-        if amount == 0 {
-            return;
-        }
-
-        let treasury = read_treasury(&e);
-        Self::do_mint(&e, treasury.clone(), amount);
-        event::mint(&e, pool, treasury, amount);
-    }
-
     /// Transfers tokens during a liquidation.
     ///
     /// # Arguments
@@ -460,16 +435,6 @@ impl STokenTrait for SToken {
     ///
     fn underlying_asset(e: Env) -> Address {
         read_underlying_asset(&e)
-    }
-
-    /// Retrieves the address of the treasury.
-    ///
-    /// # Returns
-    ///
-    /// The address of the treasury.
-    ///
-    fn treasury(e: Env) -> Address {
-        read_treasury(&e)
     }
 
     /// Retrieves the address of the pool.

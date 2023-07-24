@@ -89,20 +89,29 @@ impl LendingPoolTrait for LendingPool {
     /// # Arguments
     ///
     /// - admin - The address of the admin for the contract.
+    /// - treasury - The address of the treasury contract.
     /// - ir_params - The interest rate parameters to set.
     ///
     /// # Panics
     ///
     /// Panics with `AlreadyInitialized` if the admin key already exists in storage.
     ///
-    fn initialize(env: Env, admin: Address, ir_params: IRParams) -> Result<(), Error> {
+    fn initialize(
+        env: Env,
+        admin: Address,
+        treasury: Address,
+        ir_params: IRParams,
+    ) -> Result<(), Error> {
         if has_admin(&env) {
             panic_with_error!(&env, Error::AlreadyInitialized);
         }
         Self::require_valid_ir_params(&env, &ir_params);
 
-        write_admin(&env, admin);
+        write_admin(&env, admin.clone());
+        write_treasury(&env, &treasury);
         write_ir_params(&env, &ir_params);
+
+        event::initialized(&env, admin, treasury, ir_params);
 
         Ok(())
     }
@@ -301,8 +310,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// - who - The address of the user making the deposit.
     /// - asset - The address of the asset to be deposited for lend or repay.
-    /// - amount - The amount to be repayed/deposited.
-    /// - repay_only - The flag indicating the deposit must be performed after repayment.
+    /// - amount - The amount to be repayed/deposited. Use i128::MAX to repay the maximum available amount.
     ///
     /// # Errors
     ///
@@ -315,13 +323,7 @@ impl LendingPoolTrait for LendingPool {
     /// If the deposit amount is invalid or does not meet the reserve requirements.
     /// If the reserve data cannot be retrieved from storage.
     ///
-    fn deposit(
-        env: Env,
-        who: Address,
-        asset: Address,
-        amount: i128,
-        repay_only: bool,
-    ) -> Result<(), Error> {
+    fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
         Self::require_not_paused(&env);
 
@@ -330,7 +332,7 @@ impl LendingPoolTrait for LendingPool {
 
         let (remaining_amount, is_repayed) = Self::do_repay(&env, &who, &asset, amount, &reserve)?;
 
-        let is_first_deposit = if !repay_only {
+        let is_first_deposit = if remaining_amount > 0 {
             Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?
         } else {
             false
@@ -544,6 +546,16 @@ impl LendingPoolTrait for LendingPool {
         paused(&env)
     }
 
+    /// Retrieves the address of the treasury.
+    ///
+    /// # Returns
+    ///
+    /// The address of the treasury.
+    ///
+    fn treasury(e: Env) -> Address {
+        read_treasury(&e)
+    }
+
     /// Retrieves the account position info.
     ///
     /// # Arguments
@@ -704,10 +716,6 @@ impl LendingPool {
         amount: i128,
         reserve: &ReserveData,
     ) -> Result<bool, Error> {
-        if amount == 0 {
-            return Ok(false);
-        }
-
         let collat_coeff = Self::get_collateral_coeff(env, reserve)?;
         let underlying_asset = token::Client::new(env, asset);
         let s_token = STokenClient::new(env, &reserve.s_token_address);
@@ -734,45 +742,49 @@ impl LendingPool {
         reserve: &ReserveData,
     ) -> Result<(i128, bool), Error> {
         let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-        let asset_debt = debt_token.balance(who);
+        let borrower_total_debt = debt_token.balance(who);
 
-        if asset_debt == 0 {
+        if borrower_total_debt == 0 {
             return Ok((amount, false));
         }
 
         let underlying_asset = token::Client::new(env, asset);
-        let debt_coeff = Self::get_debt_coeff(env, reserve)?;
+        let treasury_address = read_treasury(env);
 
-        let compounded_debt = debt_coeff
-            .mul_int(asset_debt)
+        let debt_coeff = Self::get_debt_coeff(env, reserve)?;
+        let collat_coeff = Self::get_collateral_coeff(env, reserve)?;
+
+        let borrower_actual_debt = debt_coeff
+            .mul_int(borrower_total_debt)
             .ok_or(Error::MathOverflowError)?;
 
-        let payback_amount = amount.min(compounded_debt);
+        let borrower_payback_amount = amount.min(borrower_actual_debt);
 
-        let payback_debt = if payback_amount == compounded_debt {
-            asset_debt
-        } else {
-            debt_coeff
-                .recip_mul_int(payback_amount)
-                .ok_or(Error::MathOverflowError)?
-        };
+        let borrower_debt_to_burn = debt_coeff
+            .recip_mul_int(borrower_payback_amount)
+            .ok_or(Error::MathOverflowError)?;
+        let lender_part = collat_coeff
+            .mul_int(borrower_debt_to_burn)
+            .ok_or(Error::MathOverflowError)?;
+        let treasury_part = borrower_payback_amount
+            .checked_sub(lender_part)
+            .ok_or(Error::MathOverflowError)?;
 
-        underlying_asset.transfer(who, &reserve.s_token_address, &payback_amount);
-        debt_token.burn(who, &payback_debt);
+        underlying_asset.transfer(who, &reserve.s_token_address, &lender_part);
+        underlying_asset.transfer(who, &treasury_address, &treasury_part);
+        debt_token.burn(who, &borrower_debt_to_burn);
 
         event::repay(env, who.clone(), asset.clone(), amount);
 
-        let remaning_amount = amount
-            .checked_sub(payback_amount)
-            .ok_or(Error::MathOverflowError)?;
-
-        let remaning_amount = if remaning_amount > 0 {
-            remaning_amount
+        let remaning_amount = if amount != i128::MAX && amount > borrower_actual_debt {
+            amount
+                .checked_sub(borrower_actual_debt)
+                .ok_or(Error::MathOverflowError)?
         } else {
             0
         };
 
-        let is_repayed = compounded_debt == payback_amount;
+        let is_repayed = borrower_actual_debt == borrower_payback_amount;
 
         Ok((remaning_amount, is_repayed))
     }
