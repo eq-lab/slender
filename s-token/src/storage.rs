@@ -11,7 +11,6 @@ pub struct AllowanceDataKey {
 #[contracttype]
 pub enum DataKey {
     Allowance(AllowanceDataKey),
-    Treasury,
     UnderlyingAsset,
 }
 
@@ -23,14 +22,6 @@ pub fn read_underlying_asset(e: &Env) -> Address {
     e.storage()
         .get_unchecked(&DataKey::UnderlyingAsset)
         .unwrap()
-}
-
-pub fn write_treasury(e: &Env, treasury: &Address) {
-    e.storage().set(&DataKey::Treasury, treasury);
-}
-
-pub fn read_treasury(e: &Env) -> Address {
-    e.storage().get_unchecked(&DataKey::Treasury).unwrap()
 }
 
 pub fn read_allowance(e: &Env, from: Address, spender: Address) -> i128 {

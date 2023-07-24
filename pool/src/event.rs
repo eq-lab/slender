@@ -1,5 +1,10 @@
-use pool_interface::CollateralParamsInput;
+use pool_interface::{CollateralParamsInput, IRParams};
 use soroban_sdk::{Address, Env, Symbol};
+
+pub(crate) fn initialized(e: &Env, admin: Address, treasury: Address, ir_params: IRParams) {
+    let topics = (Symbol::new(e, "initialize"), admin, treasury);
+    e.events().publish(topics, ir_params);
+}
 
 pub(crate) fn reserve_used_as_collateral_enabled(e: &Env, who: Address, asset: Address) {
     let topics = (Symbol::new(e, "reserve_used_as_coll_enabled"), who);
@@ -33,8 +38,15 @@ pub(crate) fn repay(e: &Env, who: Address, asset: Address, amount: i128) {
 
 pub(crate) fn collat_config_change(e: &Env, asset: Address, params: CollateralParamsInput) {
     let topics = (Symbol::new(e, "collat_config_change"), asset);
-    e.events()
-        .publish(topics, (params.liq_bonus, params.liq_cap, params.discount));
+    e.events().publish(
+        topics,
+        (
+            params.liq_bonus,
+            params.liq_cap,
+            params.util_cap,
+            params.discount,
+        ),
+    );
 }
 
 pub(crate) fn borrowing_enabled(e: &Env, asset: Address) {

@@ -39,12 +39,10 @@ pub(crate) fn initialized(
     e: &Env,
     underlying_asset: Address,
     pool: Address,
-    treasury: Address,
     decimals: u32,
     name: Bytes,
     symbol: Bytes,
 ) {
     let topics = (Symbol::short("init"), underlying_asset, pool);
-    e.events()
-        .publish(topics, (treasury, decimals, name, symbol));
+    e.events().publish(topics, (decimals, name, symbol));
 }

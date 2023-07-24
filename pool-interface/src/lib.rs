@@ -42,6 +42,7 @@ pub enum Error {
     NotEnoughCollateral = 308,
     LiquidateMathError = 309,
     MustNotBeInCollateralAsset = 310,
+    UtilizationCapExceeded = 311,
 
     MathOverflowError = 400,
     MustBeLtePercentageFactor = 401,
@@ -65,7 +66,12 @@ pub struct AccountPosition {
 #[contractspecfn(name = "Spec", export = false)]
 #[contractclient(name = "LendingPoolClient")]
 pub trait LendingPoolTrait {
-    fn initialize(env: Env, admin: Address, ir_params: IRParams) -> Result<(), Error>;
+    fn initialize(
+        env: Env,
+        admin: Address,
+        treasury: Address,
+        ir_params: IRParams,
+    ) -> Result<(), Error>;
 
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
 
@@ -87,13 +93,7 @@ pub trait LendingPoolTrait {
 
     fn get_ir_params(env: Env) -> Option<IRParams>;
 
-    fn deposit(
-        env: Env,
-        who: Address,
-        asset: Address,
-        amount: i128,
-        repay_only: bool,
-    ) -> Result<(), Error>;
+    fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn finalize_transfer(
         env: Env,
@@ -126,6 +126,8 @@ pub trait LendingPoolTrait {
     fn set_pause(env: Env, value: bool) -> Result<(), Error>;
 
     fn paused(env: Env) -> bool;
+
+    fn treasury(e: Env) -> Address;
 
     fn get_account_position(env: Env, who: Address) -> Result<AccountPosition, Error>;
 
