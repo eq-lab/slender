@@ -774,7 +774,9 @@ impl LendingPool {
         }
 
         let underlying_asset = token::Client::new(env, asset);
-        let balance = underlying_asset.balance(&reserve.s_token_address);
+
+        //TODO: use own aggregate instead of token.balance
+        let balance = underlying_asset.balance(&reserve.s_token_address); 
 
         Self::require_liq_cap_not_exceeded(env, reserve, balance, amount)?;
 
@@ -1118,6 +1120,7 @@ impl LendingPool {
 
         let collat_ar = Self::get_actual_lender_accrued_rate(env, reserve)?;
 
+        //TODO: use own aggregate instead of balance()
         let balance = TokenClient::new(env, asset).balance(&reserve.s_token_address);
         let debt_token_supply =
             DebtTokenClient::new(env, &reserve.debt_token_address).total_supply();
