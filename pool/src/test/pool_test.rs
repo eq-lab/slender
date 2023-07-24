@@ -747,7 +747,7 @@ fn borrow_utilization_exceeded() {
             .try_borrow(&borrower, &sut.reserves[0].token.address, &990_000_000)
             .unwrap_err()
             .unwrap(),
-        Error::UtilizationExceeded
+        Error::UtilizationCapExceeded
     )
 }
 

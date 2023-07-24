@@ -495,7 +495,7 @@ impl LendingPoolTrait for LendingPool {
     /// - Panics when caller is not authorized as who
     /// - Panics if user balance doesn't meet requirements for borrowing an amount of asset
     /// - Panics with `MustNotBeInCollateralAsset` if there is a collateral in borrowing asset.
-    /// - Panics with `UtilizationExceeded` if utilization after borrow is above the limit.
+    /// - Panics with `UtilizationCapExceeded` if utilization after borrow is above the limit.
     ///
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
@@ -834,7 +834,7 @@ impl LendingPool {
             .ok_or(Error::ValidateBorrowMathError)?;
         let util_cap = FixedI128::from_percentage(reserve.configuration.util_cap)
             .ok_or(Error::ValidateBorrowMathError)?;
-        assert_with_error!(env, utilization <= util_cap, Error::UtilizationExceeded);
+        assert_with_error!(env, utilization <= util_cap, Error::UtilizationCapExceeded);
 
         let asset_price = Self::get_asset_price(env, asset.clone())?;
         let amount_in_xlm = asset_price
