@@ -864,7 +864,6 @@ impl LendingPool {
         assert_with_error!(env, flags.borrowing_enabled, Error::BorrowingNotEnabled);
 
         let reserves = &read_reserves(env);
-        // TODO: check calc_account_data with balances after borrow
         let account_data = Self::calc_account_data(env, who, None, user_config, reserves, false)?;
 
         assert_with_error!(
@@ -873,7 +872,6 @@ impl LendingPool {
             Error::CollateralNotCoverNewBorrow
         );
 
-        //TODO: complete validation after rate implementation
         Self::require_good_position(account_data)?;
 
         Ok(())
