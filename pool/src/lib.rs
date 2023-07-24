@@ -477,7 +477,13 @@ impl LendingPoolTrait for LendingPool {
         let reserve = get_actual_reserve_data(&env, asset.clone())?;
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
-        let who_balance = s_token.balance(&who);
+        let s_token_balance = s_token.balance(&who);
+
+        let collat_coeff = Self::get_collat_coeff(&env, &asset, &reserve)?;
+        let who_balance = collat_coeff
+            .recip_mul_int(s_token_balance)
+            .ok_or(Error::MathOverflowError)?;
+
         let amount_to_withdraw = if amount == i128::MAX {
             who_balance
         } else {
@@ -501,7 +507,7 @@ impl LendingPoolTrait for LendingPool {
         }
 
         // amount_to_burn = amount_to_withdraw / liquidity_index
-        let amount_to_burn = Self::get_collat_coeff(&env, &asset, &reserve)?
+        let amount_to_burn = collat_coeff
             .recip_mul_int(amount_to_withdraw)
             .ok_or(Error::MathOverflowError)?;
         s_token.burn(&who, &amount_to_burn, &amount_to_withdraw, &to);
