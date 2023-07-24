@@ -26,7 +26,7 @@ pub fn spend_balance(e: &Env, addr: Address, amount: i128) {
     write_balance(e, addr, balance - amount);
 }
 
-pub fn add_total_supply(e: &Env, amount: i128) -> i128 {
+pub fn add_total_supply(e: &Env, amount: i128) {
     let total_supply = read_total_supply(e)
         .checked_add(amount)
         .expect("no overflow");
@@ -35,5 +35,4 @@ pub fn add_total_supply(e: &Env, amount: i128) -> i128 {
     }
 
     write_total_supply(e, total_supply);
-    total_supply
 }

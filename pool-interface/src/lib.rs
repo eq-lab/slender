@@ -107,6 +107,7 @@ pub trait LendingPoolTrait {
         amount: i128,
         balance_from_before: i128,
         balance_to_before: i128,
+        total_supply: i128,
     ) -> Result<(), Error>;
 
     fn withdraw(

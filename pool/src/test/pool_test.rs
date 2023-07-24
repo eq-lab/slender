@@ -815,6 +815,8 @@ fn borrow_disabled_for_borrowing_asset() {
     let borrow_asset = sut.reserves[1].token.address.clone();
     let borrow_amount = 10_000;
 
+    env.budget().reset_default();
+
     //disable second token for borrowing
     sut.pool.enable_borrowing_on_reserve(&borrow_asset, &false);
     let reserve = sut.pool.get_reserve(&borrow_asset);
@@ -917,6 +919,7 @@ fn test_liquidate_error_not_enough_collateral() {
         &token2.address,
         &(10i128.pow(sut.price_feed.decimals()) * 2),
     );
+    env.budget().reset_default();
 
     let position = sut.pool.get_account_position(&borrower);
     assert!(position.npv < 0, "test configuration");

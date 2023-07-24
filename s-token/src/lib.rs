@@ -6,7 +6,6 @@ mod storage;
 mod test;
 
 use crate::storage::*;
-use common::FixedI128;
 use common_token::{balance::*, require_nonnegative_amount, storage::*, verify_caller_is_pool};
 use pool_interface::LendingPoolClient;
 use s_token_interface::STokenTrait;
@@ -157,28 +156,6 @@ impl STokenTrait for SToken {
         read_balance(&e, id)
     }
 
-    /// Returns the corresponding balance of underlying token for a specified `id`.
-    ///
-    /// # Arguments
-    ///
-    /// - id - The address of the user account.
-    ///
-    /// # Returns
-    ///
-    /// The underlying balance of tokens for the specified user account.
-    ///
-    /// # Panics
-    ///
-    /// Panics if there is an overflow error during the calculation.
-    ///
-    fn underlying_balance(e: Env, id: Address) -> i128 {
-        let collat_coeff = Self::get_collat_coeff(&e);
-        let balance = read_balance(&e, id);
-        collat_coeff
-            .mul_int(balance)
-            .unwrap_or_else(|| panic!("s-token: overflow error"))
-    }
-
     /// Returns the spendable balance of tokens for a specified id.
     ///
     /// # Arguments
@@ -304,12 +281,11 @@ impl STokenTrait for SToken {
     /// Panics if the amount is negative.
     /// Panics if the caller is not the pool associated with this token.
     ///
-    fn mint(e: Env, to: Address, amount: i128) -> i128 {
+    fn mint(e: Env, to: Address, amount: i128) {
         let pool = verify_caller_is_pool(&e);
 
-        let total_supply = Self::do_mint(&e, to.clone(), amount);
+        Self::do_mint(&e, to.clone(), amount);
         event::mint(&e, pool, to, amount);
-        total_supply
     }
 
     /// Burns a specified amount of tokens from the from account and returns total supply
@@ -326,18 +302,11 @@ impl STokenTrait for SToken {
     /// Panics if the amount_to_burn is negative.
     /// Panics if the caller is not the pool associated with this token.
     ///
-    fn burn(
-        e: Env,
-        from: Address,
-        amount_to_burn: i128,
-        amount_to_withdraw: i128,
-        to: Address,
-    ) -> i128 {
+    fn burn(e: Env, from: Address, amount_to_burn: i128, amount_to_withdraw: i128, to: Address) {
         verify_caller_is_pool(&e);
 
-        let total_supply = Self::do_burn(&e, from.clone(), amount_to_burn, amount_to_withdraw, to);
+        Self::do_burn(&e, from.clone(), amount_to_burn, amount_to_withdraw, to);
         event::burn(&e, from, amount_to_burn);
-        total_supply
     }
 
     /// Returns the number of decimal places used by the token.
@@ -378,20 +347,6 @@ impl STokenTrait for SToken {
     ///
     fn total_supply(e: Env) -> i128 {
         read_total_supply(&e)
-    }
-
-    /// Returns the corresponding total supply of the underlying asset.
-    ///
-    /// # Returns
-    ///
-    /// The corresponding total supply of the underlying asset.
-    fn underlying_total_supply(e: Env) -> i128 {
-        let collat_coeff = Self::get_collat_coeff(&e);
-        let total_supply = read_total_supply(&e);
-
-        collat_coeff
-            .mul_int(total_supply)
-            .unwrap_or_else(|| panic!("s-token: overflow error"))
     }
 
     /// Mints tokens and transfers them to the treasury.
@@ -501,6 +456,7 @@ impl SToken {
         receive_balance(e, to.clone(), amount);
 
         if validate && cfg!(not(feature = "testutils")) {
+            let total_supply = read_total_supply(e);
             let pool_client = LendingPoolClient::new(e, &read_pool(e));
             pool_client.finalize_transfer(
                 &underlying_asset,
@@ -509,6 +465,7 @@ impl SToken {
                 &amount,
                 &from_balance_prev,
                 &to_balance_prev,
+                &total_supply,
             );
         }
 
@@ -524,13 +481,13 @@ impl SToken {
     }
 
     /// Makes mint and returns updates total supply
-    fn do_mint(e: &Env, user: Address, amount: i128) -> i128 {
+    fn do_mint(e: &Env, user: Address, amount: i128) {
         if amount == 0 {
             panic!("s-token: invalid mint amount");
         }
 
         receive_balance(e, user, amount);
-        add_total_supply(e, amount)
+        add_total_supply(e, amount);
     }
 
     /// Makes burn and returns updates total supply
@@ -540,13 +497,13 @@ impl SToken {
         amount_to_burn: i128,
         amount_to_withdraw: i128,
         to: Address,
-    ) -> i128 {
+    ) {
         if amount_to_burn == 0 {
             panic!("s-token: invalid burn amount");
         }
 
         spend_balance(e, from, amount_to_burn);
-        let total_supply = add_total_supply(
+        add_total_supply(
             e,
             amount_to_burn.checked_neg().expect("s-token: no overflow"),
         );
@@ -554,15 +511,5 @@ impl SToken {
         let underlying_asset = read_underlying_asset(e);
         let underlying_asset_client = token::Client::new(e, &underlying_asset);
         underlying_asset_client.transfer(&e.current_contract_address(), &to, &amount_to_withdraw);
-
-        total_supply
-    }
-
-    fn get_collat_coeff(e: &Env) -> FixedI128 {
-        let pool = read_pool(e);
-        let pool_client = LendingPoolClient::new(e, &pool);
-
-        let underlying_asset = read_underlying_asset(e);
-        FixedI128::from_inner(pool_client.collat_coeff(&underlying_asset))
     }
 }

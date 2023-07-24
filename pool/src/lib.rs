@@ -396,11 +396,17 @@ impl LendingPoolTrait for LendingPool {
         amount: i128,
         balance_from_before: i128,
         balance_to_before: i128,
+        s_token_supply: i128,
     ) -> Result<(), Error> {
         // TODO: maybe check with callstack?
-        let reserve = get_actual_reserve_data(&env, asset.clone())?;
+
+        let reserve = read_reserve(&env, asset.clone())?;
         let s_token_address = (reserve.clone()).s_token_address;
         s_token_address.require_auth();
+
+        // update reserve
+        let reserve = recalculate_reserve_data(&env, asset.clone(), reserve, s_token_supply)?;
+
         Self::require_not_paused(&env);
         let balance_from_after = balance_from_before
             .checked_sub(amount)
@@ -498,14 +504,7 @@ impl LendingPoolTrait for LendingPool {
         let amount_to_burn = Self::get_collat_coeff(&env, &asset, &reserve)?
             .recip_mul_int(amount_to_withdraw)
             .ok_or(Error::MathOverflowError)?;
-        s_token_burn(
-            &env,
-            &s_token,
-            &who,
-            amount_to_burn,
-            amount_to_withdraw,
-            &to,
-        );
+        s_token.burn(&who, &amount_to_burn, &amount_to_withdraw, &to);
 
         event::withdraw(&env, who, asset, to, amount_to_withdraw);
         Ok(())
@@ -749,8 +748,8 @@ impl LendingPool {
 
         let collat_coeff = Self::get_collat_coeff(env, asset, reserve)?;
         let underlying_asset = token::Client::new(env, asset);
-
-        let s_token_supply = read_stoken_supply(env, reserve.s_token_address.clone());
+        let s_token = STokenClient::new(env, &reserve.s_token_address);
+        let s_token_supply = s_token.total_supply();
         let underlying_balance_after = collat_coeff
             .mul_int(s_token_supply)
             .ok_or(Error::MathOverflowError)?
@@ -765,7 +764,7 @@ impl LendingPool {
             .ok_or(Error::MathOverflowError)?;
 
         underlying_asset.transfer(who, &reserve.s_token_address, &amount);
-        s_token_mint(env, &s_token, who, amount_to_mint);
+        s_token.mint(who, &amount_to_mint);
 
         event::deposit(env, who.clone(), asset.clone(), amount);
 
@@ -1085,8 +1084,10 @@ impl LendingPool {
         asset: &Address,
         reserve: &ReserveData,
     ) -> Result<FixedI128, Error> {
-        let stoken_supply = read_stoken_supply(env, reserve.s_token_address.clone());
-        if stoken_supply == 0 {
+        let s_token = STokenClient::new(env, &reserve.s_token_address);
+        let s_token_supply = s_token.total_supply();
+
+        if s_token_supply == 0 {
             return Ok(FixedI128::ONE);
         }
 
@@ -1104,7 +1105,7 @@ impl LendingPool {
                         .ok_or(Error::CollateralCoeffMathError)?,
                 )
                 .ok_or(Error::CollateralCoeffMathError)?,
-            stoken_supply,
+            s_token_supply,
         )
         .ok_or(Error::CollateralCoeffMathError)
     }
@@ -1207,7 +1208,8 @@ impl LendingPool {
                 );
             }
 
-            recalculate_reserve_data(env, underlying_asset, reserve)?;
+            let s_token_supply = s_token.total_supply();
+            recalculate_reserve_data(env, underlying_asset, reserve, s_token_supply)?;
         }
 
         if debt_with_penalty != 0 {
@@ -1217,12 +1219,13 @@ impl LendingPool {
         for debt_to_cover in liquidation_data.debt_to_cover {
             let (reserve, compounded_debt, debt_amount) = debt_to_cover.unwrap_optimized();
             let s_token = STokenClient::new(env, &reserve.s_token_address);
+            let s_token_supply = s_token.total_supply();
             let underlying_asset = token::Client::new(env, &s_token.underlying_asset());
             let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
             underlying_asset.transfer(&liquidator, &reserve.s_token_address, &compounded_debt);
             debt_token.burn(&who, &debt_amount);
             user_config.set_borrowing(env, reserve.get_id(), false);
-            recalculate_reserve_data(env, underlying_asset.address, reserve)?;
+            recalculate_reserve_data(env, underlying_asset.address, reserve, s_token_supply)?;
         }
 
         write_user_config(env, who, user_config);
@@ -1234,13 +1237,16 @@ impl LendingPool {
 /// Returns reserve data with updated accrued coeffiсients
 pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData, Error> {
     let reserve = read_reserve(env, asset.clone())?;
-    recalculate_reserve_data(env, asset, reserve)
+    let s_token = STokenClient::new(env, &reserve.s_token_address);
+    let s_token_supply = s_token.total_supply();
+    recalculate_reserve_data(env, asset, reserve, s_token_supply)
 }
 
 pub fn recalculate_reserve_data(
     env: &Env,
     asset: Address,
     reserve: ReserveData,
+    s_token_supply: i128,
 ) -> Result<ReserveData, Error> {
     let current_time = env.ledger().timestamp();
     let elapsed_time = current_time
@@ -1249,8 +1255,6 @@ pub fn recalculate_reserve_data(
     if elapsed_time == 0 {
         return Ok(reserve);
     }
-
-    let s_token_supply = read_stoken_supply(env, reserve.s_token_address.clone());
 
     let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
     let debt_token_supply = debt_token.total_supply();
@@ -1274,25 +1278,4 @@ pub fn recalculate_reserve_data(
 
     write_reserve(env, asset, &reserve);
     Ok(reserve)
-}
-
-/// WORKAROUND: to avoid reentrancy we keep stoken total supply in the storage and update it on mint/burn
-/// Do mint and update total supply
-pub fn s_token_mint(env: &Env, s_token: &STokenClient, to: &Address, amount: i128) {
-    let total_supply = s_token.mint(to, &amount);
-    write_stoken_supply(env, s_token.address.clone(), total_supply);
-}
-
-/// WORKAROUND: to avoid reentrancy we keep stoken total supply in the storage and update it on mint/burn
-/// Do burn and update total supply
-pub fn s_token_burn(
-    env: &Env,
-    s_token: &STokenClient,
-    from: &Address,
-    amount_to_burn: i128,
-    amount_to_withdraw: i128,
-    to: &Address,
-) {
-    let total_supply = s_token.burn(from, &amount_to_burn, &amount_to_withdraw, to);
-    write_stoken_supply(env, s_token.address.clone(), total_supply);
 }
