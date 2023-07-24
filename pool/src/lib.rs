@@ -811,6 +811,7 @@ impl LendingPool {
         //balance_decrease_allowed()
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn validate_borrow(
         env: &Env,
         who: Address,
