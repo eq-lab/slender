@@ -91,13 +91,7 @@ pub trait LendingPoolTrait {
 
     fn get_ir_params(env: Env) -> Option<IRParams>;
 
-    fn deposit(
-        env: Env,
-        who: Address,
-        asset: Address,
-        amount: i128,
-        repay_only: bool,
-    ) -> Result<(), Error>;
+    fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn finalize_transfer(
         env: Env,

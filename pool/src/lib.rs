@@ -310,8 +310,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// - who - The address of the user making the deposit.
     /// - asset - The address of the asset to be deposited for lend or repay.
-    /// - amount - The amount to be repayed/deposited.
-    /// - repay_only - The flag indicating the deposit must be performed after repayment.
+    /// - amount - The amount to be repayed/deposited. Use i128::MAX to repay the maximum available amount.
     ///
     /// # Errors
     ///
@@ -324,13 +323,7 @@ impl LendingPoolTrait for LendingPool {
     /// If the deposit amount is invalid or does not meet the reserve requirements.
     /// If the reserve data cannot be retrieved from storage.
     ///
-    fn deposit(
-        env: Env,
-        who: Address,
-        asset: Address,
-        amount: i128,
-        repay_only: bool,
-    ) -> Result<(), Error> {
+    fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
         Self::require_not_paused(&env);
 
@@ -339,7 +332,7 @@ impl LendingPoolTrait for LendingPool {
 
         let (remaining_amount, is_repayed) = Self::do_repay(&env, &who, &asset, amount, &reserve)?;
 
-        let is_first_deposit = if !repay_only && remaining_amount > 0 {
+        let is_first_deposit = if remaining_amount > 0 {
             Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?
         } else {
             false
