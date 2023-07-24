@@ -139,6 +139,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
 
             let liq_bonus = 11000; //110%
             let liq_cap = 100_000_000 * 10_i128.pow(decimals); // 100M
+            let util_cap = 9000; //90%
             let discount = 6000; //60%
 
             pool.configure_as_collateral(
@@ -146,6 +147,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
                 &CollateralParamsInput {
                     liq_bonus,
                     liq_cap,
+                    util_cap,
                     discount,
                 },
             );
@@ -159,6 +161,7 @@ fn init_pool<'a>(env: &Env) -> Sut<'a> {
             assert_eq!(reserve_config.borrowing_enabled, true);
             assert_eq!(reserve_config.liq_bonus, liq_bonus);
             assert_eq!(reserve_config.liq_cap, liq_cap);
+            assert_eq!(reserve_config.util_cap, util_cap);
             assert_eq!(reserve_config.discount, discount);
 
             pool.set_price_feed(
@@ -695,6 +698,37 @@ fn borrow() {
 }
 
 #[test]
+fn borrow_utilization_exceeded() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+
+    let initial_amount: i128 = 1_000_000_000;
+    let lender = Address::random(&env);
+    let borrower = Address::random(&env);
+
+    sut.reserves[0].token.mint(&lender, &initial_amount);
+    sut.reserves[1].token.mint(&borrower, &initial_amount);
+
+    let deposit_amount = 1_000_000_000;
+
+    sut.pool
+        .deposit(&lender, &sut.reserves[0].token.address, &deposit_amount);
+
+    sut.pool
+        .deposit(&borrower, &sut.reserves[1].token.address, &deposit_amount);
+
+    assert_eq!(
+        sut.pool
+            .try_borrow(&borrower, &sut.reserves[0].token.address, &990_000_000)
+            .unwrap_err()
+            .unwrap(),
+        Error::UtilizationCapExceeded
+    )
+}
+
+#[test]
 fn borrow_user_confgig_not_exists() {
     let env = Env::default();
     env.mock_all_auths();
@@ -718,15 +752,22 @@ fn borrow_collateral_is_zero() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
+    let lender = Address::random(&env);
     let borrower = Address::random(&env);
 
     let initial_amount = 1_000_000_000;
     for r in sut.reserves.iter() {
         r.token.mint(&borrower, &initial_amount);
         assert_eq!(r.token.balance(&borrower), initial_amount);
+        r.token.mint(&lender, &initial_amount);
+        assert_eq!(r.token.balance(&lender), initial_amount);
     }
 
     let deposit_amount = 1000;
+
+    sut.pool
+        .deposit(&lender, &sut.reserves[0].token.address, &deposit_amount);
+
     sut.pool
         .deposit(&borrower, &sut.reserves[1].token.address, &deposit_amount);
 
@@ -763,17 +804,31 @@ fn borrow_collateral_not_cover_new_debt() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
+    let lender = Address::random(&env);
     let borrower = Address::random(&env);
 
     let initial_amount = 1_000_000_000;
     for r in sut.reserves.iter() {
         r.token.mint(&borrower, &initial_amount);
         assert_eq!(r.token.balance(&borrower), initial_amount);
+        r.token.mint(&lender, &initial_amount);
+        assert_eq!(r.token.balance(&lender), initial_amount);
     }
 
-    let deposit_amount = 500;
-    sut.pool
-        .deposit(&borrower, &sut.reserves[1].token.address, &deposit_amount);
+    let borrower_deposit_amount = 500;
+    let lender_deposit_amount = 2000;
+
+    sut.pool.deposit(
+        &lender,
+        &sut.reserves[0].token.address,
+        &lender_deposit_amount,
+    );
+
+    sut.pool.deposit(
+        &borrower,
+        &sut.reserves[1].token.address,
+        &borrower_deposit_amount,
+    );
 
     let borrow_amount = 1000;
     assert_eq!(
