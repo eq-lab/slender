@@ -1120,7 +1120,12 @@ impl LendingPool {
                 };
 
             if receive_stoken {
-                s_token.transfer_on_liquidation(&who, &liquidator, &s_token_amount);
+                let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
+                if debt_token.balance(&liquidator) > 0 {
+                    todo!()
+                } else {
+                    s_token.transfer_on_liquidation(&who, &liquidator, &s_token_amount);
+                }
             } else {
                 s_token.burn(&who, &s_token_amount, &underlying_amount, &liquidator);
             }
