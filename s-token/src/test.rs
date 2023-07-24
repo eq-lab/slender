@@ -90,6 +90,7 @@ fn test() {
         let liq_bonus = 11000; //110%
         let liq_cap = 100_000_000 * 10_i128.pow(underlying_decimals); // 100M
         let discount = 6000; //60%
+        let util_cap = 9000; //90%
 
         pool.configure_as_collateral(
             &underlying.address,
@@ -97,6 +98,7 @@ fn test() {
                 liq_bonus,
                 liq_cap,
                 discount,
+                util_cap,
             },
         );
     }

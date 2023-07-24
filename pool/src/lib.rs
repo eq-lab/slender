@@ -220,7 +220,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// # Panics
     ///
-    /// - Panics with `MustBeLtePercentageFactor` if discount is invalid.
+    /// - Panics with `MustBeLtePercentageFactor` if util_cap or discount is invalid.
     /// - Panics with `MustBeGtPercentageFactor` if liq_bonus is invalid.
     /// - Panics with `MustBePositive` if liq_cap is invalid.
     /// - Panics with `NoReserveExistForAsset` if no reserve exists for the specified asset.
@@ -529,6 +529,7 @@ impl LendingPoolTrait for LendingPool {
     /// - Panics when caller is not authorized as who
     /// - Panics if user balance doesn't meet requirements for borrowing an amount of asset
     /// - Panics with `MustNotBeInCollateralAsset` if there is a collateral in borrowing asset.
+    /// - Panics with `UtilizationCapExceeded` if utilization after borrow is above the limit.
     ///
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
@@ -538,7 +539,7 @@ impl LendingPoolTrait for LendingPool {
         let user_config = read_user_config(&env, who.clone())?;
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
-        let s_token_balance = s_token.balance(&who);
+        let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
 
         Self::validate_borrow(
             &env,
@@ -546,8 +547,9 @@ impl LendingPoolTrait for LendingPool {
             &asset,
             &reserve,
             &user_config,
+            &s_token,
+            &debt_token,
             amount,
-            s_token_balance,
         )?;
 
         let debt_coeff = Self::get_debt_coeff(&env, &reserve)?;
@@ -694,6 +696,7 @@ impl LendingPool {
 
     fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
         Self::require_lte_percentage_factor(env, params.discount);
+        Self::require_lte_percentage_factor(env, params.util_cap);
         Self::require_gt_percentage_factor(env, params.liq_bonus);
         Self::require_positive(env, params.liq_cap);
     }
@@ -885,16 +888,30 @@ impl LendingPool {
         //balance_decrease_allowed()
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn validate_borrow(
         env: &Env,
         who: Address,
         asset: &Address,
         reserve: &ReserveData,
         user_config: &UserConfiguration,
+        s_token: &STokenClient,
+        debt_token: &DebtTokenClient,
         amount_to_borrow: i128,
-        s_token_balance: i128,
     ) -> Result<(), Error> {
+        let s_token_balance = s_token.balance(&who);
         assert_with_error!(env, s_token_balance == 0, Error::MustNotBeInCollateralAsset);
+
+        let total_debt_after = debt_token
+            .total_supply()
+            .checked_add(amount_to_borrow)
+            .ok_or(Error::ValidateBorrowMathError)?;
+        let total_collat = s_token.total_supply();
+        let utilization = FixedI128::from_rational(total_debt_after, total_collat)
+            .ok_or(Error::ValidateBorrowMathError)?;
+        let util_cap = FixedI128::from_percentage(reserve.configuration.util_cap)
+            .ok_or(Error::ValidateBorrowMathError)?;
+        assert_with_error!(env, utilization <= util_cap, Error::UtilizationCapExceeded);
 
         let asset_price = Self::get_asset_price(env, asset.clone())?;
         let amount_in_xlm = asset_price
