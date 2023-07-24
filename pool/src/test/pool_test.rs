@@ -1547,3 +1547,35 @@ fn collateral_coeff_test() {
     assert_eq!(collat_coeff, expected_collat_coeff);
     std::println!("collat_coeff={}", collat_coeff);
 }
+
+#[test]
+fn liquidity_cap_test() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (lender, _borrower, debt_config) = fill_pool(&env, &sut);
+
+    let token_one = 10_i128.pow(debt_config.token.decimals());
+    let liq_bonus = 11000; //110%
+    let liq_cap = 1_000_000 * 10_i128.pow(debt_config.token.decimals()); // 1M
+    let discount = 6000; //60%
+
+    sut.pool.configure_as_collateral(
+        &debt_config.token.address,
+        &CollateralParamsInput {
+            liq_bonus,
+            liq_cap,
+            discount,
+        },
+    );
+
+    let deposit_amount = 1_000_000 * token_one;
+    assert_eq!(
+        sut.pool
+            .try_deposit(&lender, &debt_config.token.address, &deposit_amount, &false)
+            .unwrap_err()
+            .unwrap(),
+        Error::LiqCapExceeded
+    );
+}

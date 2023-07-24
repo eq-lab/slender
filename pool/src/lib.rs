@@ -727,12 +727,33 @@ impl LendingPool {
         assert_with_error!(env, value > 0, Error::MustBePositive);
     }
 
-    fn require_liq_cap_not_exceeded(env: &Env, reserve: &ReserveData, balance: i128) {
+    /// Check that balance + deposit + debt * ar_lender <= reserve.configuration.liq_cap
+    fn require_liq_cap_not_exceeded(
+        env: &Env,
+        reserve: &ReserveData,
+        balance: i128,
+        deposit_amount: i128,
+    ) -> Result<(), Error> {
+        let balance_after_deposit = {
+            let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
+            let debt_supply = debt_token.total_supply();
+
+            FixedI128::from_inner(reserve.lender_accrued_rate)
+                .mul_int(debt_supply)
+                .ok_or(Error::MathOverflowError)?
+                .checked_add(deposit_amount)
+                .ok_or(Error::MathOverflowError)?
+                .checked_add(balance)
+                .ok_or(Error::MathOverflowError)?
+        };
+
         assert_with_error!(
             env,
-            balance <= reserve.configuration.liq_cap,
+            balance_after_deposit <= reserve.configuration.liq_cap,
             Error::LiqCapExceeded
         );
+
+        Ok(())
     }
 
     fn do_deposit(
@@ -746,24 +767,22 @@ impl LendingPool {
             return Ok(false);
         }
 
-        let collat_coeff = Self::get_collat_coeff(env, asset, reserve)?;
         let underlying_asset = token::Client::new(env, asset);
-        let s_token = STokenClient::new(env, &reserve.s_token_address);
-        let s_token_supply = s_token.total_supply();
-        let underlying_balance_after = collat_coeff
-            .mul_int(s_token_supply)
-            .ok_or(Error::MathOverflowError)?
-            .checked_add(amount)
-            .ok_or(Error::MathOverflowError)?;
-        Self::require_liq_cap_not_exceeded(env, reserve, underlying_balance_after);
+        let balance = underlying_asset.balance(&reserve.s_token_address);
+
+        Self::require_liq_cap_not_exceeded(env, reserve, balance, amount)?;
 
         let s_token = STokenClient::new(env, &reserve.s_token_address);
         let is_first_deposit = s_token.balance(who) == 0;
+
+        let collat_coeff = Self::get_collat_coeff(env, asset, reserve)?;
         let amount_to_mint = collat_coeff
             .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
 
         underlying_asset.transfer(who, &reserve.s_token_address, &amount);
+
+        let s_token = STokenClient::new(env, &reserve.s_token_address);
         s_token.mint(who, &amount_to_mint);
 
         event::deposit(env, who.clone(), asset.clone(), amount);
