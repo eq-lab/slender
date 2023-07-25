@@ -51,8 +51,4 @@ pub trait STokenTrait {
     fn underlying_asset(e: Env) -> Address;
 
     fn pool(e: Env) -> Address;
-
-    fn underlying_balance(e: Env, user: Address) -> i128;
-
-    fn underlying_total_supply(e: Env) -> i128;
 }

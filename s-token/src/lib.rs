@@ -6,9 +6,8 @@ mod storage;
 mod test;
 
 use crate::storage::*;
-use common::FixedI128;
 use common_token::{balance::*, require_nonnegative_amount, storage::*, verify_caller_is_pool};
-use pool_interface::{LendingPoolClient, ReserveData};
+use pool_interface::LendingPoolClient;
 use s_token_interface::STokenTrait;
 use soroban_sdk::{contractimpl, token, Address, Bytes, Env};
 use soroban_token_sdk::TokenMetadata;
@@ -148,28 +147,6 @@ impl STokenTrait for SToken {
         read_balance(&e, id)
     }
 
-    /// Returns the corresponding balance of underlying token for a specified `id`.
-    ///
-    /// # Arguments
-    ///
-    /// - id - The address of the user account.
-    ///
-    /// # Returns
-    ///
-    /// The underlying balance of tokens for the specified user account.
-    ///
-    /// # Panics
-    ///
-    /// Panics if there is an overflow error during the calculation.
-    ///
-    fn underlying_balance(e: Env, id: Address) -> i128 {
-        let (reserve, _) = Self::get_reserve_and_underlying(&e);
-        let balance = read_balance(&e, id);
-        FixedI128::from_inner(reserve.collat_accrued_rate)
-            .mul_int(balance)
-            .unwrap_or_else(|| panic!("s-token: overflow error"))
-    }
-
     /// Returns the spendable balance of tokens for a specified id.
     ///
     /// # Arguments
@@ -283,7 +260,7 @@ impl STokenTrait for SToken {
         event::set_authorized(&e, id, authorize);
     }
 
-    /// Mints a specified amount of tokens for a given `id`.
+    /// Mints a specified amount of tokens for a given `id` and returns total supply
     ///
     /// # Arguments
     ///
@@ -302,7 +279,7 @@ impl STokenTrait for SToken {
         event::mint(&e, pool, to, amount);
     }
 
-    /// Burns a specified amount of tokens from the from account.
+    /// Burns a specified amount of tokens from the from account and returns total supply
     ///
     /// # Arguments
     ///
@@ -320,7 +297,6 @@ impl STokenTrait for SToken {
         verify_caller_is_pool(&e);
 
         Self::do_burn(&e, from.clone(), amount_to_burn, amount_to_withdraw, to);
-
         event::burn(&e, from, amount_to_burn);
     }
 
@@ -362,20 +338,6 @@ impl STokenTrait for SToken {
     ///
     fn total_supply(e: Env) -> i128 {
         read_total_supply(&e)
-    }
-
-    /// Returns the corresponding total supply of the underlying asset.
-    ///
-    /// # Returns
-    ///
-    /// The corresponding total supply of the underlying asset.
-    fn underlying_total_supply(e: Env) -> i128 {
-        let (reserve, _) = Self::get_reserve_and_underlying(&e);
-        let total_supply = read_total_supply(&e);
-
-        FixedI128::from_inner(reserve.collat_accrued_rate)
-            .mul_int(total_supply)
-            .unwrap_or_else(|| panic!("s-token: overflow error"))
     }
 
     /// Transfers tokens during a liquidation.
@@ -453,6 +415,7 @@ impl SToken {
         receive_balance(e, to.clone(), amount);
 
         if validate && cfg!(not(feature = "testutils")) {
+            let total_supply = read_total_supply(e);
             let pool_client = LendingPoolClient::new(e, &read_pool(e));
             pool_client.finalize_transfer(
                 &underlying_asset,
@@ -461,6 +424,7 @@ impl SToken {
                 &amount,
                 &from_balance_prev,
                 &to_balance_prev,
+                &total_supply,
             );
         }
 
@@ -475,6 +439,7 @@ impl SToken {
         write_allowance(e, from, spender, allowance - amount);
     }
 
+    /// Makes mint and returns updates total supply
     fn do_mint(e: &Env, user: Address, amount: i128) {
         if amount == 0 {
             panic!("s-token: invalid mint amount");
@@ -484,6 +449,7 @@ impl SToken {
         add_total_supply(e, amount);
     }
 
+    /// Makes burn and returns updates total supply
     fn do_burn(
         e: &Env,
         from: Address,
@@ -504,16 +470,5 @@ impl SToken {
         let underlying_asset = read_underlying_asset(e);
         let underlying_asset_client = token::Client::new(e, &underlying_asset);
         underlying_asset_client.transfer(&e.current_contract_address(), &to, &amount_to_withdraw);
-    }
-
-    fn get_reserve_and_underlying(e: &Env) -> (ReserveData, Address) {
-        let pool = read_pool(e);
-        let pool_client = LendingPoolClient::new(e, &pool);
-
-        let underlying_asset = read_underlying_asset(e);
-        let reserve = pool_client
-            .get_reserve(&underlying_asset)
-            .unwrap_or_else(|| panic!("s-token: reserve not found for underlying asset"));
-        (reserve, underlying_asset)
     }
 }
