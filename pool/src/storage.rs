@@ -8,6 +8,7 @@ pub enum DataKey {
     Admin,
     ReserveAssetKey(Address),
     Reserves,
+    Treasury,
     IRParams,
     UserConfig(Address),
     PriceFeed(Address),
@@ -106,4 +107,12 @@ pub fn paused(env: &Env) -> bool {
 
 pub fn write_pause(env: &Env, value: bool) {
     env.storage().set(&DataKey::Pause, &value);
+}
+
+pub fn write_treasury(e: &Env, treasury: &Address) {
+    e.storage().set(&DataKey::Treasury, treasury);
+}
+
+pub fn read_treasury(e: &Env) -> Address {
+    e.storage().get_unchecked(&DataKey::Treasury).unwrap()
 }
