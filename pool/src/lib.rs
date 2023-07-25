@@ -352,12 +352,7 @@ impl LendingPoolTrait for LendingPool {
         Self::validate_deposit(&env, &reserve, amount);
 
         let (remaining_amount, is_repayed) = Self::do_repay(&env, &who, &asset, amount, &reserve)?;
-
-        let is_first_deposit = if remaining_amount > 0 {
-            Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?
-        } else {
-            false
-        };
+        let is_first_deposit = Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?;
 
         if is_repayed || is_first_deposit {
             let mut user_config = read_user_config(&env, who.clone()).unwrap_or_default();

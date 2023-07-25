@@ -13,7 +13,6 @@ pub enum DataKey {
     UserConfig(Address),
     PriceFeed(Address),
     Pause,
-    STokenSupply(Address),
 }
 
 pub fn has_admin(env: &Env) -> bool {
