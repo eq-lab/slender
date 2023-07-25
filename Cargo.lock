@@ -171,7 +171,7 @@ name = "common-token"
 version = "0.1.0"
 dependencies = [
  "soroban-sdk 0.9.2",
- "soroban-token-sdk 0.9.2",
+ "soroban-token-sdk",
 ]
 
 [[package]]
@@ -303,9 +303,8 @@ version = "0.1.0"
 dependencies = [
  "common-token",
  "debt-token-interface",
- "soroban-sdk 0.8.7",
  "soroban-sdk 0.9.2",
- "soroban-token-sdk 0.8.7",
+ "soroban-token-sdk",
 ]
 
 [[package]]
@@ -813,7 +812,7 @@ dependencies = [
  "price-feed-interface",
  "s-token-interface",
  "soroban-sdk 0.9.2",
- "soroban-token-sdk 0.9.2",
+ "soroban-token-sdk",
 ]
 
 [[package]]
@@ -966,7 +965,7 @@ dependencies = [
  "pool-interface",
  "s-token-interface",
  "soroban-sdk 0.9.2",
- "soroban-token-sdk 0.9.2",
+ "soroban-token-sdk",
 ]
 
 [[package]]
@@ -1418,15 +1417,6 @@ dependencies = [
  "stellar-xdr 0.0.17",
  "syn 2.0.18",
  "thiserror",
-]
-
-[[package]]
-name = "soroban-token-sdk"
-version = "0.8.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "443a52e2b900432ccbd6ddd0c223b026a705938bdb0c813fa1845f71122530d0"
-dependencies = [
- "soroban-sdk 0.8.7",
 ]
 
 [[package]]

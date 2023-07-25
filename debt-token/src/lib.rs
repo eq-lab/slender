@@ -10,9 +10,10 @@ use common_token::{
     verify_caller_is_pool,
 };
 use debt_token_interface::DebtTokenTrait;
-use soroban_sdk::{contractimpl, token, Address, Bytes, Env};
+use soroban_sdk::{contract, contractimpl, token, Address, Env, String};
 use soroban_token_sdk::TokenMetadata;
 
+#[contract]
 pub struct DebtToken;
 
 #[contractimpl]
@@ -32,12 +33,12 @@ impl DebtTokenTrait for DebtToken {
     /// Panics if the contract has already been initialized.
     /// Panics if name or symbol is empty
     ///
-    fn initialize(e: Env, name: Bytes, symbol: Bytes, pool: Address, underlying_asset: Address) {
-        if name.is_empty() {
+    fn initialize(e: Env, name: String, symbol: String, pool: Address, underlying_asset: Address) {
+        if name.len() == 0 {
             panic!("debt-token: no name");
         }
 
-        if symbol.is_empty() {
+        if symbol.len() == 0 {
             panic!("debt-token: no symbol");
         }
 
@@ -204,7 +205,7 @@ impl DebtTokenTrait for DebtToken {
     ///
     /// The name of the token as a `soroban_sdk::Bytes` value.
     ///
-    fn name(env: Env) -> Bytes {
+    fn name(env: Env) -> String {
         read_name(&env)
     }
 
@@ -214,7 +215,7 @@ impl DebtTokenTrait for DebtToken {
     ///
     /// The symbol of the token as a `soroban_sdk::Bytes` value.
     ///
-    fn symbol(env: Env) -> Bytes {
+    fn symbol(env: Env) -> String {
         read_symbol(&env)
     }
 
