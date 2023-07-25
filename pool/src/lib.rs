@@ -476,7 +476,7 @@ impl LendingPoolTrait for LendingPool {
             AssetBalance::new(s_token_address, s_token_balance_after),
             amount_to_withdraw,
             who_balance,
-        );
+        )?;
 
         if amount_to_withdraw == who_balance {
             user_config.set_using_as_collateral(&env, reserve.get_id(), false);
@@ -810,7 +810,7 @@ impl LendingPool {
         s_token_after: AssetBalance,
         amount: i128,
         balance: i128,
-    ) {
+    ) -> Result<(), Error> {
         assert_with_error!(env, amount > 0, Error::InvalidAmount);
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
@@ -818,22 +818,18 @@ impl LendingPool {
 
         let reserves = read_reserves(env);
         if user_config.is_borrowing_any() {
-            let mb_account_data = Self::calc_account_data(
+            let account_data = Self::calc_account_data(
                 env,
                 who,
                 Some(s_token_after),
                 user_config,
                 &reserves,
                 false,
-            );
-            match mb_account_data {
-                Ok(account_data) => {
-                    assert_with_error!(env, account_data.is_good_position(), Error::BadPosition)
-                }
-                Err(e) => assert_with_error!(env, false, e),
-            }
+            )?;
+            Self::require_good_position(account_data)?;
         }
-        //balance_decrease_allowed()
+
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]
