@@ -1177,75 +1177,76 @@ fn test_liquidate_receive_stoken() {
     );
 }
 
-// #[test]
-// fn liquidate_repay_liquidator_debt() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-//     let sut = init_pool(&env);
+#[test]
+fn liquidate_over_repay_liquidator_debt() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let sut = init_pool(&env);
 
-//     let liquidator = Address::random(&env);
-//     let borrower = Address::random(&env);
-//     let lender = Address::random(&env);
+    env.budget().reset_unlimited();
 
-//     let collateral_asset = &sut.reserves[0].token;
-//     let debt_asset = &sut.reserves[1].token;
+    let liquidator = Address::random(&env);
+    let borrower = Address::random(&env);
+    let lender = Address::random(&env);
 
-//     let deposit = 1_000_000_000;
-//     let discount = sut
-//         .pool
-//         .get_reserve(&collateral_asset.address)
-//         .expect("Reserve")
-//         .configuration
-//         .discount;
-//     let debt = FixedI128::from_percentage(discount)
-//         .unwrap()
-//         .mul_int(deposit)
-//         .unwrap();
+    let reserve_1 = &sut.reserves[0];
+    let reserve_2 = &sut.reserves[1];
 
-//     collateral_asset.mint(&borrower, &deposit);
-//     debt_asset.mint(&lender, &deposit);
-//     debt_asset.mint(&liquidator, &deposit);
-//     sut.pool
-//         .deposit(&borrower, &collateral_asset.address, &deposit);
-//     sut.pool.deposit(&lender, &debt_asset.address, &deposit);
-//     sut.pool.borrow(&borrower, &debt_asset.address, &debt);
+    reserve_1.token.mint(&liquidator, &2_000_000_000);
+    reserve_1.token.mint(&borrower, &2_000_000_000);
+    reserve_2.token.mint(&lender, &2_000_000_000);
+    reserve_2.token.mint(&liquidator, &2_000_000_000);
 
-//     // env.budget().reset_default();
+    sut.pool
+        .deposit(&lender, &reserve_2.token.address, &2_000_000_000);
+    sut.pool
+        .deposit(&liquidator, &reserve_2.token.address, &1_000_000_000);
+    sut.pool
+        .deposit(&borrower, &reserve_1.token.address, &1_000_000_000);
 
-//     let debt_reserve = sut.pool.get_reserve(&debt_asset.address).expect("reserve");
-//     let debt_token = DebtTokenClient::new(&env, &debt_reserve.debt_token_address);
-//     let debt_token_supply_before = debt_token.total_supply();
-//     let borrower_collateral_balance_before = collateral_asset.balance(&borrower);
-//     let stoken = STokenClient::new(
-//         &env,
-//         &sut.pool
-//             .get_reserve(&collateral_asset.address)
-//             .expect("reserve")
-//             .s_token_address,
-//     );
-//     let stoken_balance_before = stoken.balance(&borrower);
+    sut.pool
+        .borrow(&borrower, &reserve_2.token.address, &600_000_000);
+    sut.pool
+        .borrow(&liquidator, &reserve_1.token.address, &200_000_000);
 
-//     assert_eq!(sut.pool.liquidate(&liquidator, &borrower, &false), ());
+    let borrower_debt_before = reserve_2.debt_token.balance(&borrower);
+    let liquidator_debt_before = reserve_1.debt_token.balance(&liquidator);
 
-//     let debt_with_penalty = FixedI128::from_percentage(debt_reserve.configuration.liq_bonus)
-//         .unwrap()
-//         .mul_int(debt)
-//         .unwrap();
-//     // assume that default price is 1.0 for both assets
-//     assert_eq!(collateral_asset.balance(&liquidator), debt_with_penalty);
-//     assert_eq!(debt_asset.balance(&liquidator), deposit - debt);
-//     assert_eq!(debt_asset.balance(&borrower), debt);
-//     assert_eq!(debt_token.balance(&borrower), 0);
-//     assert_eq!(debt_token.total_supply(), debt_token_supply_before - debt);
-//     assert_eq!(
-//         collateral_asset.balance(&borrower),
-//         borrower_collateral_balance_before
-//     );
-//     assert_eq!(
-//         stoken.balance(&borrower),
-//         stoken_balance_before - debt_with_penalty
-//     );
-// }
+    let borrower_collat_before = reserve_1.s_token.balance(&borrower);
+    let liquidator_collat_before = reserve_2.s_token.balance(&liquidator);
+
+    assert_eq!(sut.pool.liquidate(&liquidator, &borrower, &true), ());
+
+    let borrower_debt_after = reserve_2.debt_token.balance(&borrower);
+    let liquidator_debt_after = reserve_1.debt_token.balance(&liquidator);
+
+    let borrower_collat_after = reserve_1.s_token.balance(&borrower);
+    let liquidator_collat_after = reserve_1.s_token.balance(&liquidator);
+
+    // borrower borrowed 600_000_000
+    assert_eq!(borrower_debt_before, 600_000_000);
+
+    // liquidator borrowed 200_000_000
+    assert_eq!(liquidator_debt_before, 200_000_000);
+
+    // borrower deposited 1_000_000_000
+    assert_eq!(borrower_collat_before, 1_000_000_000);
+
+    // liquidator deposited 1_000_000_000
+    assert_eq!(liquidator_collat_before, 1_000_000_000);
+
+    // borrower's debt repayed
+    assert_eq!(borrower_debt_after, 0);
+
+    // liquidator's debt repayed
+    assert_eq!(liquidator_debt_after, 0);
+
+    // borrower transferred stokens: 1_000_000_000 - 660_000_000 = 340_000_000
+    assert_eq!(borrower_collat_after, 340_000_000);
+
+    // liquidator accepted stokens: 660_000_000 - 200_000_000 = 460_000_000
+    assert_eq!(liquidator_collat_after, 460_000_000);
+}
 
 #[test]
 fn user_operation_should_update_ar_coeffs() {
