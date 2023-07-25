@@ -498,14 +498,19 @@ impl LendingPoolTrait for LendingPool {
         };
 
         let mut user_config: UserConfiguration = read_user_config(&env, who.clone())?;
+        let s_token_balance_after = s_token_balance
+            .checked_sub(s_token_to_burn)
+            .ok_or(Error::InvalidAmount)?;
+        let s_token_address = s_token.address.clone();
         Self::validate_withdraw(
             &env,
             who.clone(),
             &reserve,
             &user_config,
+            AssetBalance::new(s_token_address, s_token_balance_after),
             underlying_to_withdraw,
             underlying_balance,
-        );
+        )?;
 
         if underlying_to_withdraw == underlying_balance {
             user_config.set_using_as_collateral(&env, reserve.get_id(), false);
@@ -637,6 +642,7 @@ impl LendingPoolTrait for LendingPool {
         receive_stoken: bool,
     ) -> Result<(), Error> {
         liquidator.require_auth();
+        Self::require_not_paused(&env);
         let reserves = read_reserves(&env);
         let mut user_config = read_user_config(&env, who.clone())?;
         let account_data =
@@ -891,26 +897,29 @@ impl LendingPool {
         who: Address,
         reserve: &ReserveData,
         user_config: &UserConfiguration,
+        s_token_after: AssetBalance,
         amount: i128,
         balance: i128,
-    ) {
+    ) -> Result<(), Error> {
         assert_with_error!(env, amount > 0, Error::InvalidAmount);
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
         assert_with_error!(env, amount <= balance, Error::NotEnoughAvailableUserBalance);
 
         let reserves = read_reserves(env);
-        // TODO: fix calc_account_data with balance after withdraw
-        let mb_account_data =
-            Self::calc_account_data(env, who, None, user_config, &reserves, false);
-        match mb_account_data {
-            Ok(account_data) => {
-                assert_with_error!(env, account_data.is_good_position(), Error::BadPosition)
-            }
-            Err(e) => assert_with_error!(env, false, e),
+        if user_config.is_borrowing_any() {
+            let account_data = Self::calc_account_data(
+                env,
+                who,
+                Some(s_token_after),
+                user_config,
+                &reserves,
+                false,
+            )?;
+            Self::require_good_position(account_data)?;
         }
 
-        //balance_decrease_allowed()
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]
