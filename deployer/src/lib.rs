@@ -2,7 +2,9 @@
 #![no_std]
 
 use pool_interface::IRParams;
-use soroban_sdk::{contract, contractimpl, vec, Address, Bytes, BytesN, Env, IntoVal, Symbol, Val};
+use soroban_sdk::{
+    contract, contractimpl, vec, Address, BytesN, Env, IntoVal, String, Symbol, Val,
+};
 
 #[contract]
 pub struct Deployer;
@@ -40,8 +42,8 @@ impl Deployer {
         env: Env,
         salt: BytesN<32>,
         wasm_hash: BytesN<32>,
-        name: Bytes,
-        symbol: Bytes,
+        name: String,
+        symbol: String,
         pool: Address,
         underlying_asset: Address,
     ) -> (Address, Val) {
@@ -66,8 +68,8 @@ impl Deployer {
         env: Env,
         salt: BytesN<32>,
         wasm_hash: BytesN<32>,
-        name: Bytes,
-        symbol: Bytes,
+        name: String,
+        symbol: String,
         pool: Address,
         underlying_asset: Address,
     ) -> (Address, Val) {
