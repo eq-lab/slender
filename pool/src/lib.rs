@@ -460,11 +460,20 @@ impl LendingPoolTrait for LendingPool {
         };
 
         let mut user_config: UserConfiguration = read_user_config(&env, who.clone())?;
+        let amount_to_burn = Self::get_collateral_coeff(&env, &reserve)?
+            .recip_mul_int(amount_to_withdraw)
+            .ok_or(Error::MathOverflowError)?;
+        let s_token_balance_after = s_token
+            .balance(&who)
+            .checked_sub(amount_to_burn)
+            .ok_or(Error::InvalidAmount)?;
+        let s_token_address = s_token.address.clone();
         Self::validate_withdraw(
             &env,
             who.clone(),
             &reserve,
             &user_config,
+            AssetBalance::new(s_token_address, s_token_balance_after),
             amount_to_withdraw,
             who_balance,
         );
@@ -476,9 +485,6 @@ impl LendingPoolTrait for LendingPool {
         }
 
         // amount_to_burn = amount_to_withdraw / liquidity_index
-        let amount_to_burn = Self::get_collateral_coeff(&env, &reserve)?
-            .recip_mul_int(amount_to_withdraw)
-            .ok_or(Error::MathOverflowError)?;
         s_token.burn(&who, &amount_to_burn, &amount_to_withdraw, &to);
 
         event::withdraw(&env, who, asset, to, amount_to_withdraw);
@@ -801,6 +807,7 @@ impl LendingPool {
         who: Address,
         reserve: &ReserveData,
         user_config: &UserConfiguration,
+        s_token_after: AssetBalance,
         amount: i128,
         balance: i128,
     ) {
@@ -810,16 +817,22 @@ impl LendingPool {
         assert_with_error!(env, amount <= balance, Error::NotEnoughAvailableUserBalance);
 
         let reserves = read_reserves(env);
-        // TODO: fix calc_account_data with balance after withdraw
-        let mb_account_data =
-            Self::calc_account_data(env, who, None, user_config, &reserves, false);
-        match mb_account_data {
-            Ok(account_data) => {
-                assert_with_error!(env, account_data.is_good_position(), Error::BadPosition)
+        if user_config.is_borrowing_any() {
+            let mb_account_data = Self::calc_account_data(
+                env,
+                who,
+                Some(s_token_after),
+                user_config,
+                &reserves,
+                false,
+            );
+            match mb_account_data {
+                Ok(account_data) => {
+                    assert_with_error!(env, account_data.is_good_position(), Error::BadPosition)
+                }
+                Err(e) => assert_with_error!(env, false, e),
             }
-            Err(e) => assert_with_error!(env, false, e),
         }
-
         //balance_decrease_allowed()
     }
 
