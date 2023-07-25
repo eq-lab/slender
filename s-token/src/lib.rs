@@ -32,13 +32,7 @@ impl STokenTrait for SToken {
     /// Panics with if the contract has already been initialized.
     /// Panics if name or symbol is empty
     ///
-    fn initialize(
-        e: Env,
-        name: Bytes,
-        symbol: Bytes,
-        pool: Address,
-        underlying_asset: Address,
-    ) {
+    fn initialize(e: Env, name: Bytes, symbol: Bytes, pool: Address, underlying_asset: Address) {
         if name.is_empty() {
             panic!("s-token: no name");
         }
