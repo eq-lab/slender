@@ -319,6 +319,68 @@ fn set_ir_params() {
 }
 
 #[test]
+fn withdraw() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (lender, _borrower, debt_config) = fill_pool(&env, &sut);
+    let debt_token = &debt_config.token.address;
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 60 * DAY;
+    });
+
+    let lender_s_token_balance = debt_config.s_token.balance(&lender);
+    let s_token_supply = debt_config.s_token.total_supply();
+    assert_eq!(s_token_supply, 100000000);
+    assert_eq!(lender_s_token_balance, 100000000);
+
+    let withdraw_amount = 1_000_000;
+    sut.pool
+        .withdraw(&lender, debt_token, &withdraw_amount, &lender);
+
+    let lender_underlying_balance = debt_config.token.balance(&lender);
+    let lender_s_token_balance = debt_config.s_token.balance(&lender);
+    let s_token_supply = debt_config.s_token.total_supply();
+
+    assert_eq!(lender_underlying_balance, 901000000);
+    assert_eq!(lender_s_token_balance, 99002451);
+    assert_eq!(s_token_supply, 99002451);
+}
+
+#[test]
+fn withdraw_full() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (lender, _lender, _borrower, debt_config) = fill_pool_two(&env, &sut);
+    let debt_token = &debt_config.token.address;
+
+    env.ledger().with_mut(|li| {
+        li.timestamp = 60 * DAY;
+    });
+
+    let lender_s_token_balance = debt_config.s_token.balance(&lender);
+    let s_token_supply = debt_config.s_token.total_supply();
+    assert_eq!(s_token_supply, 200000000);
+    assert_eq!(lender_s_token_balance, 100000000);
+
+    let withdraw_amount = i128::MAX;
+    sut.pool
+        .withdraw(&lender, debt_token, &withdraw_amount, &lender);
+
+    let lender_underlying_balance = debt_config.token.balance(&lender);
+    let lender_s_token_balance = debt_config.s_token.balance(&lender);
+    let s_token_supply = debt_config.s_token.total_supply();
+
+    assert_eq!(lender_underlying_balance, 1000081366);
+    assert_eq!(lender_s_token_balance, 0);
+    assert_eq!(s_token_supply, 100000000);
+}
+
+#[test]
 fn withdraw_base() {
     let env = Env::default();
     env.mock_all_auths();
@@ -1360,6 +1422,39 @@ fn fill_pool<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Address, &'a Reser
     env.budget().reset_default();
 
     (lender, borrower, &sut.reserves[1])
+}
+
+/// Fill lending pool with two lenders and one borrower
+fn fill_pool_two<'a, 'b>(
+    env: &'b Env,
+    sut: &'a Sut,
+) -> (Address, Address, Address, &'a ReserveConfig<'a>) {
+    let (lender_1, borrower, debt_token) = fill_pool(env, sut);
+
+    let initial_amount: i128 = 1_000_000_000;
+    let lender_2 = Address::random(env);
+
+    for r in sut.reserves.iter() {
+        r.token.mint(&lender_2, &initial_amount);
+        assert_eq!(r.token.balance(&lender_2), initial_amount);
+    }
+
+    //lender deposit all tokens
+    let deposit_amount = 100_000_000;
+    for r in sut.reserves.iter() {
+        let pool_balance = r.token.balance(&r.s_token.address);
+        sut.pool
+            .deposit(&lender_2, &r.token.address, &deposit_amount);
+        assert_eq!(r.s_token.balance(&lender_2), deposit_amount);
+        assert_eq!(
+            r.token.balance(&r.s_token.address),
+            pool_balance + deposit_amount
+        );
+    }
+
+    env.budget().reset_default();
+
+    (lender_1, lender_2, borrower, debt_token)
 }
 
 #[test]

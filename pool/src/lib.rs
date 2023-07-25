@@ -478,14 +478,18 @@ impl LendingPoolTrait for LendingPool {
         let s_token_balance = s_token.balance(&who);
 
         let collat_coeff = Self::get_collat_coeff(&env, &asset, &reserve)?;
-        let who_balance = collat_coeff
-            .recip_mul_int(s_token_balance)
+        let underlying_balance = collat_coeff
+            .mul_int(s_token_balance)
             .ok_or(Error::MathOverflowError)?;
 
-        let amount_to_withdraw = if amount == i128::MAX {
-            who_balance
+        let (underlying_to_withdraw, s_token_to_burn) = if amount == i128::MAX {
+            (underlying_balance, s_token_balance)
         } else {
-            amount
+            // s_token_to_burn = underlying_to_withdraw / collat_coeff
+            let s_token_to_burn = collat_coeff
+                .recip_mul_int(amount)
+                .ok_or(Error::MathOverflowError)?;
+            (amount, s_token_to_burn)
         };
 
         let mut user_config: UserConfiguration = read_user_config(&env, who.clone())?;
@@ -494,23 +498,19 @@ impl LendingPoolTrait for LendingPool {
             who.clone(),
             &reserve,
             &user_config,
-            amount_to_withdraw,
-            who_balance,
+            underlying_to_withdraw,
+            underlying_balance,
         );
 
-        if amount_to_withdraw == who_balance {
+        if underlying_to_withdraw == underlying_balance {
             user_config.set_using_as_collateral(&env, reserve.get_id(), false);
             write_user_config(&env, who.clone(), &user_config);
             event::reserve_used_as_collateral_disabled(&env, who.clone(), asset.clone());
         }
 
-        // amount_to_burn = amount_to_withdraw / liquidity_index
-        let amount_to_burn = collat_coeff
-            .recip_mul_int(amount_to_withdraw)
-            .ok_or(Error::MathOverflowError)?;
-        s_token.burn(&who, &amount_to_burn, &amount_to_withdraw, &to);
+        s_token.burn(&who, &s_token_to_burn, &underlying_to_withdraw, &to);
 
-        event::withdraw(&env, who, asset, to, amount_to_withdraw);
+        event::withdraw(&env, who, asset, to, underlying_to_withdraw);
         Ok(())
     }
 
