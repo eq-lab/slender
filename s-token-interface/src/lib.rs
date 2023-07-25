@@ -8,13 +8,7 @@ pub struct Spec;
 #[contractspecfn(name = "Spec", export = false)]
 #[contractclient(name = "STokenClient")]
 pub trait STokenTrait {
-    fn initialize(
-        e: Env,
-        name: Bytes,
-        symbol: Bytes,
-        pool: Address,
-        underlying_asset: Address,
-    );
+    fn initialize(e: Env, name: Bytes, symbol: Bytes, pool: Address, underlying_asset: Address);
 
     fn allowance(e: Env, from: Address, spender: Address) -> i128;
 
@@ -57,8 +51,4 @@ pub trait STokenTrait {
     fn underlying_asset(e: Env) -> Address;
 
     fn pool(e: Env) -> Address;
-
-    fn underlying_balance(e: Env, user: Address) -> i128;
-
-    fn underlying_total_supply(e: Env) -> i128;
 }

@@ -43,6 +43,7 @@ pub enum Error {
     LiquidateMathError = 309,
     MustNotBeInCollateralAsset = 310,
     UtilizationCapExceeded = 311,
+    LiqCapExceeded = 312,
 
     MathOverflowError = 400,
     MustBeLtePercentageFactor = 401,
@@ -85,6 +86,10 @@ pub trait LendingPoolTrait {
 
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData>;
 
+    fn collat_coeff(env: Env, asset: Address) -> Result<i128, Error>;
+
+    fn debt_coeff(env: Env, asset: Address) -> Result<i128, Error>;
+
     fn set_price_feed(env: Env, feed: Address, assets: Vec<Address>) -> Result<(), Error>;
 
     fn get_price_feed(env: Env, asset: Address) -> Option<Address>;
@@ -95,6 +100,7 @@ pub trait LendingPoolTrait {
 
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
+    #[allow(clippy::too_many_arguments)]
     fn finalize_transfer(
         env: Env,
         asset: Address,
@@ -103,6 +109,7 @@ pub trait LendingPoolTrait {
         amount: i128,
         balance_from_before: i128,
         balance_to_before: i128,
+        total_supply: i128,
     ) -> Result<(), Error>;
 
     fn withdraw(
@@ -117,8 +124,8 @@ pub trait LendingPoolTrait {
     fn set_accrued_rates(
         env: Env,
         asset: Address,
-        collat_accrued_rate: Option<i128>,
-        debt_accrued_rate: Option<i128>,
+        lender_accrued_rate: Option<i128>,
+        borrower_accrued_rate: Option<i128>,
     ) -> Result<(), Error>;
 
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
