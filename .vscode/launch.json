@@ -13,6 +13,7 @@
                     "test",
                     "--package=pool",
                     "--features=testutils",
+                    "--test-threads=1",
                     "--lib",
                     "--no-run"
                 ],

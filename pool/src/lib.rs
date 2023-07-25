@@ -330,7 +330,8 @@ impl LendingPoolTrait for LendingPool {
         let reserve = get_actual_reserve_data(&env, asset.clone())?;
         Self::validate_deposit(&env, &reserve, amount);
 
-        let (remaining_amount, is_repayed) = Self::do_repay(&env, &who, &asset, amount, &reserve)?;
+        let (remaining_amount, is_repayed) =
+            Self::do_repay(&env, &who, &asset, amount, None, &reserve)?;
 
         let is_first_deposit = if remaining_amount > 0 {
             Self::do_deposit(&env, &who, &asset, remaining_amount, &reserve)?
@@ -745,10 +746,15 @@ impl LendingPool {
         who: &Address,
         asset: &Address,
         amount: i128,
+        mb_debt_amount: Option<i128>,
         reserve: &ReserveData,
     ) -> Result<(i128, bool), Error> {
         let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-        let borrower_total_debt = debt_token.balance(who);
+        let borrower_total_debt: i128 = if let Some(mb_debt_amount) = mb_debt_amount {
+            mb_debt_amount
+        } else {
+            debt_token.balance(who)
+        };
 
         if borrower_total_debt == 0 {
             return Ok((amount, false));
@@ -1084,7 +1090,7 @@ impl LendingPool {
         recipient: Address,
         debt_token_address: Address,
     ) -> Result<(), Error> {
-        let debt_token = DebtTokenClient::new(&env, &debt_token_address);
+        let debt_token = DebtTokenClient::new(env, &debt_token_address);
         if debt_token.balance(&recipient) > 0 {
             return Err(Error::MustNotHaveDebt);
         }
@@ -1111,6 +1117,7 @@ impl LendingPool {
             .liquidation
             .expect("pool: liquidation flag in calc_account_data");
         let mut debt_with_penalty = liquidation_data.total_debt_with_penalty_in_xlm;
+
         for collateral_to_receive in liquidation_data.collateral_to_receive {
             if debt_with_penalty == 0 {
                 break;
@@ -1149,10 +1156,45 @@ impl LendingPool {
 
             if receive_stoken {
                 let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-                if debt_token.balance(&liquidator) > 0 {
-                    todo!()
-                } else {
+                let liquidator_debt = debt_token.balance(&liquidator);
+
+                if liquidator_debt == 0 {
                     s_token.transfer_on_liquidation(&who, &liquidator, &s_token_amount);
+                } else {
+                    let debt_coeff = Self::get_debt_coeff(env, &reserve)?;
+
+                    let liquidator_actual_debt = debt_coeff
+                        .mul_int(liquidator_debt)
+                        .ok_or(Error::LiquidateMathError)?;
+
+                    let repayment_amount = liquidator_actual_debt.min(underlying_amount);
+
+                    let s_token_to_burn = coll_coeff
+                        .recip_mul_int(repayment_amount)
+                        .ok_or(Error::LiquidateMathError)?;
+
+                    s_token.burn(&who, &s_token_to_burn, &repayment_amount, &liquidator);
+
+                    let (_, is_repayed) = Self::do_repay(
+                        env,
+                        &liquidator,
+                        &underlying_asset,
+                        repayment_amount,
+                        Some(liquidator_debt),
+                        &reserve,
+                    )?;
+
+                    if is_repayed {
+                        user_config.set_borrowing(env, reserve.get_id(), false);
+                    }
+
+                    let s_token_amount = s_token_amount
+                        .checked_sub(s_token_to_burn)
+                        .ok_or(Error::LiquidateMathError)?;
+
+                    if s_token_amount > 0 {
+                        s_token.transfer_on_liquidation(&who, &liquidator, &s_token_amount);
+                    }
                 }
             } else {
                 s_token.burn(&who, &s_token_amount, &underlying_amount, &liquidator);
