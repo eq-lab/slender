@@ -637,6 +637,7 @@ impl LendingPoolTrait for LendingPool {
         receive_stoken: bool,
     ) -> Result<(), Error> {
         liquidator.require_auth();
+        Self::require_not_paused(&env);
         let reserves = read_reserves(&env);
         let mut user_config = read_user_config(&env, who.clone())?;
         let account_data =
