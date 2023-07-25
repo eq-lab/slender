@@ -5,7 +5,10 @@ use crate::SToken;
 use debt_token_interface::DebtTokenClient;
 use s_token_interface::STokenClient;
 use soroban_sdk::{
-    testutils::Address as _, token::Client as TokenClient, vec, Address, Env, IntoVal, Symbol,
+    symbol_short,
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
+    token::Client as TokenClient,
+    vec, Address, Env, IntoVal, Symbol,
 };
 
 use self::pool::{CollateralParamsInput, IRParams, InitReserveInput};
@@ -116,9 +119,14 @@ fn test() {
         e.auths(),
         [(
             pool.address.clone(),
-            s_token.address.clone(),
-            Symbol::short("mint"),
-            (&user1, 1000_i128).into_val(&e),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    s_token.address.clone(),
+                    symbol_short!("mint"),
+                    (&user1, 1000_i128).into_val(&e),
+                )),
+                sub_invocations: std::vec![]
+            }
         )]
     );
     assert_eq!(s_token.balance(&user1), 1000);
@@ -129,9 +137,14 @@ fn test() {
         e.auths(),
         [(
             user2.clone(),
-            s_token.address.clone(),
-            Symbol::new(&e, "increase_allowance"),
-            (&user2, &user3, 500_i128).into_val(&e),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    s_token.address.clone(),
+                    Symbol::new(&e, "increase_allowance"),
+                    (&user2, &user3, 500_i128).into_val(&e),
+                )),
+                sub_invocations: std::vec![]
+            }
         )]
     );
     assert_eq!(s_token.allowance(&user2, &user3), 500);
@@ -141,9 +154,14 @@ fn test() {
         e.auths(),
         [(
             user1.clone(),
-            s_token.address.clone(),
-            Symbol::short("transfer"),
-            (&user1, &user2, 600_i128).into_val(&e),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    s_token.address.clone(),
+                    symbol_short!("transfer"),
+                    (&user1, &user2, 600_i128).into_val(&e),
+                )),
+                sub_invocations: std::vec![]
+            }
         )]
     );
     assert_eq!(s_token.balance(&user1), 400);
@@ -154,9 +172,14 @@ fn test() {
         e.auths(),
         [(
             user3.clone(),
-            s_token.address.clone(),
-            Symbol::new(&e, "transfer_from"),
-            (&user3, &user2, &user1, 400_i128).into_val(&e),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    s_token.address.clone(),
+                    Symbol::new(&e, "transfer_from"),
+                    (&user3, &user2, &user1, 400_i128).into_val(&e),
+                )),
+                sub_invocations: std::vec![]
+            }
         )]
     );
     assert_eq!(s_token.balance(&user1), 800);
@@ -171,9 +194,14 @@ fn test() {
         e.auths(),
         [(
             pool.address.clone(),
-            s_token.address.clone(),
-            Symbol::new(&e, "set_authorized"),
-            (&user2, false).into_val(&e),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    s_token.address.clone(),
+                    Symbol::new(&e, "set_authorized"),
+                    (&user2, false).into_val(&e),
+                )),
+                sub_invocations: std::vec![]
+            }
         )]
     );
     assert_eq!(s_token.authorized(&user2), false);
@@ -186,9 +214,14 @@ fn test() {
         e.auths(),
         [(
             pool.address.clone(),
-            s_token.address.clone(),
-            Symbol::short("clawback"),
-            (&user3, 100_i128).into_val(&e),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    s_token.address.clone(),
+                    symbol_short!("clawback"),
+                    (&user3, 100_i128).into_val(&e),
+                )),
+                sub_invocations: std::vec![]
+            }
         )]
     );
     assert_eq!(s_token.balance(&user3), 200);
@@ -202,9 +235,14 @@ fn test() {
         e.auths(),
         [(
             user2.clone(),
-            s_token.address.clone(),
-            Symbol::new(&e, "decrease_allowance"),
-            (&user2, &user3, 500_i128).into_val(&e),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    s_token.address.clone(),
+                    Symbol::new(&e, "decrease_allowance"),
+                    (&user2, &user3, 500_i128).into_val(&e),
+                )),
+                sub_invocations: std::vec![]
+            }
         )]
     );
     assert_eq!(s_token.allowance(&user2, &user3), 0);

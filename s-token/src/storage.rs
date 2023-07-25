@@ -15,25 +15,24 @@ pub enum DataKey {
 }
 
 pub fn write_underlying_asset(e: &Env, asset: &Address) {
-    e.storage().set(&DataKey::UnderlyingAsset, asset);
+    e.storage()
+        .persistent()
+        .set(&DataKey::UnderlyingAsset, asset);
 }
 
 pub fn read_underlying_asset(e: &Env) -> Address {
     e.storage()
-        .get_unchecked(&DataKey::UnderlyingAsset)
+        .persistent()
+        .get(&DataKey::UnderlyingAsset)
         .unwrap()
 }
 
 pub fn read_allowance(e: &Env, from: Address, spender: Address) -> i128 {
     let key = DataKey::Allowance(AllowanceDataKey { from, spender });
-    if let Some(allowance) = e.storage().get(&key) {
-        allowance.unwrap()
-    } else {
-        0
-    }
+    e.storage().persistent().get(&key).unwrap_or(0)
 }
 
 pub fn write_allowance(e: &Env, from: Address, spender: Address, amount: i128) {
     let key = DataKey::Allowance(AllowanceDataKey { from, spender });
-    e.storage().set(&key, &amount);
+    e.storage().persistent().set(&key, &amount);
 }

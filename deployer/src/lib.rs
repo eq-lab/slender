@@ -2,8 +2,9 @@
 #![no_std]
 
 use pool_interface::IRParams;
-use soroban_sdk::{contractimpl, vec, Address, Bytes, BytesN, Env, IntoVal, RawVal, Symbol};
+use soroban_sdk::{contract, contractimpl, vec, Address, Bytes, BytesN, Env, IntoVal, Symbol, Val};
 
+#[contract]
 pub struct Deployer;
 
 #[contractimpl]
@@ -18,11 +19,8 @@ impl Deployer {
         admin: Address,
         treasury: Address,
         ir_params: IRParams,
-    ) -> (Address, RawVal) {
-        let id = env
-            .deployer()
-            .with_current_contract(&salt)
-            .deploy(&wasm_hash);
+    ) -> (Address, Val) {
+        let id = env.deployer().with_current_contract(salt).deploy(wasm_hash);
         let init_fn = Symbol::new(&env, "initialize");
         let init_args = vec![
             &env,
@@ -30,7 +28,7 @@ impl Deployer {
             treasury.into_val(&env),
             ir_params.into_val(&env),
         ];
-        let res: RawVal = env.invoke_contract(&id, &init_fn, init_args);
+        let res: Val = env.invoke_contract(&id, &init_fn, init_args);
         (id, res)
     }
 
@@ -46,11 +44,8 @@ impl Deployer {
         symbol: Bytes,
         pool: Address,
         underlying_asset: Address,
-    ) -> (Address, RawVal) {
-        let id = env
-            .deployer()
-            .with_current_contract(&salt)
-            .deploy(&wasm_hash);
+    ) -> (Address, Val) {
+        let id = env.deployer().with_current_contract(salt).deploy(wasm_hash);
         let init_fn = Symbol::new(&env, "initialize");
         let init_args = vec![
             &env,
@@ -59,7 +54,7 @@ impl Deployer {
             pool.into_val(&env),
             underlying_asset.into_val(&env),
         ];
-        let res: RawVal = env.invoke_contract(&id, &init_fn, init_args);
+        let res: Val = env.invoke_contract(&id, &init_fn, init_args);
         (id, res)
     }
 
@@ -75,11 +70,8 @@ impl Deployer {
         symbol: Bytes,
         pool: Address,
         underlying_asset: Address,
-    ) -> (Address, RawVal) {
-        let id = env
-            .deployer()
-            .with_current_contract(&salt)
-            .deploy(&wasm_hash);
+    ) -> (Address, Val) {
+        let id = env.deployer().with_current_contract(salt).deploy(wasm_hash);
         let init_fn = Symbol::new(&env, "initialize");
         let init_args = vec![
             &env,
@@ -88,7 +80,7 @@ impl Deployer {
             pool.into_val(&env),
             underlying_asset.into_val(&env),
         ];
-        let res: RawVal = env.invoke_contract(&id, &init_fn, init_args);
+        let res: Val = env.invoke_contract(&id, &init_fn, init_args);
         (id, res)
     }
 }

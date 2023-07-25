@@ -9,15 +9,15 @@ pub enum DataKey {
 pub fn write_asset_price(env: &Env, asset: Address, price: i128) {
     let data_key = DataKey::Price(asset);
 
-    env.storage().set(&data_key, &price);
+    env.storage().persistent().set(&data_key, &price);
 }
 
 pub fn read_asset_price(env: &Env, asset: Address) -> Option<i128> {
     let data_key = DataKey::Price(asset);
 
-    if !env.storage().has(&data_key) {
+    if !env.storage().persistent().has(&data_key) {
         return None;
     }
 
-    Some(env.storage().get_unchecked(&data_key).unwrap())
+    Some(env.storage().persistent().get(&data_key).unwrap())
 }

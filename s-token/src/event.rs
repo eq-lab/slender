@@ -1,4 +1,4 @@
-use soroban_sdk::{Address, Bytes, Env, Symbol};
+use soroban_sdk::{symbol_short, Address, Env, String, Symbol};
 
 pub(crate) fn increase_allowance(e: &Env, from: Address, to: Address, amount: i128) {
     let topics = (Symbol::new(e, "increase_allowance"), from, to);
@@ -11,17 +11,17 @@ pub(crate) fn decrease_allowance(e: &Env, from: Address, to: Address, amount: i1
 }
 
 pub(crate) fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
-    let topics = (Symbol::short("transfer"), from, to);
+    let topics = (symbol_short!("transfer"), from, to);
     e.events().publish(topics, amount);
 }
 
 pub(crate) fn mint(e: &Env, admin: Address, to: Address, amount: i128) {
-    let topics = (Symbol::short("mint"), admin, to);
+    let topics = (symbol_short!("mint"), admin, to);
     e.events().publish(topics, amount);
 }
 
 pub(crate) fn clawback(e: &Env, from: Address, amount: i128) {
-    let topics = (Symbol::short("clawback"), from);
+    let topics = (symbol_short!("clawback"), from);
     e.events().publish(topics, amount);
 }
 
@@ -31,7 +31,7 @@ pub(crate) fn set_authorized(e: &Env, id: Address, authorize: bool) {
 }
 
 pub(crate) fn burn(e: &Env, from: Address, amount: i128) {
-    let topics = (Symbol::short("burn"), from);
+    let topics = (symbol_short!("burn"), from);
     e.events().publish(topics, amount);
 }
 
@@ -40,9 +40,9 @@ pub(crate) fn initialized(
     underlying_asset: Address,
     pool: Address,
     decimals: u32,
-    name: Bytes,
-    symbol: Bytes,
+    name: String,
+    symbol: String,
 ) {
-    let topics = (Symbol::short("init"), underlying_asset, pool);
+    let topics = (symbol_short!("init"), underlying_asset, pool);
     e.events().publish(topics, (decimals, name, symbol));
 }

@@ -1,5 +1,5 @@
 use pool_interface::{CollateralParamsInput, IRParams};
-use soroban_sdk::{Address, Env, Symbol};
+use soroban_sdk::{symbol_short, Address, Env, Symbol};
 
 pub(crate) fn initialized(e: &Env, admin: Address, treasury: Address, ir_params: IRParams) {
     let topics = (Symbol::new(e, "initialize"), admin, treasury);
@@ -17,22 +17,22 @@ pub(crate) fn reserve_used_as_collateral_disabled(e: &Env, who: Address, asset: 
 }
 
 pub(crate) fn deposit(e: &Env, who: Address, asset: Address, amount: i128) {
-    let topics = (Symbol::short("deposit"), who);
+    let topics = (symbol_short!("deposit"), who);
     e.events().publish(topics, (asset, amount));
 }
 
 pub(crate) fn withdraw(e: &Env, who: Address, asset: Address, to: Address, amount: i128) {
-    let topics = (Symbol::short("withdraw"), who);
+    let topics = (symbol_short!("withdraw"), who);
     e.events().publish(topics, (to, asset, amount));
 }
 
 pub(crate) fn borrow(e: &Env, who: Address, asset: Address, amount: i128) {
-    let topics = (Symbol::short("borrow"), who);
+    let topics = (symbol_short!("borrow"), who);
     e.events().publish(topics, (asset, amount));
 }
 
 pub(crate) fn repay(e: &Env, who: Address, asset: Address, amount: i128) {
-    let topics = (Symbol::short("repay"), who);
+    let topics = (symbol_short!("repay"), who);
     e.events().publish(topics, (asset, amount));
 }
 

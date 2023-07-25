@@ -17,4 +17,4 @@ price-feed-interface = { path = "../../price-feed-interface", version = "0.1.0",
 common = { path = "../../common", version = "0.1.0", package = "common" }
 
 [dev_dependencies]
-soroban-sdk = { version = "0.8.4", features = ["testutils"] }
+soroban-sdk = { workspace = true, features = ["testutils"] }

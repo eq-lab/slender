@@ -9,9 +9,10 @@ use crate::storage::*;
 use common_token::{balance::*, require_nonnegative_amount, storage::*, verify_caller_is_pool};
 use pool_interface::LendingPoolClient;
 use s_token_interface::STokenTrait;
-use soroban_sdk::{contractimpl, token, Address, Bytes, Env};
+use soroban_sdk::{contract, contractimpl, token, Address, Env, String};
 use soroban_token_sdk::TokenMetadata;
 
+#[contract]
 pub struct SToken;
 
 #[contractimpl]
@@ -31,12 +32,12 @@ impl STokenTrait for SToken {
     /// Panics with if the contract has already been initialized.
     /// Panics if name or symbol is empty
     ///
-    fn initialize(e: Env, name: Bytes, symbol: Bytes, pool: Address, underlying_asset: Address) {
-        if name.is_empty() {
+    fn initialize(e: Env, name: String, symbol: String, pool: Address, underlying_asset: Address) {
+        if name.len() == 0 {
             panic!("s-token: no name");
         }
 
-        if symbol.is_empty() {
+        if symbol.len() == 0 {
             panic!("s-token: no symbol");
         }
 
@@ -316,7 +317,7 @@ impl STokenTrait for SToken {
     ///
     /// The name of the token as a `soroban_sdk::Bytes` value.
     ///
-    fn name(e: Env) -> Bytes {
+    fn name(e: Env) -> String {
         read_name(&e)
     }
 
@@ -326,7 +327,7 @@ impl STokenTrait for SToken {
     ///
     /// The symbol of the token as a `soroban_sdk::Bytes` value.
     ///
-    fn symbol(e: Env) -> Bytes {
+    fn symbol(e: Env) -> String {
         read_symbol(&e)
     }
 

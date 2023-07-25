@@ -6,8 +6,9 @@ mod storage;
 
 use crate::storage::*;
 use price_feed_interface::{PriceData, PriceFeedTrait};
-use soroban_sdk::{contractimpl, Address, Env, Vec};
+use soroban_sdk::{contract, contractimpl, Address, Env, Vec};
 
+#[contract]
 pub struct PriceFeedMock;
 
 #[contractimpl]
