@@ -149,8 +149,8 @@ fn initialize_already_initialized() {
     let underlying_asset = Address::random(&e);
 
     token.initialize(
-        &"name".into_val(&e),
-        &"symbol".into_val(&e),
+        &String::from_slice(&e, &"name"),
+        &String::from_slice(&e, &"symbol"),
         &pool,
         &underlying_asset,
     );

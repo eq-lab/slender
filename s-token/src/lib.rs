@@ -12,6 +12,8 @@ use s_token_interface::STokenTrait;
 use soroban_sdk::{contract, contractimpl, token, Address, Env, String};
 use soroban_token_sdk::TokenMetadata;
 
+pub(crate) const INSTANCE_BUMP_AMOUNT: u32 = 34560; // 2 days
+
 #[contract]
 pub struct SToken;
 
@@ -76,7 +78,7 @@ impl STokenTrait for SToken {
     /// The amount of tokens that the `spender` is allowed to withdraw from the `from` address.
     ///
     fn allowance(e: Env, from: Address, spender: Address) -> i128 {
-        read_allowance(&e, from, spender)
+        read_allowance(&e, from, spender).amount
     }
 
     /// Increases the allowance for a spender to withdraw from the `from` address by a specified amount of tokens.
@@ -86,6 +88,7 @@ impl STokenTrait for SToken {
     /// - from - The address of the token owner.
     /// - spender - The address of the spender.
     /// - amount - The amount of tokens to increase the allowance by.
+    /// - expiration_ledger - The time when allowance will be expired.
     ///
     /// # Panics
     ///
@@ -93,45 +96,15 @@ impl STokenTrait for SToken {
     /// Panics if the amount is negative.
     /// Panics if the updated allowance exceeds the maximum value of i128.
     ///
-    fn increase_allowance(e: Env, from: Address, spender: Address, amount: i128) {
+    fn approve(e: Env, from: Address, spender: Address, amount: i128, expiration_ledger: u32) {
         from.require_auth();
 
         require_nonnegative_amount(amount);
 
-        let allowance = read_allowance(&e, from.clone(), spender.clone());
-        let new_allowance = allowance
-            .checked_add(amount)
-            .expect("Updated allowance doesn't fit in an i128");
+        e.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
 
-        write_allowance(&e, from.clone(), spender.clone(), new_allowance);
-        event::increase_allowance(&e, from, spender, amount);
-    }
-
-    /// Decreases the allowance for a spender to withdraw from the `from` address by a specified amount of tokens.
-    ///
-    /// # Arguments
-    ///
-    /// - from - The address of the token owner.
-    /// - spender - The address of the spender.
-    /// - amount - The amount of tokens to decrease the allowance by.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the caller is not authorized.
-    /// Panics if the amount is negative.
-    ///
-    fn decrease_allowance(e: Env, from: Address, spender: Address, amount: i128) {
-        from.require_auth();
-
-        require_nonnegative_amount(amount);
-
-        let allowance = read_allowance(&e, from.clone(), spender.clone());
-        if amount >= allowance {
-            write_allowance(&e, from.clone(), spender.clone(), 0);
-        } else {
-            write_allowance(&e, from.clone(), spender.clone(), allowance - amount);
-        }
-        event::decrease_allowance(&e, from, spender, amount);
+        write_allowance(&e, from.clone(), spender.clone(), amount, expiration_ledger);
+        event::approve(&e, from, spender, amount, expiration_ledger);
     }
 
     /// Returns the balance of tokens for a specified `id`.
@@ -434,10 +407,16 @@ impl SToken {
 
     fn spend_allowance(e: &Env, from: Address, spender: Address, amount: i128) {
         let allowance = read_allowance(e, from.clone(), spender.clone());
-        if allowance < amount {
+        if allowance.amount < amount {
             panic!("s-token: insufficient allowance");
         }
-        write_allowance(e, from, spender, allowance - amount);
+        write_allowance(
+            e,
+            from,
+            spender,
+            allowance.amount - amount,
+            allowance.expiration_ledger,
+        );
     }
 
     /// Makes mint and returns updates total supply

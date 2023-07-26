@@ -7,6 +7,7 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
+    token::AdminClient as TokenAdminClient,
     token::Client as TokenClient,
     vec, Address, Env, IntoVal, Symbol,
 };
@@ -34,6 +35,7 @@ fn create_token<'a>(
     DebtTokenClient<'a>,
     pool::Client<'a>,
     TokenClient,
+    TokenAdminClient,
 ) {
     let pool = pool::Client::new(e, &e.register_contract_wasm(None, pool::WASM));
     let pool_admin = Address::random(e);
@@ -51,9 +53,11 @@ fn create_token<'a>(
     );
 
     let s_token = STokenClient::new(e, &e.register_contract(None, SToken {}));
-    let underlying_asset =
-        TokenClient::new(e, &e.register_stellar_asset_contract(pool_admin.clone()));
 
+    let stellar_asset = &e.register_stellar_asset_contract(pool_admin.clone());
+    let underlying_asset = TokenClient::new(e, stellar_asset);
+    let underlying_asset_admin = TokenAdminClient::new(e, stellar_asset);
+    e.budget().reset_default();
     let oracle = oracle::Client::new(e, &e.register_contract_wasm(None, oracle::WASM));
     pool.set_price_feed(&oracle.address, &vec![e, underlying_asset.address.clone()]);
 
@@ -63,6 +67,8 @@ fn create_token<'a>(
         &pool.address,
         &underlying_asset.address,
     );
+
+    e.budget().reset_default();
 
     let debt_token: DebtTokenClient<'_> =
         DebtTokenClient::new(&e, &e.register_contract_wasm(None, debt_token::WASM));
@@ -74,7 +80,13 @@ fn create_token<'a>(
         &underlying_asset.address,
     );
 
-    (s_token, debt_token, pool, underlying_asset)
+    (
+        s_token,
+        debt_token,
+        pool,
+        underlying_asset,
+        underlying_asset_admin,
+    )
 }
 
 #[test]
@@ -82,12 +94,15 @@ fn test() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let (s_token, debt_token, pool, underlying) = create_token(&e);
+    let (s_token, debt_token, pool, underlying, underlying_admin) = create_token(&e);
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
     };
     pool.init_reserve(&underlying.address, &init_reserve_input);
+
+    e.budget().reset_default();
+
     {
         let underlying_decimals = underlying.decimals();
         let liq_bonus = 11000; //110%
@@ -110,9 +125,9 @@ fn test() {
     let user2 = Address::random(&e);
     let user3 = Address::random(&e);
 
-    underlying.mint(&user1, &1000);
+    underlying_admin.mint(&user1, &1000);
 
-    underlying.mint(&user2, &1000);
+    underlying_admin.mint(&user2, &1000);
 
     s_token.mint(&user1, &1000);
     assert_eq!(
@@ -132,7 +147,8 @@ fn test() {
     assert_eq!(s_token.balance(&user1), 1000);
     assert_eq!(s_token.total_supply(), 1000);
 
-    s_token.increase_allowance(&user2, &user3, &500);
+    let min_expiration = e.ledger().sequence() + 1000;
+    s_token.approve(&user2, &user3, &500, &min_expiration);
     assert_eq!(
         e.auths(),
         [(
@@ -140,8 +156,8 @@ fn test() {
             AuthorizedInvocation {
                 function: AuthorizedFunction::Contract((
                     s_token.address.clone(),
-                    Symbol::new(&e, "increase_allowance"),
-                    (&user2, &user3, 500_i128).into_val(&e),
+                    Symbol::new(&e, "approve"),
+                    (&user2, &user3, 500_i128, min_expiration).into_val(&e),
                 )),
                 sub_invocations: std::vec![]
             }
@@ -228,9 +244,11 @@ fn test() {
     assert_eq!(s_token.total_supply(), 900);
 
     // Increase by 400, with an existing 100 = 500
-    s_token.increase_allowance(&user2, &user3, &400);
+    let min_expiration = e.ledger().sequence() + 1000;
+    s_token.approve(&user2, &user3, &500, &min_expiration);
     assert_eq!(s_token.allowance(&user2, &user3), 500);
-    s_token.decrease_allowance(&user2, &user3, &500);
+
+    s_token.approve(&user2, &user3, &0, &0);
     assert_eq!(
         e.auths(),
         [(
@@ -238,8 +256,8 @@ fn test() {
             AuthorizedInvocation {
                 function: AuthorizedFunction::Contract((
                     s_token.address.clone(),
-                    Symbol::new(&e, "decrease_allowance"),
-                    (&user2, &user3, 500_i128).into_val(&e),
+                    Symbol::new(&e, "approve"),
+                    (&user2, &user3, 0_i128, 0_u32).into_val(&e),
                 )),
                 sub_invocations: std::vec![]
             }
@@ -256,13 +274,14 @@ fn test_burn() {
 
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
-    let (token, _, _pool, _) = create_token(&e);
+    let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
     assert_eq!(token.balance(&user1), 1000);
     assert_eq!(token.total_supply(), 1000);
 
-    token.increase_allowance(&user1, &user2, &500);
+    let min_expiration = e.ledger().sequence() + 1000;
+    token.approve(&user1, &user2, &500, &min_expiration);
     assert_eq!(token.allowance(&user1, &user2), 500);
 
     token.burn_from(&user2, &user1, &500);
@@ -276,7 +295,7 @@ fn transfer_insufficient_balance() {
 
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
-    let (token, _, _pool, _) = create_token(&e);
+    let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
     assert_eq!(token.balance(&user1), 1000);
@@ -292,7 +311,7 @@ fn transfer_receive_deauthorized() {
 
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
-    let (token, _, _pool, _) = create_token(&e);
+    let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
     assert_eq!(token.balance(&user1), 1000);
@@ -309,7 +328,7 @@ fn transfer_spend_deauthorized() {
 
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
-    let (token, _, _pool, _) = create_token(&e);
+    let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
     assert_eq!(token.balance(&user1), 1000);
@@ -327,12 +346,13 @@ fn transfer_from_insufficient_allowance() {
     let user1 = Address::random(&e);
     let user2 = Address::random(&e);
     let user3 = Address::random(&e);
-    let (token, _, _pool, _) = create_token(&e);
+    let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
     assert_eq!(token.balance(&user1), 1000);
 
-    token.increase_allowance(&user1, &user3, &100);
+    let min_expiration = e.ledger().sequence() + 1000;
+    token.approve(&user1, &user3, &100, &min_expiration);
     assert_eq!(token.allowance(&user1, &user3), 100);
 
     token.transfer_from(&user3, &user1, &user2, &101);
@@ -343,7 +363,7 @@ fn transfer_from_insufficient_allowance() {
 fn initialize_already_initialized() {
     let e = Env::default();
     e.mock_all_auths();
-    let (token, _, _pool, _) = create_token(&e);
+    let (token, _, _pool, _, _) = create_token(&e);
 
     let pool = Address::random(&e);
     let underlying_asset = Address::random(&e);

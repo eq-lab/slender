@@ -16,60 +16,58 @@ pub enum DataKey {
 }
 
 pub fn has_admin(env: &Env) -> bool {
-    env.storage().persistent().has(&DataKey::Admin)
+    env.storage().instance().has(&DataKey::Admin)
 }
 
 pub fn write_admin(env: &Env, admin: Address) {
-    env.storage().persistent().set(&DataKey::Admin, &admin);
+    env.storage().instance().set(&DataKey::Admin, &admin);
 }
 
 pub fn read_admin(env: &Env) -> Result<Address, Error> {
     env.storage()
-        .persistent()
+        .instance()
         .get(&DataKey::Admin)
         .ok_or(Error::Uninitialized)
 }
 
 pub fn write_ir_params(env: &Env, ir_params: &IRParams) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::IRParams, ir_params);
+    env.storage().instance().set(&DataKey::IRParams, ir_params);
 }
 
 pub fn read_ir_params(env: &Env) -> Result<IRParams, Error> {
     env.storage()
-        .persistent()
+        .instance()
         .get(&DataKey::IRParams)
         .ok_or(Error::Uninitialized)
 }
 
 pub fn read_reserve(env: &Env, asset: Address) -> Result<ReserveData, Error> {
     env.storage()
-        .persistent()
+        .instance()
         .get(&DataKey::ReserveAssetKey(asset))
         .ok_or(Error::NoReserveExistForAsset)
 }
 
 pub fn write_reserve(env: &Env, asset: Address, reserve_data: &ReserveData) {
-    let asset_key = DataKey::ReserveAssetKey(asset);
-    env.storage().persistent().set(&asset_key, reserve_data);
+    let asset_key: DataKey = DataKey::ReserveAssetKey(asset);
+    env.storage().instance().set(&asset_key, reserve_data);
 }
 
 pub fn has_reserve(env: &Env, asset: Address) -> bool {
     env.storage()
-        .persistent()
+        .instance()
         .has(&DataKey::ReserveAssetKey(asset))
 }
 
 pub fn read_reserves(env: &Env) -> Vec<Address> {
     env.storage()
-        .persistent()
+        .instance()
         .get(&DataKey::Reserves)
         .unwrap_or(vec![env])
 }
 
 pub fn write_reserves(env: &Env, reserves: &Vec<Address>) {
-    env.storage().persistent().set(&DataKey::Reserves, reserves);
+    env.storage().instance().set(&DataKey::Reserves, reserves);
 }
 
 pub fn read_user_config(env: &Env, user: Address) -> Result<UserConfiguration, Error> {
@@ -103,19 +101,19 @@ pub fn write_price_feed(env: &Env, feed: Address, assets: &Vec<Address>) {
 
 pub fn paused(env: &Env) -> bool {
     env.storage()
-        .persistent()
+        .instance()
         .get(&DataKey::Pause)
         .unwrap_or(false)
 }
 
 pub fn write_pause(env: &Env, value: bool) {
-    env.storage().persistent().set(&DataKey::Pause, &value);
+    env.storage().instance().set(&DataKey::Pause, &value);
 }
 
 pub fn write_treasury(e: &Env, treasury: &Address) {
-    e.storage().persistent().set(&DataKey::Treasury, treasury);
+    e.storage().instance().set(&DataKey::Treasury, treasury);
 }
 
 pub fn read_treasury(e: &Env) -> Address {
-    e.storage().persistent().get(&DataKey::Treasury).unwrap()
+    e.storage().instance().get(&DataKey::Treasury).unwrap()
 }

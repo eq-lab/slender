@@ -12,17 +12,17 @@ pub enum CommonDataKey {
 
 pub fn read_pool(e: &Env) -> Address {
     e.storage()
-        .persistent()
+        .instance()
         .get(&CommonDataKey::Pool)
         .expect("has pool")
 }
 
 pub fn write_pool(e: &Env, id: &Address) {
-    e.storage().persistent().set(&CommonDataKey::Pool, id);
+    e.storage().instance().set(&CommonDataKey::Pool, id);
 }
 
 pub fn has_pool(e: &Env) -> bool {
-    e.storage().persistent().has(&CommonDataKey::Pool)
+    e.storage().instance().has(&CommonDataKey::Pool)
 }
 
 pub fn read_balance(e: &Env, addr: Address) -> i128 {
@@ -66,14 +66,14 @@ pub fn read_symbol(e: &Env) -> String {
 
 pub fn read_total_supply(e: &Env) -> i128 {
     e.storage()
-        .persistent()
+        .instance()
         .get(&CommonDataKey::TotalSupply)
         .unwrap_or(0)
 }
 
 pub fn write_total_supply(e: &Env, val: i128) {
     e.storage()
-        .persistent()
+        .instance()
         .set(&CommonDataKey::TotalSupply, &val);
 }
 
