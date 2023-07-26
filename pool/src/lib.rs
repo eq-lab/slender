@@ -567,6 +567,7 @@ impl LendingPoolTrait for LendingPool {
         let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
 
         let is_first_borrowing = debt_token.balance(&who) == 0;
+
         if is_first_borrowing {
             let mut user_config = user_config;
             user_config.set_borrowing(&env, reserve.get_id(), true);
@@ -1315,7 +1316,9 @@ impl LendingPool {
                     )?;
 
                     if is_repayed {
-                        user_config.set_borrowing(env, reserve.get_id(), false);
+                        let mut liquidator_user_config = read_user_config(env, liquidator.clone())?;
+                        liquidator_user_config.set_borrowing(env, reserve.get_id(), false);
+                        write_user_config(env, liquidator.clone(), &liquidator_user_config);
                     }
 
                     let s_token_amount = s_token_amount
