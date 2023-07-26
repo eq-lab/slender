@@ -401,8 +401,6 @@ impl LendingPoolTrait for LendingPool {
     ) -> Result<(), Error> {
         // TODO: maybe check with callstack?
 
-        // TODO: asset is underlying /Artur
-
         let reserve = read_reserve(&env, asset.clone())?;
         let s_token_address = (reserve.clone()).s_token_address;
         s_token_address.require_auth();
@@ -525,6 +523,7 @@ impl LendingPoolTrait for LendingPool {
         sub_stoken_underlying_supply(&env, s_token.address, underlying_to_withdraw)?;
 
         event::withdraw(&env, who, asset, to, underlying_to_withdraw);
+
         Ok(())
     }
 
@@ -873,7 +872,7 @@ impl LendingPool {
 
         // TODO: /Artur
         underlying_asset.transfer(who, &reserve.s_token_address, &lender_part);
-        // TODO: /Artur
+        add_stoken_underlying_supply(&env, s_token.address.clone(), lender_part)?;
         underlying_asset.transfer(who, &treasury_address, &treasury_part);
         debt_token.burn(who, &borrower_debt_to_burn);
 
@@ -906,8 +905,6 @@ impl LendingPool {
         amount: i128,
         balance: i128,
     ) -> Result<(), Error> {
-        // TODO: add check for stoken_underlying_total_supply /Artur
-
         assert_with_error!(env, amount > 0, Error::InvalidAmount);
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
@@ -1291,7 +1288,6 @@ impl LendingPool {
                 let liquidator_debt = debt_token.balance(&liquidator);
 
                 if liquidator_debt == 0 {
-                    // TODO: /Artur
                     s_token.transfer_on_liquidation(&who, &liquidator, &s_token_amount);
                 } else {
                     let debt_coeff = Self::get_debt_coeff(env, &reserve)?;
@@ -1308,6 +1304,7 @@ impl LendingPool {
 
                     // TODO: /Artur
                     s_token.burn(&who, &s_token_to_burn, &repayment_amount, &liquidator);
+                    sub_stoken_underlying_supply(env, s_token.address, repayment_amount);
 
                     let (_, is_repayed) = Self::do_repay(
                         env,
@@ -1327,13 +1324,13 @@ impl LendingPool {
                         .ok_or(Error::LiquidateMathError)?;
 
                     if s_token_amount > 0 {
-                        // TODO: /Artur
                         s_token.transfer_on_liquidation(&who, &liquidator, &s_token_amount);
                     }
                 }
             } else {
                 // TODO: /Artur
                 s_token.burn(&who, &s_token_amount, &underlying_amount, &liquidator);
+                sub_stoken_underlying_supply(env, s_token.address, underlying_amount);
             }
 
             if s_token_balance == s_token_amount {
@@ -1361,6 +1358,7 @@ impl LendingPool {
             let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
             // TODO: /Artur
             underlying_asset.transfer(&liquidator, &reserve.s_token_address, &compounded_debt);
+            add_stoken_underlying_supply(&env, s_token.address.clone(), compounded_debt)?;
             debt_token.burn(&who, &debt_amount);
             user_config.set_borrowing(env, reserve.get_id(), false);
             recalculate_reserve_data(env, underlying_asset.address, reserve, s_token_supply)?;

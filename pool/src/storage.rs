@@ -117,9 +117,19 @@ pub fn read_treasury(e: &Env) -> Address {
     e.storage().get_unchecked(&DataKey::Treasury).unwrap()
 }
 
-pub fn write_stoken_underlying_supply(e: &Env, s_token_address: Address, total_supply: i128) {
+pub fn write_stoken_underlying_supply(
+    e: &Env,
+    s_token_address: Address,
+    total_supply: i128,
+) -> Result<(), Error> {
+    if total_supply.is_negative() {
+        return Error::MustBePositive;
+    }
+
     let data_key = DataKey::STokenUnderlyingSupply(s_token_address);
     e.storage().set(&data_key, &total_supply);
+
+    Ok(())
 }
 
 pub fn read_stoken_underlying_supply(e: &Env, s_token_address: Address) -> i128 {

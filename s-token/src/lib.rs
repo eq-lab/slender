@@ -406,8 +406,6 @@ impl STokenTrait for SToken {
 
 impl SToken {
     fn do_transfer(e: &Env, from: Address, to: Address, amount: i128, validate: bool) {
-        let underlying_asset = read_underlying_asset(e);
-
         let from_balance_prev = read_balance(e, from.clone());
         let to_balance_prev = read_balance(e, to.clone());
 
@@ -415,6 +413,7 @@ impl SToken {
         receive_balance(e, to.clone(), amount);
 
         if validate && cfg!(not(feature = "testutils")) {
+            let underlying_asset = read_underlying_asset(e);
             let total_supply = read_total_supply(e);
             let pool_client = LendingPoolClient::new(e, &read_pool(e));
             pool_client.finalize_transfer(
