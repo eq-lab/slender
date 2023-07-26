@@ -273,7 +273,7 @@ impl LendingPoolTrait for LendingPool {
     /// - asset - The address of underlying asset
     fn collat_coeff(env: Env, asset: Address) -> Result<i128, Error> {
         let reserve = read_reserve(&env, asset.clone())?;
-        Self::get_collat_coeff(&env, &asset, &reserve).map(|fixed| fixed.into_inner())
+        Self::get_collat_coeff(&env, &reserve).map(|fixed| fixed.into_inner())
     }
 
     /// Returns debt coefficient corrected on current time expressed as inner value of FixedI128.
@@ -482,7 +482,7 @@ impl LendingPoolTrait for LendingPool {
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
         let s_token_balance = s_token.balance(&who);
 
-        let collat_coeff = Self::get_collat_coeff(&env, &asset, &reserve)?;
+        let collat_coeff = Self::get_collat_coeff(&env, &reserve)?;
         let underlying_balance = collat_coeff
             .mul_int(s_token_balance)
             .ok_or(Error::MathOverflowError)?;
@@ -797,19 +797,19 @@ impl LendingPool {
 
         let underlying_asset = token::Client::new(env, asset);
 
-        //TODO: use own aggregate instead of token.balance
-        let balance = underlying_asset.balance(&reserve.s_token_address);
+        let balance = read_stoken_underlying_supply(env, reserve.s_token_address.clone());
 
         Self::require_liq_cap_not_exceeded(env, reserve, balance, amount)?;
 
         let s_token = STokenClient::new(env, &reserve.s_token_address);
         let is_first_deposit = s_token.balance(who) == 0;
 
-        let collat_coeff = Self::get_collat_coeff(env, asset, reserve)?;
+        let collat_coeff = Self::get_collat_coeff(env, reserve)?;
         let amount_to_mint = collat_coeff
             .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
 
+        // TODO: /Artur
         underlying_asset.transfer(who, &reserve.s_token_address, &amount);
 
         let s_token = STokenClient::new(env, &reserve.s_token_address);
@@ -841,7 +841,7 @@ impl LendingPool {
         }
 
         let debt_coeff = Self::get_debt_coeff(env, reserve)?;
-        let collat_coeff = Self::get_collat_coeff(env, asset, reserve)?;
+        let collat_coeff = Self::get_collat_coeff(env, reserve)?;
 
         let borrower_actual_debt = debt_coeff
             .mul_int(borrower_total_debt)
@@ -901,6 +901,8 @@ impl LendingPool {
         amount: i128,
         balance: i128,
     ) -> Result<(), Error> {
+        // TODO: add check for stoken_underlying_total_supply /Artur
+
         assert_with_error!(env, amount > 0, Error::InvalidAmount);
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
@@ -1017,7 +1019,7 @@ impl LendingPool {
             let reserve_price = Self::get_asset_price(env, curr_reserve_asset.clone())?;
 
             if user_config.is_using_as_collateral(env, i) {
-                let collat_coeff = Self::get_collat_coeff(env, &curr_reserve_asset, &curr_reserve)?;
+                let collat_coeff = Self::get_collat_coeff(env, &curr_reserve)?;
 
                 let who_balance: i128 = match &mb_who_balance {
                     Some(AssetBalance { asset, balance })
@@ -1156,11 +1158,7 @@ impl LendingPool {
 
     /// Returns collateral coefficient
     /// collateral_coeff = [underlying_balance + lender_accrued_rate * total_debt_token]/total_stoken
-    fn get_collat_coeff(
-        env: &Env,
-        asset: &Address,
-        reserve: &ReserveData,
-    ) -> Result<FixedI128, Error> {
+    fn get_collat_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
         let s_token = STokenClient::new(env, &reserve.s_token_address);
         let s_token_supply = s_token.total_supply();
 
@@ -1170,8 +1168,7 @@ impl LendingPool {
 
         let collat_ar = Self::get_actual_lender_accrued_rate(env, reserve)?;
 
-        //TODO: use own aggregate instead of balance()
-        let balance = TokenClient::new(env, asset).balance(&reserve.s_token_address);
+        let balance = read_stoken_underlying_supply(&env, reserve.s_token_address.clone());
         let debt_token_supply =
             DebtTokenClient::new(env, &reserve.debt_token_address).total_supply();
 

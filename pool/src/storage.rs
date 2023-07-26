@@ -13,6 +13,7 @@ pub enum DataKey {
     UserConfig(Address),
     PriceFeed(Address),
     Pause,
+    STokenUnderlyingSupply(Address),
 }
 
 pub fn has_admin(env: &Env) -> bool {
@@ -114,4 +115,14 @@ pub fn write_treasury(e: &Env, treasury: &Address) {
 
 pub fn read_treasury(e: &Env) -> Address {
     e.storage().get_unchecked(&DataKey::Treasury).unwrap()
+}
+
+pub fn write_stoken_underlying_supply(e: &Env, asset: Address, total_supply: i128) {
+    let data_key = DataKey::STokenUnderlyingSupply(asset);
+    e.storage().set(&data_key, &total_supply);
+}
+
+pub fn read_stoken_underlying_supply(e: &Env, asset: Address) -> i128 {
+    let data_key = DataKey::STokenUnderlyingSupply(asset);
+    e.storage().get_unchecked(&data_key).unwrap_or(0)
 }
