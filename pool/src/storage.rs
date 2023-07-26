@@ -117,12 +117,48 @@ pub fn read_treasury(e: &Env) -> Address {
     e.storage().get_unchecked(&DataKey::Treasury).unwrap()
 }
 
-pub fn write_stoken_underlying_supply(e: &Env, asset: Address, total_supply: i128) {
-    let data_key = DataKey::STokenUnderlyingSupply(asset);
+pub fn write_stoken_underlying_supply(e: &Env, s_token_address: Address, total_supply: i128) {
+    let data_key = DataKey::STokenUnderlyingSupply(s_token_address);
     e.storage().set(&data_key, &total_supply);
 }
 
-pub fn read_stoken_underlying_supply(e: &Env, asset: Address) -> i128 {
-    let data_key = DataKey::STokenUnderlyingSupply(asset);
+pub fn read_stoken_underlying_supply(e: &Env, s_token_address: Address) -> i128 {
+    let data_key = DataKey::STokenUnderlyingSupply(s_token_address);
     e.storage().get_unchecked(&data_key).unwrap_or(0)
+}
+
+pub fn add_stoken_underlying_supply(
+    env: &Env,
+    s_token_address: Address,
+    amount: i128,
+) -> Result<i128, Error> {
+    if amount < 0 {
+        return Err(Error::MustBePositive);
+    }
+
+    let total_supply = read_stoken_underlying_supply(&env, s_token_address.clone())
+        .checked_add(amount)
+        .ok_or(Error::MathOverflowError)?;
+
+    write_stoken_underlying_supply(env, s_token_address.clone(), total_supply);
+
+    Ok(total_supply)
+}
+
+pub fn sub_stoken_underlying_supply(
+    env: &Env,
+    s_token_address: Address,
+    amount: i128,
+) -> Result<i128, Error> {
+    if amount < 0 {
+        return Err(Error::MustBePositive);
+    }
+
+    let total_supply = read_stoken_underlying_supply(&env, s_token_address.clone())
+        .checked_sub(amount)
+        .ok_or(Error::MathOverflowError)?;
+
+    write_stoken_underlying_supply(env, s_token_address.clone(), total_supply);
+
+    Ok(total_supply)
 }

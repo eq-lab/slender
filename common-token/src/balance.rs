@@ -23,7 +23,7 @@ pub fn spend_balance(e: &Env, addr: Address, amount: i128) {
     if balance < amount {
         panic!("insufficient balance");
     }
-    write_balance(e, addr, balance - amount);
+    write_balance(e, addr, balance.checked_sub(amount).expect("no overflow"));
 }
 
 pub fn add_total_supply(e: &Env, amount: i128) {

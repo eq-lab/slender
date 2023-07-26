@@ -445,8 +445,11 @@ impl SToken {
             panic!("s-token: invalid mint amount");
         }
 
-        receive_balance(e, user, amount);
+        receive_balance(e, user.clone(), amount);
         add_total_supply(e, amount);
+
+        let underlying_asset_client = token::Client::new(e, &read_underlying_asset(e));
+        underlying_asset_client.transfer(&user, &e.current_contract_address(), &amount);
     }
 
     /// Makes burn and returns updates total supply
@@ -467,8 +470,7 @@ impl SToken {
             amount_to_burn.checked_neg().expect("s-token: no overflow"),
         );
 
-        let underlying_asset = read_underlying_asset(e);
-        let underlying_asset_client = token::Client::new(e, &underlying_asset);
+        let underlying_asset_client = token::Client::new(e, &read_underlying_asset(e));
         underlying_asset_client.transfer(&e.current_contract_address(), &to, &amount_to_withdraw);
     }
 }
