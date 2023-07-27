@@ -4,7 +4,10 @@ extern crate std;
 use crate::DebtToken;
 use debt_token_interface::DebtTokenClient;
 use soroban_sdk::{
-    testutils::Address as _, token::Client as TokenClient, Address, Bytes, Env, IntoVal, Symbol,
+    symbol_short,
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
+    token::Client as TokenClient,
+    Address, Env, IntoVal, String, Symbol,
 };
 
 fn create_token<'a>(e: &Env) -> (DebtTokenClient<'a>, Address) {
@@ -44,8 +47,8 @@ fn initialize() {
     );
 
     assert_eq!(token.decimals(), 7);
-    assert_eq!(token.name(), Bytes::from_slice(&e, b"name"));
-    assert_eq!(token.symbol(), Bytes::from_slice(&e, b"symbol"));
+    assert_eq!(token.name(), String::from_slice(&e, &"name"));
+    assert_eq!(token.symbol(), String::from_slice(&e, &"symbol"));
 }
 
 #[test]
@@ -61,13 +64,19 @@ fn test() {
     let total_supply = user1_amount;
 
     token.mint(&user1, &user1_amount);
+
     assert_eq!(
         e.auths(),
         [(
             pool.clone(),
-            token.address.clone(),
-            Symbol::short("mint"),
-            (&user1, user1_amount).into_val(&e),
+            AuthorizedInvocation {
+                function: AuthorizedFunction::Contract((
+                    token.address.clone(),
+                    symbol_short!("mint"),
+                    (&user1, user1_amount).into_val(&e)
+                )),
+                sub_invocations: std::vec![]
+            }
         )]
     );
     assert_eq!(token.balance(&user1), 1000);
@@ -78,9 +87,14 @@ fn test() {
         e.auths(),
         [(
             pool.clone(),
-            token.address.clone(),
-            Symbol::new(&e, "set_authorized"),
-            (&user2, false).into_val(&e),
+            AuthorizedInvocation {
+                sub_invocations: std::vec![],
+                function: AuthorizedFunction::Contract((
+                    token.address.clone(),
+                    Symbol::new(&e, "set_authorized"),
+                    (&user2, false).into_val(&e),
+                ))
+            }
         )]
     );
     assert_eq!(token.authorized(&user2), false);
@@ -94,9 +108,14 @@ fn test() {
         e.auths(),
         [(
             pool.clone(),
-            token.address.clone(),
-            Symbol::short("clawback"),
-            (&user1, clawback).into_val(&e),
+            AuthorizedInvocation {
+                sub_invocations: std::vec![],
+                function: AuthorizedFunction::Contract((
+                    token.address.clone(),
+                    symbol_short!("clawback"),
+                    (&user1, clawback).into_val(&e),
+                ))
+            }
         )]
     );
     assert_eq!(token.balance(&user1), user1_amount - clawback);
@@ -130,8 +149,8 @@ fn initialize_already_initialized() {
     let underlying_asset = Address::random(&e);
 
     token.initialize(
-        &"name".into_val(&e),
-        &"symbol".into_val(&e),
+        &String::from_slice(&e, &"name"),
+        &String::from_slice(&e, &"symbol"),
         &pool,
         &underlying_asset,
     );

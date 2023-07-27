@@ -1,20 +1,18 @@
 #![deny(warnings)]
 #![no_std]
 
-use soroban_sdk::{contractclient, contractspecfn, Address, Bytes, Env};
+use soroban_sdk::{contractclient, contractspecfn, Address, Env, String};
 pub struct Spec;
 
 /// Interface for SToken
 #[contractspecfn(name = "Spec", export = false)]
 #[contractclient(name = "STokenClient")]
 pub trait STokenTrait {
-    fn initialize(e: Env, name: Bytes, symbol: Bytes, pool: Address, underlying_asset: Address);
+    fn initialize(e: Env, name: String, symbol: String, pool: Address, underlying_asset: Address);
 
     fn allowance(e: Env, from: Address, spender: Address) -> i128;
 
-    fn increase_allowance(e: Env, from: Address, spender: Address, amount: i128);
-
-    fn decrease_allowance(e: Env, from: Address, spender: Address, amount: i128);
+    fn approve(e: Env, from: Address, spender: Address, amount: i128, expiration_ledger: u32);
 
     fn balance(e: Env, id: Address) -> i128;
 
@@ -38,9 +36,9 @@ pub trait STokenTrait {
 
     fn decimals(e: Env) -> u32;
 
-    fn name(e: Env) -> Bytes;
+    fn name(e: Env) -> String;
 
-    fn symbol(e: Env) -> Bytes;
+    fn symbol(e: Env) -> String;
 
     fn total_supply(e: Env) -> i128;
 
