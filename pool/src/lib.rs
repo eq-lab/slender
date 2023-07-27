@@ -704,7 +704,6 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
-    #[cfg(any(test, feature = "testutils"))]
     fn get_stoken_underlying_supply(env: Env, stoken_address: Address) -> i128 {
         read_stoken_underlying_supply(&env, &stoken_address)
     }
