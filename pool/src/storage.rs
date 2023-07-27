@@ -1,6 +1,6 @@
 use crate::Error;
 use pool_interface::{IRParams, ReserveData, UserConfiguration};
-use soroban_sdk::{contracttype, vec, Address, Env, Vec};
+use soroban_sdk::{assert_with_error, contracttype, vec, Address, Env, Vec};
 
 #[derive(Clone)]
 #[contracttype]
@@ -109,32 +109,30 @@ pub fn write_pause(env: &Env, value: bool) {
     env.storage().set(&DataKey::Pause, &value);
 }
 
-pub fn write_treasury(e: &Env, treasury: &Address) {
-    e.storage().set(&DataKey::Treasury, treasury);
+pub fn write_treasury(env: &Env, treasury: &Address) {
+    env.storage().set(&DataKey::Treasury, treasury);
 }
 
-pub fn read_treasury(e: &Env) -> Address {
-    e.storage().get_unchecked(&DataKey::Treasury).unwrap()
+pub fn read_treasury(env: &Env) -> Address {
+    env.storage().get_unchecked(&DataKey::Treasury).unwrap()
 }
 
 pub fn write_stoken_underlying_supply(
-    e: &Env,
+    env: &Env,
     s_token_address: &Address,
     total_supply: i128,
 ) -> Result<(), Error> {
-    if total_supply.is_negative() {
-        return Err(Error::MustBePositive);
-    }
+    assert_with_error!(env, !total_supply.is_negative(), Error::MustBePositive);
 
     let data_key = DataKey::STokenUnderlyingSupply(s_token_address.clone());
-    e.storage().set(&data_key, &total_supply);
+    env.storage().set(&data_key, &total_supply);
 
     Ok(())
 }
 
-pub fn read_stoken_underlying_supply(e: &Env, s_token_address: &Address) -> i128 {
+pub fn read_stoken_underlying_supply(env: &Env, s_token_address: &Address) -> i128 {
     let data_key = DataKey::STokenUnderlyingSupply(s_token_address.clone());
-    e.storage().get(&data_key).unwrap_or(Ok(0i128)).unwrap()
+    env.storage().get(&data_key).unwrap_or(Ok(0i128)).unwrap()
 }
 
 pub fn add_stoken_underlying_supply(
@@ -142,9 +140,7 @@ pub fn add_stoken_underlying_supply(
     s_token_address: &Address,
     amount: i128,
 ) -> Result<i128, Error> {
-    if amount < 0 {
-        return Err(Error::MustBePositive);
-    }
+    assert_with_error!(env, amount > 0, Error::MustBePositive);
 
     let mut total_supply = read_stoken_underlying_supply(env, s_token_address);
 
@@ -162,9 +158,7 @@ pub fn sub_stoken_underlying_supply(
     s_token_address: &Address,
     amount: i128,
 ) -> Result<i128, Error> {
-    if amount < 0 {
-        return Err(Error::MustBePositive);
-    }
+    assert_with_error!(env, amount > 0, Error::MustBePositive);
 
     let mut total_supply = read_stoken_underlying_supply(env, s_token_address);
 
