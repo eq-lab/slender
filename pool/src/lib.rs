@@ -17,7 +17,7 @@ mod price_provider;
 mod rate;
 mod storage;
 #[cfg(test)]
-mod test;
+mod tests;
 
 use crate::storage::*;
 
@@ -696,7 +696,7 @@ impl LendingPoolTrait for LendingPool {
                     !user_config.is_borrowing(&env, reserve_index),
                     Error::MustNotHaveDebt
                 );
-            } else {
+            } else if !user_config.is_borrowing(&env, reserve_index) {
                 user_config.set_using_as_collateral(&env, reserve_index, use_as_collateral);
                 let reserves = read_reserves(&env);
                 let account_data = Self::calc_account_data(
