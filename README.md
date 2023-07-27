@@ -26,10 +26,10 @@ make test
 
 ## Deploy and run integration tests
 
-To run the tests you need to install **soroban-cli** version 0.8.7
+To run the tests you need to install **soroban-cli** version 0.9.1
 
 ```shell
-cargo install --locked --version 0.8.7 soroban-cli
+cargo install --locked --version 0.9.1 soroban-cli
 ```
 
 Run a local standalone (or Futurenet) network with the following command:
