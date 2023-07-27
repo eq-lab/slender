@@ -364,7 +364,7 @@ fn withdraw() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&debt_config.s_token.address);
+        .get_stoken_underlying_balance(&debt_config.s_token.address);
 
     let lender_underlying_balance = debt_config.token.balance(&lender);
     let lender_s_token_balance = debt_config.s_token.balance(&lender);
@@ -404,7 +404,7 @@ fn withdraw_full() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&debt_config.s_token.address);
+        .get_stoken_underlying_balance(&debt_config.s_token.address);
 
     let lender_underlying_balance = debt_config.token.balance(&lender);
     let lender_s_token_balance = debt_config.s_token.balance(&lender);
@@ -439,7 +439,7 @@ fn withdraw_base() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.s_token().address);
+        .get_stoken_underlying_balance(&sut.s_token().address);
 
     assert_eq!(sut.s_token().balance(&user1), deposit_amount);
     assert_eq!(
@@ -455,7 +455,7 @@ fn withdraw_base() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.s_token().address);
+        .get_stoken_underlying_balance(&sut.s_token().address);
 
     assert_eq!(sut.token().balance(&user2), amount_to_withdraw);
     assert_eq!(
@@ -486,7 +486,7 @@ fn withdraw_base() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.s_token().address);
+        .get_stoken_underlying_balance(&sut.s_token().address);
 
     assert_eq!(sut.token().balance(&user2), deposit_amount);
     assert_eq!(sut.s_token().balance(&user1), 0);
@@ -784,7 +784,7 @@ fn borrow() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     assert_eq!(s_token_underlying_supply, 100_000_000);
 
@@ -804,7 +804,7 @@ fn borrow() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     let pool_balance = sut.reserves[1]
         .token
@@ -1205,10 +1205,10 @@ fn test_liquidate() {
 
     let s_token_underlying_supply_0 = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[0].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[0].s_token.address);
     let s_token_underlying_supply_1 = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     let position = sut.pool.get_account_position(&borrower);
     assert!(position.npv == 0, "test configuration");
@@ -1232,10 +1232,10 @@ fn test_liquidate() {
 
     let s_token_underlying_supply_0 = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[0].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[0].s_token.address);
     let s_token_underlying_supply_1 = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     let debt_with_penalty = FixedI128::from_percentage(debt_reserve.configuration.liq_bonus)
         .unwrap()
@@ -1297,7 +1297,7 @@ fn test_liquidate_receive_stoken() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     let position = sut.pool.get_account_position(&borrower);
     assert!(position.npv == 0, "test configuration");
@@ -1323,7 +1323,7 @@ fn test_liquidate_receive_stoken() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     let debt_with_penalty = FixedI128::from_percentage(debt_reserve.configuration.liq_bonus)
         .unwrap()
@@ -1382,10 +1382,10 @@ fn liquidate_over_repay_liquidator_debt() {
 
     let s_token_underlying_supply_1 = sut
         .pool
-        .get_stoken_underlying_supply(&reserve_1.s_token.address);
+        .get_stoken_underlying_balance(&reserve_1.s_token.address);
     let s_token_underlying_supply_2 = sut
         .pool
-        .get_stoken_underlying_supply(&reserve_2.s_token.address);
+        .get_stoken_underlying_balance(&reserve_2.s_token.address);
 
     assert_eq!(s_token_underlying_supply_1, 1_000_000_000);
     assert_eq!(s_token_underlying_supply_2, 3_000_000_000);
@@ -1397,10 +1397,10 @@ fn liquidate_over_repay_liquidator_debt() {
 
     let s_token_underlying_supply_1 = sut
         .pool
-        .get_stoken_underlying_supply(&reserve_1.s_token.address);
+        .get_stoken_underlying_balance(&reserve_1.s_token.address);
     let s_token_underlying_supply_2 = sut
         .pool
-        .get_stoken_underlying_supply(&reserve_2.s_token.address);
+        .get_stoken_underlying_balance(&reserve_2.s_token.address);
 
     assert_eq!(s_token_underlying_supply_1, 800_000_000);
     assert_eq!(s_token_underlying_supply_2, 2_400_000_000);
@@ -1415,10 +1415,10 @@ fn liquidate_over_repay_liquidator_debt() {
 
     let s_token_underlying_supply_1 = sut
         .pool
-        .get_stoken_underlying_supply(&reserve_1.s_token.address);
+        .get_stoken_underlying_balance(&reserve_1.s_token.address);
     let s_token_underlying_supply_2 = sut
         .pool
-        .get_stoken_underlying_supply(&reserve_2.s_token.address);
+        .get_stoken_underlying_balance(&reserve_2.s_token.address);
 
     let borrower_debt_after = reserve_2.debt_token.balance(&borrower);
     let liquidator_debt_after = reserve_1.debt_token.balance(&liquidator);
@@ -1488,7 +1488,7 @@ fn user_operation_should_update_ar_coeffs() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     assert_eq!(s_token_underlying_supply, 100_000_000);
 
@@ -1499,7 +1499,7 @@ fn user_operation_should_update_ar_coeffs() {
 
         let s_token_underlying_supply = sut
             .pool
-            .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+            .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
         let updated_reserve = sut.pool.get_reserve(&debt_asset_1).unwrap();
         assert_eq!(
@@ -1527,7 +1527,7 @@ fn user_operation_should_update_ar_coeffs() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     let updated = sut.pool.get_reserve(&debt_asset_1).unwrap();
     let ir_params = sut.pool.get_ir_params().unwrap();
@@ -1595,7 +1595,7 @@ fn repay() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     let borrower_stoken_balance = sut.reserves[0].s_token.balance(&borrower);
     let borrower_token_balance = sut.reserves[0].token.balance(&borrower);
@@ -1615,7 +1615,7 @@ fn repay() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     let collat_coeff = FixedI128::from_inner(sut.pool.collat_coeff(&sut.reserves[1].token.address));
     std::println!("collat_coeff={:?}", collat_coeff.into_inner());
@@ -1642,7 +1642,7 @@ fn repay() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     let expected_borrower_debt_amount = borrower_debt_amount - repayment_amount_debt_token;
     assert_eq!(expected_borrower_debt_amount, 2995079952_i128);
@@ -1672,7 +1672,7 @@ fn repay() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     let collat_coeff = FixedI128::from_inner(sut.pool.collat_coeff(&sut.reserves[1].token.address));
     let expected_deposit_amount = over_repayment_amount - remaining_debt;
@@ -2016,7 +2016,7 @@ fn withdraw_should_burn_s_token() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&debt_config.s_token.address);
+        .get_stoken_underlying_balance(&debt_config.s_token.address);
 
     assert_eq!(s_token_underlying_supply, 60_000_000);
 
@@ -2032,7 +2032,7 @@ fn withdraw_should_burn_s_token() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&debt_config.s_token.address);
+        .get_stoken_underlying_balance(&debt_config.s_token.address);
 
     let collat_coeff = FixedI128::from_inner(sut.pool.collat_coeff(&debt_config.token.address));
     let expected_burned_stoken = collat_coeff.recip_mul_int(withdraw_amount).unwrap();
@@ -2098,7 +2098,7 @@ fn test_withdraw_bad_position() {
 }
 
 #[test]
-fn stoken_supply_not_changed_when_direct_transfer_to_underlying_asset() {
+fn stoken_balance_not_changed_when_direct_transfer_to_underlying_asset() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -2113,7 +2113,7 @@ fn stoken_supply_not_changed_when_direct_transfer_to_underlying_asset() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[0].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[0].s_token.address);
 
     assert_eq!(s_token_underlying_supply, 1_000_000_000);
 
@@ -2123,7 +2123,7 @@ fn stoken_supply_not_changed_when_direct_transfer_to_underlying_asset() {
 
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_supply(&sut.reserves[0].s_token.address);
+        .get_stoken_underlying_balance(&sut.reserves[0].s_token.address);
 
     assert_eq!(s_token_underlying_supply, 1_000_000_000);
 }
