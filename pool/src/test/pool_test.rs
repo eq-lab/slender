@@ -1301,10 +1301,10 @@ fn liquidate_over_repay_liquidator_debt() {
     let reserve_1 = &sut.reserves[0];
     let reserve_2 = &sut.reserves[1];
 
-    reserve_1.token.mint(&liquidator, &2_000_000_000);
-    reserve_1.token.mint(&borrower, &2_000_000_000);
-    reserve_2.token.mint(&lender, &2_000_000_000);
-    reserve_2.token.mint(&liquidator, &2_000_000_000);
+    reserve_1.token_admin.mint(&liquidator, &2_000_000_000);
+    reserve_1.token_admin.mint(&borrower, &2_000_000_000);
+    reserve_2.token_admin.mint(&lender, &2_000_000_000);
+    reserve_2.token_admin.mint(&liquidator, &2_000_000_000);
 
     sut.pool
         .deposit(&lender, &reserve_2.token.address, &2_000_000_000);
