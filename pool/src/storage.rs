@@ -13,7 +13,7 @@ pub enum DataKey {
     UserConfig(Address),
     PriceFeed(Address),
     Pause,
-    STokenUnderlyingSupply(Address),
+    STokenUnderlyingBalance(Address),
 }
 
 pub fn has_admin(env: &Env) -> bool {
@@ -126,14 +126,14 @@ pub fn write_stoken_underlying_balance(
 ) -> Result<(), Error> {
     assert_with_error!(env, !total_supply.is_negative(), Error::MustBePositive);
 
-    let data_key = DataKey::STokenUnderlyingSupply(s_token_address.clone());
+    let data_key = DataKey::STokenUnderlyingBalance(s_token_address.clone());
     env.storage().instance().set(&data_key, &total_supply);
 
     Ok(())
 }
 
 pub fn read_stoken_underlying_balance(env: &Env, s_token_address: &Address) -> i128 {
-    let data_key = DataKey::STokenUnderlyingSupply(s_token_address.clone());
+    let data_key = DataKey::STokenUnderlyingBalance(s_token_address.clone());
     env.storage().instance().get(&data_key).unwrap_or(0i128)
 }
 
