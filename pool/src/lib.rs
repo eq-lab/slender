@@ -417,17 +417,19 @@ impl LendingPoolTrait for LendingPool {
             .ok_or(Error::InvalidAmount)?;
 
         let mut from_config = read_user_config(&env, from.clone())?;
-        let reserves = read_reserves(&env);
-        let account_data = Self::calc_account_data(
-            &env,
-            from.clone(),
-            Some(AssetBalance::new(s_token_address, balance_from_after)),
-            &from_config,
-            &reserves,
-            false,
-        )?;
+        if from_config.is_borrowing_any() {
+            let reserves = read_reserves(&env);
+            let from_account_data = Self::calc_account_data(
+                &env,
+                from.clone(),
+                Some(AssetBalance::new(s_token_address, balance_from_after)),
+                &from_config,
+                &reserves,
+                false,
+            )?;
 
-        Self::require_good_position(&env, account_data);
+            Self::require_good_position(&env, from_account_data);
+        }
 
         if from != to {
             let reserve_id = reserve.get_id();
