@@ -1319,8 +1319,6 @@ fn test_liquidate_receive_stoken() {
 
     assert_eq!(s_token_underlying_supply, 400_000_000);
 
-    env.budget().reset_default();
-
     assert_eq!(sut.pool.liquidate(&liquidator, &borrower, &true), ());
 
     let s_token_underlying_supply = sut
@@ -1493,8 +1491,6 @@ fn user_operation_should_update_ar_coeffs() {
         .get_stoken_underlying_supply(&sut.reserves[1].s_token.address);
 
     assert_eq!(s_token_underlying_supply, 100_000_000);
-
-    env.budget().reset_default();
 
     // ensure that zero elapsed time doesn't change AR coefficients
     {
@@ -2109,11 +2105,11 @@ fn stoken_supply_not_changed_when_direct_transfer_to_underlying_asset() {
     let sut = init_pool(&env);
     let lender = Address::random(&env);
 
-    sut.reserves[0].token.mint(&lender, &2_000_000_000);
+    env.budget().reset_unlimited();
+
+    sut.reserves[0].token_admin.mint(&lender, &2_000_000_000);
     sut.pool
         .deposit(&lender, &sut.reserves[0].token.address, &1_000_000_000);
-
-    env.budget().reset_default();
 
     let s_token_underlying_supply = sut
         .pool

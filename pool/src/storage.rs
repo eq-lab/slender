@@ -134,11 +134,7 @@ pub fn write_stoken_underlying_supply(
 
 pub fn read_stoken_underlying_supply(env: &Env, s_token_address: &Address) -> i128 {
     let data_key = DataKey::STokenUnderlyingSupply(s_token_address.clone());
-    env.storage()
-        .instance()
-        .get(&data_key)
-        .unwrap_or(Ok(0i128))
-        .unwrap()
+    env.storage().instance().get(&data_key).unwrap_or(0i128)
 }
 
 pub fn add_stoken_underlying_supply(
