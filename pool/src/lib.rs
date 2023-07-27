@@ -427,7 +427,7 @@ impl LendingPoolTrait for LendingPool {
             false,
         )?;
 
-        assert_with_error!(env, account_data.is_good_position(), Error::BadPosition);
+        Self::require_good_position(&env, account_data);
 
         if from != to {
             let reserve_id = reserve.get_id();
@@ -786,6 +786,10 @@ impl LendingPool {
         Ok(())
     }
 
+    fn require_good_position(env: &Env, account_data: AccountData) {
+        assert_with_error!(env, account_data.is_good_position(), Error::BadPosition);
+    }
+
     fn do_deposit(
         env: &Env,
         who: &Address,
@@ -919,7 +923,7 @@ impl LendingPool {
                 false,
             )?;
 
-            assert_with_error!(env, account_data.is_good_position(), Error::BadPosition);
+            Self::require_good_position(env, account_data);
         }
 
         Ok(())
@@ -974,7 +978,7 @@ impl LendingPool {
             Error::CollateralNotCoverNewBorrow
         );
 
-        assert_with_error!(env, account_data.is_good_position(), Error::BadPosition);
+        Self::require_good_position(env, account_data);
 
         Ok(())
     }
