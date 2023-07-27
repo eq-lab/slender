@@ -1950,3 +1950,42 @@ fn test_withdraw_bad_position() {
     //     Error::BadPosition
     // );
 }
+
+#[test]
+fn set_as_collateral_no_debt() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let sut = init_pool(&env);
+    let user = Address::random(&env);
+    sut.token_admin().mint(&user, &1_000_000_000);
+    sut.pool.deposit(&user, &sut.token().address, &1_000_000_000);
+    
+}
+
+#[test]
+fn set_as_collateral_false_with_debt() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+}
+
+#[test]
+fn set_as_collateral_true_with_debt() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+}
+
+#[test]
+fn set_as_collateral_must_not_have_debt() {
+    let env = Env::default();
+    env.mock_all_auths();
+    
+}
+
+#[test]
+fn set_as_collateral_bad_position() {
+    let env = Env::default();
+    env.mock_all_auths();
+    
+}

@@ -716,6 +716,10 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
+    fn get_user_configuration(env: Env, who: Address) -> Result<UserConfiguration, Error> {
+        read_user_config(&env, who)
+    }
+
     #[cfg(any(test, feature = "testutils"))]
     fn set_accrued_rates(
         env: Env,
