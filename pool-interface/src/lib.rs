@@ -128,6 +128,8 @@ pub trait LendingPoolTrait {
         borrower_accrued_rate: Option<i128>,
     ) -> Result<(), Error>;
 
+    fn get_stoken_underlying_balance(env: Env, stoken_address: Address) -> i128;
+
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn set_pause(env: Env, value: bool) -> Result<(), Error>;

@@ -376,8 +376,6 @@ impl STokenTrait for SToken {
 
 impl SToken {
     fn do_transfer(e: &Env, from: Address, to: Address, amount: i128, validate: bool) {
-        let underlying_asset = read_underlying_asset(e);
-
         let from_balance_prev = read_balance(e, from.clone());
         let to_balance_prev = read_balance(e, to.clone());
 
@@ -385,6 +383,7 @@ impl SToken {
         receive_balance(e, to.clone(), amount);
 
         if validate && cfg!(not(feature = "testutils")) {
+            let underlying_asset = read_underlying_asset(e);
             let total_supply = read_total_supply(e);
             let pool_client = LendingPoolClient::new(e, &read_pool(e));
             pool_client.finalize_transfer(
@@ -443,8 +442,7 @@ impl SToken {
             amount_to_burn.checked_neg().expect("s-token: no overflow"),
         );
 
-        let underlying_asset = read_underlying_asset(e);
-        let underlying_asset_client = token::Client::new(e, &underlying_asset);
+        let underlying_asset_client = token::Client::new(e, &read_underlying_asset(e));
         underlying_asset_client.transfer(&e.current_contract_address(), &to, &amount_to_withdraw);
     }
 }
