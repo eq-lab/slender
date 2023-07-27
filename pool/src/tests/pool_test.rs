@@ -10,6 +10,8 @@ use soroban_sdk::{
     token::AdminClient as TokenAdminClient, token::Client as TokenClient, vec, IntoVal, Symbol,
 };
 
+use super::sut::{ReserveConfig, Sut};
+
 extern crate std;
 
 mod s_token {
@@ -91,42 +93,7 @@ fn create_price_feed_contract<'a>(e: &Env) -> PriceFeedClient<'a> {
     PriceFeedClient::new(&e, &e.register_contract_wasm(None, price_feed::WASM))
 }
 
-#[allow(dead_code)]
-struct ReserveConfig<'a> {
-    token: TokenClient<'a>,
-    token_admin: TokenAdminClient<'a>,
-    s_token: STokenClient<'a>,
-    debt_token: DebtTokenClient<'a>,
-}
-
-#[allow(dead_code)]
-struct Sut<'a> {
-    pool: LendingPoolClient<'a>,
-    price_feed: PriceFeedClient<'a>,
-    pool_admin: Address,
-    token_admin: Address,
-    reserves: std::vec::Vec<ReserveConfig<'a>>,
-}
-
-impl<'a> Sut<'a> {
-    fn token(&self) -> &TokenClient<'a> {
-        &self.reserves[0].token
-    }
-
-    fn token_admin(&self) -> &TokenAdminClient<'a> {
-        &self.reserves[0].token_admin
-    }
-
-    fn debt_token(&self) -> &DebtTokenClient<'a> {
-        &self.reserves[0].debt_token
-    }
-
-    fn s_token(&self) -> &STokenClient<'a> {
-        &self.reserves[0].s_token
-    }
-}
-
-fn init_pool<'a>(env: &Env) -> Sut<'a> {
+pub(crate) fn init_pool<'a>(env: &Env) -> Sut<'a> {
     let admin = Address::random(&env);
     let token_admin = Address::random(&env);
 
@@ -1949,43 +1916,4 @@ fn test_withdraw_bad_position() {
     //         .unwrap(),
     //     Error::BadPosition
     // );
-}
-
-#[test]
-fn set_as_collateral_no_debt() {
-    let env = Env::default();
-    env.mock_all_auths();
-    let sut = init_pool(&env);
-    let user = Address::random(&env);
-    sut.token_admin().mint(&user, &1_000_000_000);
-    sut.pool.deposit(&user, &sut.token().address, &1_000_000_000);
-    
-}
-
-#[test]
-fn set_as_collateral_false_with_debt() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-}
-
-#[test]
-fn set_as_collateral_true_with_debt() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-}
-
-#[test]
-fn set_as_collateral_must_not_have_debt() {
-    let env = Env::default();
-    env.mock_all_auths();
-    
-}
-
-#[test]
-fn set_as_collateral_bad_position() {
-    let env = Env::default();
-    env.mock_all_auths();
-    
 }
