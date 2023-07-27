@@ -980,7 +980,7 @@ impl LendingPool {
     ) -> Result<(), Error> {
         assert_with_error!(
             env,
-            user_config.is_using_as_collateral(env, reserve.get_id()),
+            !user_config.is_using_as_collateral(env, reserve.get_id()),
             Error::MustNotBeInCollateralAsset
         );
 
