@@ -5,7 +5,7 @@ extern crate std;
 use crate::{Deployer, DeployerClient};
 use pool_interface::IRParams;
 use soroban_sdk::{
-    testutils::Address as _, token::Client as TokenClient, Address, Bytes, BytesN, Env,
+    testutils::Address as _, token::Client as TokenClient, Address, BytesN, Env, String,
 };
 
 mod pool {
@@ -34,7 +34,7 @@ fn deploy_pool_and_s_token() {
     };
     let pool_contract_id = {
         // Install the WASM code to be deployed from the deployer contract.
-        let pool_wasm_hash = env.install_contract_wasm(pool::WASM);
+        let pool_wasm_hash = env.deployer().upload_contract_wasm(pool::WASM);
 
         // Deploy contract using deployer, and include an init function to call.
         let salt = BytesN::from_array(&env, &[0; 32]);
@@ -53,6 +53,8 @@ fn deploy_pool_and_s_token() {
         contract_id
     };
 
+    env.budget().reset_default();
+
     // Invoke contract to check that it is initialized.
     let pool_client = pool::Client::new(&env, &pool_contract_id);
     let underlying_asset = TokenClient::new(
@@ -61,10 +63,10 @@ fn deploy_pool_and_s_token() {
     );
     // Deploy s-token
     let s_token_contract_id = {
-        let s_token_wasm_hash = env.install_contract_wasm(s_token::WASM);
+        let s_token_wasm_hash = env.deployer().upload_contract_wasm(s_token::WASM);
 
-        let name = Bytes::from_slice(&env, b"name");
-        let symbol = Bytes::from_slice(&env, b"symbol");
+        let name = String::from_slice(&env, &"name");
+        let symbol = String::from_slice(&env, &"symbol");
 
         let (contract_id, init_result) = client.deploy_s_token(
             &BytesN::from_array(&env, &[1; 32]),
@@ -81,12 +83,14 @@ fn deploy_pool_and_s_token() {
 
     let _s_token_client = s_token::Client::new(&env, &s_token_contract_id);
 
+    env.budget().reset_default();
+
     // Deploy debt token
     let debt_token_contract_id = {
-        let debt_token_wasm_hash = env.install_contract_wasm(debt_token::WASM);
+        let debt_token_wasm_hash = env.deployer().upload_contract_wasm(debt_token::WASM);
 
-        let name = Bytes::from_slice(&env, b"name");
-        let symbol = Bytes::from_slice(&env, b"symbol");
+        let name = String::from_slice(&env, &"name");
+        let symbol = String::from_slice(&env, &"symbol");
 
         let (contract_id, init_result) = client.deploy_debt_token(
             &BytesN::from_array(&env, &[2; 32]),

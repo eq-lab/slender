@@ -1,13 +1,13 @@
 #![deny(warnings)]
 #![no_std]
 
-use soroban_sdk::{contractclient, contractspecfn, Address, Bytes, Env};
+use soroban_sdk::{contractclient, contractspecfn, Address, Env, String};
 pub struct Spec;
 
 #[contractspecfn(name = "Spec", export = false)]
 #[contractclient(name = "DebtTokenClient")]
 pub trait DebtTokenTrait {
-    fn initialize(e: Env, name: Bytes, symbol: Bytes, pool: Address, underlying_asset: Address);
+    fn initialize(e: Env, name: String, symbol: String, pool: Address, underlying_asset: Address);
 
     fn balance(env: Env, id: Address) -> i128;
 
@@ -27,9 +27,9 @@ pub trait DebtTokenTrait {
 
     fn decimals(env: Env) -> u32;
 
-    fn name(env: Env) -> Bytes;
+    fn name(env: Env) -> String;
 
-    fn symbol(env: Env) -> Bytes;
+    fn symbol(env: Env) -> String;
 
     fn total_supply(env: Env) -> i128;
 }

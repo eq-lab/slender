@@ -12,7 +12,7 @@ doctest = false
 
 [dependencies]
 soroban-sdk = { workspace = true }
-pool-interface = { path="../pool-interface", version="0.1.0", package="pool-interface" }
+pool-interface = { path = "../pool-interface", version = "0.1.0", package = "pool-interface" }
 
 [dev_dependencies]
-soroban-sdk = { workspace = true, features=["testutils"] }
+soroban-sdk = { workspace = true, features = ["testutils"] }
