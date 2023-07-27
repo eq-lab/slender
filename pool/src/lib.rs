@@ -678,6 +678,42 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
+    fn set_as_collateral(
+        env: Env,
+        who: Address,
+        asset: Address,
+        use_as_collateral: bool,
+    ) -> Result<(), Error> {
+        who.require_auth();
+        let mut user_config = read_user_config(&env, who.clone())?;
+        let reserve_index = read_reserve(&env, asset)?.get_id();
+        if user_config.is_borrowing_any() {
+            if use_as_collateral {
+                assert_with_error!(
+                    &env,
+                    !user_config.is_borrowing(&env, reserve_index),
+                    Error::MustNotHaveDebt
+                );
+            } else {
+                user_config.set_using_as_collateral(&env, reserve_index, use_as_collateral);
+                let reserves = read_reserves(&env);
+                let account_data = Self::calc_account_data(
+                    &env,
+                    who.clone(),
+                    None,
+                    &user_config,
+                    &reserves,
+                    false,
+                )?;
+                Self::require_good_position(&env, account_data);
+            }
+        }
+        user_config.set_using_as_collateral(&env, reserve_index, use_as_collateral);
+        write_user_config(&env, who, &user_config);
+
+        Ok(())
+    }
+
     #[cfg(any(test, feature = "testutils"))]
     fn set_accrued_rates(
         env: Env,
@@ -940,8 +976,11 @@ impl LendingPool {
         debt_token: &DebtTokenClient,
         amount_to_borrow: i128,
     ) -> Result<(), Error> {
-        let s_token_balance = s_token.balance(&who);
-        assert_with_error!(env, s_token_balance == 0, Error::MustNotBeInCollateralAsset);
+        assert_with_error!(
+            env,
+            user_config.is_using_as_collateral(env, reserve.get_id()),
+            Error::MustNotBeInCollateralAsset
+        );
 
         let total_debt_after = debt_token
             .total_supply()
