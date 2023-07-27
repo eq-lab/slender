@@ -1216,16 +1216,13 @@ impl LendingPool {
         assert_with_error!(env, !paused(env), Error::Paused);
     }
 
-    fn require_zero_debt(
-        env: &Env,
-        recipient: Address,
-        debt_token_address: Address,
-    ) -> Result<(), Error> {
+    fn require_zero_debt(env: &Env, recipient: Address, debt_token_address: Address) {
         let debt_token = DebtTokenClient::new(env, &debt_token_address);
-        if debt_token.balance(&recipient) > 0 {
-            return Err(Error::MustNotHaveDebt);
-        }
-        Ok(())
+        assert_with_error!(
+            env,
+            debt_token.balance(&recipient) == 0,
+            Error::MustNotHaveDebt
+        );
     }
 
     fn require_good_position(account_data: AccountData) -> Result<(), Error> {
