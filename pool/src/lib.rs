@@ -425,7 +425,8 @@ impl LendingPoolTrait for LendingPool {
             &reserves,
             false,
         )?;
-        Self::require_good_position(account_data)?;
+
+        assert_with_error!(env, account_data.is_good_position(), Error::BadPosition);
 
         if from != to {
             let reserve_id = reserve.get_id();
@@ -648,9 +649,8 @@ impl LendingPoolTrait for LendingPool {
         let mut user_config = read_user_config(&env, who.clone())?;
         let account_data =
             Self::calc_account_data(&env, who.clone(), None, &user_config, &reserves, true)?;
-        if account_data.is_good_position() {
-            return Err(Error::GoodPosition);
-        }
+
+        assert_with_error!(&env, !account_data.is_good_position(), Error::GoodPosition);
 
         // let liquidation_debt = account_data
         //     .debt_with_penalty
@@ -917,7 +917,8 @@ impl LendingPool {
                 &reserves,
                 false,
             )?;
-            Self::require_good_position(account_data)?;
+
+            assert_with_error!(env, account_data.is_good_position(), Error::BadPosition);
         }
 
         Ok(())
@@ -972,7 +973,7 @@ impl LendingPool {
             Error::CollateralNotCoverNewBorrow
         );
 
-        Self::require_good_position(account_data)?;
+        assert_with_error!(env, account_data.is_good_position(), Error::BadPosition);
 
         Ok(())
     }
@@ -1011,9 +1012,11 @@ impl LendingPool {
             let curr_reserve_asset = reserves.get_unchecked(i.into()).unwrap_optimized();
             let curr_reserve = read_reserve(env, curr_reserve_asset.clone())?;
 
-            if !curr_reserve.configuration.is_active && liquidation {
-                return Err(Error::NoActiveReserve);
-            }
+            assert_with_error!(
+                env,
+                curr_reserve.configuration.is_active || !liquidation,
+                Error::NoActiveReserve
+            );
 
             let reserve_price = Self::get_asset_price(env, curr_reserve_asset.clone())?;
 
@@ -1225,14 +1228,6 @@ impl LendingPool {
         );
     }
 
-    fn require_good_position(account_data: AccountData) -> Result<(), Error> {
-        if !account_data.is_good_position() {
-            return Err(Error::BadPosition);
-        }
-
-        Ok(())
-    }
-
     fn do_liquidate(
         env: &Env,
         liquidator: Address,
@@ -1343,9 +1338,7 @@ impl LendingPool {
             recalculate_reserve_data(env, underlying_asset, reserve, s_token_supply)?;
         }
 
-        if debt_with_penalty != 0 {
-            return Err(Error::NotEnoughCollateral);
-        }
+        assert_with_error!(env, debt_with_penalty == 0, Error::NotEnoughCollateral);
 
         for debt_to_cover in liquidation_data.debt_to_cover {
             let (reserve, compounded_debt, debt_amount) = debt_to_cover.unwrap_optimized();
