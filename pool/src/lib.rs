@@ -818,7 +818,6 @@ impl LendingPool {
 
         underlying_asset.transfer(who, &reserve.s_token_address, &amount);
 
-        let s_token = STokenClient::new(env, &reserve.s_token_address);
         s_token.mint(who, &amount_to_mint);
 
         event::deposit(env, who.clone(), asset.clone(), amount);
