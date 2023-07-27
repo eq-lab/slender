@@ -405,7 +405,7 @@ impl LendingPoolTrait for LendingPool {
         let s_token_address = (reserve.clone()).s_token_address;
         s_token_address.require_auth();
 
-        Self::require_zero_debt(&env, to.clone(), reserve.debt_token_address.clone())?;
+        Self::require_zero_debt(&env, to.clone(), reserve.debt_token_address.clone());
 
         // update reserve
         let reserve = recalculate_reserve_data(&env, asset.clone(), reserve, s_token_supply)?;
