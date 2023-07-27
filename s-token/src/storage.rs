@@ -1,5 +1,7 @@
 use soroban_sdk::{contracttype, Address, Env};
 
+pub(crate) const INSTANCE_BUMP_AMOUNT: u32 = 34560; // 2 days
+
 #[contracttype]
 pub struct AllowanceValue {
     pub amount: i128,
@@ -57,6 +59,8 @@ pub fn write_allowance(
     amount: i128,
     expiration_ledger: u32,
 ) {
+    e.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
+
     let allowance = AllowanceValue {
         amount,
         expiration_ledger,
@@ -67,7 +71,7 @@ pub fn write_allowance(
     }
 
     let key = DataKey::Allowance(AllowanceDataKey { from, spender });
-    e.storage().temporary().set(&key.clone(), &allowance);
+    e.storage().temporary().set(&key, &allowance);
 
     if amount > 0 {
         e.storage().temporary().bump(

@@ -12,8 +12,6 @@ use s_token_interface::STokenTrait;
 use soroban_sdk::{contract, contractimpl, token, Address, Env, String};
 use soroban_token_sdk::TokenMetadata;
 
-pub(crate) const INSTANCE_BUMP_AMOUNT: u32 = 34560; // 2 days
-
 #[contract]
 pub struct SToken;
 
@@ -81,7 +79,7 @@ impl STokenTrait for SToken {
         read_allowance(&e, from, spender).amount
     }
 
-    /// Increases the allowance for a spender to withdraw from the `from` address by a specified amount of tokens.
+    /// Set the allowance for a spender to withdraw from the `from` address by a specified amount of tokens.
     ///
     /// # Arguments
     ///
@@ -100,8 +98,6 @@ impl STokenTrait for SToken {
         from.require_auth();
 
         require_nonnegative_amount(amount);
-
-        e.storage().instance().bump(INSTANCE_BUMP_AMOUNT);
 
         write_allowance(&e, from.clone(), spender.clone(), amount, expiration_ledger);
         event::approve(&e, from, spender, amount, expiration_ledger);

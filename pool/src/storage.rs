@@ -87,7 +87,7 @@ pub fn read_price_feed(env: &Env, asset: Address) -> Result<Address, Error> {
     let data_key = DataKey::PriceFeed(asset);
 
     env.storage()
-        .persistent()
+        .instance()
         .get(&data_key)
         .ok_or(Error::NoPriceFeed)
 }
@@ -95,7 +95,7 @@ pub fn read_price_feed(env: &Env, asset: Address) -> Result<Address, Error> {
 pub fn write_price_feed(env: &Env, feed: Address, assets: &Vec<Address>) {
     for asset in assets.iter() {
         let data_key = DataKey::PriceFeed(asset);
-        env.storage().persistent().set(&data_key, &feed);
+        env.storage().instance().set(&data_key, &feed);
     }
 }
 
