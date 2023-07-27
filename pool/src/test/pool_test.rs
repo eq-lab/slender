@@ -1287,6 +1287,77 @@ fn test_liquidate_receive_stoken() {
 }
 
 #[test]
+fn liquidate_over_repay_liquidator_debt() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let sut = init_pool(&env);
+
+    env.budget().reset_unlimited();
+
+    let liquidator = Address::random(&env);
+    let borrower = Address::random(&env);
+    let lender = Address::random(&env);
+
+    let reserve_1 = &sut.reserves[0];
+    let reserve_2 = &sut.reserves[1];
+
+    reserve_1.token_admin.mint(&liquidator, &2_000_000_000);
+    reserve_1.token_admin.mint(&borrower, &2_000_000_000);
+    reserve_2.token_admin.mint(&lender, &2_000_000_000);
+    reserve_2.token_admin.mint(&liquidator, &2_000_000_000);
+
+    sut.pool
+        .deposit(&lender, &reserve_2.token.address, &2_000_000_000);
+    sut.pool
+        .deposit(&liquidator, &reserve_2.token.address, &1_000_000_000);
+    sut.pool
+        .deposit(&borrower, &reserve_1.token.address, &1_000_000_000);
+
+    sut.pool
+        .borrow(&borrower, &reserve_2.token.address, &600_000_000);
+    sut.pool
+        .borrow(&liquidator, &reserve_1.token.address, &200_000_000);
+
+    let borrower_debt_before = reserve_2.debt_token.balance(&borrower);
+    let liquidator_debt_before = reserve_1.debt_token.balance(&liquidator);
+
+    let borrower_collat_before = reserve_1.s_token.balance(&borrower);
+    let liquidator_collat_before = reserve_2.s_token.balance(&liquidator);
+
+    assert_eq!(sut.pool.liquidate(&liquidator, &borrower, &true), ());
+
+    let borrower_debt_after = reserve_2.debt_token.balance(&borrower);
+    let liquidator_debt_after = reserve_1.debt_token.balance(&liquidator);
+
+    let borrower_collat_after = reserve_1.s_token.balance(&borrower);
+    let liquidator_collat_after = reserve_1.s_token.balance(&liquidator);
+
+    // borrower borrowed 600_000_000
+    assert_eq!(borrower_debt_before, 600_000_000);
+
+    // liquidator borrowed 200_000_000
+    assert_eq!(liquidator_debt_before, 200_000_000);
+
+    // borrower deposited 1_000_000_000
+    assert_eq!(borrower_collat_before, 1_000_000_000);
+
+    // liquidator deposited 1_000_000_000
+    assert_eq!(liquidator_collat_before, 1_000_000_000);
+
+    // borrower's debt repayed
+    assert_eq!(borrower_debt_after, 0);
+
+    // liquidator's debt repayed
+    assert_eq!(liquidator_debt_after, 0);
+
+    // borrower transferred stokens: 1_000_000_000 - 660_000_000 = 340_000_000
+    assert_eq!(borrower_collat_after, 340_000_000);
+
+    // liquidator accepted stokens: 660_000_000 - 200_000_000 = 460_000_000
+    assert_eq!(liquidator_collat_after, 460_000_000);
+}
+
+#[test]
 fn user_operation_should_update_ar_coeffs() {
     let env = Env::default();
     env.mock_all_auths();

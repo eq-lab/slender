@@ -25,7 +25,6 @@
             //     "test::pool_test::repay",
             //     "--exact",
             //     "--nocapture"
-
             // ],
             "cwd": "${workspaceFolder}"
         }

@@ -29,6 +29,7 @@ pub enum Error {
     UserConfigInvalidIndex = 200,
     NotEnoughAvailableUserBalance = 201,
     UserConfigNotExists = 202,
+    MustNotHaveDebt = 203,
 
     BorrowingNotEnabled = 300,
     CollateralNotCoverNewBorrow = 301,
