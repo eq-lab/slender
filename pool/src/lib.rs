@@ -8,7 +8,7 @@ use pool_interface::*;
 use rate::{calc_accrued_rates, calc_next_accrued_rate};
 use s_token_interface::STokenClient;
 use soroban_sdk::{
-    assert_with_error, contractimpl, contracttype, panic_with_error, token,
+    assert_with_error, contract, contractimpl, contracttype, panic_with_error, token,
     token::Client as TokenClient, unwrap::UnwrapOptimized, vec, Address, BytesN, Env, Map, Vec,
 };
 
@@ -80,6 +80,7 @@ impl AssetBalance {
     }
 }
 
+#[contract]
 pub struct LendingPool;
 
 #[contractimpl]
@@ -997,7 +998,7 @@ impl LendingPool {
                 continue;
             }
 
-            let curr_reserve_asset = reserves.get_unchecked(i.into()).unwrap_optimized();
+            let curr_reserve_asset = reserves.get_unchecked(i.into());
             let curr_reserve = read_reserve(env, curr_reserve_asset.clone())?;
 
             if !curr_reserve.configuration.is_active && liquidation {
@@ -1041,8 +1042,7 @@ impl LendingPool {
                     let curr_discount = curr_reserve.configuration.discount;
                     let mut collateral_to_receive = sorted_collateral_to_receive
                         .get(curr_discount)
-                        .unwrap_or(Ok(Vec::new(env)))
-                        .expect("sorted");
+                        .unwrap_or(Vec::new(env));
                     collateral_to_receive.push_back((
                         curr_reserve,
                         who_balance,
@@ -1092,8 +1092,8 @@ impl LendingPool {
             let mut collateral_to_receive = vec![env];
             let sorted = sorted_collateral_to_receive.values();
             for v in sorted {
-                for c in v.unwrap_optimized() {
-                    collateral_to_receive.push_back(c.unwrap_optimized());
+                for c in v {
+                    collateral_to_receive.push_back(c);
                 }
             }
 
@@ -1230,8 +1230,7 @@ impl LendingPool {
                 break;
             }
 
-            let (reserve, s_token_balance, price_fixed, coll_coeff_fixed) =
-                collateral_to_receive.unwrap_optimized();
+            let (reserve, s_token_balance, price_fixed, coll_coeff_fixed) = collateral_to_receive;
             let price = FixedI128::from_inner(price_fixed);
 
             let s_token = STokenClient::new(env, &reserve.s_token_address);
@@ -1284,8 +1283,7 @@ impl LendingPool {
             return Err(Error::NotEnoughCollateral);
         }
 
-        for debt_to_cover in liquidation_data.debt_to_cover {
-            let (reserve, compounded_debt, debt_amount) = debt_to_cover.unwrap_optimized();
+        for (reserve, compounded_debt, debt_amount) in liquidation_data.debt_to_cover {
             let s_token = STokenClient::new(env, &reserve.s_token_address);
             let s_token_supply = s_token.total_supply();
             let underlying_asset = token::Client::new(env, &s_token.underlying_asset());
