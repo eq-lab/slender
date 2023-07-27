@@ -144,4 +144,11 @@ pub trait LendingPoolTrait {
         who: Address,
         receive_stoken: bool,
     ) -> Result<(), Error>;
+
+    fn set_as_collateral(
+        env: Env,
+        who: Address,
+        asset: Address,
+        use_as_collateral: bool,
+    ) -> Result<(), Error>;
 }
