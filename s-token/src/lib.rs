@@ -444,11 +444,8 @@ impl SToken {
             panic!("s-token: invalid mint amount");
         }
 
-        receive_balance(e, user.clone(), amount);
+        receive_balance(e, user, amount);
         add_total_supply(e, amount);
-
-        let underlying_asset_client = token::Client::new(e, &read_underlying_asset(e));
-        underlying_asset_client.transfer(&user, &e.current_contract_address(), &amount);
     }
 
     /// Makes burn and returns updates total supply

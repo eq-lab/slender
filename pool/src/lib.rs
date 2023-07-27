@@ -9,7 +9,7 @@ use rate::{calc_accrued_rates, calc_next_accrued_rate};
 use s_token_interface::STokenClient;
 use soroban_sdk::{
     assert_with_error, contractimpl, contracttype, panic_with_error, token,
-    token::Client as TokenClient, unwrap::UnwrapOptimized, vec, Address, BytesN, Env, Map, Vec,
+    unwrap::UnwrapOptimized, vec, Address, BytesN, Env, Map, Vec,
 };
 
 mod event;
@@ -502,6 +502,7 @@ impl LendingPoolTrait for LendingPool {
             .checked_sub(s_token_to_burn)
             .ok_or(Error::InvalidAmount)?;
         let s_token_address = s_token.address.clone();
+
         Self::validate_withdraw(
             &env,
             who.clone(),
@@ -518,9 +519,8 @@ impl LendingPoolTrait for LendingPool {
             event::reserve_used_as_collateral_disabled(&env, who.clone(), asset.clone());
         }
 
-        // TODO: /Artur
         s_token.burn(&who, &s_token_to_burn, &underlying_to_withdraw, &to);
-        sub_stoken_underlying_supply(&env, s_token.address, underlying_to_withdraw)?;
+        sub_stoken_underlying_supply(&env, &s_token.address, underlying_to_withdraw)?;
 
         event::withdraw(&env, who, asset, to, underlying_to_withdraw);
 
@@ -577,9 +577,8 @@ impl LendingPoolTrait for LendingPool {
         }
 
         debt_token.mint(&who, &amount_of_debt_token);
-        // TODO: /Artur
         s_token.transfer_underlying_to(&who, &amount);
-        sub_stoken_underlying_supply(&env, s_token.address.clone(), amount)?;
+        sub_stoken_underlying_supply(&env, &s_token.address, amount)?;
 
         event::borrow(&env, who, asset, amount);
 
@@ -702,6 +701,11 @@ impl LendingPoolTrait for LendingPool {
 
         Ok(())
     }
+
+    #[cfg(any(test, feature = "testutils"))]
+    fn get_stoken_underlying_supply(env: Env, stoken_address: Address) -> i128 {
+        read_stoken_underlying_supply(&env, &stoken_address)
+    }
 }
 
 impl LendingPool {
@@ -800,7 +804,7 @@ impl LendingPool {
             return Ok(false);
         }
 
-        let balance = read_stoken_underlying_supply(env, reserve.s_token_address.clone());
+        let balance = read_stoken_underlying_supply(env, &reserve.s_token_address);
 
         Self::require_liq_cap_not_exceeded(env, reserve, balance, amount)?;
 
@@ -812,9 +816,11 @@ impl LendingPool {
             .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
 
-        // TODO: /Artur
+        let underlying_asset = token::Client::new(env, asset);
+
+        underlying_asset.transfer(who, &reserve.s_token_address, &amount);
+        add_stoken_underlying_supply(env, &s_token.address, amount)?;
         s_token.mint(who, &amount_to_mint);
-        add_stoken_underlying_supply(&env, s_token.address.clone(), amount_to_mint)?;
 
         event::deposit(env, who.clone(), asset.clone(), amount);
 
@@ -870,9 +876,8 @@ impl LendingPool {
         let treasury_address = read_treasury(env);
         let underlying_asset = token::Client::new(env, asset);
 
-        // TODO: /Artur
         underlying_asset.transfer(who, &reserve.s_token_address, &lender_part);
-        add_stoken_underlying_supply(&env, s_token.address.clone(), lender_part)?;
+        add_stoken_underlying_supply(env, &reserve.s_token_address, lender_part)?;
         underlying_asset.transfer(who, &treasury_address, &treasury_part);
         debt_token.burn(who, &borrower_debt_to_burn);
 
@@ -1170,7 +1175,7 @@ impl LendingPool {
 
         let collat_ar = Self::get_actual_lender_accrued_rate(env, reserve)?;
 
-        let balance = read_stoken_underlying_supply(&env, reserve.s_token_address.clone());
+        let balance = read_stoken_underlying_supply(env, &reserve.s_token_address);
         let debt_token_supply =
             DebtTokenClient::new(env, &reserve.debt_token_address).total_supply();
 
@@ -1302,9 +1307,8 @@ impl LendingPool {
                         .recip_mul_int(repayment_amount)
                         .ok_or(Error::LiquidateMathError)?;
 
-                    // TODO: /Artur
                     s_token.burn(&who, &s_token_to_burn, &repayment_amount, &liquidator);
-                    sub_stoken_underlying_supply(env, s_token.address, repayment_amount);
+                    sub_stoken_underlying_supply(env, &s_token.address, repayment_amount)?;
 
                     let (_, is_repayed) = Self::do_repay(
                         env,
@@ -1328,9 +1332,8 @@ impl LendingPool {
                     }
                 }
             } else {
-                // TODO: /Artur
                 s_token.burn(&who, &s_token_amount, &underlying_amount, &liquidator);
-                sub_stoken_underlying_supply(env, s_token.address, underlying_amount);
+                sub_stoken_underlying_supply(env, &s_token.address, underlying_amount)?;
             }
 
             if s_token_balance == s_token_amount {
@@ -1356,9 +1359,8 @@ impl LendingPool {
             let s_token_supply = s_token.total_supply();
             let underlying_asset = token::Client::new(env, &s_token.underlying_asset());
             let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-            // TODO: /Artur
             underlying_asset.transfer(&liquidator, &reserve.s_token_address, &compounded_debt);
-            add_stoken_underlying_supply(&env, s_token.address.clone(), compounded_debt)?;
+            add_stoken_underlying_supply(env, &s_token.address, compounded_debt)?;
             debt_token.burn(&who, &debt_amount);
             user_config.set_borrowing(env, reserve.get_id(), false);
             recalculate_reserve_data(env, underlying_asset.address, reserve, s_token_supply)?;
