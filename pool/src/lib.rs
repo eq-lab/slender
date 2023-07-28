@@ -713,14 +713,8 @@ impl LendingPoolTrait for LendingPool {
         let mut user_config = read_user_config(&env, who.clone())?;
         let reserve_index = read_reserve(&env, asset)?.get_id();
         match (user_config.is_borrowing_any(), use_as_collateral) {
-            (true, true) => {
-                assert_with_error!(
-                    &env,
-                    !user_config.is_borrowing(&env, reserve_index),
-                    Error::MustNotHaveDebt
-                );
-                user_config.set_using_as_collateral(&env, reserve_index, use_as_collateral);
-                write_user_config(&env, who, &user_config);
+            (true, true) if user_config.is_borrowing(&env, reserve_index) => {
+                panic_with_error!(&env, Error::MustNotHaveDebt);
             }
             (true, false)
                 if !user_config.is_borrowing(&env, reserve_index)
