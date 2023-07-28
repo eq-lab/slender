@@ -901,11 +901,6 @@ fn borrow_no_active_reserve() {
 }
 
 #[test]
-fn borrow_reserve_is_frozen() {
-    //TODO: implement
-}
-
-#[test]
 #[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
 fn borrow_collateral_not_cover_new_debt() {
     let env = Env::default();

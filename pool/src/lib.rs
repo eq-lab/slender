@@ -156,6 +156,34 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
+    /// Activates/De-activates reserve for the specified asset.
+    ///
+    /// # Arguments
+    ///
+    /// - asset - address of the asset associated with the reserve
+    /// - is_active - flag indicating the reserve must be activeted or de-activated
+    ///
+    /// # Panics
+    /// - Panics with `NoReserveExistForAsset` if no reserve exists for the specified asset.
+    /// - Panics if the caller is not the admin.
+    ///
+    fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error> {
+        Self::require_admin(&env)?;
+
+        let mut reserve = read_reserve(&env, asset.clone())?;
+
+        reserve.configuration.is_active = is_active;
+        write_reserve(&env, asset.clone(), &reserve);
+
+        if is_active {
+            event::reserve_activated(&env, asset);
+        } else {
+            event::reserve_deactivated(&env, asset);
+        }
+
+        Ok(())
+    }
+
     /// Updates an interest rate parameters.
     ///
     /// # Arguments
@@ -980,7 +1008,6 @@ impl LendingPool {
         assert_with_error!(env, amount > 0, Error::InvalidAmount);
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
-        assert_with_error!(env, !flags.is_frozen, Error::ReserveFrozen);
     }
 
     fn validate_withdraw(
@@ -1057,7 +1084,6 @@ impl LendingPool {
         );
         let flags = reserve.configuration.get_flags();
         assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
-        assert_with_error!(env, !flags.is_frozen, Error::ReserveFrozen);
         assert_with_error!(env, flags.borrowing_enabled, Error::BorrowingNotEnabled);
 
         let reserves = &read_reserves(env);

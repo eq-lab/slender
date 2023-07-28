@@ -59,6 +59,16 @@ pub(crate) fn borrowing_disabled(e: &Env, asset: Address) {
     e.events().publish(topics, ());
 }
 
+pub(crate) fn reserve_activated(e: &Env, asset: Address) {
+    let topics = (Symbol::new(e, "reserve_activated"), asset);
+    e.events().publish(topics, ());
+}
+
+pub(crate) fn reserve_deactivated(e: &Env, asset: Address) {
+    let topics = (Symbol::new(e, "reserve_deactivated"), asset);
+    e.events().publish(topics, ());
+}
+
 pub(crate) fn liquidation(e: &Env, who: Address, covered_debt: i128, liquidated_collateral: i128) {
     let topics = (Symbol::new(e, "liquidation"), who);
     e.events()
