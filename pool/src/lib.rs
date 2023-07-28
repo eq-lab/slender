@@ -711,7 +711,7 @@ impl LendingPoolTrait for LendingPool {
     ) -> Result<(), Error> {
         who.require_auth();
         let mut user_config = read_user_config(&env, who.clone())?;
-        let reserve_index = read_reserve(&env, asset)?.get_id();
+        let reserve_index = read_reserve(&env, asset.clone())?.get_id();
         match (user_config.is_borrowing_any(), use_as_collateral) {
             (true, true) if user_config.is_borrowing(&env, reserve_index) => {
                 panic_with_error!(&env, Error::MustNotHaveDebt);
@@ -731,12 +731,18 @@ impl LendingPoolTrait for LendingPool {
                     false,
                 )?;
                 Self::require_good_position(&env, account_data);
-                write_user_config(&env, who, &user_config);
+                write_user_config(&env, who.clone(), &user_config);
             }
             _ => {
                 user_config.set_using_as_collateral(&env, reserve_index, use_as_collateral);
-                write_user_config(&env, who, &user_config);
+                write_user_config(&env, who.clone(), &user_config);
             }
+        }
+
+        if use_as_collateral {
+            event::reserve_used_as_collateral_enabled(&env, who, asset);
+        } else {
+            event::reserve_used_as_collateral_disabled(&env, who, asset);
         }
 
         Ok(())
