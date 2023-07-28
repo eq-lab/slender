@@ -106,7 +106,7 @@ fn deploy_pool_and_s_token() {
     };
 
     let _debt_token_client = debt_token::Client::new(&env, &debt_token_contract_id);
-    let ir_params = pool_client.get_ir_params().unwrap();
+    let ir_params = pool_client.ir_params().unwrap();
 
     assert_eq!(pool_ir_params.alpha, ir_params.alpha);
     assert_eq!(pool_ir_params.initial_rate, ir_params.initial_rate);

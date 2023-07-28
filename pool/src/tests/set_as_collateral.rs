@@ -164,10 +164,7 @@ fn set_as_collateral_bad_position() {
     env.mock_all_auths();
     let (sut, user, (collat_reserve_index, _), (_collat_token, _)) = init_with_debt(&env);
 
-    assert!(
-        sut.pool.get_account_position(&user).npv == 0,
-        "configuration"
-    );
+    assert!(sut.pool.account_position(&user).npv == 0, "configuration");
 
     assert!(sut
         .pool

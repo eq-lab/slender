@@ -138,7 +138,7 @@ fn set_ir_params() {
 
     sut.pool.set_ir_params(&ir_params_input);
 
-    let ir_params = sut.pool.get_ir_params().unwrap();
+    let ir_params = sut.pool.ir_params().unwrap();
 
     assert_eq!(ir_params_input.alpha, ir_params.alpha);
     assert_eq!(ir_params_input.initial_rate, ir_params.initial_rate);
@@ -627,11 +627,6 @@ fn borrow_no_active_reserve() {
 }
 
 #[test]
-fn borrow_reserve_is_frozen() {
-    //TODO: implement
-}
-
-#[test]
 #[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
 fn borrow_collateral_not_cover_new_debt() {
     let env = Env::default();
@@ -753,8 +748,8 @@ fn set_price_feed() {
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
     let assets = vec![&env, asset_1.clone(), asset_2.clone()];
 
-    assert!(pool.get_price_feed(&asset_1.clone()).is_none());
-    assert!(pool.get_price_feed(&asset_2.clone()).is_none());
+    assert!(pool.price_feed(&asset_1.clone()).is_none());
+    assert!(pool.price_feed(&asset_2.clone()).is_none());
 
     assert_eq!(
         pool.mock_auths(&[MockAuth {
@@ -770,8 +765,8 @@ fn set_price_feed() {
         ()
     );
 
-    assert_eq!(pool.get_price_feed(&asset_1).unwrap(), price_feed.address);
-    assert_eq!(pool.get_price_feed(&asset_2).unwrap(), price_feed.address);
+    assert_eq!(pool.price_feed(&asset_1).unwrap(), price_feed.address);
+    assert_eq!(pool.price_feed(&asset_2).unwrap(), price_feed.address);
 }
 
 #[test]
@@ -790,7 +785,7 @@ fn test_liquidate_error_good_position() {
 
     sut.pool.deposit(&user, &token.address, &1_000_000_000);
 
-    let position = sut.pool.get_account_position(&user);
+    let position = sut.pool.account_position(&user);
     assert!(position.npv > 0, "test configuration");
 
     //TODO: check error after soroban fix
@@ -844,7 +839,7 @@ fn test_liquidate_error_not_enough_collateral() {
         &(10i128.pow(sut.price_feed.decimals()) * 2),
     );
 
-    let position = sut.pool.get_account_position(&borrower);
+    let position = sut.pool.account_position(&borrower);
     assert!(position.npv < 0, "test configuration");
 
     //TODO: check error after soroban fix
@@ -903,7 +898,7 @@ fn test_liquidate() {
         .pool
         .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
-    let position = sut.pool.get_account_position(&borrower);
+    let position = sut.pool.account_position(&borrower);
     assert!(position.npv == 0, "test configuration");
 
     let debt_reserve = sut.pool.get_reserve(&debt_asset.address).expect("reserve");
@@ -992,7 +987,7 @@ fn test_liquidate_receive_stoken() {
         .pool
         .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
-    let position = sut.pool.get_account_position(&borrower);
+    let position = sut.pool.account_position(&borrower);
     assert!(position.npv == 0, "test configuration");
 
     let debt_reserve = sut.pool.get_reserve(&debt_asset.address).expect("reserve");
@@ -1223,7 +1218,7 @@ fn user_operation_should_update_ar_coeffs() {
         .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
 
     let updated = sut.pool.get_reserve(&debt_asset_1).unwrap();
-    let ir_params = sut.pool.get_ir_params().unwrap();
+    let ir_params = sut.pool.ir_params().unwrap();
     let debt_ir = calc_interest_rate(deposit_amount, borrow_amount, &ir_params).unwrap();
     let lender_ir = debt_ir
         .checked_mul(FixedI128::from_percentage(ir_params.scaling_coeff).unwrap())
