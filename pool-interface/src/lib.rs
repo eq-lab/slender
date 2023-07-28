@@ -154,5 +154,5 @@ pub trait LendingPoolTrait {
         use_as_collateral: bool,
     ) -> Result<(), Error>;
 
-    fn get_user_configuration(env: Env, who: Address) -> Result<UserConfiguration, Error>;
+    fn user_configuration(env: Env, who: Address) -> Result<UserConfiguration, Error>;
 }
