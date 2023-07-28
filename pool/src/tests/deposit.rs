@@ -6,6 +6,54 @@ use soroban_sdk::{vec, IntoVal, Symbol};
 
 extern crate std;
 
+// todo: check events /Artur
+// todo: check all errors /Artur
+// todo: check user_config /Artur
+// todo: 1 test per execution branch /Artur
+// todo: repay /Artur
+// todo: separate test to validate budgets /Artur
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
+fn deposit_pool_paused() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let user = Address::random(&env);
+    let sut = init_pool(&env);
+    let token_address = sut.token().address.clone();
+
+    sut.pool.set_pause(&true);
+
+    sut.pool.deposit(&user, &token_address, &1);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+fn deposit_invalid_amount() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let user = Address::random(&env);
+    let sut = init_pool(&env);
+    let token_address = sut.token().address.clone();
+
+    sut.pool.deposit(&user, &token_address, &-1);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+fn deposit_reserve_deactivated() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let user = Address::random(&env);
+    let sut = init_pool(&env);
+    let token_address = sut.token().address.clone();
+
+    sut.pool.deposit(&user, &token_address, &-1);
+}
+
 #[test]
 fn deposit() {
     let env = Env::default();
