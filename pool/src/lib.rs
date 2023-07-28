@@ -1033,11 +1033,12 @@ impl LendingPool {
         debt_token: &DebtTokenClient,
         amount_to_borrow: i128,
     ) -> Result<(), Error> {
-        assert_with_error!(
-            env,
-            !user_config.is_using_as_collateral(env, reserve.get_id()),
-            Error::MustNotBeInCollateralAsset
-        );
+        // we don't check is_collateral_enabled flag to avoid situation, when user
+        // 1. make deposit
+        // 2. disable flag
+        // 3. borrow the same asset
+        let s_token_balance = s_token.balance(&who);
+        assert_with_error!(env, s_token_balance == 0, Error::MustNotBeInCollateralAsset);
 
         let total_debt_after = debt_token
             .total_supply()
