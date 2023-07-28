@@ -185,7 +185,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// Returns the interest rate parameters if set, or None otherwise.
     ///
-    fn get_ir_params(env: Env) -> Option<IRParams> {
+    fn ir_params(env: Env) -> Option<IRParams> {
         read_ir_params(&env).ok()
     }
 
@@ -319,7 +319,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// Returns the price feed oracle contract id associated with the asset if set, or None otherwise.
     ///
-    fn get_price_feed(env: Env, asset: Address) -> Option<Address> {
+    fn price_feed(env: Env, asset: Address) -> Option<Address> {
         read_price_feed(&env, asset).ok()
     }
 
@@ -630,7 +630,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// Returns the position info.
     ///
-    fn get_account_position(env: Env, who: Address) -> Result<AccountPosition, Error> {
+    fn account_position(env: Env, who: Address) -> Result<AccountPosition, Error> {
         let account_data = Self::calc_account_data(
             &env,
             who.clone(),

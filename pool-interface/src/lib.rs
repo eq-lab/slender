@@ -92,11 +92,11 @@ pub trait LendingPoolTrait {
 
     fn set_price_feed(env: Env, feed: Address, assets: Vec<Address>) -> Result<(), Error>;
 
-    fn get_price_feed(env: Env, asset: Address) -> Option<Address>;
+    fn price_feed(env: Env, asset: Address) -> Option<Address>;
 
     fn set_ir_params(env: Env, input: IRParams) -> Result<(), Error>;
 
-    fn get_ir_params(env: Env) -> Option<IRParams>;
+    fn ir_params(env: Env) -> Option<IRParams>;
 
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
@@ -138,7 +138,7 @@ pub trait LendingPoolTrait {
 
     fn treasury(e: Env) -> Address;
 
-    fn get_account_position(env: Env, who: Address) -> Result<AccountPosition, Error>;
+    fn account_position(env: Env, who: Address) -> Result<AccountPosition, Error>;
 
     fn liquidate(
         env: Env,
