@@ -6,7 +6,6 @@ use soroban_sdk::{contracttype, Address, BytesN, Env};
 pub struct ReserveConfiguration {
     pub decimals: u32,
     pub is_active: bool,
-    pub is_frozen: bool,
     pub borrowing_enabled: bool,
     pub liq_bonus: u32,
     pub liq_cap: i128,
@@ -24,7 +23,6 @@ impl ReserveConfiguration {
             util_cap: Default::default(),
             decimals: Default::default(),
             is_active: true,
-            is_frozen: false,
             borrowing_enabled: false,
             discount: Default::default(),
         }
@@ -44,7 +42,6 @@ pub struct IRParams {
 #[allow(dead_code)]
 pub struct ReserveConfigurationFlags {
     pub is_active: bool,
-    pub is_frozen: bool,
     pub borrowing_enabled: bool,
 }
 
@@ -52,7 +49,6 @@ impl ReserveConfiguration {
     pub fn get_flags(&self) -> ReserveConfigurationFlags {
         ReserveConfigurationFlags {
             is_active: self.is_active,
-            is_frozen: self.is_frozen,
             borrowing_enabled: self.borrowing_enabled,
         }
     }
