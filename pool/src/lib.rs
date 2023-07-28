@@ -417,7 +417,7 @@ impl LendingPoolTrait for LendingPool {
             .ok_or(Error::InvalidAmount)?;
 
         let mut from_config = read_user_config(&env, from.clone())?;
-        if from_config.is_borrowing_any() {
+        if from_config.is_borrowing_any() && from_config.is_using_as_collateral(&env, reserve.get_id()) {
             let reserves = read_reserves(&env);
             let from_account_data = Self::calc_account_data(
                 &env,
@@ -1002,7 +1002,7 @@ impl LendingPool {
         assert_with_error!(env, amount <= balance, Error::NotEnoughAvailableUserBalance);
 
         let reserves = read_reserves(env);
-        if user_config.is_borrowing_any() {
+        if user_config.is_borrowing_any() && user_config.is_using_as_collateral(&env, reserve.get_id()) {
             let account_data = Self::calc_account_data(
                 env,
                 who,
