@@ -1,8 +1,7 @@
-use crate::tests::pool_test::init_pool;
 use crate::*;
 use soroban_sdk::{testutils::Address as _, token::AdminClient as TokenAdminClient};
 
-use super::sut::Sut;
+use super::sut::{init_pool, Sut};
 extern crate std;
 
 /// Init for set_as_collateral tests.
