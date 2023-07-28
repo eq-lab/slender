@@ -55,7 +55,7 @@ fn set_as_collateral_no_debt() {
 
     assert!(sut
         .pool
-        .get_user_configuration(&user)
+        .user_configuration(&user)
         .is_using_as_collateral(&env, reserve_index));
 
     assert_eq!(
@@ -66,14 +66,14 @@ fn set_as_collateral_no_debt() {
 
     assert!(sut
         .pool
-        .get_user_configuration(&user)
+        .user_configuration(&user)
         .is_using_as_collateral(&env, reserve_index));
 
     assert_eq!(sut.pool.set_as_collateral(&user, &token, &false), ());
 
     assert!(!sut
         .pool
-        .get_user_configuration(&user)
+        .user_configuration(&user)
         .is_using_as_collateral(&env, reserve_index));
 
     assert_eq!(
@@ -84,7 +84,7 @@ fn set_as_collateral_no_debt() {
 
     assert!(sut
         .pool
-        .get_user_configuration(&user)
+        .user_configuration(&user)
         .is_using_as_collateral(&env, reserve_index));
 }
 
@@ -99,26 +99,26 @@ fn set_as_collateral_false_with_debt() {
 
     assert!(sut
         .pool
-        .get_user_configuration(&user)
+        .user_configuration(&user)
         .is_using_as_collateral(&env, collat_reserve_index));
 
     assert_eq!(sut.pool.set_as_collateral(&user, &collat_token, &false), ());
 
     assert!(!sut
         .pool
-        .get_user_configuration(&user)
+        .user_configuration(&user)
         .is_using_as_collateral(&env, collat_reserve_index));
 
     assert!(!sut
         .pool
-        .get_user_configuration(&user)
+        .user_configuration(&user)
         .is_using_as_collateral(&env, debt_reserve_index));
 
     assert_eq!(sut.pool.set_as_collateral(&user, &u_debt_token, &false), ());
 
     assert!(!sut
         .pool
-        .get_user_configuration(&user)
+        .user_configuration(&user)
         .is_using_as_collateral(&env, debt_reserve_index));
 }
 
@@ -135,19 +135,19 @@ fn set_as_collateral_true_with_debt() {
 
     assert!(sut
         .pool
-        .get_user_configuration(&user)
+        .user_configuration(&user)
         .is_using_as_collateral(&env, collat_reserve_index));
 
     assert_eq!(sut.pool.set_as_collateral(&user, &collat_token, &true), ());
 
     assert!(sut
         .pool
-        .get_user_configuration(&user)
+        .user_configuration(&user)
         .is_using_as_collateral(&env, collat_reserve_index));
 
     assert!(!sut
         .pool
-        .get_user_configuration(&user)
+        .user_configuration(&user)
         .is_using_as_collateral(&env, debt_reserve_index));
 
     // TODO: after soroban fix
@@ -155,7 +155,7 @@ fn set_as_collateral_true_with_debt() {
 
     // assert!(!sut
     //     .pool
-    //     .get_user_configuration(&user)
+    //     .user_configuration(&user)
     //     .is_using_as_collateral(&env, debt_reserve_index));
 }
 
@@ -172,7 +172,7 @@ fn set_as_collateral_bad_position() {
 
     assert!(sut
         .pool
-        .get_user_configuration(&user)
+        .user_configuration(&user)
         .is_using_as_collateral(&env, collat_reserve_index));
 
     // TODO: after soroban fix
@@ -186,6 +186,6 @@ fn set_as_collateral_bad_position() {
 
     // assert!(sut
     //     .pool
-    //     .get_user_configuration(&user)
+    //     .user_configuration(&user)
     //     .is_using_as_collateral(&env, collat_reserve_index));
 }

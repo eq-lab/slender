@@ -665,10 +665,6 @@ impl LendingPoolTrait for LendingPool {
 
         assert_with_error!(&env, !account_data.is_good_position(), Error::GoodPosition);
 
-        // let liquidation_debt = account_data
-        //     .debt_with_penalty
-        //     .expect("pool: liquidation flag in calc_account_data");
-
         Self::do_liquidate(
             &env,
             liquidator,
@@ -690,6 +686,21 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
+    /// Enables or disables asset for using as collateral.
+    /// User should not have the debt in asset.
+    /// If user has debt position it will be checked if position stays good after disabling collateral.
+    ///
+    /// # Arguments
+    /// - who The address for collateral enabling/disabling
+    /// - asset The address of underlying asset
+    /// - use_as_collateral Enable/disable flag
+    ///
+    /// # Errors
+    /// - UserConfigNotExists
+    /// - NoReserveExistForAsset
+    /// - MustNotHaveDebt
+    /// - Bad position
+    ///
     fn set_as_collateral(
         env: Env,
         who: Address,
@@ -699,14 +710,20 @@ impl LendingPoolTrait for LendingPool {
         who.require_auth();
         let mut user_config = read_user_config(&env, who.clone())?;
         let reserve_index = read_reserve(&env, asset)?.get_id();
-        if user_config.is_borrowing_any() {
-            if use_as_collateral {
+        match (user_config.is_borrowing_any(), use_as_collateral) {
+            (true, true) => {
                 assert_with_error!(
                     &env,
                     !user_config.is_borrowing(&env, reserve_index),
                     Error::MustNotHaveDebt
                 );
-            } else if !user_config.is_borrowing(&env, reserve_index) {
+                user_config.set_using_as_collateral(&env, reserve_index, use_as_collateral);
+                write_user_config(&env, who, &user_config);
+            }
+            (true, false)
+                if !user_config.is_borrowing(&env, reserve_index)
+                    && user_config.is_using_as_collateral(&env, reserve_index) =>
+            {
                 user_config.set_using_as_collateral(&env, reserve_index, use_as_collateral);
                 let reserves = read_reserves(&env);
                 let account_data = Self::calc_account_data(
@@ -718,15 +735,31 @@ impl LendingPoolTrait for LendingPool {
                     false,
                 )?;
                 Self::require_good_position(&env, account_data);
+                write_user_config(&env, who, &user_config);
+            }
+            _ => {
+                user_config.set_using_as_collateral(&env, reserve_index, use_as_collateral);
+                write_user_config(&env, who, &user_config);
             }
         }
-        user_config.set_using_as_collateral(&env, reserve_index, use_as_collateral);
-        write_user_config(&env, who, &user_config);
 
         Ok(())
     }
 
-    fn get_user_configuration(env: Env, who: Address) -> Result<UserConfiguration, Error> {
+    /// Retrieves the user configuration.
+    ///
+    /// # Arguments
+    /// - who The address for which the configuration is getting
+    ///
+    /// # Errors
+    /// - UserConfigNotExists
+    ///
+    /// # Returns
+    ///
+    /// Returns the user configuration:
+    /// bitmask where even/odd bits correspond to reserve indexes and indicate whether collateral/borrow is allowed for this reserve.
+    ///
+    fn user_configuration(env: Env, who: Address) -> Result<UserConfiguration, Error> {
         read_user_config(&env, who)
     }
 
