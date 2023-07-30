@@ -1,4 +1,4 @@
-use crate::tests::sut::{fill_pool, init_pool};
+use crate::tests::sut::{fill_pool, init_pool, DAY};
 use crate::*;
 use common::FixedI128;
 use soroban_sdk::testutils::{Address as _, Events, Ledger};
@@ -83,6 +83,10 @@ fn deposit() {
             ()
         );
         let collat_coeff = sut.pool.collat_coeff(&token.address);
+        env.ledger().with_mut(|li| {
+            li.timestamp = 60 * DAY;
+        });
+
         sut.pool.deposit(&user, &token.address, &deposit_amount);
 
         assert_eq!(

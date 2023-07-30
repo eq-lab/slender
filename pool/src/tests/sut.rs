@@ -148,7 +148,7 @@ pub(crate) fn init_pool<'a>(env: &Env) -> Sut<'a> {
                 &soroban_sdk::vec![env, token.address.clone()],
             );
 
-            let pool_price_feed = pool.get_price_feed(&token.address);
+            let pool_price_feed = pool.price_feed(&token.address);
             assert_eq!(pool_price_feed, Some(price_feed.address.clone()));
 
             ReserveConfig {
