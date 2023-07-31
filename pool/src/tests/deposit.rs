@@ -146,7 +146,7 @@ fn should_change_balances() {
 }
 
 #[test]
-fn should_change_coeffs() {
+fn should_affect_coeffs() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -167,6 +167,25 @@ fn should_change_coeffs() {
 
     assert!(collat_coeff_prev < collat_coeff);
     assert!(debt_coeff_prev < debt_coeff);
+}
+
+#[test]
+fn should_affect_account_data() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (_, borrower, _) = fill_pool(&env, &sut);
+
+    let account_position_prev = sut.pool.account_position(&borrower);
+
+    sut.pool
+        .deposit(&borrower, &sut.reserves[0].token.address, &200_000_000);
+
+    let account_position = sut.pool.account_position(&borrower);
+
+    assert!(account_position_prev.discounted_collateral < account_position.discounted_collateral);
+    assert!(account_position_prev.npv < account_position.npv);
 }
 
 #[test]
