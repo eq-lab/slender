@@ -95,6 +95,48 @@ fn should_change_user_config() {
 }
 
 #[test]
+fn should_affect_coeffs() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut);
+
+    env.ledger().with_mut(|li| li.timestamp = DAY);
+
+    let collat_coeff_prev = sut.pool.collat_coeff(&debt_config.token.address);
+    let debt_coeff_prev = sut.pool.debt_coeff(&debt_config.token.address);
+
+    sut.pool
+        .deposit(&borrower, &debt_config.token.address, &100_000_000);
+
+    let collat_coeff = sut.pool.collat_coeff(&debt_config.token.address);
+    let debt_coeff = sut.pool.debt_coeff(&debt_config.token.address);
+
+    assert!(collat_coeff_prev < collat_coeff);
+    assert!(debt_coeff_prev < debt_coeff);
+}
+
+#[test]
+fn should_affect_account_data() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut);
+
+    let account_position_prev = sut.pool.account_position(&borrower);
+
+    sut.pool
+        .deposit(&borrower, &debt_config.token.address, &100_000_000);
+
+    let account_position = sut.pool.account_position(&borrower);
+
+    assert!(account_position_prev.discounted_collateral < account_position.discounted_collateral);
+    assert!(account_position_prev.npv < account_position.npv);
+}
+
+#[test]
 fn should_emit_events() {
     let env = Env::default();
     env.mock_all_auths();
