@@ -1,9 +1,31 @@
 use crate::tests::sut::{fill_pool, init_pool, DAY};
 use crate::*;
-use soroban_sdk::testutils::{Address as _, Events, Ledger};
-use soroban_sdk::{vec, IntoVal, Symbol};
+use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
+use soroban_sdk::{symbol_short, vec, IntoVal, Symbol};
 
 extern crate std;
+
+#[test]
+fn should_require_authorized_caller() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let user = Address::random(&env);
+    let sut = init_pool(&env);
+    let token_address = sut.token().address.clone();
+
+    sut.token_admin().mint(&user, &1_000_000_000);
+    sut.pool.deposit(&user, &token_address, &1_000_000_000);
+
+    assert_eq!(
+        env.auths().pop().map(|f| f.1.function).unwrap(),
+        AuthorizedFunction::Contract((
+            sut.pool.address.clone(),
+            symbol_short!("deposit"),
+            (user.clone(), token_address, 1_000_000_000i128).into_val(&env)
+        )),
+    );
+}
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #3)")]
