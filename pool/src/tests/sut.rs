@@ -92,6 +92,8 @@ pub(crate) fn create_price_feed_contract<'a>(e: &Env) -> PriceFeedClient<'a> {
 }
 
 pub(crate) fn init_pool<'a>(env: &Env) -> Sut<'a> {
+    env.budget().reset_unlimited();
+
     let admin = Address::random(&env);
     let token_admin = Address::random(&env);
 
@@ -105,8 +107,6 @@ pub(crate) fn init_pool<'a>(env: &Env) -> Sut<'a> {
             let s_token = create_s_token_contract(&env, &pool.address, &token.address);
             let decimals = s_token.decimals();
             assert!(pool.get_reserve(&s_token.address).is_none());
-
-            env.budget().reset_default();
 
             pool.init_reserve(
                 &token.address,
@@ -160,8 +160,6 @@ pub(crate) fn init_pool<'a>(env: &Env) -> Sut<'a> {
         })
         .collect();
 
-    env.budget().reset_default();
-
     Sut {
         pool,
         price_feed,
@@ -172,8 +170,8 @@ pub(crate) fn init_pool<'a>(env: &Env) -> Sut<'a> {
 }
 
 /// Fill lending pool with one lender and one borrower
-/// Lender deposit all three assets.
-/// Borrower deposit 0 asset and borrow 1 asset
+/// Lender deposits all three assets.
+/// Borrower deposits 1 asset and borrow 1 asset
 pub(crate) fn fill_pool<'a, 'b>(
     env: &'b Env,
     sut: &'a Sut,

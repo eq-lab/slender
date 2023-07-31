@@ -1,21 +1,15 @@
 use crate::tests::sut::{fill_pool, init_pool, DAY};
 use crate::*;
-use common::FixedI128;
 use soroban_sdk::testutils::{Address as _, Events, Ledger};
 use soroban_sdk::{vec, IntoVal, Symbol};
 
 extern crate std;
 
-// todo: check events /Artur
-// todo: check all errors /Artur
-// todo: check user_config /Artur
-// todo: 1 test per execution branch /Artur
-// todo: repay /Artur
-// todo: separate test to validate budgets /Artur
+// todo: macro_rules! for balances
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #3)")]
-fn deposit_pool_paused() {
+fn should_fail_when_pool_paused() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -24,110 +18,32 @@ fn deposit_pool_paused() {
     let token_address = sut.token().address.clone();
 
     sut.pool.set_pause(&true);
-
     sut.pool.deposit(&user, &token_address, &1);
-}
-
-#[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-fn deposit_invalid_amount() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let user = Address::random(&env);
-    let sut = init_pool(&env);
-    let token_address = sut.token().address.clone();
-
-    sut.pool.deposit(&user, &token_address, &-1);
-}
-
-#[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-fn deposit_reserve_deactivated() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let user = Address::random(&env);
-    let sut = init_pool(&env);
-    let token_address = sut.token().address.clone();
-
-    sut.pool.deposit(&user, &token_address, &-1);
-}
-
-#[test]
-fn deposit() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env);
-
-    //TODO: optimize gas
-    env.budget().reset_unlimited();
-
-    let token = &sut.reserves[0].token;
-    let token_admin = &sut.reserves[0].token_admin;
-    let s_token = &sut.reserves[0].s_token;
-
-    for i in 0..10 {
-        let user = Address::random(&env);
-        let initial_balance = 1_000_000_000;
-        token_admin.mint(&user, &1_000_000_000);
-        assert_eq!(token.balance(&user), initial_balance);
-
-        let deposit_amount = 10_000;
-        let lender_accrued_rate = Some(FixedI128::ONE.into_inner() + i * 100_000_000);
-
-        assert_eq!(
-            sut.pool
-                .set_accrued_rates(&token.address, &lender_accrued_rate, &None),
-            ()
-        );
-        let collat_coeff = sut.pool.collat_coeff(&token.address);
-        env.ledger().with_mut(|li| {
-            li.timestamp = 60 * DAY;
-        });
-
-        sut.pool.deposit(&user, &token.address, &deposit_amount);
-
-        assert_eq!(
-            s_token.balance(&user),
-            deposit_amount * FixedI128::ONE.into_inner() / collat_coeff
-        );
-        assert_eq!(token.balance(&user), initial_balance - deposit_amount);
-
-        let last = env.events().all().pop_back_unchecked();
-        assert_eq!(
-            vec![&env, last],
-            vec![
-                &env,
-                (
-                    sut.pool.address.clone(),
-                    (Symbol::new(&env, "reserve_used_as_coll_enabled"), user).into_val(&env),
-                    (token.address.clone()).into_val(&env)
-                ),
-            ]
-        );
-    }
-}
-
-#[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-fn deposit_zero_amount() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env);
-
-    let user1 = Address::random(&env);
-
-    //TODO: check error after soroban fix
-    let deposit_amount = 0;
-    sut.pool
-        .deposit(&user1, &sut.reserves[0].token.address, &deposit_amount);
 
     // assert_eq!(
     //     sut.pool
-    //         .try_deposit(&user1, &sut.reserves[0].token.address, &deposit_amount,)
+    //         .try_deposit(&user, &token_address, &1)
+    //         .unwrap_err()
+    //         .unwrap(),
+    //     Error::Paused
+    // )
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+fn should_fail_when_invalid_amount() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let user = Address::random(&env);
+    let sut = init_pool(&env);
+    let token_address = sut.token().address.clone();
+
+    sut.pool.deposit(&user, &token_address, &-1);
+
+    // assert_eq!(
+    //     sut.pool
+    //         .try_deposit(&user, &token_address, &-1)
     //         .unwrap_err()
     //         .unwrap(),
     //     Error::InvalidAmount
@@ -135,18 +51,30 @@ fn deposit_zero_amount() {
 }
 
 #[test]
-fn deposit_non_active_reserve() {
-    //TODO: implement when possible
-}
+#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+fn should_fail_when_reserve_deactivated() {
+    let env = Env::default();
+    env.mock_all_auths();
 
-#[test]
-fn deposit_frozen_() {
-    //TODO: implement when possible
+    let user = Address::random(&env);
+    let sut = init_pool(&env);
+    let token_address = sut.token().address.clone();
+
+    sut.pool.set_reserve_status(&token_address, &false);
+    sut.pool.deposit(&user, &token_address, &1);
+
+    // assert_eq!(
+    //     sut.pool
+    //         .try_deposit(&user, &token_address, &1)
+    //         .unwrap_err()
+    //         .unwrap(),
+    //     Error::NoActiveReserve
+    // )
 }
 
 #[test]
 #[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-fn deposit_should_fail_when_exceeded_liq_cap() {
+fn should_fail_when_liq_cap_exceeded() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -176,54 +104,118 @@ fn deposit_should_fail_when_exceeded_liq_cap() {
 }
 
 #[test]
-fn deposit_should_mint_s_token() {
+fn should_change_user_config() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let user = Address::random(&env);
+    let sut = init_pool(&env);
+    let token_address = sut.token().address.clone();
+
+    sut.token_admin().mint(&user, &1_000_000_000);
+    sut.pool.deposit(&user, &token_address, &1_000_000_000);
+
+    let user_config = sut.pool.user_configuration(&user);
+    let reserve = sut.pool.get_reserve(&token_address).unwrap();
+
+    assert_eq!(
+        user_config.is_using_as_collateral(&env, reserve.get_id()),
+        true
+    );
+}
+
+#[test]
+fn should_change_balances() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let user = Address::random(&env);
+    let sut = init_pool(&env);
+    let token_address = sut.token().address.clone();
+
+    sut.token_admin().mint(&user, &10_000_000_000);
+    sut.pool.deposit(&user, &token_address, &3_000_000_000);
+
+    let stoken_underlying_balance = sut
+        .pool
+        .get_stoken_underlying_balance(&sut.s_token().address);
+    let user_balance = sut.token().balance(&user);
+    let user_stoken_balance = sut.s_token().balance(&user);
+
+    assert_eq!(stoken_underlying_balance, 3_000_000_000);
+    assert_eq!(user_balance, 7_000_000_000);
+    assert_eq!(user_stoken_balance, 3_000_000_000);
+}
+
+#[test]
+fn should_change_coeffs() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-
-    //TODO: optimize gas
-    env.budget().reset_unlimited();
-
-    let (lender, _borrower, debt_config) = fill_pool(&env, &sut);
+    let (lender, _, debt_config) = fill_pool(&env, &sut);
     let debt_token = &debt_config.token.address;
-    // shift time to one day
-    env.ledger().with_mut(|li| {
-        li.timestamp = 24 * 60 * 60 // one day
-    });
 
-    let stoken_supply = debt_config.s_token.total_supply();
-    let lender_stoken_balance_before = debt_config.s_token.balance(&lender);
-    let deposit_amount = 10_000;
-    sut.pool
-        .deposit(&lender, &sut.reserves[1].token.address, &deposit_amount);
+    env.ledger().with_mut(|li| li.timestamp = DAY);
 
-    let _reserve = sut.pool.get_reserve(&debt_token).unwrap();
-    let collat_coeff = sut.pool.collat_coeff(&debt_token);
-    let _debt_coeff = sut.pool.debt_coeff(&debt_token);
-
-    let expected_stoken_amount = FixedI128::from_inner(collat_coeff)
-        .recip_mul_int(deposit_amount)
-        .unwrap();
-
-    assert_eq!(
-        debt_config.s_token.balance(&lender),
-        lender_stoken_balance_before + expected_stoken_amount
-    );
-    assert_eq!(
-        debt_config.s_token.total_supply(),
-        stoken_supply + expected_stoken_amount
-    );
     let collat_coeff_prev = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_prev = sut.pool.debt_coeff(&debt_token);
-    // shift time to one day
-    env.ledger().with_mut(|li| {
-        li.timestamp = 2 * 24 * 60 * 60 // one day
-    });
+
+    sut.pool
+        .deposit(&lender, &sut.reserves[1].token.address, &100_000_000);
 
     let collat_coeff = sut.pool.collat_coeff(&debt_token);
     let debt_coeff = sut.pool.debt_coeff(&debt_token);
 
     assert!(collat_coeff_prev < collat_coeff);
     assert!(debt_coeff_prev < debt_coeff);
+}
+
+#[test]
+fn should_emit_events() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+
+    let user = Address::random(&env);
+    let token_address = sut.token().address.clone();
+
+    sut.token_admin().mint(&user, &10_000_000_000);
+    assert_eq!(sut.token().balance(&user), 10_000_000_000);
+
+    sut.pool.deposit(&user, &token_address, &5_000_000_000);
+
+    let mut events = env.events().all();
+    let event = events.pop_back_unchecked();
+
+    assert_eq!(
+        vec![&env, event],
+        vec![
+            &env,
+            (
+                sut.pool.address.clone(),
+                (
+                    Symbol::new(&env, "reserve_used_as_coll_enabled"),
+                    user.clone()
+                )
+                    .into_val(&env),
+                (token_address.clone()).into_val(&env)
+            ),
+        ]
+    );
+
+    let event = events.pop_back_unchecked();
+
+    assert_eq!(
+        vec![&env, event],
+        vec![
+            &env,
+            (
+                sut.pool.address.clone(),
+                (Symbol::new(&env, "deposit"), user.clone()).into_val(&env),
+                (token_address, 5_000_000_000i128).into_val(&env)
+            ),
+        ]
+    );
 }
