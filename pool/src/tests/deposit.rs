@@ -5,8 +5,6 @@ use soroban_sdk::{vec, IntoVal, Symbol};
 
 extern crate std;
 
-// todo: macro_rules! for balances
-
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #3)")]
 fn should_fail_when_pool_paused() {
