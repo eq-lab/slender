@@ -78,6 +78,37 @@ fn should_fully_repay() {
 }
 
 #[test]
+fn should_deposit_when_overrepay() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut);
+    let debt_token = &debt_config.token.address;
+    let stoken_token = &debt_config.s_token.address;
+
+    env.ledger().with_mut(|li| li.timestamp = DAY);
+
+    let stoken_underlying_balance = sut.pool.get_stoken_underlying_balance(&stoken_token);
+    let user_balance = debt_config.token.balance(&borrower);
+    let user_stoken_balance = debt_config.s_token.balance(&borrower);
+
+    assert_eq!(stoken_underlying_balance, 60_000_000);
+    assert_eq!(user_balance, 1_040_000_000);
+    assert_eq!(user_stoken_balance, 0);
+
+    sut.pool.deposit(&borrower, &debt_token, &100_000_000);
+
+    let stoken_underlying_balance = sut.pool.get_stoken_underlying_balance(&stoken_token);
+    let user_balance = debt_config.token.balance(&borrower);
+    let user_stoken_balance = debt_config.s_token.balance(&borrower);
+
+    assert_eq!(stoken_underlying_balance, 159_997_089);
+    assert_eq!(user_balance, 940_000_000);
+    assert_eq!(user_stoken_balance, 59_994_469);
+}
+
+#[test]
 fn should_change_user_config() {
     let env = Env::default();
     env.mock_all_auths();
