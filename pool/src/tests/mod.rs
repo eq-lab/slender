@@ -5,3 +5,4 @@ pub mod repay;
 pub mod set_as_collateral;
 pub mod set_reserve_status;
 mod sut;
+pub mod withdraw;

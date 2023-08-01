@@ -375,10 +375,12 @@ impl LendingPoolTrait for LendingPool {
     ///
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
+
         Self::require_not_paused(&env);
+        Self::require_positive_amount(&env, amount);
 
         let reserve = get_actual_reserve_data(&env, asset.clone())?;
-        Self::validate_deposit(&env, &reserve, amount);
+        Self::require_active_reserve(&env, &reserve);
 
         let (remaining_amount, is_repayed) =
             Self::do_repay(&env, &who, &asset, amount, None, &reserve)?;
@@ -509,9 +511,12 @@ impl LendingPoolTrait for LendingPool {
         to: Address,
     ) -> Result<(), Error> {
         who.require_auth();
+
         Self::require_not_paused(&env);
+        Self::require_positive_amount(&env, amount);
 
         let reserve = get_actual_reserve_data(&env, asset.clone())?;
+        Self::require_active_reserve(&env, &reserve);
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
         let s_token_balance = s_token.balance(&who);
@@ -524,34 +529,30 @@ impl LendingPoolTrait for LendingPool {
         let (underlying_to_withdraw, s_token_to_burn) = if amount == i128::MAX {
             (underlying_balance, s_token_balance)
         } else {
-            // s_token_to_burn = underlying_to_withdraw / collat_coeff
             let s_token_to_burn = collat_coeff
                 .recip_mul_int(amount)
                 .ok_or(Error::MathOverflowError)?;
             (amount, s_token_to_burn)
         };
 
+        assert_with_error!(
+            env,
+            underlying_to_withdraw <= underlying_balance,
+            Error::NotEnoughAvailableUserBalance
+        );
+
         let mut user_config: UserConfiguration = read_user_config(&env, who.clone())?;
         let s_token_balance_after = s_token_balance
             .checked_sub(s_token_to_burn)
             .ok_or(Error::InvalidAmount)?;
-        let s_token_address = s_token.address.clone();
 
-        Self::validate_withdraw(
+        Self::require_good_position_when_borrowing(
             &env,
             who.clone(),
             &reserve,
             &user_config,
-            AssetBalance::new(s_token_address, s_token_balance_after),
-            underlying_to_withdraw,
-            underlying_balance,
+            AssetBalance::new(s_token.address.clone(), s_token_balance_after),
         )?;
-
-        if underlying_to_withdraw == underlying_balance {
-            user_config.set_using_as_collateral(&env, reserve.get_id(), false);
-            write_user_config(&env, who.clone(), &user_config);
-            event::reserve_used_as_collateral_disabled(&env, who.clone(), asset.clone());
-        }
 
         let amount_to_sub = underlying_to_withdraw
             .checked_neg()
@@ -559,6 +560,12 @@ impl LendingPoolTrait for LendingPool {
 
         s_token.burn(&who, &s_token_to_burn, &underlying_to_withdraw, &to);
         add_stoken_underlying_balance(&env, &s_token.address, amount_to_sub)?;
+
+        if underlying_to_withdraw == underlying_balance {
+            user_config.set_using_as_collateral(&env, reserve.get_id(), false);
+            write_user_config(&env, who.clone(), &user_config);
+            event::reserve_used_as_collateral_disabled(&env, who.clone(), asset.clone());
+        }
 
         event::withdraw(&env, who, asset, to, underlying_to_withdraw);
 
@@ -870,6 +877,15 @@ impl LendingPool {
         assert_with_error!(env, value > 0, Error::MustBePositive);
     }
 
+    fn require_positive_amount(env: &Env, amount: i128) {
+        assert_with_error!(env, amount > 0, Error::InvalidAmount);
+    }
+
+    fn require_active_reserve(env: &Env, reserve: &ReserveData) {
+        let flags = reserve.configuration.get_flags();
+        assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
+    }
+
     /// Check that balance + deposit + debt * ar_lender <= reserve.configuration.liq_cap
     fn require_liq_cap_not_exceeded(
         env: &Env,
@@ -1004,41 +1020,31 @@ impl LendingPool {
         Ok((remaning_amount, is_repayed))
     }
 
-    fn validate_deposit(env: &Env, reserve: &ReserveData, amount: i128) {
-        assert_with_error!(env, amount > 0, Error::InvalidAmount);
-        let flags = reserve.configuration.get_flags();
-        assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
-    }
-
-    fn validate_withdraw(
+    fn require_good_position_when_borrowing(
         env: &Env,
         who: Address,
         reserve: &ReserveData,
         user_config: &UserConfiguration,
         s_token_after: AssetBalance,
-        amount: i128,
-        balance: i128,
     ) -> Result<(), Error> {
-        assert_with_error!(env, amount > 0, Error::InvalidAmount);
-        let flags = reserve.configuration.get_flags();
-        assert_with_error!(env, flags.is_active, Error::NoActiveReserve);
-        assert_with_error!(env, amount <= balance, Error::NotEnoughAvailableUserBalance);
-
-        let reserves = read_reserves(env);
-        if user_config.is_borrowing_any()
-            && user_config.is_using_as_collateral(env, reserve.get_id())
-        {
-            let account_data = Self::calc_account_data(
-                env,
-                who,
-                Some(s_token_after),
-                user_config,
-                &reserves,
-                false,
-            )?;
-
-            Self::require_good_position(env, account_data);
+        if !user_config.is_borrowing_any() {
+            return Ok(());
         }
+
+        if !user_config.is_using_as_collateral(env, reserve.get_id()) {
+            return Ok(());
+        }
+
+        let account_data = Self::calc_account_data(
+            env,
+            who,
+            Some(s_token_after),
+            user_config,
+            &read_reserves(env),
+            false,
+        )?;
+
+        Self::require_good_position(env, account_data);
 
         Ok(())
     }
