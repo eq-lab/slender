@@ -934,7 +934,7 @@ impl LendingPool {
 
         let underlying_asset = token::Client::new(env, asset);
 
-        underlying_asset.transfer(who, &reserve.s_token_address, &amount);
+        underlying_asset.transfer(who, &s_token.address, &amount);
         add_stoken_underlying_balance(env, &s_token.address, amount)?;
         s_token.mint(who, &amount_to_mint);
 
@@ -997,7 +997,7 @@ impl LendingPool {
         underlying_asset.transfer(who, &treasury_address, &treasury_part);
         debt_token.burn(who, &borrower_debt_to_burn);
 
-        event::repay(env, who.clone(), asset.clone(), amount);
+        event::repay(env, who.clone(), asset.clone(), borrower_payback_amount);
 
         let remaning_amount = if amount != i128::MAX && amount > borrower_actual_debt {
             amount
@@ -1276,6 +1276,7 @@ impl LendingPool {
             .checked_sub(reserve.last_update_timestamp)
             .ok_or(Error::CollateralCoeffMathError)?;
         let prev_ar = FixedI128::from_inner(reserve.lender_accrued_rate);
+
         if elapsed_time == 0 {
             Ok(prev_ar)
         } else {
@@ -1507,7 +1508,8 @@ pub fn recalculate_reserve_data(
     let elapsed_time = current_time
         .checked_sub(reserve.last_update_timestamp)
         .ok_or(Error::AccruedRateMathError)?;
-    if elapsed_time == 0 {
+
+    if elapsed_time == 0 || s_token_supply == 0 {
         return Ok(reserve);
     }
 

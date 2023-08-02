@@ -1,5 +1,4 @@
-use crate::tests::pool_test::init_pool;
-use crate::*;
+use crate::{tests::sut::init_pool, *};
 use soroban_sdk::{testutils::Events, IntoVal, Symbol};
 
 extern crate std;

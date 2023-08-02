@@ -22,7 +22,7 @@
                 // }
             },
             // "args": [
-            //     "test::pool_test::repay",
+            //     "tests::deposit::deposit",
             //     "--exact",
             //     "--nocapture"
             // ],
