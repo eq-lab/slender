@@ -987,16 +987,17 @@ impl LendingPool {
             .mul_int(borrower_total_debt)
             .ok_or(Error::MathOverflowError)?;
 
-        let (borrower_payback_amount, borrower_debt_to_burn) = if amount >= borrower_actual_debt {
-            // To avoid dust in debt_token borrower balance in case of full repayment
-            (borrower_actual_debt, borrower_total_debt)
-        } else {
-            let borrower_debt_to_burn = debt_coeff
-                .recip_mul_int(amount)
-                .ok_or(Error::MathOverflowError)?;
+        let (borrower_payback_amount, borrower_debt_to_burn, is_repayed) =
+            if amount >= borrower_actual_debt {
+                // To avoid dust in debt_token borrower balance in case of full repayment
+                (borrower_actual_debt, borrower_total_debt, true)
+            } else {
+                let borrower_debt_to_burn = debt_coeff
+                    .recip_mul_int(amount)
+                    .ok_or(Error::MathOverflowError)?;
 
-            (amount, borrower_debt_to_burn)
-        };
+                (amount, borrower_debt_to_burn, false)
+            };
 
         let lender_part = collat_coeff
             .mul_int(borrower_debt_to_burn)
@@ -1023,10 +1024,7 @@ impl LendingPool {
             0
         };
 
-        Ok((
-            remaning_amount,
-            borrower_debt_to_burn == borrower_total_debt,
-        ))
+        Ok((remaning_amount, is_repayed))
     }
 
     fn require_good_position_when_withdrawing(
