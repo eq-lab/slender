@@ -1,5 +1,9 @@
 use crate::*;
-use soroban_sdk::{testutils::Address as _, token::AdminClient as TokenAdminClient};
+use soroban_sdk::{
+    testutils::{Address as _, Events},
+    token::AdminClient as TokenAdminClient,
+    IntoVal, Symbol,
+};
 
 use super::sut::{init_pool, Sut};
 extern crate std;
@@ -57,11 +61,7 @@ fn set_as_collateral_no_debt() {
         .user_configuration(&user)
         .is_using_as_collateral(&env, reserve_index));
 
-    assert_eq!(
-        sut.pool
-            .set_as_collateral(&user, &sut.token().address, &true),
-        ()
-    );
+    assert_eq!(sut.pool.set_as_collateral(&user, &token, &true), ());
 
     assert!(sut
         .pool
@@ -75,11 +75,7 @@ fn set_as_collateral_no_debt() {
         .user_configuration(&user)
         .is_using_as_collateral(&env, reserve_index));
 
-    assert_eq!(
-        sut.pool
-            .set_as_collateral(&user, &sut.token().address, &true),
-        ()
-    );
+    assert_eq!(sut.pool.set_as_collateral(&user, &token, &true), ());
 
     assert!(sut
         .pool
@@ -184,4 +180,43 @@ fn set_as_collateral_bad_position() {
     //     .pool
     //     .user_configuration(&user)
     //     .is_using_as_collateral(&env, collat_reserve_index));
+}
+
+#[test]
+fn events() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (sut, user, _, token) = init(&env);
+
+    assert_eq!(sut.pool.set_as_collateral(&user, &token, &false), ());
+
+    let coll_disabled_event = env.events().all().pop_back_unchecked();
+
+    assert_eq!(
+        vec![&env, coll_disabled_event],
+        vec![
+            &env,
+            (
+                sut.pool.address.clone(),
+                (Symbol::new(&env, "reserve_used_as_coll_disabled"), &user).into_val(&env),
+                token.into_val(&env)
+            ),
+        ]
+    );
+
+    assert_eq!(sut.pool.set_as_collateral(&user, &token, &true), ());
+
+    let coll_disabled_event = env.events().all().pop_back_unchecked();
+
+    assert_eq!(
+        vec![&env, coll_disabled_event],
+        vec![
+            &env,
+            (
+                sut.pool.address.clone(),
+                (Symbol::new(&env, "reserve_used_as_coll_enabled"), &user).into_val(&env),
+                token.into_val(&env)
+            ),
+        ]
+    );
 }
