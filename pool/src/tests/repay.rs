@@ -141,6 +141,8 @@ fn should_affect_coeffs() {
     sut.pool
         .deposit(&borrower, &debt_config.token.address, &100_000_000);
 
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
     let collat_coeff = sut.pool.collat_coeff(&debt_config.token.address);
     let debt_coeff = sut.pool.debt_coeff(&debt_config.token.address);
 
@@ -164,6 +166,7 @@ fn should_affect_account_data() {
     let account_position = sut.pool.account_position(&borrower);
 
     assert!(account_position_prev.discounted_collateral < account_position.discounted_collateral);
+    assert!(account_position_prev.debt > account_position.debt);
     assert!(account_position_prev.npv < account_position.npv);
 }
 

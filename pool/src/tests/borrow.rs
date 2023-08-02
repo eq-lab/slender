@@ -1,9 +1,13 @@
-use soroban_sdk::testutils::AuthorizedFunction;
-use soroban_sdk::{symbol_short, Env, IntoVal};
+use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
+use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
 use crate::tests::sut::{fill_pool, init_pool};
 
-// enable_borrowing_on_reserve /Artur
+use super::sut::DAY;
+
+// events /Artur
+// user config /Artur
+// user account /Artur
 
 #[test]
 fn should_require_authorized_caller() {
@@ -199,363 +203,212 @@ fn should_fail_when_collat_not_covers_amount() {
     // )
 }
 
-// #[test]
-// #[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-// fn should_fail_when_unknown_asset() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-
-//     let unknown_asset = Address::random(&env);
-//     let sut = init_pool(&env);
-//     let (_, borrower, _) = fill_pool(&env, &sut, false);
-
-//     sut.pool
-//         .withdraw(&borrower, &unknown_asset, &1_000_000, &borrower);
-
-//     // assert_eq!(
-//     //     sut.pool
-//     //         .try_withdraw(&borrower, &unknown_asset, &1_000_000, &borrower)
-//     //         .unwrap_err()
-//     //         .unwrap(),
-//     //     Error::NoReserveExistForAsset
-//     // )
-// }
-
-// #[test]
-// fn borrow() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-
-//     let sut = init_pool(&env);
-
-//     let initial_amount: i128 = 1_000_000_000;
-//     let lender = Address::random(&env);
-//     let borrower = Address::random(&env);
-
-//     for r in sut.reserves.iter() {
-//         r.token_admin.mint(&lender, &initial_amount);
-//         assert_eq!(r.token.balance(&lender), initial_amount);
-
-//         r.token_admin.mint(&borrower, &initial_amount);
-//         assert_eq!(r.token.balance(&borrower), initial_amount);
-//     }
-
-//     //TODO: optimize gas
-//     env.budget().reset_unlimited();
-
-//     //lender deposit all tokens
-//     let deposit_amount = 100_000_000;
-//     for r in sut.reserves.iter() {
-//         let pool_balance = r.token.balance(&r.s_token.address);
-//         sut.pool.deposit(&lender, &r.token.address, &deposit_amount);
-//         assert_eq!(r.s_token.balance(&lender), deposit_amount);
-//         assert_eq!(
-//             r.token.balance(&r.s_token.address),
-//             pool_balance + deposit_amount
-//         );
-//     }
-
-//     //borrower deposit first token and borrow second token
-//     sut.pool
-//         .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
-//     assert_eq!(sut.reserves[0].s_token.balance(&borrower), deposit_amount);
-
-//     let s_token_underlying_supply = sut
-//         .pool
-//         .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
-
-//     assert_eq!(s_token_underlying_supply, 100_000_000);
-
-//     //borrower borrow second token
-//     let borrow_asset = sut.reserves[1].token.address.clone();
-//     let borrow_amount = 10_000;
-//     let pool_balance_before = sut.reserves[1]
-//         .token
-//         .balance(&sut.reserves[1].s_token.address);
-
-//     let borrower_balance_before = sut.reserves[1].token.balance(&borrower);
-//     sut.pool.borrow(&borrower, &borrow_asset, &borrow_amount);
-//     assert_eq!(
-//         sut.reserves[1].token.balance(&borrower),
-//         borrower_balance_before + borrow_amount
-//     );
-
-//     let s_token_underlying_supply = sut
-//         .pool
-//         .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
-
-//     let pool_balance = sut.reserves[1]
-//         .token
-//         .balance(&sut.reserves[1].s_token.address);
-//     let debt_token_balance = sut.reserves[1].debt_token.balance(&borrower);
-//     assert_eq!(
-//         pool_balance + borrow_amount,
-//         pool_balance_before,
-//         "Pool balance"
-//     );
-//     assert_eq!(debt_token_balance, borrow_amount, "Debt token balance");
-//     assert_eq!(s_token_underlying_supply, 99_990_000);
-// }
-
-// #[test]
-// #[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-// fn borrow_utilization_exceeded() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-
-//     let sut = init_pool(&env);
-
-//     let initial_amount: i128 = 1_000_000_000;
-//     let lender = Address::random(&env);
-//     let borrower = Address::random(&env);
-
-//     sut.reserves[0].token_admin.mint(&lender, &initial_amount);
-//     sut.reserves[1].token_admin.mint(&borrower, &initial_amount);
-
-//     //TODO: optimize gas
-//     env.budget().reset_unlimited();
-
-//     let deposit_amount = 1_000_000_000;
-
-//     sut.pool
-//         .deposit(&lender, &sut.reserves[0].token.address, &deposit_amount);
-
-//     sut.pool
-//         .deposit(&borrower, &sut.reserves[1].token.address, &deposit_amount);
-
-//     sut.pool
-//         .borrow(&borrower, &sut.reserves[0].token.address, &990_000_000);
-
-//     // assert_eq!(
-//     //     sut.pool
-//     //         .try_borrow(&borrower, &sut.reserves[0].token.address, &990_000_000)
-//     //         .unwrap_err()
-//     //         .unwrap(),
-//     //     Error::UtilizationCapExceeded
-//     // )
-// }
-
-// #[test]
-// #[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-// fn borrow_user_confgig_not_exists() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-
-//     let sut = init_pool(&env);
-//     let borrower = Address::random(&env);
-
-//     //TODO: check error after soroban fix
-//     let borrow_amount = 0;
-//     sut.pool
-//         .borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount);
-//     // assert_eq!(
-//     //     sut.pool
-//     //         .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount)
-//     //         .unwrap_err()
-//     //         .unwrap(),
-//     //     Error::UserConfigNotExists
-//     // )
-// }
-
-// #[test]
-// #[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-// fn borrow_collateral_is_zero() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-
-//     let sut = init_pool(&env);
-//     let lender = Address::random(&env);
-//     let borrower = Address::random(&env);
-
-//     let initial_amount = 1_000_000_000;
-//     for r in sut.reserves.iter() {
-//         r.token_admin.mint(&borrower, &initial_amount);
-//         assert_eq!(r.token.balance(&borrower), initial_amount);
-//         r.token_admin.mint(&lender, &initial_amount);
-//         assert_eq!(r.token.balance(&lender), initial_amount);
-//     }
-
-//     let deposit_amount = 1000;
-
-//     env.budget().reset_unlimited();
-
-//     sut.pool
-//         .deposit(&lender, &sut.reserves[0].token.address, &deposit_amount);
-
-//     sut.pool
-//         .deposit(&borrower, &sut.reserves[1].token.address, &deposit_amount);
-
-//     sut.pool.withdraw(
-//         &borrower,
-//         &sut.reserves[1].token.address,
-//         &deposit_amount,
-//         &borrower,
-//     );
-
-//     let borrow_amount = 100;
-//     sut.pool
-//         .borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount)
-
-//     //TODO: check error after fix
-//     // assert_eq!(
-//     //     sut.pool
-//     //         .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount)
-//     //         .unwrap_err()
-//     //         .unwrap(),
-//     //     Error::CollateralNotCoverNewBorrow
-//     // )
-// }
-
-// #[test]
-// fn borrow_no_active_reserve() {
-//     //TODO: implement
-// }
-
-// #[test]
-// #[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-// fn borrow_collateral_not_cover_new_debt() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-
-//     let sut = init_pool(&env);
-//     let lender = Address::random(&env);
-//     let borrower = Address::random(&env);
-
-//     let initial_amount = 1_000_000_000;
-//     for r in sut.reserves.iter() {
-//         r.token_admin.mint(&borrower, &initial_amount);
-//         assert_eq!(r.token.balance(&borrower), initial_amount);
-//         r.token_admin.mint(&lender, &initial_amount);
-//         assert_eq!(r.token.balance(&lender), initial_amount);
-//     }
-
-//     let borrower_deposit_amount = 500;
-//     let lender_deposit_amount = 2000;
-
-//     //TODO: optimize gas
-//     env.budget().reset_unlimited();
-
-//     sut.pool.deposit(
-//         &lender,
-//         &sut.reserves[0].token.address,
-//         &lender_deposit_amount,
-//     );
-
-//     sut.pool.deposit(
-//         &borrower,
-//         &sut.reserves[1].token.address,
-//         &borrower_deposit_amount,
-//     );
-
-//     //TODO: check error after soroban fix
-//     let borrow_amount = 1000;
-//     sut.pool
-//         .borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount);
-
-//     // assert_eq!(
-//     //     sut.pool
-//     //         .try_borrow(&borrower, &sut.reserves[0].token.address, &borrow_amount)
-//     //         .unwrap_err()
-//     //         .unwrap(),
-//     //     Error::CollateralNotCoverNewBorrow
-//     // )
-// }
-
-// #[test]
-// #[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-// fn borrow_disabled_for_borrowing_asset() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-
-//     let sut = init_pool(&env);
-
-//     let initial_amount: i128 = 1_000_000_000;
-//     let lender = Address::random(&env);
-//     let borrower = Address::random(&env);
-
-//     for r in sut.reserves.iter() {
-//         r.token_admin.mint(&lender, &initial_amount);
-//         assert_eq!(r.token.balance(&lender), initial_amount);
-
-//         r.token_admin.mint(&borrower, &initial_amount);
-//         assert_eq!(r.token.balance(&borrower), initial_amount);
-//     }
-
-//     env.budget().reset_unlimited();
-
-//     //lender deposit all tokens
-//     let deposit_amount = 100_000_000;
-//     for r in sut.reserves.iter() {
-//         let pool_balance = r.token.balance(&r.s_token.address);
-//         sut.pool.deposit(&lender, &r.token.address, &deposit_amount);
-//         assert_eq!(r.s_token.balance(&lender), deposit_amount);
-//         assert_eq!(
-//             r.token.balance(&r.s_token.address),
-//             pool_balance + deposit_amount
-//         );
-//     }
-
-//     //borrower deposit first token and borrow second token
-//     sut.pool
-//         .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
-//     assert_eq!(sut.reserves[0].s_token.balance(&borrower), deposit_amount);
-
-//     //borrower borrow second token
-//     let borrow_asset = sut.reserves[1].token.address.clone();
-//     let borrow_amount = 10_000;
-
-//     //disable second token for borrowing
-//     sut.pool.enable_borrowing_on_reserve(&borrow_asset, &false);
-//     let reserve = sut.pool.get_reserve(&borrow_asset);
-//     assert_eq!(reserve.unwrap().configuration.borrowing_enabled, false);
-
-//     //TODO: check error after soroban fix
-//     sut.pool.borrow(&borrower, &borrow_asset, &borrow_amount);
-
-//     // assert_eq!(
-//     //     sut.pool
-//     //         .try_borrow(&borrower, &borrow_asset, &borrow_amount)
-//     //         .unwrap_err()
-//     //         .unwrap(),
-//     //     Error::BorrowingNotEnabled
-//     // );
-// }
-
-// #[test]
-// fn borrow_should_mint_debt_token() {
-//     let env = Env::default();
-//     env.mock_all_auths();
-
-//     //TODO: optimize gas
-
-//     let sut = init_pool(&env);
-
-//     env.budget().reset_unlimited();
-
-//     let (_lender, borrower, debt_config) = fill_pool(&env, &sut, false);
-//     let debt_token = &debt_config.token.address;
-
-//     // shift time to one day
-//     env.ledger().with_mut(|li| {
-//         li.timestamp = 24 * 60 * 60 // one day
-//     });
-
-//     let debttoken_supply = debt_config.debt_token.total_supply();
-//     let borrower_debt_token_balance_before = debt_config.debt_token.balance(&borrower);
-//     let borrow_amount = 10_000;
-//     sut.pool.borrow(&borrower, &debt_token, &borrow_amount);
-
-//     let reserve = sut.pool.get_reserve(&debt_token).unwrap();
-//     let expected_minted_debt_token = FixedI128::from_inner(reserve.borrower_accrued_rate)
-//         .recip_mul_int(borrow_amount)
-//         .unwrap();
-
-//     assert_eq!(
-//         debt_config.debt_token.balance(&borrower),
-//         borrower_debt_token_balance_before + expected_minted_debt_token
-//     );
-//     assert_eq!(
-//         debt_config.debt_token.balance(&borrower),
-//         debttoken_supply + expected_minted_debt_token
-//     )
-// }
+#[test]
+#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+fn should_fail_when_user_config_not_exist() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let borrower = Address::random(&env);
+
+    sut.pool.borrow(&borrower, &sut.token().address, &1);
+
+    // assert_eq!(
+    //     sut.pool
+    //         .try_borrow(&borrower, &sut.token().address, &1)
+    //         .unwrap_err()
+    //         .unwrap(),
+    //     Error::UserConfigNotExists
+    // )
+}
+
+#[test]
+fn should_change_user_config() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
+    let token_1_address = debt_config.token.address.clone();
+    let token_2_address = sut.reserves[2].token.address.clone();
+
+    let reserve_1 = sut.pool.get_reserve(&token_1_address).unwrap();
+    let reserve_2 = sut.pool.get_reserve(&token_2_address).unwrap();
+
+    let user_config = sut.pool.user_configuration(&borrower);
+    let is_borrowing_any_before = user_config.is_borrowing_any();
+    let is_borrowing_token_1_before = user_config.is_borrowing(&env, reserve_1.get_id());
+    let is_borrowing_token_2_before = user_config.is_borrowing(&env, reserve_2.get_id());
+
+    sut.pool.borrow(&borrower, &token_1_address, &10_000_000);
+    sut.pool.borrow(&borrower, &token_2_address, &10_000_000);
+
+    let user_config = sut.pool.user_configuration(&borrower);
+    let is_borrowing_any_after_borrow = user_config.is_borrowing_any();
+    let is_borrowing_token_1_after_borrow = user_config.is_borrowing(&env, reserve_1.get_id());
+    let is_borrowing_token_2_after_borrow = user_config.is_borrowing(&env, reserve_2.get_id());
+
+    sut.pool.deposit(&borrower, &token_1_address, &i128::MAX);
+
+    let user_config = sut.pool.user_configuration(&borrower);
+    let is_borrowing_any_after_repay_1 = user_config.is_borrowing_any();
+    let is_borrowing_token_1_after_repay_1 = user_config.is_borrowing(&env, reserve_1.get_id());
+    let is_borrowing_token_2_after_repay_1 = user_config.is_borrowing(&env, reserve_2.get_id());
+
+    sut.pool.deposit(&borrower, &token_2_address, &i128::MAX);
+
+    let user_config = sut.pool.user_configuration(&borrower);
+    let is_borrowing_any_after_repay_2 = user_config.is_borrowing_any();
+    let is_borrowing_token_1_after_repay_2 = user_config.is_borrowing(&env, reserve_1.get_id());
+    let is_borrowing_token_2_after_repay_2 = user_config.is_borrowing(&env, reserve_2.get_id());
+
+    assert_eq!(is_borrowing_any_before, false);
+    assert_eq!(is_borrowing_token_1_before, false);
+    assert_eq!(is_borrowing_token_2_before, false);
+
+    assert_eq!(is_borrowing_any_after_borrow, true);
+    assert_eq!(is_borrowing_token_1_after_borrow, true);
+    assert_eq!(is_borrowing_token_2_after_borrow, true);
+
+    assert_eq!(is_borrowing_any_after_repay_1, true);
+    assert_eq!(is_borrowing_token_1_after_repay_1, false);
+    assert_eq!(is_borrowing_token_2_after_repay_1, true);
+
+    assert_eq!(is_borrowing_any_after_repay_2, false);
+    assert_eq!(is_borrowing_token_1_after_repay_2, false);
+    assert_eq!(is_borrowing_token_2_after_repay_2, false);
+}
+
+#[test]
+fn should_affect_coeffs() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
+    let token_address = debt_config.token.address.clone();
+
+    env.ledger().with_mut(|li| li.timestamp = DAY);
+
+    let collat_coeff_prev = sut.pool.collat_coeff(&token_address);
+    let debt_coeff_prev = sut.pool.debt_coeff(&token_address);
+
+    sut.pool.borrow(&borrower, &token_address, &20_000_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
+    let collat_coeff = sut.pool.collat_coeff(&token_address);
+    let debt_coeff = sut.pool.debt_coeff(&token_address);
+
+    assert!(collat_coeff_prev < collat_coeff);
+    assert!(debt_coeff_prev < debt_coeff);
+}
+
+#[test]
+fn should_affect_account_data() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
+    let token_address = debt_config.token.address.clone();
+
+    let account_position_prev = sut.pool.account_position(&borrower);
+
+    sut.pool.borrow(&borrower, &token_address, &20_000_000);
+
+    let account_position = sut.pool.account_position(&borrower);
+
+    assert!(account_position_prev.discounted_collateral == account_position.discounted_collateral);
+    assert!(account_position_prev.debt < account_position.debt);
+    assert!(account_position_prev.npv > account_position.npv);
+}
+
+#[test]
+fn should_change_balances_when_borrow_and_repay() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
+    let token_address = debt_config.token.address.clone();
+    let treasury = sut.pool.treasury();
+
+    env.ledger().with_mut(|li| li.timestamp = DAY);
+
+    let treasury_before = debt_config.token.balance(&treasury);
+    let debt_balance_before = debt_config.debt_token.balance(&borrower);
+    let debt_total_before = debt_config.debt_token.total_supply();
+    let borrower_balance_before = debt_config.token.balance(&borrower);
+    let underlying_supply_before = sut
+        .pool
+        .get_stoken_underlying_balance(&debt_config.s_token.address);
+
+    sut.pool.borrow(&borrower, &token_address, &20_000_000);
+
+    let treasury_after_borrow = debt_config.token.balance(&treasury);
+    let debt_balance_after_borrow = debt_config.debt_token.balance(&borrower);
+    let debt_total_after_borrow = debt_config.debt_token.total_supply();
+    let borrower_balance_after_borrow = debt_config.token.balance(&borrower);
+    let underlying_supply_after_borrow = sut
+        .pool
+        .get_stoken_underlying_balance(&debt_config.s_token.address);
+
+    env.ledger().with_mut(|li| li.timestamp = 30 * DAY);
+
+    sut.pool.deposit(&borrower, &token_address, &i128::MAX);
+
+    let treasury_after_repay = debt_config.token.balance(&treasury);
+    let debt_balance_after_repay = debt_config.debt_token.balance(&borrower);
+    let debt_total_after_repay = debt_config.debt_token.total_supply();
+    let borrower_balance_after_repay = debt_config.token.balance(&borrower);
+    let underlying_supply_after_repay = sut
+        .pool
+        .get_stoken_underlying_balance(&debt_config.s_token.address);
+
+    assert_eq!(treasury_before, 0);
+    assert_eq!(debt_balance_before, 0);
+    assert_eq!(debt_total_before, 0);
+    assert_eq!(borrower_balance_before, 1_000_000_000);
+    assert_eq!(underlying_supply_before, 100_000_000);
+
+    assert_eq!(treasury_after_borrow, 0);
+    assert_eq!(debt_balance_after_borrow, 19_998_904);
+    assert_eq!(debt_total_after_borrow, 19_998_904);
+    assert_eq!(borrower_balance_after_borrow, 1_020_000_000);
+    assert_eq!(underlying_supply_after_borrow, 80_000_000);
+
+    assert_eq!(treasury_after_repay, 36_949);
+    assert_eq!(debt_balance_after_repay, 0);
+    assert_eq!(debt_total_after_repay, 0);
+    assert_eq!(borrower_balance_after_repay, 999_956_305);
+    assert_eq!(underlying_supply_after_repay, 100_006_746);
+}
+
+#[test]
+fn should_emit_events() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
+    let token_address = debt_config.token.address.clone();
+
+    sut.pool.borrow(&borrower, &token_address, &20_000_000);
+
+    let mut events = env.events().all();
+    let event = events.pop_back_unchecked();
+
+    assert_eq!(
+        vec![&env, event],
+        vec![
+            &env,
+            (
+                sut.pool.address.clone(),
+                (Symbol::new(&env, "borrow"), borrower.clone()).into_val(&env),
+                (token_address.clone(), 20_000_000i128).into_val(&env)
+            ),
+        ]
+    );
+}

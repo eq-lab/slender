@@ -287,12 +287,14 @@ fn should_affect_coeffs() {
     let (lender, _, _, debt_config) = fill_pool_two(&env, &sut);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = 60 * DAY);
+    env.ledger().with_mut(|li| li.timestamp = DAY);
 
     let collat_coeff_prev = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_prev = sut.pool.debt_coeff(&debt_token);
 
     sut.pool.withdraw(&lender, debt_token, &i128::MAX, &lender);
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     let collat_coeff = sut.pool.collat_coeff(&debt_token);
     let debt_coeff = sut.pool.debt_coeff(&debt_token);
@@ -318,6 +320,7 @@ fn should_affect_account_data() {
     let account_position = sut.pool.account_position(&borrower);
 
     assert!(account_position_prev.discounted_collateral > account_position.discounted_collateral);
+    assert!(account_position_prev.debt == account_position.debt);
     assert!(account_position_prev.npv > account_position.npv);
 }
 
