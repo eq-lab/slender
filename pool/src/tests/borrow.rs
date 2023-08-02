@@ -5,10 +5,6 @@ use crate::tests::sut::{fill_pool, init_pool};
 
 use super::sut::DAY;
 
-// events /Artur
-// user config /Artur
-// user account /Artur
-
 #[test]
 fn should_require_authorized_caller() {
     let env = Env::default();
