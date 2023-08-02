@@ -546,7 +546,7 @@ impl LendingPoolTrait for LendingPool {
             .checked_sub(s_token_to_burn)
             .ok_or(Error::InvalidAmount)?;
 
-        Self::require_good_position_when_borrowing(
+        Self::require_good_position_when_withdrawing(
             &env,
             who.clone(),
             &reserve,
@@ -1073,7 +1073,7 @@ impl LendingPool {
         ))
     }
 
-    fn require_good_position_when_borrowing(
+    fn require_good_position_when_withdrawing(
         env: &Env,
         who: Address,
         reserve: &ReserveData,
