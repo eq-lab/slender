@@ -173,7 +173,7 @@ fn should_affect_coeffs() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (lender, _, debt_config) = fill_pool(&env, &sut);
+    let (lender, _, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
 
     env.ledger().with_mut(|li| li.timestamp = DAY);
@@ -197,7 +197,7 @@ fn should_affect_account_data() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, _) = fill_pool(&env, &sut);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
 
     let account_position_prev = sut.pool.account_position(&borrower);
 

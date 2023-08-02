@@ -21,11 +21,11 @@
                 //     "kind": "lib"
                 // }
             },
-            // "args": [
-            //     "tests::deposit::deposit",
-            //     "--exact",
-            //     "--nocapture"
-            // ],
+            "args": [
+                "tests::borrow::should_fail_when_collat_not_covers_amount",
+                "--exact",
+                "--nocapture"
+            ],
             "cwd": "${workspaceFolder}"
         }
     ]

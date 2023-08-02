@@ -175,6 +175,7 @@ pub(crate) fn init_pool<'a>(env: &Env) -> Sut<'a> {
 pub(crate) fn fill_pool<'a, 'b>(
     env: &'b Env,
     sut: &'a Sut,
+    with_borrowing: bool,
 ) -> (Address, Address, &'a ReserveConfig<'a>) {
     let initial_amount: i128 = 1_000_000_000;
     let lender = Address::random(&env);
@@ -206,8 +207,10 @@ pub(crate) fn fill_pool<'a, 'b>(
         .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
     assert_eq!(sut.reserves[0].s_token.balance(&borrower), deposit_amount);
 
-    let borrow_amount = 40_000_000;
-    sut.pool.borrow(&borrower, &debt_token, &borrow_amount);
+    if with_borrowing {
+        let borrow_amount = 40_000_000;
+        sut.pool.borrow(&borrower, &debt_token, &borrow_amount);
+    }
 
     (lender, borrower, &sut.reserves[1])
 }
@@ -217,7 +220,7 @@ pub(crate) fn fill_pool_two<'a, 'b>(
     env: &'b Env,
     sut: &'a Sut,
 ) -> (Address, Address, Address, &'a ReserveConfig<'a>) {
-    let (lender_1, borrower, debt_token) = fill_pool(env, sut);
+    let (lender_1, borrower, debt_token) = fill_pool(env, sut, true);
 
     let initial_amount: i128 = 1_000_000_000;
     let lender_2 = Address::random(env);

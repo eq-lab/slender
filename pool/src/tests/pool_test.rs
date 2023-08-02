@@ -658,7 +658,7 @@ fn collateral_coeff_test() {
 
     env.budget().reset_unlimited();
 
-    let (_lender, borrower, debt_config) = fill_pool(&env, &sut);
+    let (_lender, borrower, debt_config) = fill_pool(&env, &sut, true);
     let initial_collat_coeff = sut.pool.collat_coeff(&debt_config.token.address);
     std::println!("initial_collat_coeff={}", initial_collat_coeff);
 
@@ -720,7 +720,7 @@ fn liquidity_cap_test() {
 
     env.budget().reset_unlimited();
 
-    let (lender, _borrower, debt_config) = fill_pool(&env, &sut);
+    let (lender, _borrower, debt_config) = fill_pool(&env, &sut, true);
 
     let token_one = 10_i128.pow(debt_config.token.decimals());
     let liq_bonus = 11000; //110%

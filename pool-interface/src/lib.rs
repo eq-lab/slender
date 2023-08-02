@@ -122,14 +122,6 @@ pub trait LendingPoolTrait {
         to: Address,
     ) -> Result<(), Error>;
 
-    #[cfg(any(test, feature = "testutils"))]
-    fn set_accrued_rates(
-        env: Env,
-        asset: Address,
-        lender_accrued_rate: Option<i128>,
-        borrower_accrued_rate: Option<i128>,
-    ) -> Result<(), Error>;
-
     fn get_stoken_underlying_balance(env: Env, stoken_address: Address) -> i128;
 
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
