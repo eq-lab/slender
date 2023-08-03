@@ -11,7 +11,7 @@ fn should_partially_repay() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, debt_config) = fill_pool(&env, &sut);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
     let stoken_token = &debt_config.s_token.address;
 
@@ -47,7 +47,7 @@ fn should_fully_repay() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, debt_config) = fill_pool(&env, &sut);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
     let stoken_token = &debt_config.s_token.address;
 
@@ -83,7 +83,7 @@ fn should_deposit_when_overrepay() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, debt_config) = fill_pool(&env, &sut);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
     let stoken_token = &debt_config.s_token.address;
 
@@ -114,7 +114,7 @@ fn should_change_user_config() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, debt_config) = fill_pool(&env, &sut);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
 
     sut.pool.deposit(&borrower, &debt_token, &i128::MAX);
@@ -131,7 +131,7 @@ fn should_affect_coeffs() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, debt_config) = fill_pool(&env, &sut);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
 
     env.ledger().with_mut(|li| li.timestamp = DAY);
 
@@ -140,6 +140,8 @@ fn should_affect_coeffs() {
 
     sut.pool
         .deposit(&borrower, &debt_config.token.address, &100_000_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     let collat_coeff = sut.pool.collat_coeff(&debt_config.token.address);
     let debt_coeff = sut.pool.debt_coeff(&debt_config.token.address);
@@ -154,7 +156,7 @@ fn should_affect_account_data() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, debt_config) = fill_pool(&env, &sut);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
 
     let account_position_prev = sut.pool.account_position(&borrower);
 
@@ -164,6 +166,7 @@ fn should_affect_account_data() {
     let account_position = sut.pool.account_position(&borrower);
 
     assert!(account_position_prev.discounted_collateral < account_position.discounted_collateral);
+    assert!(account_position_prev.debt > account_position.debt);
     assert!(account_position_prev.npv < account_position.npv);
 }
 
@@ -173,7 +176,7 @@ fn should_emit_events() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, debt_config) = fill_pool(&env, &sut);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
 
     env.ledger().with_mut(|li| li.timestamp = DAY);

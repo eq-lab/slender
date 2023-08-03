@@ -14,7 +14,7 @@ fn should_require_authorized_caller() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, _) = fill_pool(&env, &sut);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
     sut.pool
@@ -43,7 +43,7 @@ fn should_fail_when_pool_paused() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, _) = fill_pool(&env, &sut);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
     sut.pool.set_pause(&true);
@@ -66,7 +66,7 @@ fn should_fail_when_invalid_amount() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, _) = fill_pool(&env, &sut);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
     sut.pool.withdraw(&borrower, &token_address, &-1, &borrower);
@@ -87,7 +87,7 @@ fn should_fail_when_reserve_deactivated() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, _) = fill_pool(&env, &sut);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
     sut.pool.set_reserve_status(&token_address, &false);
@@ -110,7 +110,7 @@ fn should_fail_when_not_enough_stoken_balance() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, _) = fill_pool(&env, &sut);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
     sut.pool
@@ -132,7 +132,7 @@ fn should_fail_when_bad_position() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, _) = fill_pool(&env, &sut);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
     sut.pool
@@ -155,7 +155,7 @@ fn should_fail_when_unknown_asset() {
 
     let unknown_asset = Address::random(&env);
     let sut = init_pool(&env);
-    let (_, borrower, _) = fill_pool(&env, &sut);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
 
     sut.pool
         .withdraw(&borrower, &unknown_asset, &1_000_000, &borrower);
@@ -287,12 +287,14 @@ fn should_affect_coeffs() {
     let (lender, _, _, debt_config) = fill_pool_two(&env, &sut);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = 60 * DAY);
+    env.ledger().with_mut(|li| li.timestamp = DAY);
 
     let collat_coeff_prev = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_prev = sut.pool.debt_coeff(&debt_token);
 
     sut.pool.withdraw(&lender, debt_token, &i128::MAX, &lender);
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     let collat_coeff = sut.pool.collat_coeff(&debt_token);
     let debt_coeff = sut.pool.debt_coeff(&debt_token);
@@ -307,7 +309,7 @@ fn should_affect_account_data() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, _) = fill_pool(&env, &sut);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
     let account_position_prev = sut.pool.account_position(&borrower);
@@ -318,6 +320,7 @@ fn should_affect_account_data() {
     let account_position = sut.pool.account_position(&borrower);
 
     assert!(account_position_prev.discounted_collateral > account_position.discounted_collateral);
+    assert!(account_position_prev.debt == account_position.debt);
     assert!(account_position_prev.npv > account_position.npv);
 }
 

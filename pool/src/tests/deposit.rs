@@ -173,7 +173,7 @@ fn should_affect_coeffs() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (lender, _, debt_config) = fill_pool(&env, &sut);
+    let (lender, _, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
 
     env.ledger().with_mut(|li| li.timestamp = DAY);
@@ -183,6 +183,8 @@ fn should_affect_coeffs() {
 
     sut.pool
         .deposit(&lender, &sut.reserves[1].token.address, &100_000_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     let collat_coeff = sut.pool.collat_coeff(&debt_token);
     let debt_coeff = sut.pool.debt_coeff(&debt_token);
@@ -197,7 +199,7 @@ fn should_affect_account_data() {
     env.mock_all_auths();
 
     let sut = init_pool(&env);
-    let (_, borrower, _) = fill_pool(&env, &sut);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
 
     let account_position_prev = sut.pool.account_position(&borrower);
 
@@ -207,6 +209,7 @@ fn should_affect_account_data() {
     let account_position = sut.pool.account_position(&borrower);
 
     assert!(account_position_prev.discounted_collateral < account_position.discounted_collateral);
+    assert!(account_position_prev.debt == account_position.debt);
     assert!(account_position_prev.npv < account_position.npv);
 }
 
