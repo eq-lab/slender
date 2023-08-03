@@ -174,7 +174,7 @@ fn should_fail_when_oracle_price_is_negative() {
     //         .try_borrow(&borrower, &token_address, &10_000_000)
     //         .unwrap_err()
     //         .unwrap(),
-    //     Error::ValidateBorrowMathError
+    //     Error::InvalidAssetPrice
     // )
 }
 

@@ -21,11 +21,11 @@
                 //     "kind": "lib"
                 // }
             },
-            // "args": [
-            //     "tests::deposit::deposit",
-            //     "--exact",
-            //     "--nocapture"
-            // ],
+            "args": [
+                "tests::liquidate::should_affect_coeffs",
+                "--exact",
+                "--nocapture"
+            ],
             "cwd": "${workspaceFolder}"
         }
     ]

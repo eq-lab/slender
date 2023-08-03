@@ -1,5 +1,6 @@
 pub mod borrow;
 pub mod deposit;
+pub mod liquidate;
 pub mod pool_test;
 pub mod rate_test;
 pub mod repay;
