@@ -20,8 +20,8 @@ pub fn has_admin(env: &Env) -> bool {
     env.storage().instance().has(&DataKey::Admin)
 }
 
-pub fn write_admin(env: &Env, admin: Address) {
-    env.storage().instance().set(&DataKey::Admin, &admin);
+pub fn write_admin(env: &Env, admin: &Address) {
+    env.storage().instance().set(&DataKey::Admin, admin);
 }
 
 pub fn read_admin(env: &Env) -> Result<Address, Error> {
@@ -42,22 +42,22 @@ pub fn read_ir_params(env: &Env) -> Result<IRParams, Error> {
         .ok_or(Error::Uninitialized)
 }
 
-pub fn read_reserve(env: &Env, asset: Address) -> Result<ReserveData, Error> {
+pub fn read_reserve(env: &Env, asset: &Address) -> Result<ReserveData, Error> {
     env.storage()
         .instance()
-        .get(&DataKey::ReserveAssetKey(asset))
+        .get(&DataKey::ReserveAssetKey(asset.clone()))
         .ok_or(Error::NoReserveExistForAsset)
 }
 
-pub fn write_reserve(env: &Env, asset: Address, reserve_data: &ReserveData) {
-    let asset_key: DataKey = DataKey::ReserveAssetKey(asset);
+pub fn write_reserve(env: &Env, asset: &Address, reserve_data: &ReserveData) {
+    let asset_key: DataKey = DataKey::ReserveAssetKey(asset.clone());
     env.storage().instance().set(&asset_key, reserve_data);
 }
 
-pub fn has_reserve(env: &Env, asset: Address) -> bool {
+pub fn has_reserve(env: &Env, asset: &Address) -> bool {
     env.storage()
         .instance()
-        .has(&DataKey::ReserveAssetKey(asset))
+        .has(&DataKey::ReserveAssetKey(asset.clone()))
 }
 
 pub fn read_reserves(env: &Env) -> Vec<Address> {
@@ -71,21 +71,21 @@ pub fn write_reserves(env: &Env, reserves: &Vec<Address>) {
     env.storage().instance().set(&DataKey::Reserves, reserves);
 }
 
-pub fn read_user_config(env: &Env, user: Address) -> Result<UserConfiguration, Error> {
+pub fn read_user_config(env: &Env, user: &Address) -> Result<UserConfiguration, Error> {
     env.storage()
         .persistent()
-        .get(&DataKey::UserConfig(user))
+        .get(&DataKey::UserConfig(user.clone()))
         .ok_or(Error::UserConfigNotExists)
 }
 
-pub fn write_user_config(env: &Env, user: Address, config: &UserConfiguration) {
+pub fn write_user_config(env: &Env, user: &Address, config: &UserConfiguration) {
     env.storage()
         .persistent()
-        .set(&DataKey::UserConfig(user), config);
+        .set(&DataKey::UserConfig(user.clone()), config);
 }
 
-pub fn read_price_feed(env: &Env, asset: Address) -> Result<Address, Error> {
-    let data_key = DataKey::PriceFeed(asset);
+pub fn read_price_feed(env: &Env, asset: &Address) -> Result<Address, Error> {
+    let data_key = DataKey::PriceFeed(asset.clone());
 
     env.storage()
         .instance()
@@ -93,10 +93,10 @@ pub fn read_price_feed(env: &Env, asset: Address) -> Result<Address, Error> {
         .ok_or(Error::NoPriceFeed)
 }
 
-pub fn write_price_feed(env: &Env, feed: Address, assets: &Vec<Address>) {
+pub fn write_price_feed(env: &Env, feed: &Address, assets: &Vec<Address>) {
     for asset in assets.iter() {
-        let data_key = DataKey::PriceFeed(asset);
-        env.storage().instance().set(&data_key, &feed);
+        let data_key = DataKey::PriceFeed(asset.clone());
+        env.storage().instance().set(&data_key, feed);
     }
 }
 

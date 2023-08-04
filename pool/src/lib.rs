@@ -8,8 +8,8 @@ use pool_interface::*;
 use rate::{calc_accrued_rates, calc_next_accrued_rate};
 use s_token_interface::STokenClient;
 use soroban_sdk::{
-    assert_with_error, contract, contractimpl, contracttype, panic_with_error, token,
-    unwrap::UnwrapOptimized, vec, Address, BytesN, Env, Map, Vec,
+    assert_with_error, contract, contractimpl, contracttype, panic_with_error, token, vec, Address,
+    BytesN, Env, Map, Vec,
 };
 use user_configurator::UserConfigurator;
 
@@ -120,11 +120,11 @@ impl LendingPoolTrait for LendingPool {
         }
         Self::require_valid_ir_params(&env, &ir_params);
 
-        write_admin(&env, admin.clone());
+        write_admin(&env, &admin);
         write_treasury(&env, &treasury);
         write_ir_params(&env, &ir_params);
 
-        event::initialized(&env, admin, treasury, ir_params);
+        event::initialized(&env, &admin, &treasury, ir_params);
 
         Ok(())
     }
@@ -163,7 +163,7 @@ impl LendingPoolTrait for LendingPool {
         reserves.push_back(asset.clone());
 
         write_reserves(&env, &reserves);
-        write_reserve(&env, asset, &reserve_data);
+        write_reserve(&env, &asset, &reserve_data);
 
         Ok(())
     }
@@ -182,15 +182,15 @@ impl LendingPoolTrait for LendingPool {
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error> {
         Self::require_admin(&env)?;
 
-        let mut reserve = read_reserve(&env, asset.clone())?;
+        let mut reserve = read_reserve(&env, &asset)?;
 
         reserve.configuration.is_active = is_active;
-        write_reserve(&env, asset.clone(), &reserve);
+        write_reserve(&env, &asset, &reserve);
 
         if is_active {
-            event::reserve_activated(&env, asset);
+            event::reserve_activated(&env, &asset);
         } else {
-            event::reserve_deactivated(&env, asset);
+            event::reserve_deactivated(&env, &asset);
         }
 
         Ok(())
@@ -247,14 +247,14 @@ impl LendingPoolTrait for LendingPool {
     fn enable_borrowing_on_reserve(env: Env, asset: Address, enabled: bool) -> Result<(), Error> {
         Self::require_admin(&env)?;
 
-        let mut reserve = read_reserve(&env, asset.clone())?;
+        let mut reserve = read_reserve(&env, &asset)?;
         reserve.configuration.borrowing_enabled = enabled;
-        write_reserve(&env, asset.clone(), &reserve);
+        write_reserve(&env, &asset, &reserve);
 
         if enabled {
-            event::borrowing_enabled(&env, asset);
+            event::borrowing_enabled(&env, &asset);
         } else {
-            event::borrowing_disabled(&env, asset);
+            event::borrowing_disabled(&env, &asset);
         }
 
         Ok(())
@@ -284,11 +284,11 @@ impl LendingPoolTrait for LendingPool {
         Self::require_admin(&env)?;
         Self::require_valid_collateral_params(&env, &params);
 
-        let mut reserve = read_reserve(&env, asset.clone())?;
+        let mut reserve = read_reserve(&env, &asset)?;
         reserve.update_collateral_config(params);
 
-        write_reserve(&env, asset.clone(), &reserve);
-        event::collat_config_change(&env, asset, params);
+        write_reserve(&env, &asset, &reserve);
+        event::collat_config_change(&env, &asset, params);
 
         Ok(())
     }
@@ -304,7 +304,7 @@ impl LendingPoolTrait for LendingPool {
     /// Returns the reserve data for the specified asset if it exists, or None otherwise.
     ///
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData> {
-        read_reserve(&env, asset).ok()
+        read_reserve(&env, &asset).ok()
     }
 
     /// Returns collateral coefficient corrected on current time expressed as inner value of FixedI128
@@ -313,7 +313,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// - asset - The address of underlying asset
     fn collat_coeff(env: Env, asset: Address) -> Result<i128, Error> {
-        let reserve = read_reserve(&env, asset)?;
+        let reserve = read_reserve(&env, &asset)?;
         Self::get_collat_coeff(&env, &reserve).map(|fixed| fixed.into_inner())
     }
 
@@ -324,7 +324,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// - asset - The address of underlying asset
     fn debt_coeff(env: Env, asset: Address) -> Result<i128, Error> {
-        let reserve = read_reserve(&env, asset)?;
+        let reserve = read_reserve(&env, &asset)?;
         Self::get_debt_coeff(&env, &reserve).map(|fixed| fixed.into_inner())
     }
 
@@ -344,7 +344,7 @@ impl LendingPoolTrait for LendingPool {
         Self::require_admin(&env)?;
         PriceProvider::new(&env, &feed);
 
-        write_price_feed(&env, feed, &assets);
+        write_price_feed(&env, &feed, &assets);
 
         Ok(())
     }
@@ -360,7 +360,7 @@ impl LendingPoolTrait for LendingPool {
     /// Returns the price feed oracle contract id associated with the asset if set, or None otherwise.
     ///
     fn price_feed(env: Env, asset: Address) -> Option<Address> {
-        read_price_feed(&env, asset).ok()
+        read_price_feed(&env, &asset).ok()
     }
 
     /// Repays a borrowed amount on a specific reserve, burning the equivalent debt tokens owned when debt exists.
@@ -391,7 +391,7 @@ impl LendingPoolTrait for LendingPool {
         Self::require_not_paused(&env);
         Self::require_positive_amount(&env, amount);
 
-        let reserve = get_actual_reserve_data(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, &asset)?;
         Self::require_active_reserve(&env, &reserve);
 
         let (remaining_amount, is_repayed) =
@@ -445,14 +445,13 @@ impl LendingPoolTrait for LendingPool {
         // TODO: maybe check with callstack?
         Self::require_not_paused(&env);
 
-        let reserve = read_reserve(&env, asset.clone())?;
+        let reserve = read_reserve(&env, &asset)?;
         Self::require_active_reserve(&env, &reserve);
-        Self::require_zero_debt(&env, to.clone(), reserve.debt_token_address.clone());
+        Self::require_zero_debt(&env, &to, &reserve.debt_token_address);
 
-        let s_token_address = (reserve.clone()).s_token_address;
-        s_token_address.require_auth();
+        reserve.s_token_address.require_auth();
 
-        let reserve = recalculate_reserve_data(&env, asset.clone(), reserve, s_token_supply)?;
+        let reserve = recalculate_reserve_data(&env, &asset, &reserve, s_token_supply)?;
 
         let balance_from_after = balance_from_before
             .checked_sub(amount)
@@ -468,13 +467,16 @@ impl LendingPoolTrait for LendingPool {
             let from_account_data = Self::calc_account_data(
                 &env,
                 &from,
-                Some(AssetBalance::new(s_token_address, balance_from_after)),
+                Some(&AssetBalance::new(
+                    reserve.s_token_address.clone(),
+                    balance_from_after,
+                )),
                 from_config,
                 &reserves,
                 false,
             )?;
 
-            Self::require_good_position(&env, from_account_data);
+            Self::require_good_position(&env, &from_account_data);
         }
 
         if from != to {
@@ -528,7 +530,7 @@ impl LendingPoolTrait for LendingPool {
         Self::require_not_paused(&env);
         Self::require_positive_amount(&env, amount);
 
-        let reserve = get_actual_reserve_data(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, &asset)?;
         Self::require_active_reserve(&env, &reserve);
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
@@ -564,7 +566,7 @@ impl LendingPoolTrait for LendingPool {
             &who,
             &reserve,
             &user_configurator.user_config,
-            AssetBalance::new(s_token.address.clone(), s_token_balance_after),
+            &AssetBalance::new(s_token.address.clone(), s_token_balance_after),
         )?;
 
         let amount_to_sub = underlying_to_withdraw
@@ -580,7 +582,7 @@ impl LendingPoolTrait for LendingPool {
                 .write(&env);
         }
 
-        event::withdraw(&env, who, asset, to, underlying_to_withdraw);
+        event::withdraw(&env, &who, &asset, &to, underlying_to_withdraw);
 
         Ok(())
     }
@@ -605,7 +607,7 @@ impl LendingPoolTrait for LendingPool {
         Self::require_not_paused(&env);
         Self::require_positive_amount(&env, amount);
 
-        let reserve = get_actual_reserve_data(&env, asset.clone())?;
+        let reserve = get_actual_reserve_data(&env, &asset)?;
         Self::require_active_reserve(&env, &reserve);
         Self::require_borrowing_enabled(&env, &reserve);
 
@@ -642,7 +644,7 @@ impl LendingPoolTrait for LendingPool {
                 .write(&env);
         }
 
-        event::borrow(&env, who, asset, amount);
+        event::borrow(&env, &who, &asset, amount);
 
         Ok(())
     }
@@ -682,9 +684,9 @@ impl LendingPoolTrait for LendingPool {
     fn account_position(env: Env, who: Address) -> Result<AccountPosition, Error> {
         let account_data = Self::calc_account_data(
             &env,
-            &who.clone(),
+            &who,
             None,
-            &read_user_config(&env, who)?,
+            &read_user_config(&env, &who)?,
             &read_reserves(&env),
             false,
         )?;
@@ -724,23 +726,24 @@ impl LendingPoolTrait for LendingPool {
 
         assert_with_error!(&env, !account_data.is_good_position(), Error::GoodPosition);
 
+        let liquidation = account_data
+            .liquidation
+            .expect("pool: liquidation flag in calc_account_data");
+
         Self::do_liquidate(
             &env,
             &liquidator,
             &who,
             &mut user_configurator,
-            account_data.clone(),
+            &liquidation,
             receive_stoken,
         )?;
 
         event::liquidation(
             &env,
-            who,
+            &who,
             account_data.debt,
-            account_data
-                .liquidation
-                .unwrap_optimized()
-                .total_debt_with_penalty_in_xlm,
+            liquidation.total_debt_with_penalty_in_xlm,
         );
 
         Ok(())
@@ -771,7 +774,7 @@ impl LendingPoolTrait for LendingPool {
 
         let mut user_configurator = UserConfigurator::new(&env, &who, false)?;
         let user_config = &user_configurator.user_config;
-        let reserve_id = read_reserve(&env, asset.clone())?.get_id();
+        let reserve_id = read_reserve(&env, &asset)?.get_id();
 
         match (user_config.is_borrowing_any(), use_as_collateral) {
             (true, true) if user_config.is_borrowing(&env, reserve_id) => {
@@ -793,7 +796,7 @@ impl LendingPoolTrait for LendingPool {
                     &reserves,
                     false,
                 )?;
-                Self::require_good_position(&env, account_data);
+                Self::require_good_position(&env, &account_data);
 
                 user_configurator.write(&env);
             }
@@ -822,7 +825,7 @@ impl LendingPoolTrait for LendingPool {
     /// bitmask where even/odd bits correspond to reserve indexes and indicate whether collateral/borrow is allowed for this reserve.
     ///
     fn user_configuration(env: Env, who: Address) -> Result<UserConfiguration, Error> {
-        read_user_config(&env, who)
+        read_user_config(&env, &who)
     }
 
     fn get_stoken_underlying_balance(env: Env, stoken_address: Address) -> i128 {
@@ -853,7 +856,7 @@ impl LendingPool {
     fn require_uninitialized_reserve(env: &Env, asset: &Address) {
         assert_with_error!(
             env,
-            !has_reserve(env, asset.clone()),
+            !has_reserve(env, asset),
             Error::ReserveAlreadyInitialized
         );
     }
@@ -953,7 +956,7 @@ impl LendingPool {
         Ok(())
     }
 
-    fn require_good_position(env: &Env, account_data: AccountData) {
+    fn require_good_position(env: &Env, account_data: &AccountData) {
         assert_with_error!(env, account_data.is_good_position(), Error::BadPosition);
     }
 
@@ -986,7 +989,7 @@ impl LendingPool {
         add_stoken_underlying_balance(env, &s_token.address, amount)?;
         s_token.mint(who, &amount_to_mint);
 
-        event::deposit(env, who.clone(), asset.clone(), amount);
+        event::deposit(env, who, asset, amount);
 
         Ok(is_first_deposit)
     }
@@ -1045,7 +1048,7 @@ impl LendingPool {
         underlying_asset.transfer(who, &treasury_address, &treasury_part);
         debt_token.burn(who, &borrower_debt_to_burn);
 
-        event::repay(env, who.clone(), asset.clone(), borrower_payback_amount);
+        event::repay(env, who, asset, borrower_payback_amount);
 
         let remaning_amount = if amount != i128::MAX && amount > borrower_actual_debt {
             amount
@@ -1063,7 +1066,7 @@ impl LendingPool {
         who: &Address,
         reserve: &ReserveData,
         user_config: &UserConfiguration,
-        s_token_after: AssetBalance,
+        s_token_after: &AssetBalance,
     ) -> Result<(), Error> {
         if !user_config.is_borrowing_any() {
             return Ok(());
@@ -1082,7 +1085,7 @@ impl LendingPool {
             false,
         )?;
 
-        Self::require_good_position(env, account_data);
+        Self::require_good_position(env, &account_data);
 
         Ok(())
     }
@@ -1120,7 +1123,7 @@ impl LendingPool {
         let account_data = Self::calc_account_data(
             env,
             who,
-            Some(AssetBalance::new(s_token.address.clone(), stoken_balance)),
+            Some(&AssetBalance::new(s_token.address.clone(), stoken_balance)),
             user_config,
             &read_reserves(env),
             false,
@@ -1138,7 +1141,7 @@ impl LendingPool {
     fn calc_account_data(
         env: &Env,
         who: &Address,
-        mb_who_balance: Option<AssetBalance>,
+        mb_who_balance: Option<&AssetBalance>,
         user_config: &UserConfiguration,
         reserves: &Vec<Address>,
         liquidation: bool,
@@ -1162,7 +1165,7 @@ impl LendingPool {
             }
 
             let curr_reserve_asset = reserves.get_unchecked(i.into());
-            let curr_reserve = read_reserve(env, curr_reserve_asset.clone())?;
+            let curr_reserve = read_reserve(env, &curr_reserve_asset)?;
 
             assert_with_error!(
                 env,
@@ -1279,7 +1282,7 @@ impl LendingPool {
 
     /// Returns price of asset expressed in XLM token and denominator 10^decimals
     fn get_asset_price(env: &Env, asset: &Address) -> Result<FixedI128, Error> {
-        let price_feed = read_price_feed(env, asset.clone())?;
+        let price_feed = read_price_feed(env, asset)?;
         let provider = PriceProvider::new(env, &price_feed);
 
         provider.get_price(asset).map(|price_data| {
@@ -1364,11 +1367,11 @@ impl LendingPool {
         assert_with_error!(env, !paused(env), Error::Paused);
     }
 
-    fn require_zero_debt(env: &Env, recipient: Address, debt_token_address: Address) {
-        let debt_token = DebtTokenClient::new(env, &debt_token_address);
+    fn require_zero_debt(env: &Env, recipient: &Address, debt_token_address: &Address) {
+        let debt_token = DebtTokenClient::new(env, debt_token_address);
         assert_with_error!(
             env,
-            debt_token.balance(&recipient) == 0,
+            debt_token.balance(recipient) == 0,
             Error::MustNotHaveDebt
         );
     }
@@ -1378,20 +1381,18 @@ impl LendingPool {
         liquidator: &Address,
         who: &Address,
         user_configurator: &mut UserConfigurator,
-        account_data: AccountData,
+        liquidation_data: &LiquidationData,
         receive_stoken: bool,
     ) -> Result<(), Error> {
-        let liquidation_data = account_data
-            .liquidation
-            .expect("pool: liquidation flag in calc_account_data");
         let mut debt_with_penalty = liquidation_data.total_debt_with_penalty_in_xlm;
 
-        for collateral_to_receive in liquidation_data.collateral_to_receive {
+        for (reserve, s_token_balance, price_fixed, coll_coeff_fixed) in
+            liquidation_data.collateral_to_receive.iter()
+        {
             if debt_with_penalty == 0 {
                 break;
             }
 
-            let (reserve, s_token_balance, price_fixed, coll_coeff_fixed) = collateral_to_receive;
             let price = FixedI128::from_inner(price_fixed);
 
             let s_token = STokenClient::new(env, &reserve.s_token_address);
@@ -1498,12 +1499,12 @@ impl LendingPool {
             }
 
             let s_token_supply = s_token.total_supply();
-            recalculate_reserve_data(env, asset, reserve, s_token_supply)?;
+            recalculate_reserve_data(env, &asset, &reserve, s_token_supply)?;
         }
 
         assert_with_error!(env, debt_with_penalty == 0, Error::NotEnoughCollateral);
 
-        for (reserve, compounded_debt, debt_amount) in liquidation_data.debt_to_cover {
+        for (reserve, compounded_debt, debt_amount) in liquidation_data.debt_to_cover.iter() {
             let s_token = STokenClient::new(env, &reserve.s_token_address);
             let s_token_supply = s_token.total_supply();
             let underlying_asset = token::Client::new(env, &s_token.underlying_asset());
@@ -1514,12 +1515,7 @@ impl LendingPool {
             debt_token.burn(who, &debt_amount);
             user_configurator.set_borrowing(env, reserve.get_id(), false);
 
-            recalculate_reserve_data(
-                env,
-                underlying_asset.address,
-                reserve.clone(),
-                s_token_supply,
-            )?;
+            recalculate_reserve_data(env, &underlying_asset.address, &reserve, s_token_supply)?;
         }
 
         user_configurator.write(env);
@@ -1529,17 +1525,18 @@ impl LendingPool {
 }
 
 /// Returns reserve data with updated accrued coeffiсients
-pub fn get_actual_reserve_data(env: &Env, asset: Address) -> Result<ReserveData, Error> {
-    let reserve = read_reserve(env, asset.clone())?;
+pub fn get_actual_reserve_data(env: &Env, asset: &Address) -> Result<ReserveData, Error> {
+    let reserve = read_reserve(env, asset)?;
     let s_token = STokenClient::new(env, &reserve.s_token_address);
     let s_token_supply = s_token.total_supply();
-    recalculate_reserve_data(env, asset, reserve, s_token_supply)
+
+    recalculate_reserve_data(env, asset, &reserve, s_token_supply)
 }
 
 pub fn recalculate_reserve_data(
     env: &Env,
-    asset: Address,
-    reserve: ReserveData,
+    asset: &Address,
+    reserve: &ReserveData,
     s_token_supply: i128,
 ) -> Result<ReserveData, Error> {
     let current_time = env.ledger().timestamp();
@@ -1548,7 +1545,7 @@ pub fn recalculate_reserve_data(
         .ok_or(Error::AccruedRateMathError)?;
 
     if elapsed_time == 0 || s_token_supply == 0 {
-        return Ok(reserve);
+        return Ok(reserve.clone());
     }
 
     let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
@@ -1560,11 +1557,11 @@ pub fn recalculate_reserve_data(
         debt_token_supply,
         elapsed_time,
         ir_params,
-        &reserve,
+        reserve,
     )
     .ok_or(Error::AccruedRateMathError)?;
 
-    let mut reserve = reserve;
+    let mut reserve = reserve.clone();
     reserve.lender_accrued_rate = accrued_rates.lender_accrued_rate.into_inner();
     reserve.borrower_accrued_rate = accrued_rates.borrower_accrued_rate.into_inner();
     reserve.borrower_ir = accrued_rates.borrower_ir.into_inner();
@@ -1572,5 +1569,6 @@ pub fn recalculate_reserve_data(
     reserve.last_update_timestamp = current_time;
 
     write_reserve(env, asset, &reserve);
+
     Ok(reserve)
 }

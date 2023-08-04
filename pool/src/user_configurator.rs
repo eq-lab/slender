@@ -15,9 +15,9 @@ pub struct UserConfigurator {
 impl UserConfigurator {
     pub fn new(env: &Env, user: &Address, create_if_not_exist: bool) -> Result<Self, Error> {
         let user_config = if create_if_not_exist {
-            read_user_config(env, user.clone()).unwrap_or_default()
+            read_user_config(env, user).unwrap_or_default()
         } else {
-            read_user_config(env, user.clone())?
+            read_user_config(env, user)?
         };
 
         Ok(Self {
@@ -37,9 +37,9 @@ impl UserConfigurator {
             .set_using_as_collateral(env, reserve_id, value);
 
         if value {
-            event::reserve_used_as_collateral_enabled(env, self.user.clone(), asset.clone());
+            event::reserve_used_as_collateral_enabled(env, &self.user, asset);
         } else {
-            event::reserve_used_as_collateral_disabled(env, self.user.clone(), asset.clone());
+            event::reserve_used_as_collateral_disabled(env, &self.user, asset);
         }
 
         self
@@ -52,6 +52,6 @@ impl UserConfigurator {
     }
 
     pub fn write(&self, env: &Env) {
-        write_user_config(env, self.user.clone(), &self.user_config);
+        write_user_config(env, &self.user, &self.user_config);
     }
 }
