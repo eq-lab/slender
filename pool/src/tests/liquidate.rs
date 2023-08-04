@@ -422,6 +422,8 @@ fn should_change_user_config() {
 
     let is_liquidator_borrowed_asset_1_before =
         liquidator_user_config.is_borrowing(&env, reserve_1.get_id());
+    let is_liquidator_deposited_asset_1_before =
+        liquidator_user_config.is_using_as_collateral(&env, reserve_1.get_id());
     let is_borrower_borrowed_asset_2_before =
         borrower_user_config.is_borrowing(&env, reserve_2.get_id());
     let is_borrower_deposited_asset_1_before =
@@ -436,6 +438,8 @@ fn should_change_user_config() {
 
     let is_liquidator_borrowed_asset_1_after =
         liquidator_user_config.is_borrowing(&env, reserve_1.get_id());
+    let is_liquidator_deposited_asset_1_after =
+        liquidator_user_config.is_using_as_collateral(&env, reserve_1.get_id());
     let is_borrower_borrowed_asset_2_after =
         borrower_user_config.is_borrowing(&env, reserve_2.get_id());
     let is_borrower_deposited_asset_1_after =
@@ -444,11 +448,13 @@ fn should_change_user_config() {
         borrower_user_config.is_using_as_collateral(&env, reserve_3.get_id());
 
     assert_eq!(is_liquidator_borrowed_asset_1_before, true);
+    assert_eq!(is_liquidator_deposited_asset_1_before, false);
     assert_eq!(is_borrower_borrowed_asset_2_before, true);
     assert_eq!(is_borrower_deposited_asset_1_before, true);
     assert_eq!(is_borrower_deposited_asset_3_before, true);
 
     assert_eq!(is_liquidator_borrowed_asset_1_after, false);
+    assert_eq!(is_liquidator_deposited_asset_1_after, true);
     assert_eq!(is_borrower_borrowed_asset_2_after, false);
     assert_eq!(is_borrower_deposited_asset_1_after, false);
     assert_eq!(is_borrower_deposited_asset_3_after, true);
@@ -464,9 +470,9 @@ fn should_affect_account_data() {
 
     let borrower_account_position_before = sut.pool.account_position(&borrower);
 
-    sut.pool.liquidate(&liquidator, &borrower, &false);
+    sut.pool.liquidate(&liquidator, &borrower, &true);
 
-    // let _liquidator_account_position_after = sut.pool.account_position(&liquidator); /Artur
+    let liquidator_account_position_after = sut.pool.account_position(&liquidator);
     let borrower_account_position_after = sut.pool.account_position(&borrower);
 
     assert!(
@@ -475,6 +481,10 @@ fn should_affect_account_data() {
     );
     assert!(borrower_account_position_before.debt > borrower_account_position_after.debt);
     assert!(borrower_account_position_before.npv < borrower_account_position_after.npv);
+
+    assert!(liquidator_account_position_after.discounted_collateral > 0);
+    assert!(liquidator_account_position_after.debt == 0);
+    assert!(liquidator_account_position_after.npv > 0);
 }
 
 #[test]
