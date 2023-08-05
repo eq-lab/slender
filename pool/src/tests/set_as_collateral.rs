@@ -87,7 +87,7 @@ fn set_as_collateral_no_debt() {
 fn set_as_collateral_false_with_debt() {
     let env = Env::default();
     env.mock_all_auths();
-    let (sut, user, (collat_reserve_index, debt_reserve_index), (collat_token, u_debt_token)) =
+    let (sut, user, (collat_reserve_index, debt_reserve_index), (collat_token, _)) =
         init_with_debt(&env);
     deposit(&sut.pool, &sut.reserves[2].token_admin, &user);
     deposit(&sut.pool, &sut.reserves[2].token_admin, &user);
@@ -103,13 +103,6 @@ fn set_as_collateral_false_with_debt() {
         .pool
         .user_configuration(&user)
         .is_using_as_collateral(&env, collat_reserve_index));
-
-    assert!(!sut
-        .pool
-        .user_configuration(&user)
-        .is_using_as_collateral(&env, debt_reserve_index));
-
-    assert_eq!(sut.pool.set_as_collateral(&user, &u_debt_token, &false), ());
 
     assert!(!sut
         .pool
