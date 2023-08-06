@@ -39,7 +39,7 @@ impl UserConfigurator {
             .as_mut()
             .unwrap();
         user_config.set_using_as_collateral(env, reserve_id, false);
-        event::reserve_used_as_collateral_disabled(env, &self.user, &asset);
+        event::reserve_used_as_collateral_disabled(env, &self.user, asset);
 
         self.should_write = true;
 
@@ -62,7 +62,7 @@ impl UserConfigurator {
             .as_mut()
             .unwrap();
         user_config.set_using_as_collateral(env, reserve_id, true);
-        event::reserve_used_as_collateral_enabled(env, &self.user, &asset);
+        event::reserve_used_as_collateral_enabled(env, &self.user, asset);
 
         self.should_write = true;
 
