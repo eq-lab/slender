@@ -469,7 +469,7 @@ impl LendingPoolTrait for LendingPool {
             Self::require_good_position(&env, &from_account_data);
         }
 
-        if from == to {
+        if from != to {
             let reserve_id = reserve.get_id();
             let is_to_deposit = balance_to_before == 0 && amount != 0;
 
