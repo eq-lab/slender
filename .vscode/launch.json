@@ -22,7 +22,7 @@
                 // }
             },
             "args": [
-                "tests::coeffs::should_update_coeffs_when_deposit_borrow_withdraw_liquidate",
+                "tests::deposit:should_require_authorized_caller",
                 "--exact",
                 "--nocapture"
             ],

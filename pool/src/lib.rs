@@ -814,7 +814,7 @@ impl LendingPoolTrait for LendingPool {
         read_user_config(&env, &who)
     }
 
-    fn get_stoken_underlying_balance(env: Env, stoken_address: Address) -> i128 {
+    fn stoken_underlying_balance(env: Env, stoken_address: Address) -> i128 {
         read_stoken_underlying_balance(&env, &stoken_address)
     }
 }
@@ -1336,6 +1336,7 @@ impl LendingPool {
             .checked_sub(reserve.last_update_timestamp)
             .ok_or(Error::DebtCoeffMathError)?;
         let prev_ar = FixedI128::from_inner(reserve.borrower_ar);
+
         if elapsed_time == 0 {
             Ok(prev_ar)
         } else {

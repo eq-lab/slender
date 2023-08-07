@@ -3,8 +3,6 @@ use crate::*;
 use soroban_sdk::testutils::{Events, Ledger};
 use soroban_sdk::{vec, IntoVal, Symbol};
 
-extern crate std;
-
 #[test]
 fn should_partially_repay() {
     let env = Env::default();
@@ -18,7 +16,7 @@ fn should_partially_repay() {
     env.ledger().with_mut(|li| li.timestamp = DAY);
     let treasury_address = sut.pool.treasury().clone();
 
-    let stoken_underlying_balance = sut.pool.get_stoken_underlying_balance(&stoken_token);
+    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
     let treasury_balance = debt_config.token.balance(&treasury_address);
     let user_debt_balance = debt_config.debt_token.balance(&borrower);
@@ -30,7 +28,7 @@ fn should_partially_repay() {
 
     sut.pool.deposit(&borrower, &debt_token, &20_000_000i128);
 
-    let stoken_underlying_balance = sut.pool.get_stoken_underlying_balance(&stoken_token);
+    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
     let treasury_balance = debt_config.token.balance(&treasury_address);
     let user_debt_balance = debt_config.debt_token.balance(&borrower);
@@ -54,7 +52,7 @@ fn should_fully_repay() {
     env.ledger().with_mut(|li| li.timestamp = DAY);
     let treasury_address = sut.pool.treasury().clone();
 
-    let stoken_underlying_balance = sut.pool.get_stoken_underlying_balance(&stoken_token);
+    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
     let treasury_balance = debt_config.token.balance(&treasury_address);
     let user_debt_balance = debt_config.debt_token.balance(&borrower);
@@ -66,7 +64,7 @@ fn should_fully_repay() {
 
     sut.pool.deposit(&borrower, &debt_token, &i128::MAX);
 
-    let stoken_underlying_balance = sut.pool.get_stoken_underlying_balance(&stoken_token);
+    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
     let treasury_balance = debt_config.token.balance(&treasury_address);
     let user_debt_balance = debt_config.debt_token.balance(&borrower);
@@ -89,7 +87,7 @@ fn should_deposit_when_overrepay() {
 
     env.ledger().with_mut(|li| li.timestamp = DAY);
 
-    let stoken_underlying_balance = sut.pool.get_stoken_underlying_balance(&stoken_token);
+    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
     let user_stoken_balance = debt_config.s_token.balance(&borrower);
 
@@ -99,7 +97,7 @@ fn should_deposit_when_overrepay() {
 
     sut.pool.deposit(&borrower, &debt_token, &100_000_000);
 
-    let stoken_underlying_balance = sut.pool.get_stoken_underlying_balance(&stoken_token);
+    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
     let user_stoken_balance = debt_config.s_token.balance(&borrower);
 

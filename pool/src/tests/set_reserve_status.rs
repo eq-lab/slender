@@ -1,10 +1,8 @@
 use crate::{tests::sut::init_pool, *};
 use soroban_sdk::{testutils::Events, IntoVal, Symbol};
 
-extern crate std;
-
 #[test]
-fn set_reserve_status_activated_by_default() {
+fn should_be_active_when_reserve_initialized() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -15,7 +13,7 @@ fn set_reserve_status_activated_by_default() {
 }
 
 #[test]
-fn events() {
+fn should_emit_events() {
     let env = Env::default();
     env.mock_all_auths();
 

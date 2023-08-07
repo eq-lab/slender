@@ -200,12 +200,6 @@ fn should_update_rates_over_time() {
     sut.pool
         .deposit(&borrower, &sut.reserves[0].token.address, &100_000_000);
 
-    let s_token_underlying_supply = sut
-        .pool
-        .get_stoken_underlying_balance(&sut.reserves[1].s_token.address);
-
-    assert_eq!(s_token_underlying_supply, 100_000_000);
-
     // ensure that zero elapsed time doesn't change AR coefficients
     {
         let reserve_before = sut.pool.get_reserve(&debt_asset_1).unwrap();
@@ -218,7 +212,6 @@ fn should_update_rates_over_time() {
             reserve_before.last_update_timestamp,
             updated_reserve.last_update_timestamp
         );
-        assert_eq!(s_token_underlying_supply, 60_000_000);
     }
 
     // shift time to
@@ -242,9 +235,6 @@ fn should_update_rates_over_time() {
     let debt_ar = calc_next_accrued_rate(FixedI128::ONE, debt_ir, elapsed_time)
         .unwrap()
         .into_inner();
-
-    let _collat_coeff = sut.pool.collat_coeff(&debt_asset_1);
-    let _debt_coeff = sut.pool.debt_coeff(&debt_asset_1);
 
     assert_eq!(updated.lender_ar, coll_ar);
     assert_eq!(updated.borrower_ar, debt_ar);

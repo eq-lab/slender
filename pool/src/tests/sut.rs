@@ -1,3 +1,6 @@
+#![cfg(test)]
+extern crate std;
+
 use crate::*;
 use debt_token_interface::DebtTokenClient;
 use price_feed_interface::PriceFeedClient;
@@ -8,8 +11,6 @@ use soroban_sdk::{
     token::Client as TokenClient,
     IntoVal,
 };
-
-extern crate std;
 
 mod s_token {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/s_token.wasm");
