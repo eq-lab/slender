@@ -12,8 +12,7 @@ extern crate std;
 /// Returns Sut, user address, reserve index and token address
 fn init(env: &Env) -> (Sut, Address, u8, Address) {
     let sut = init_pool(env);
-    //TODO: optimize gas
-    env.budget().reset_unlimited();
+
     let user = Address::random(env);
     deposit(&sut.pool, sut.token_admin(), &user);
     let reserve_index = sut

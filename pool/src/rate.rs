@@ -79,13 +79,13 @@ pub fn calc_next_accrued_rate(
 
 #[derive(Debug, Clone, Copy)]
 pub struct AccruedRates {
-    pub lender_accrued_rate: FixedI128,
-    pub borrower_accrued_rate: FixedI128,
+    pub lender_ar: FixedI128,
+    pub borrower_ar: FixedI128,
     pub lender_ir: FixedI128,
     pub borrower_ir: FixedI128,
 }
 
-/// Calculates lender and borrower accrued rates, lend and borrower interest rates
+/// Calculates lender and borrower accrued/interest rates
 pub fn calc_accrued_rates(
     total_collateral: i128,
     total_debt: i128,
@@ -98,21 +98,21 @@ pub fn calc_accrued_rates(
     let scale_coeff = FixedI128::from_percentage(ir_params.scaling_coeff)?;
     let lender_ir = borrower_ir.checked_mul(scale_coeff)?;
 
-    let borrower_accrued_rate = calc_next_accrued_rate(
-        FixedI128::from_inner(reserve_data.borrower_accrued_rate),
+    let borrower_ar = calc_next_accrued_rate(
+        FixedI128::from_inner(reserve_data.borrower_ar),
         borrower_ir,
         elapsed_time,
     )?;
 
-    let lender_accrued_rate = calc_next_accrued_rate(
-        FixedI128::from_inner(reserve_data.lender_accrued_rate),
+    let lender_ar = calc_next_accrued_rate(
+        FixedI128::from_inner(reserve_data.lender_ar),
         lender_ir,
         elapsed_time,
     )?;
 
     Some(AccruedRates {
-        lender_accrued_rate,
-        borrower_accrued_rate,
+        lender_ar,
+        borrower_ar,
         lender_ir,
         borrower_ir,
     })

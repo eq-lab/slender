@@ -902,7 +902,7 @@ impl LendingPool {
             let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
             let debt_supply = debt_token.total_supply();
 
-            FixedI128::from_inner(reserve.lender_accrued_rate)
+            FixedI128::from_inner(reserve.lender_ar)
                 .mul_int(debt_supply)
                 .ok_or(Error::MathOverflowError)?
                 .checked_add(deposit_amount)
@@ -1286,7 +1286,7 @@ impl LendingPool {
         let elapsed_time = current_time
             .checked_sub(reserve.last_update_timestamp)
             .ok_or(Error::CollateralCoeffMathError)?;
-        let prev_ar = FixedI128::from_inner(reserve.lender_accrued_rate);
+        let prev_ar = FixedI128::from_inner(reserve.lender_ar);
 
         if elapsed_time == 0 {
             Ok(prev_ar)
@@ -1298,7 +1298,7 @@ impl LendingPool {
     }
 
     /// Returns collateral coefficient
-    /// collateral_coeff = [underlying_balance + lender_accrued_rate * total_debt_token]/total_stoken
+    /// collateral_coeff = [underlying_balance + lender_ar * total_debt_token]/total_stoken
     fn get_collat_coeff(env: &Env, reserve: &ReserveData) -> Result<FixedI128, Error> {
         let s_token = STokenClient::new(env, &reserve.s_token_address);
         let s_token_supply = s_token.total_supply();
@@ -1335,7 +1335,7 @@ impl LendingPool {
         let elapsed_time = current_time
             .checked_sub(reserve.last_update_timestamp)
             .ok_or(Error::DebtCoeffMathError)?;
-        let prev_ar = FixedI128::from_inner(reserve.borrower_accrued_rate);
+        let prev_ar = FixedI128::from_inner(reserve.borrower_ar);
         if elapsed_time == 0 {
             Ok(prev_ar)
         } else {
@@ -1539,8 +1539,8 @@ pub fn recalculate_reserve_data(
     .ok_or(Error::AccruedRateMathError)?;
 
     let mut reserve = reserve.clone();
-    reserve.lender_accrued_rate = accrued_rates.lender_accrued_rate.into_inner();
-    reserve.borrower_accrued_rate = accrued_rates.borrower_accrued_rate.into_inner();
+    reserve.lender_ar = accrued_rates.lender_ar.into_inner();
+    reserve.borrower_ar = accrued_rates.borrower_ar.into_inner();
     reserve.borrower_ir = accrued_rates.borrower_ir.into_inner();
     reserve.lender_ir = accrued_rates.lender_ir.into_inner();
     reserve.last_update_timestamp = current_time;
