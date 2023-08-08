@@ -1,8 +1,7 @@
+use super::sut::fill_pool_three;
 use crate::tests::sut::init_pool;
 use crate::*;
 use soroban_sdk::testutils::Address as _;
-
-use super::sut::fill_pool_three;
 
 #[test]
 #[should_panic(expected = "HostError: Error(Value, InvalidInput)")]

@@ -1,10 +1,9 @@
+use super::sut::fill_pool;
 use crate::tests::sut::{fill_pool_two, init_pool, DAY};
 use crate::*;
 use soroban_sdk::symbol_short;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
 use soroban_sdk::{vec, IntoVal, Symbol};
-
-use super::sut::fill_pool;
 
 #[test]
 fn should_require_authorized_caller() {

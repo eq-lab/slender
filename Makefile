@@ -9,6 +9,10 @@ test: build
 	cargo test -p pool --features testutils
 	cargo test -p debt-token
 
+budget: build
+	rm -f pool/src/tests/snapshots/*
+	cargo test -p pool budget --features budget -- --test-threads=1
+
 integration-test: build
 	yarn --cwd integration-tests test-$(env)
 

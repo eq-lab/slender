@@ -32,7 +32,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     env.ledger().with_mut(|l| l.timestamp = 2 * DAY);
 
     let collat_coeff_initial = sut.pool.collat_coeff(&debt_token);
-    
+
     sut.pool
         .withdraw(&borrower, &deposit_token, &10_000_000, &lender);
 

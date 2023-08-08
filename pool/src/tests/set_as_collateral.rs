@@ -1,11 +1,10 @@
+use super::sut::{init_pool, Sut};
 use crate::*;
 use soroban_sdk::{
     testutils::{Address as _, Events},
     token::AdminClient as TokenAdminClient,
     IntoVal, Symbol,
 };
-
-use super::sut::{init_pool, Sut};
 
 #[test]
 fn should_enable_collateral_when_no_debt() {
@@ -160,8 +159,9 @@ fn init(env: &Env) -> (Sut, Address, u8, Address) {
     let address = sut.token().address.clone();
     (sut, user, reserve_index, address)
 }
+
 /// Returns Sut, user address, collat reserve index, debt reserve index, collat token address, debt token address
-fn init_with_debt(env: &Env) -> (Sut, Address, (u8, u8), (Address, Address)) {
+pub fn init_with_debt(env: &Env) -> (Sut, Address, (u8, u8), (Address, Address)) {
     let (sut, user, collat_reserve_index, collat_address) = init(env);
     let lender = Address::random(env);
     let token_admin = &sut.reserves[1].token_admin;
