@@ -125,6 +125,7 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
     };
+
     pool.init_reserve(
         &underlying_token.address.clone(),
         &init_reserve_input.clone(),

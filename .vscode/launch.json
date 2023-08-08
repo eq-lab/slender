@@ -22,7 +22,7 @@
                 // }
             },
             "args": [
-                "tests::deposit:should_require_authorized_caller",
+                "tests::test_file::test_name",
                 "--exact",
                 "--nocapture"
             ],

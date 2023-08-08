@@ -31,41 +31,36 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
 
     env.ledger().with_mut(|l| l.timestamp = 2 * DAY);
 
-    let collat_coeff_initial = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_initial = sut.pool.debt_coeff(&debt_token);
 
     sut.pool
-        .withdraw(&lender, &debt_token, &40_000_000, &lender);
+        .withdraw(&borrower, &deposit_token, &10_000_000, &lender);
 
     env.ledger().with_mut(|l| l.timestamp = 3 * DAY);
-    let collat_coeff_after_withdraw = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_after_withdraw = sut.pool.debt_coeff(&debt_token);
 
-    sut.pool.borrow(&borrower, &debt_token, &14_000_000);
+    sut.pool.borrow(&borrower, &debt_token, &10_000_000);
 
     env.ledger().with_mut(|l| l.timestamp = 4 * DAY);
-    let collat_coeff_after_borrow = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_after_borrow = sut.pool.debt_coeff(&debt_token);
 
     sut.price_feed.set_price(&debt_token, &1_200_000_000);
-    sut.pool.liquidate(&lender, &borrower, &false);
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
-    let collat_coeff_after_liquidate = sut.pool.collat_coeff(&debt_token);
+    let debt_coeff_after_price_change = sut.pool.debt_coeff(&debt_token);
+
+    sut.pool.liquidate(&lender, &borrower, &false);
+
+    env.ledger().with_mut(|l| l.timestamp = 6 * DAY);
     let debt_coeff_after_liquidate = sut.pool.debt_coeff(&debt_token);
 
-    assert_eq!(collat_coeff_initial, 1_000_017_510);
     assert_eq!(debt_coeff_initial, 1_000_109_516);
-
-    assert_eq!(collat_coeff_after_withdraw, 1_000_106_947);
-    assert_eq!(debt_coeff_after_withdraw, 1_000_282_204);
-
-    assert_eq!(collat_coeff_after_borrow, 1_000_404_872);
-    assert_eq!(debt_coeff_after_borrow, 1_000_702_334);
-
-    assert_eq!(collat_coeff_after_liquidate, 1_000_468_087);
-    assert_eq!(debt_coeff_after_liquidate, 1_000_544_931);
+    assert_eq!(debt_coeff_after_withdraw, 1_000_164_276);
+    assert_eq!(debt_coeff_after_borrow, 1_000_395_935);
+    assert_eq!(debt_coeff_after_price_change, 1_000_509_679);
+    assert_eq!(debt_coeff_after_liquidate, 1_000_446_514);
 }
+
 #[test]
 fn should_change_over_time() {
     let env = Env::default();
@@ -75,31 +70,21 @@ fn should_change_over_time() {
     let (_, _, _, debt_config) = fill_pool_three(&env, &sut);
     let debt_token = debt_config.token.address.clone();
 
-    let collat_coeff_1 = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_1 = sut.pool.debt_coeff(&debt_token);
 
     env.ledger().with_mut(|l| l.timestamp = 3 * DAY);
-
-    let collat_coeff_2 = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_2 = sut.pool.debt_coeff(&debt_token);
 
     env.ledger().with_mut(|l| l.timestamp = 4 * DAY);
-
-    let collat_coeff_3 = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_3 = sut.pool.debt_coeff(&debt_token);
 
-    assert_eq!(collat_coeff_1, 1_000_026_270);
     assert_eq!(debt_coeff_1, 1_000_109_516);
-
-    assert_eq!(collat_coeff_2, 1_000_055_840);
     assert_eq!(debt_coeff_2, 1_000_164_276);
-
-    assert_eq!(collat_coeff_3, 1_000_085_410);
     assert_eq!(debt_coeff_3, 1_000_219_036);
 }
 
 #[test]
-fn should_correctly_calculate_collateral_coeff() {
+fn should_be_correctly_calculated() {
     let env = Env::default();
     env.mock_all_auths();
 
