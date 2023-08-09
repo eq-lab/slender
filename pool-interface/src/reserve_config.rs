@@ -39,29 +39,14 @@ pub struct IRParams {
     pub scaling_coeff: u32,
 }
 
-#[allow(dead_code)]
-pub struct ReserveConfigurationFlags {
-    pub is_active: bool,
-    pub borrowing_enabled: bool,
-}
-
-impl ReserveConfiguration {
-    pub fn get_flags(&self) -> ReserveConfigurationFlags {
-        ReserveConfigurationFlags {
-            is_active: self.is_active,
-            borrowing_enabled: self.borrowing_enabled,
-        }
-    }
-}
-
 #[derive(Debug, Clone)]
 #[contracttype]
 pub struct ReserveData {
     pub configuration: ReserveConfiguration,
-    pub lender_accrued_rate: i128,
-    pub borrower_accrued_rate: i128,
-    pub borrower_ir: i128,
+    pub lender_ar: i128,
     pub lender_ir: i128,
+    pub borrower_ar: i128,
+    pub borrower_ir: i128,
     pub last_update_timestamp: u64,
     pub s_token_address: Address,
     pub debt_token_address: Address,
@@ -76,10 +61,10 @@ impl ReserveData {
             debt_token_address,
         } = input;
         Self {
-            lender_accrued_rate: FixedI128::ONE.into_inner(),
-            borrower_accrued_rate: FixedI128::ONE.into_inner(),
-            borrower_ir: Default::default(),
+            lender_ar: FixedI128::ONE.into_inner(),
             lender_ir: Default::default(),
+            borrower_ar: FixedI128::ONE.into_inner(),
+            borrower_ir: Default::default(),
             s_token_address,
             debt_token_address,
             configuration: ReserveConfiguration::default(),

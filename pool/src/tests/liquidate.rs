@@ -3,8 +3,6 @@ use crate::*;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events};
 use soroban_sdk::{symbol_short, IntoVal, Symbol};
 
-extern crate std;
-
 #[test]
 fn should_require_authorized_caller() {
     let env = Env::default();
@@ -176,10 +174,10 @@ fn should_liquidate_and_receive_collateral_partially() {
 
     let underlying_1_supply_before = sut
         .pool
-        .get_stoken_underlying_balance(&sut.reserves[0].s_token.address);
+        .stoken_underlying_balance(&sut.reserves[0].s_token.address);
     let underlying_2_supply_before = sut
         .pool
-        .get_stoken_underlying_balance(&sut.reserves[2].s_token.address);
+        .stoken_underlying_balance(&sut.reserves[2].s_token.address);
     let borrower_stoken_1_balance_before = sut.reserves[0].s_token.balance(&borrower);
     let borrower_stoken_2_balance_before = sut.reserves[2].s_token.balance(&borrower);
     let borrower_debt_balance_before = sut.reserves[1].debt_token.balance(&borrower);
@@ -193,10 +191,10 @@ fn should_liquidate_and_receive_collateral_partially() {
 
     let underlying_1_supply_after = sut
         .pool
-        .get_stoken_underlying_balance(&sut.reserves[0].s_token.address);
+        .stoken_underlying_balance(&sut.reserves[0].s_token.address);
     let underlying_2_supply_after = sut
         .pool
-        .get_stoken_underlying_balance(&sut.reserves[2].s_token.address);
+        .stoken_underlying_balance(&sut.reserves[2].s_token.address);
     let borrower_stoken_1_balance_after = sut.reserves[0].s_token.balance(&borrower);
     let borrower_stoken_2_balance_after = sut.reserves[2].s_token.balance(&borrower);
     let borrower_debt_balance_after = sut.reserves[1].debt_token.balance(&borrower);
@@ -246,10 +244,10 @@ fn should_receive_stokens_when_requested() {
 
     let underlying_1_supply_before = sut
         .pool
-        .get_stoken_underlying_balance(&sut.reserves[0].s_token.address);
+        .stoken_underlying_balance(&sut.reserves[0].s_token.address);
     let underlying_2_supply_before = sut
         .pool
-        .get_stoken_underlying_balance(&sut.reserves[2].s_token.address);
+        .stoken_underlying_balance(&sut.reserves[2].s_token.address);
     let borrower_stoken_1_balance_before = sut.reserves[0].s_token.balance(&borrower);
     let borrower_stoken_2_balance_before = sut.reserves[2].s_token.balance(&borrower);
     let borrower_debt_balance_before = sut.reserves[1].debt_token.balance(&borrower);
@@ -263,10 +261,10 @@ fn should_receive_stokens_when_requested() {
 
     let underlying_1_supply_after = sut
         .pool
-        .get_stoken_underlying_balance(&sut.reserves[0].s_token.address);
+        .stoken_underlying_balance(&sut.reserves[0].s_token.address);
     let underlying_2_supply_after = sut
         .pool
-        .get_stoken_underlying_balance(&sut.reserves[2].s_token.address);
+        .stoken_underlying_balance(&sut.reserves[2].s_token.address);
     let borrower_stoken_1_balance_after = sut.reserves[0].s_token.balance(&borrower);
     let borrower_stoken_2_balance_after = sut.reserves[2].s_token.balance(&borrower);
     let borrower_debt_balance_after = sut.reserves[1].debt_token.balance(&borrower);
@@ -323,10 +321,10 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
 
     let underlying_1_supply_before = sut
         .pool
-        .get_stoken_underlying_balance(&sut.reserves[0].s_token.address);
+        .stoken_underlying_balance(&sut.reserves[0].s_token.address);
     let underlying_2_supply_before = sut
         .pool
-        .get_stoken_underlying_balance(&sut.reserves[2].s_token.address);
+        .stoken_underlying_balance(&sut.reserves[2].s_token.address);
     let borrower_stoken_1_balance_before = sut.reserves[0].s_token.balance(&borrower);
     let borrower_stoken_2_balance_before = sut.reserves[2].s_token.balance(&borrower);
     let borrower_debt_balance_before = sut.reserves[1].debt_token.balance(&borrower);
@@ -342,10 +340,10 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
 
     let underlying_1_supply_after = sut
         .pool
-        .get_stoken_underlying_balance(&sut.reserves[0].s_token.address);
+        .stoken_underlying_balance(&sut.reserves[0].s_token.address);
     let underlying_2_supply_after = sut
         .pool
-        .get_stoken_underlying_balance(&sut.reserves[2].s_token.address);
+        .stoken_underlying_balance(&sut.reserves[2].s_token.address);
     let borrower_stoken_1_balance_after = sut.reserves[0].s_token.balance(&borrower);
     let borrower_stoken_2_balance_after = sut.reserves[2].s_token.balance(&borrower);
     let borrower_debt_balance_after = sut.reserves[1].debt_token.balance(&borrower);

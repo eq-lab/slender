@@ -339,7 +339,7 @@ fn should_change_balances_when_borrow_and_repay() {
     let borrower_balance_before = debt_config.token.balance(&borrower);
     let underlying_supply_before = sut
         .pool
-        .get_stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token.address);
 
     sut.pool.borrow(&borrower, &token_address, &20_000_000);
 
@@ -349,7 +349,7 @@ fn should_change_balances_when_borrow_and_repay() {
     let borrower_balance_after_borrow = debt_config.token.balance(&borrower);
     let underlying_supply_after_borrow = sut
         .pool
-        .get_stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token.address);
 
     env.ledger().with_mut(|li| li.timestamp = 30 * DAY);
 
@@ -361,7 +361,7 @@ fn should_change_balances_when_borrow_and_repay() {
     let borrower_balance_after_repay = debt_config.token.balance(&borrower);
     let underlying_supply_after_repay = sut
         .pool
-        .get_stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token.address);
 
     assert_eq!(treasury_before, 0);
     assert_eq!(debt_balance_before, 0);

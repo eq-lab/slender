@@ -123,7 +123,7 @@ pub trait LendingPoolTrait {
         to: Address,
     ) -> Result<(), Error>;
 
-    fn get_stoken_underlying_balance(env: Env, stoken_address: Address) -> i128;
+    fn stoken_underlying_balance(env: Env, stoken_address: Address) -> i128;
 
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 

@@ -6,8 +6,6 @@ use soroban_sdk::{vec, IntoVal, Symbol};
 
 use super::sut::fill_pool;
 
-extern crate std;
-
 #[test]
 fn should_require_authorized_caller() {
     let env = Env::default();
@@ -216,7 +214,7 @@ fn should_partially_withdraw() {
     let lender_underlying_balance_before = debt_config.token.balance(&lender);
     let s_token_underlying_supply_before = sut
         .pool
-        .get_stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token.address);
 
     sut.pool.withdraw(&lender, debt_token, &50_000_000, &lender);
 
@@ -225,7 +223,7 @@ fn should_partially_withdraw() {
     let s_token_supply = debt_config.s_token.total_supply();
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token.address);
 
     assert_eq!(lender_stoken_balance_before, 100_000_000);
     assert_eq!(lender_underlying_balance_before, 900_000_000);
@@ -255,7 +253,7 @@ fn should_fully_withdraw() {
     let lender_underlying_balance_before = debt_config.token.balance(&lender);
     let s_token_underlying_supply_before = sut
         .pool
-        .get_stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token.address);
 
     sut.pool.withdraw(&lender, debt_token, &i128::MAX, &lender);
 
@@ -264,7 +262,7 @@ fn should_fully_withdraw() {
     let s_token_supply = debt_config.s_token.total_supply();
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token.address);
 
     assert_eq!(lender_stoken_balance_before, 100_000_000);
     assert_eq!(lender_underlying_balance_before, 900_000_000);
@@ -342,7 +340,7 @@ fn should_allow_withdraw_to_other_address() {
     let s_token_supply_before = debt_config.s_token.total_supply();
     let s_token_underlying_supply_before = sut
         .pool
-        .get_stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token.address);
 
     sut.pool
         .withdraw(&lender, debt_token, &50_000_000, &borrower);
@@ -353,7 +351,7 @@ fn should_allow_withdraw_to_other_address() {
     let s_token_supply = debt_config.s_token.total_supply();
     let s_token_underlying_supply = sut
         .pool
-        .get_stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token.address);
 
     assert_eq!(borrower_underlying_balance_before, 900_000_000);
     assert_eq!(lender_stoken_balance_before, 100_000_000);

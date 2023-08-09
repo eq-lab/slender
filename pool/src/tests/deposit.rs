@@ -3,8 +3,6 @@ use crate::*;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
 use soroban_sdk::{symbol_short, vec, IntoVal, Symbol};
 
-extern crate std;
-
 #[test]
 fn should_require_authorized_caller() {
     let env = Env::default();
@@ -156,9 +154,7 @@ fn should_change_balances() {
     sut.token_admin().mint(&user, &10_000_000_000);
     sut.pool.deposit(&user, &token_address, &3_000_000_000);
 
-    let stoken_underlying_balance = sut
-        .pool
-        .get_stoken_underlying_balance(&sut.s_token().address);
+    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&sut.s_token().address);
     let user_balance = sut.token().balance(&user);
     let user_stoken_balance = sut.s_token().balance(&user);
 
