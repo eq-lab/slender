@@ -110,8 +110,6 @@ export function scValToJs<T>(val: xdr.ScVal): T {
             });
             return res as unknown as T
         }
-        case xdr.ScValType.scvContractExecutable():
-            return val.exec() as unknown as T;
         case xdr.ScValType.scvLedgerKeyNonce():
             return val.nonceKey() as unknown as T;
         case xdr.ScValType.scvTimepoint():
@@ -159,13 +157,26 @@ export function u128ToScVal(i: bigint): xdr.ScVal {
     }))
 }
 
-export function parseScVal(resultXdr) {
-    const val = xdr.TransactionResult.fromXDR(Buffer.from(resultXdr, "base64"))
-        .result()
-        .results()[0]
-        .tr()
-        .invokeHostFunctionResult()
-        .success()[0];
+export function numberToScvU32(i: number): xdr.ScVal {
+    return xdr.ScVal.scvU32(i);
+}
 
-    return scValToJs(val);
+export function stringToScvString(i: string): xdr.ScVal {
+    return xdr.ScVal.scvString(i);
+}
+
+export function stringToScvBytes(i: string): xdr.ScVal {
+    const bytes = Buffer.from(i, "utf-8")
+    return xdr.ScVal.scvBytes(bytes);
+}
+
+export function parseScVal(resultXdr) {
+    // const val = xdr.TransactionResult.fromXDR(Buffer.from(resultXdr, "base64"))
+    //     .result()
+    //     .results()[0]
+    //     .tr()
+    //     .invokeHostFunctionResult()
+    //     .success()[0];
+
+    // return scValToJs(val);
 }
