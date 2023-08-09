@@ -39,7 +39,7 @@ impl<'a> UserConfigurator<'a> {
         let user_config = self.read_user_config()?.user_config.as_mut().unwrap();
 
         user_config.set_using_as_collateral(env, reserve_id, false);
-        event::reserve_used_as_collateral_disabled(self.env, self.user.clone(), asset.clone());
+        event::reserve_used_as_collateral_disabled(env, self.user, asset);
 
         self.should_write = true;
 
@@ -60,7 +60,7 @@ impl<'a> UserConfigurator<'a> {
         let user_config = self.read_user_config()?.user_config.as_mut().unwrap();
 
         user_config.set_using_as_collateral(env, reserve_id, true);
-        event::reserve_used_as_collateral_enabled(self.env, self.user.clone(), asset.clone());
+        event::reserve_used_as_collateral_enabled(env, self.user, asset);
 
         self.should_write = true;
 
@@ -103,7 +103,7 @@ impl<'a> UserConfigurator<'a> {
 
         let user_config = self.user_config.as_ref();
 
-        write_user_config(self.env, self.user.clone(), user_config.unwrap());
+        write_user_config(self.env, self.user, user_config.unwrap());
     }
 
     pub fn user_config(&mut self) -> Result<&UserConfiguration, Error> {
@@ -118,9 +118,9 @@ impl<'a> UserConfigurator<'a> {
         }
 
         self.user_config = Some(if self.create_if_none {
-            read_user_config(self.env, self.user.clone()).unwrap_or_default()
+            read_user_config(self.env, self.user).unwrap_or_default()
         } else {
-            read_user_config(self.env, self.user.clone())?
+            read_user_config(self.env, self.user)?
         });
 
         Ok(self)
