@@ -3,10 +3,12 @@ default: build
 all: test
 
 test: build
+	rm -f pool/src/tests/snapshots/*
 	cargo test -p common
 	cargo test -p deployer
 	cargo test -p s-token --features testutils
 	cargo test -p pool --features testutils
+	cargo test -p pool budget --features budget -- --test-threads=1
 	cargo test -p debt-token
 
 integration-test: build

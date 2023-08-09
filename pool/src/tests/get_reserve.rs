@@ -1,8 +1,8 @@
-use crate::tests::sut::{create_pool_contract, create_s_token_contract, create_token_contract};
+use crate::tests::sut::{
+    create_pool_contract, create_s_token_contract, create_token_contract, init_pool,
+};
 use crate::*;
 use soroban_sdk::testutils::Address as _;
-
-use super::sut::init_pool;
 
 #[test]
 fn should_be_none_when_not_initialized() {
