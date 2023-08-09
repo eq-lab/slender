@@ -3,7 +3,9 @@ use debt_token_interface::DebtTokenClient;
 use price_feed_interface::PriceFeedClient;
 use s_token_interface::STokenClient;
 use soroban_sdk::{
-    testutils::Address as _, token::AdminClient as TokenAdminClient, token::Client as TokenClient,
+    testutils::{Address as _, Ledger},
+    token::AdminClient as TokenAdminClient,
+    token::Client as TokenClient,
     IntoVal,
 };
 
@@ -147,6 +149,7 @@ pub(crate) fn init_pool<'a>(env: &Env) -> Sut<'a> {
                 &price_feed.address,
                 &soroban_sdk::vec![env, token.address.clone()],
             );
+            price_feed.set_price(&token.address.clone(), &FixedI128::DENOMINATOR);
 
             let pool_price_feed = pool.price_feed(&token.address);
             assert_eq!(pool_price_feed, Some(price_feed.address.clone()));
@@ -244,6 +247,27 @@ pub(crate) fn fill_pool_two<'a, 'b>(
     }
 
     (lender_1, lender_2, borrower, debt_token)
+}
+
+/// Fill lending pool with lender, borrower, and liquidator
+/// Borrower's position is ready for liquidation
+pub(crate) fn fill_pool_three<'a, 'b>(
+    env: &'b Env,
+    sut: &'a Sut,
+) -> (Address, Address, Address, &'a ReserveConfig<'a>) {
+    let (lender, borrower, debt_config) = fill_pool(env, sut, false);
+    let debt_token = debt_config.token.address.clone();
+
+    let liquidator = Address::random(&env);
+
+    env.ledger().with_mut(|li| li.timestamp = DAY);
+
+    debt_config.token_admin.mint(&liquidator, &1_000_000_000);
+    sut.pool.borrow(&borrower, &debt_token, &60_000_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
+    (lender, borrower, liquidator, debt_config)
 }
 
 #[allow(dead_code)]

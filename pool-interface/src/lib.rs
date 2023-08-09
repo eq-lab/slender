@@ -25,6 +25,7 @@ pub enum Error {
     ReservesMaxCapacityExceeded = 103,
     NoPriceForAsset = 104,
     ReserveAlreadyInitialized = 105,
+    InvalidAssetPrice = 106,
 
     UserConfigInvalidIndex = 200,
     NotEnoughAvailableUserBalance = 201,
