@@ -2,7 +2,7 @@ use crate::*;
 use soroban_sdk::testutils::Address as _;
 
 #[test]
-fn shoould_return_treasury_address() {
+fn should_return_treasury_address() {
     let env = Env::default();
     env.mock_all_auths();
 

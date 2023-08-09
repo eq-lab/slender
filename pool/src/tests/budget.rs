@@ -19,20 +19,20 @@ use std::fs::OpenOptions;
 use std::io::prelude::*;
 
 #[test]
-fn should_measure_account_position_budget() {
+fn account_position() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
     let (_, borrower, _, _) = fill_pool_three(&env, &sut);
 
-    measure_budget(&env, nameof(should_measure_account_position_budget), || {
+    measure_budget(&env, nameof(account_position), || {
         sut.pool.account_position(&borrower);
     });
 }
 
 #[test]
-fn should_measure_borrow_budget() {
+fn borrow() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -40,13 +40,13 @@ fn should_measure_borrow_budget() {
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
-    measure_budget(&env, nameof(should_measure_borrow_budget), || {
+    measure_budget(&env, nameof(borrow), || {
         sut.pool.borrow(&borrower, &token_address, &20_000_000);
     });
 }
 
 #[test]
-fn should_measure_collat_coeff_budget() {
+fn collat_coeff() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -54,13 +54,13 @@ fn should_measure_collat_coeff_budget() {
     let (_, _, _, debt_config) = fill_pool_three(&env, &sut);
     let debt_token = debt_config.token.address.clone();
 
-    measure_budget(&env, nameof(should_measure_collat_coeff_budget), || {
+    measure_budget(&env, nameof(collat_coeff), || {
         sut.pool.collat_coeff(&debt_token);
     });
 }
 
 #[test]
-fn should_measure_configure_as_collateral_budget() {
+fn configure_as_collateral() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -74,18 +74,14 @@ fn should_measure_configure_as_collateral_budget() {
         discount: 6_000,
     };
 
-    measure_budget(
-        &env,
-        nameof(should_measure_configure_as_collateral_budget),
-        || {
-            sut.pool
-                .configure_as_collateral(&asset_address.clone(), &params.clone());
-        },
-    );
+    measure_budget(&env, nameof(configure_as_collateral), || {
+        sut.pool
+            .configure_as_collateral(&asset_address.clone(), &params.clone());
+    });
 }
 
 #[test]
-fn should_measure_debt_coeff_budget() {
+fn debt_coeff() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -93,13 +89,13 @@ fn should_measure_debt_coeff_budget() {
     let (_, _, _, debt_config) = fill_pool_three(&env, &sut);
     let debt_token = debt_config.token.address.clone();
 
-    measure_budget(&env, nameof(should_measure_debt_coeff_budget), || {
+    measure_budget(&env, nameof(debt_coeff), || {
         sut.pool.debt_coeff(&debt_token);
     });
 }
 
 #[test]
-fn should_measure_deposit_budget() {
+fn deposit() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -110,43 +106,39 @@ fn should_measure_deposit_budget() {
 
     sut.token_admin().mint(&user, &10_000_000_000);
 
-    measure_budget(&env, nameof(should_measure_deposit_budget), || {
+    measure_budget(&env, nameof(deposit), || {
         sut.pool.deposit(&user, &token_address, &5_000_000_000)
     });
 }
 
 #[test]
-fn should_measure_enable_borrowing_on_reserve_budget() {
+fn enable_borrowing_on_reserve() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
     let asset = sut.token().address.clone();
 
-    measure_budget(
-        &env,
-        nameof(should_measure_enable_borrowing_on_reserve_budget),
-        || {
-            sut.pool.enable_borrowing_on_reserve(&asset, &true);
-        },
-    );
+    measure_budget(&env, nameof(enable_borrowing_on_reserve), || {
+        sut.pool.enable_borrowing_on_reserve(&asset, &true);
+    });
 }
 
 #[test]
-fn should_measure_get_reserve_budget() {
+fn get_reserve() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
     let asset = sut.token().address.clone();
 
-    measure_budget(&env, nameof(should_measure_get_reserve_budget), || {
+    measure_budget(&env, nameof(get_reserve), || {
         sut.pool.get_reserve(&asset);
     });
 }
 
 #[test]
-fn should_measure_init_reserve_budget() {
+fn init_reserve() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -165,7 +157,7 @@ fn should_measure_init_reserve_budget() {
         debt_token_address: debt_token.address.clone(),
     };
 
-    measure_budget(&env, nameof(should_measure_init_reserve_budget), || {
+    measure_budget(&env, nameof(init_reserve), || {
         pool.init_reserve(
             &underlying_token.address.clone(),
             &init_reserve_input.clone(),
@@ -174,19 +166,19 @@ fn should_measure_init_reserve_budget() {
 }
 
 #[test]
-fn should_measure_ir_params_budget() {
+fn ir_params() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
 
-    measure_budget(&env, nameof(should_measure_ir_params_budget), || {
+    measure_budget(&env, nameof(ir_params), || {
         sut.pool.ir_params();
     });
 }
 
 #[test]
-fn should_measure_liquidate_budget() {
+fn liquidate() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -195,37 +187,37 @@ fn should_measure_liquidate_budget() {
 
     sut.pool.liquidate(&liquidator, &borrower, &true);
 
-    measure_budget(&env, nameof(should_measure_liquidate_budget), || {
+    measure_budget(&env, nameof(liquidate), || {
         sut.pool.ir_params();
     });
 }
 
 #[test]
-fn should_measure_paused_budget() {
+fn paused() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
 
-    measure_budget(&env, nameof(should_measure_paused_budget), || {
+    measure_budget(&env, nameof(paused), || {
         sut.pool.paused();
     });
 }
 
 #[test]
-fn should_measure_price_feed_budget() {
+fn price_feed() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
 
-    measure_budget(&env, nameof(should_measure_price_feed_budget), || {
+    measure_budget(&env, nameof(price_feed), || {
         sut.pool.price_feed(&sut.token().address);
     });
 }
 
 #[test]
-fn should_measure_repay_budget() {
+fn repay() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -235,13 +227,13 @@ fn should_measure_repay_budget() {
 
     env.ledger().with_mut(|li| li.timestamp = DAY);
 
-    measure_budget(&env, nameof(should_measure_repay_budget), || {
+    measure_budget(&env, nameof(repay), || {
         sut.pool.deposit(&borrower, &debt_token.clone(), &i128::MAX);
     });
 }
 
 #[test]
-fn should_measure_set_as_collateral_budget() {
+fn set_as_collateral() {
     let env = Env::default();
     env.mock_all_auths();
     let (sut, user, (_, _), (collat_token, _)) = init_with_debt(&env);
@@ -250,17 +242,13 @@ fn should_measure_set_as_collateral_budget() {
     sut.pool
         .deposit(&user, &sut.reserves[2].token_admin.address, &2_000_000_000);
 
-    measure_budget(
-        &env,
-        nameof(should_measure_set_as_collateral_budget),
-        || {
-            sut.pool.set_as_collateral(&user, &collat_token, &false);
-        },
-    );
+    measure_budget(&env, nameof(set_as_collateral), || {
+        sut.pool.set_as_collateral(&user, &collat_token, &false);
+    });
 }
 
 #[test]
-fn should_measure_set_ir_params_budget() {
+fn set_ir_params() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -273,25 +261,25 @@ fn should_measure_set_ir_params_budget() {
         scaling_coeff: 9_001,
     };
 
-    measure_budget(&env, nameof(should_measure_set_ir_params_budget), || {
+    measure_budget(&env, nameof(set_ir_params), || {
         sut.pool.set_ir_params(&ir_params_input);
     });
 }
 
 #[test]
-fn should_measure_set_pause_budget() {
+fn set_pause() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
 
-    measure_budget(&env, nameof(should_measure_set_pause_budget), || {
+    measure_budget(&env, nameof(set_pause), || {
         sut.pool.set_pause(&true);
     });
 }
 
 #[test]
-fn should_measure_set_price_feed_budget() {
+fn set_price_feed() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -303,30 +291,26 @@ fn should_measure_set_price_feed_budget() {
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
     let assets = vec![&env, asset_1.clone(), asset_2.clone()];
 
-    measure_budget(&env, nameof(should_measure_set_price_feed_budget), || {
+    measure_budget(&env, nameof(set_price_feed), || {
         pool.set_price_feed(&price_feed.address.clone(), &assets.clone());
     });
 }
 
 #[test]
-fn should_measure_set_reserve_status_budget() {
+fn set_reserve_status() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
     let asset = sut.token().address.clone();
 
-    measure_budget(
-        &env,
-        nameof(should_measure_set_reserve_status_budget),
-        || {
-            sut.pool.set_reserve_status(&asset, &true);
-        },
-    );
+    measure_budget(&env, nameof(set_reserve_status), || {
+        sut.pool.set_reserve_status(&asset, &true);
+    });
 }
 
 #[test]
-fn should_measure_stoken_underlying_balance_budget() {
+fn stoken_underlying_balance() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -337,29 +321,22 @@ fn should_measure_stoken_underlying_balance_budget() {
     sut.pool
         .deposit(&lender, &sut.reserves[0].token.address, &1_000_000_000);
 
-    measure_budget(
-        &env,
-        nameof(should_measure_stoken_underlying_balance_budget),
-        || {
-            sut.pool
-                .stoken_underlying_balance(&sut.reserves[0].s_token.address);
-        },
-    );
+    measure_budget(&env, nameof(stoken_underlying_balance), || {
+        sut.pool
+            .stoken_underlying_balance(&sut.reserves[0].s_token.address);
+    });
 }
 
 #[test]
-fn should_measure_treasury_budget() {
+fn treasury() {
     let env = Env::default();
     env.mock_all_auths();
 
     let pool = LendingPoolClient::new(&env, &env.register_contract(None, LendingPool));
 
-    let admin = Address::random(&env);
-    let treasury = Address::random(&env);
-
     pool.initialize(
-        &admin,
-        &treasury,
+        &Address::random(&env),
+        &Address::random(&env),
         &IRParams {
             alpha: 143,
             initial_rate: 200,
@@ -368,37 +345,33 @@ fn should_measure_treasury_budget() {
         },
     );
 
-    measure_budget(&env, nameof(should_measure_treasury_budget), || {
+    measure_budget(&env, nameof(treasury), || {
         pool.treasury();
     });
 }
 
 #[test]
-fn should_measure_user_configuration_budget() {
+fn user_configuration() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
     let (_, borrower, _) = fill_pool(&env, &sut, false);
 
-    measure_budget(
-        &env,
-        nameof(should_measure_user_configuration_budget),
-        || {
-            sut.pool.user_configuration(&borrower);
-        },
-    );
+    measure_budget(&env, nameof(user_configuration), || {
+        sut.pool.user_configuration(&borrower);
+    });
 }
 
 #[test]
-fn should_measure_withdraw_budget() {
+fn withdraw() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env);
     let (_, borrower, _) = fill_pool(&env, &sut, false);
 
-    measure_budget(&env, nameof(should_measure_withdraw_budget), || {
+    measure_budget(&env, nameof(withdraw), || {
         sut.pool
             .withdraw(&borrower, &sut.token().address, &10_000, &borrower);
     });
