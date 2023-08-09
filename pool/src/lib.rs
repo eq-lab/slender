@@ -554,7 +554,7 @@ impl LendingPoolTrait for LendingPool {
             &who,
             &reserve,
             user_configurator.user_config()?,
-            AssetBalance::new(s_token.address.clone(), s_token_balance_after),
+            &AssetBalance::new(s_token.address.clone(), s_token_balance_after),
         )?;
 
         let amount_to_sub = underlying_to_withdraw
@@ -759,7 +759,7 @@ impl LendingPoolTrait for LendingPool {
 
         let mut user_configurator = UserConfigurator::new(&env, &who, false);
         let user_config = user_configurator.user_config()?;
-        let reserve_id = read_reserve(&env, asset.clone())?.get_id();
+        let reserve_id = read_reserve(&env, &asset)?.get_id();
 
         assert_with_error!(
             &env,
