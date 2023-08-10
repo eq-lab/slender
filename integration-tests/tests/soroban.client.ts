@@ -16,20 +16,6 @@ export class SorobanClient {
         return await this.client.requestAirdrop(publicKey, process.env.FRIENDBOT_URL);
     }
 
-    async trySendTransaction(
-        contractId: string,
-        method: string,
-        signer: Keypair,
-        ...args: xdr.ScVal[]
-    ): Promise<SorobanRpc.GetTransactionResponse> {
-        try {
-            return await this.sendTransaction(contractId, method, signer, ...args);
-        }
-        catch {
-            return null;
-        }
-    }
-
     async sendTransaction(
         contractId: string,
         method: string,

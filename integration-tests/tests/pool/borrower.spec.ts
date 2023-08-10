@@ -1,7 +1,5 @@
 import { SorobanClient } from "../soroban.client";
-import { expect } from "chai";
-import { addressToScVal, arrayToScVal, parseScVal, i128ToScVal, objectToScVal, numberToScvU32, stringToScvString, stringToScvBytes } from "../soroban.converter";
-import { borrower1Keys, adminKeys } from "../soroban.config";
+import { initPool } from "../pool.sut";
 
 describe("LendingPool", function () {
     let client: SorobanClient;
@@ -9,28 +7,7 @@ describe("LendingPool", function () {
     before(async function () {
         client = new SorobanClient();
 
-        await client.trySendTransaction(process.env.TOKEN, "initialize", adminKeys,
-            addressToScVal(adminKeys.publicKey()),
-            numberToScvU32(9),
-            stringToScvString("Token"),
-            stringToScvString("TKN"));
-
-        stringToScvBytes("0000000000000000000000000000000000000000000000000000000000000000")
-        stringToScvBytes(process.env.POOL_HASH)
-        addressToScVal(adminKeys.publicKey())
-        addressToScVal()
-        // # deployPoolResult=$(invoke $deployer $POOL_SECRET "deploy_pool \
-        // #     --salt 0000000000000000000000000000000000000000000000000000000000000000 \
-        // #     --wasm_hash $poolHash \
-        // #     --admin $POOL_PUBLIC")
-        // # POOL=$(addressFromResult $deployPoolResult)
-        await client.trySendTransaction(process.env.TOKEN, "deploy_pool", adminKeys,
-            addressToScVal(adminKeys.publicKey()),
-            numberToScvU32(9),
-            stringToScvString("Token"),
-            stringToScvString("TKN"));
-
-        this.borrower = await client.registerAccount(borrower1Keys.publicKey());
+        await initPool(client);
     });
 
     it("should mint 10,000,000,000 TOKENs to USER", async function () {

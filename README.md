@@ -39,7 +39,7 @@ Run a local standalone (or Futurenet) network with the following command:
 docker run --rm -it \
   -p 8000:8000 \
   --name stellar \
-  stellar/quickstart:soroban-dev@sha256:a6b03cf6b0433c99f2f799b719f0faadbb79684b1b763e7674ba749fb0f648ee \
+  stellar/quickstart:soroban-dev@sha256:8a99332f834ca82e3ac1418143736af59b5288e792d1c4278d6c547c6ed8da3b \
   --standalone \
   --enable-soroban-rpc
 

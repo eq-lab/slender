@@ -1,5 +1,5 @@
 import { Address, xdr } from 'soroban-client';
-import { Buffer } from "buffer";
+import { Buffer } from "node:buffer";
 import { bufToBigint } from 'bigint-conversion';
 
 type ElementType<T> = T extends Array<infer U> ? U : never;
@@ -128,6 +128,10 @@ export function addressToScVal(addr: string): xdr.ScVal {
     return addrObj.toScVal();
 }
 
+export function boolToScVal(i: boolean): xdr.ScVal {
+    return xdr.ScVal.scvBool(i);
+}
+
 export function objectToScVal(obj: object): xdr.ScVal {
     const map = Object
         .keys(obj)
@@ -165,18 +169,17 @@ export function stringToScvString(i: string): xdr.ScVal {
     return xdr.ScVal.scvString(i);
 }
 
-export function stringToScvBytes(i: string): xdr.ScVal {
-    const bytes = Buffer.from(i, "utf-8")
+export function stringToScvBytes(i: string, e: BufferEncoding): xdr.ScVal {
+    const bytes = Buffer.from(i, e);
     return xdr.ScVal.scvBytes(bytes);
 }
 
-export function parseScVal(resultXdr) {
-    // const val = xdr.TransactionResult.fromXDR(Buffer.from(resultXdr, "base64"))
-    //     .result()
-    //     .results()[0]
-    //     .tr()
-    //     .invokeHostFunctionResult()
-    //     .success()[0];
+export function parseScVal<T>(resultMetaXdr: string): T {
+    const val = xdr.TransactionMeta
+        .fromXDR(resultMetaXdr, "base64")
+        .v3()
+        .sorobanMeta()
+        .returnValue();
 
-    // return scValToJs(val);
+    return scValToJs(val);
 }
