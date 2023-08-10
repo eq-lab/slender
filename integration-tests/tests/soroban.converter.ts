@@ -37,11 +37,6 @@ export function scvalToBigInt(scval: xdr.ScVal | undefined): BigInt {
     };
 }
 
-export function scValStrToJs<T>(base64Xdr: string): T {
-    let scval = xdr.ScVal.fromXDR(Buffer.from(base64Xdr, 'base64'));
-    return scValToJs(scval);
-}
-
 export function scValToJs<T>(val: xdr.ScVal): T {
     switch (val?.switch()) {
         case xdr.ScValType.scvBool(): {
@@ -174,7 +169,7 @@ export function stringToScvBytes(i: string, e: BufferEncoding): xdr.ScVal {
     return xdr.ScVal.scvBytes(bytes);
 }
 
-export function parseScVal<T>(resultMetaXdr: string): T {
+export function scValStrToJs<T>(resultMetaXdr: string): T {
     const val = xdr.TransactionMeta
         .fromXDR(resultMetaXdr, "base64")
         .v3()

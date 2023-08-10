@@ -32,8 +32,14 @@ addressFromResult() {
     echo $value1
 }
 
-TOKEN=$(deploy "../contracts/soroban_token_contract.wasm" $ADMIN_SECRET)
-echo "Token contract address: $TOKEN"
+TOKEN_XLM=$(deploy "../contracts/soroban_token_contract.wasm" $ADMIN_SECRET)
+echo "XLM contract address: $TOKEN_XLM"
+
+TOKEN_XRP=$(deploy "../contracts/soroban_token_contract.wasm" $ADMIN_SECRET)
+echo "XRP contract address: $TOKEN_XRP"
+
+TOKEN_USDC=$(deploy "../contracts/soroban_token_contract.wasm" $ADMIN_SECRET)
+echo "USDC contract address: $TOKEN_USDC"
 
 DEPLOYER=$(deploy "../target/wasm32-unknown-unknown/release/deployer.wasm" $ADMIN_SECRET)
 echo "Deployer contract address: $DEPLOYER"
@@ -53,12 +59,14 @@ echo "Price Feed contract address: $PRICE_FEED"
 
 contracts=".contracts"
 {
-    echo "SLENDER_TOKEN=$TOKEN"
+    echo "SLENDER_TOKEN_XLM=$TOKEN_XLM"
+    echo "SLENDER_TOKEN_XRP=$TOKEN_XRP"
+    echo "SLENDER_TOKEN_USDC=$TOKEN_USDC"
+    echo "SLENDER_S_TOKEN_HASH=$S_TOKEN_HASH"
+    echo "SLENDER_DEBT_TOKEN_HASH=$DEBT_TOKEN_HASH"
     echo "SLENDER_DEPLOYER=$DEPLOYER"
     echo "SLENDER_PRICE_FEED=$PRICE_FEED"
     echo "SLENDER_POOL_HASH=$POOL_HASH"
-    echo "SLENDER_S_TOKEN_HASH=$S_TOKEN_HASH"
-    echo "SLENDER_DEBT_TOKEN_HASH=$DEBT_TOKEN_HASH"
 } >$contracts
 
 echo "Contracts deployed"
