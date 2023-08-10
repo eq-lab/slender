@@ -11,11 +11,11 @@ export async function initPool(client: SorobanClient): Promise<void> {
     await initContract<Array<any>>(
         "POOL",
         () => client.sendTransaction(
-            process.env.DEPLOYER,
+            process.env.SLENDER_DEPLOYER,
             "deploy_pool",
             adminKeys,
             stringToScvBytes("0000000000000000000000000000000000000000000000000000000000000000", "hex"),
-            stringToScvBytes(process.env.POOL_HASH, "hex"),
+            stringToScvBytes(process.env.SLENDER_POOL_HASH, "hex"),
             addressToScVal(adminKeys.publicKey()),
             addressToScVal(treasuryKeys.publicKey()),
             objectToScVal({
@@ -31,7 +31,7 @@ export async function initPool(client: SorobanClient): Promise<void> {
     await initContract(
         "TOKEN_INITIALIZED",
         () => client.sendTransaction(
-            process.env.TOKEN,
+            process.env.SLENDER_TOKEN,
             "initialize",
             adminKeys,
             addressToScVal(adminKeys.publicKey()),
@@ -44,15 +44,15 @@ export async function initPool(client: SorobanClient): Promise<void> {
     await initContract<Array<any>>(
         "S_TOKEN",
         () => client.sendTransaction(
-            process.env.DEPLOYER,
+            process.env.SLENDER_DEPLOYER,
             "deploy_s_token",
             adminKeys,
             stringToScvBytes("0000000000000000000000000000000000000000000000000000000000000001", "hex"),
-            stringToScvBytes(process.env.S_TOKEN_HASH, "hex"),
+            stringToScvBytes(process.env.SLENDER_S_TOKEN_HASH, "hex"),
             stringToScvString("SToken"),
             stringToScvString("STKN"),
-            addressToScVal(process.env.POOL),
-            addressToScVal(process.env.TOKEN),
+            addressToScVal(process.env.SLENDER_POOL),
+            addressToScVal(process.env.SLENDER_TOKEN),
         ),
         result => result[0]
     );
@@ -60,28 +60,28 @@ export async function initPool(client: SorobanClient): Promise<void> {
     await initContract<Array<any>>(
         "DEBT_TOKEN",
         () => client.sendTransaction(
-            process.env.DEPLOYER,
+            process.env.SLENDER_DEPLOYER,
             "deploy_debt_token",
             adminKeys,
             stringToScvBytes("0000000000000000000000000000000000000000000000000000000000000002", "hex"),
-            stringToScvBytes(process.env.DEBT_TOKEN_HASH, "hex"),
+            stringToScvBytes(process.env.SLENDER_DEBT_TOKEN_HASH, "hex"),
             stringToScvString("DToken"),
             stringToScvString("DTKN"),
-            addressToScVal(process.env.POOL),
-            addressToScVal(process.env.TOKEN),
+            addressToScVal(process.env.SLENDER_POOL),
+            addressToScVal(process.env.SLENDER_TOKEN),
         ),
         result => result[0]);
 
     await initContract(
         "RESERVE_INITIALIZED",
         () => client.sendTransaction(
-            process.env.POOL,
+            process.env.SLENDER_POOL,
             "init_reserve",
             adminKeys,
-            addressToScVal(process.env.TOKEN),
+            addressToScVal(process.env.SLENDER_TOKEN),
             objectToScVal({
-                "debt_token_address": addressToScVal(process.env.DEBT_TOKEN),
-                "s_token_address": addressToScVal(process.env.S_TOKEN)
+                "debt_token_address": addressToScVal(process.env.SLENDER_DEBT_TOKEN),
+                "s_token_address": addressToScVal(process.env.SLENDER_S_TOKEN)
             })
         )
     );
@@ -89,10 +89,10 @@ export async function initPool(client: SorobanClient): Promise<void> {
     await initContract(
         "COLLATERAL_CONFIGURED",
         () => client.sendTransaction(
-            process.env.POOL,
+            process.env.SLENDER_POOL,
             "configure_as_collateral",
             adminKeys,
-            addressToScVal(process.env.TOKEN),
+            addressToScVal(process.env.SLENDER_TOKEN),
             objectToScVal({
                 "discount": numberToScvU32(6000),
                 "liq_bonus": numberToScvU32(11000),
@@ -105,12 +105,12 @@ export async function initPool(client: SorobanClient): Promise<void> {
     await initContract(
         "PRICE_FEED_SET",
         () => client.sendTransaction(
-            process.env.POOL,
+            process.env.SLENDER_POOL,
             "set_price_feed",
             adminKeys,
-            addressToScVal(process.env.PRICE_FEED),
+            addressToScVal(process.env.SLENDER_PRICE_FEED),
             arrayToScVal([
-                addressToScVal(process.env.TOKEN)
+                addressToScVal(process.env.SLENDER_TOKEN)
             ])
         )
     );
@@ -118,10 +118,10 @@ export async function initPool(client: SorobanClient): Promise<void> {
     await initContract(
         "BORROWING_ENABLED",
         () => client.sendTransaction(
-            process.env.POOL,
+            process.env.SLENDER_POOL,
             "enable_borrowing_on_reserve",
             adminKeys,
-            addressToScVal(process.env.TOKEN),
+            addressToScVal(process.env.SLENDER_TOKEN),
             boolToScVal(true)
         )
     );
@@ -129,7 +129,7 @@ export async function initPool(client: SorobanClient): Promise<void> {
     await initContract(
         "BORROWER_UNDERLYING_MINTED",
         () => client.sendTransaction(
-            process.env.TOKEN,
+            process.env.SLENDER_TOKEN,
             "mint",
             adminKeys,
             addressToScVal(borrower1Keys.publicKey()),
@@ -143,7 +143,7 @@ async function initContract<T>(
     callback: () => Promise<SorobanRpc.GetTransactionResponse>,
     success: (result: T) => string = undefined
 ): Promise<void> {
-    name += `SLENDER_CONF_${name}`;
+    name = `SLENDER_${name}`;
 
     if (process.env[name])
         return;
@@ -161,7 +161,7 @@ async function registerAddress(
     name: string,
     callback: () => Promise<Account>
 ): Promise<void> {
-    name += `SLENDER_ACC_${name}`;
+    name = `SLENDER_ACC_${name}`;
 
     if (process.env[name])
         return;
