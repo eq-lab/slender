@@ -7,11 +7,10 @@ describe("LendingPool", function () {
 
     before(async function () {
         client = new SorobanClient();
-
         await init(client);
     });
 
-    it("should", async function () {
+    it("should TBD", async function () {
         let lender1 = await registerAccount(client, "LENDER_1", lender1Keys);
         let lender1Address = lender1.publicKey();
 

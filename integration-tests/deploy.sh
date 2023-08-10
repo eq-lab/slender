@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# TODO: Fix /Artur
-source .develop.env
+source .$NODE_ENV.env
 
 curl -s "$FRIENDBOT_URL?addr=$ADMIN_PUBLIC" 1>/dev/null
 sleep 10
