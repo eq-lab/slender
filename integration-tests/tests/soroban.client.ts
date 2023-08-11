@@ -72,38 +72,44 @@ export class SorobanClient {
       const bodyType = xdr.ContractEntryBodyType.dataEntry();
       const durability = xdr.ContractDataDurability.persistent();
 
+      // @ts-ignore
+      const extPoint = new xdr.ExtensionPoint(0);
+      console.log("ExtensionPoint");
+      console.log(extPoint);
+      //console.log(new xdr.ExtensionPoint());
+
       const transactionData = new xdr.SorobanTransactionData({
-        ext: new xdr.ExtensionPoint(),
+        ext: extPoint,
         resources: new xdr.SorobanResources({
           footprint: new xdr.LedgerFootprint({
             readOnly: [
-              xdr.LedgerKey.contractData(
-                new xdr.LedgerKeyContractData({
-                  contract: contract.address().toScAddress(),
-                  key: xdr.ScVal.scvLedgerKeyContractInstance(),
-                  durability,
-                  bodyType,
-                })
-              ),
-              xdr.LedgerKey.contractCode(
-                new xdr.LedgerKeyContractCode({
-                  hash,
-                  bodyType,
-                })
-              ),
+              // xdr.LedgerKey.contractData(
+              //   new xdr.LedgerKeyContractData({
+              //     contract: contract.address().toScAddress(),
+              //     key: xdr.ScVal.scvLedgerKeyContractInstance(),
+              //     durability,
+              //     bodyType,
+              //   })
+              // ),
+              // xdr.LedgerKey.contractCode(
+              //   new xdr.LedgerKeyContractCode({
+              //     hash,
+              //     bodyType,
+              //   })
+              // ),
             ],
             readWrite: [
-              xdr.LedgerKey.contractData(
-                new xdr.LedgerKeyContractData({
-                  contract: contract.address().toScAddress(),
-                  key: xdr.ScVal.scvVec([
-                    xdr.ScVal.scvSymbol("Balance"),
-                    args[0],
-                  ]),
-                  durability,
-                  bodyType,
-                })
-              ),
+              // xdr.LedgerKey.contractData(
+              //   new xdr.LedgerKeyContractData({
+              //     contract: contract.address().toScAddress(),
+              //     key: xdr.ScVal.scvVec([
+              //       xdr.ScVal.scvSymbol("Balance"),
+              //       args[0],
+              //     ]),
+              //     durability,
+              //     bodyType,
+              //   })
+              // ),
             ],
           }),
           instructions: 100_000_000,
