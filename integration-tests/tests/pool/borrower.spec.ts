@@ -1,6 +1,7 @@
 import { SorobanClient } from "../soroban.client";
 import {
   balanceOf,
+  deposit,
   init,
   mintUnderlyingTo,
   registerAccount,
@@ -37,13 +38,16 @@ describe("LendingPool", function () {
       "XRP"
     );
 
-    client.setUnlimitedResources();
     let lender1UsdcBalance = await balanceOf(
       client,
       lender1Keys,
       lender1Address,
       "USDC"
     );
+    console.log("Before Deposit");
+
+    client.setUnlimitedResources();
+    await deposit(client, lender1Keys, lender1Address, "XLM", 1_000_000n);
 
     //     const debtTokenResult = await this.client.sendTransaction(
     //         process.env.TOKEN,

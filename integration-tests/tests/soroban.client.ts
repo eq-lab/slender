@@ -50,19 +50,21 @@ export class SorobanClient {
     );
 
     const entry = xdr.LedgerEntryData.fromXDR(contractData.xdr, "base64");
+    // @ts-ignore
     const instance = new xdr.ScContractInstance({
-      executable: xdr.ContractExecutable.contractExecutableWasm(
-        (entry.contractData().body().value() as any).toXDR()
-      ),
-      storage: null,
+      // @ts-ignore
+      executable: entry.contractData().body().value().val(),
     });
+    // @ts-ignore
     const executable = xdr.ContractExecutable.contractExecutableWasm(
-      instance.executable().wasmHash()
+      // @ts-ignore
+      instance.executable()
     );
-    const hash = executable.wasmHash();
+    // @ts-ignore
+    const hash = executable.wasmHash().instance().executable().wasmHash();
 
     const txBuilder = new TransactionBuilder(source, {
-      fee: "100",
+      fee: "100000",
       networkPassphrase: process.env.PASSPHRASE,
     })
       .addOperation(contract.call(method, ...(args || [])))
@@ -74,29 +76,26 @@ export class SorobanClient {
 
       // @ts-ignore
       const extPoint = new xdr.ExtensionPoint(0);
-      console.log("ExtensionPoint");
-      console.log(extPoint);
-      //console.log(new xdr.ExtensionPoint());
 
       const transactionData = new xdr.SorobanTransactionData({
         ext: extPoint,
         resources: new xdr.SorobanResources({
           footprint: new xdr.LedgerFootprint({
             readOnly: [
-              // xdr.LedgerKey.contractData(
-              //   new xdr.LedgerKeyContractData({
-              //     contract: contract.address().toScAddress(),
-              //     key: xdr.ScVal.scvLedgerKeyContractInstance(),
-              //     durability,
-              //     bodyType,
-              //   })
-              // ),
-              // xdr.LedgerKey.contractCode(
-              //   new xdr.LedgerKeyContractCode({
-              //     hash,
-              //     bodyType,
-              //   })
-              // ),
+              xdr.LedgerKey.contractData(
+                new xdr.LedgerKeyContractData({
+                  contract: contract.address().toScAddress(),
+                  key: xdr.ScVal.scvLedgerKeyContractInstance(),
+                  durability,
+                  bodyType,
+                })
+              ),
+              xdr.LedgerKey.contractCode(
+                new xdr.LedgerKeyContractCode({
+                  hash,
+                  bodyType,
+                })
+              ),
             ],
             readWrite: [
               // xdr.LedgerKey.contractData(
@@ -110,6 +109,57 @@ export class SorobanClient {
               //     bodyType,
               //   })
               // ),
+
+              xdr.LedgerKey.contractData(
+                new xdr.LedgerKeyContractData({
+                  contract: contract.address().toScAddress(),
+                  key: xdr.ScVal.scvVec([
+                    xdr.ScVal.scvSymbol("UserConfig"),
+                    args[0],
+                  ]),
+                  durability,
+                  bodyType,
+                })
+              ),
+
+              xdr.LedgerKey.contractData(
+                new xdr.LedgerKeyContractData({
+                  contract: contract.address().toScAddress(),
+                  key: xdr.ScVal.scvVec([
+                    xdr.ScVal.scvSymbol("ReserveAssetKey"),
+                    args[1],
+                  ]),
+                  durability,
+                  bodyType,
+                })
+              ),
+
+              xdr.LedgerKey.contractData(
+                new xdr.LedgerKeyContractData({
+                  contract: contract.address().toScAddress(),
+                  key: xdr.ScVal.scvVec([xdr.ScVal.scvSymbol("Reserves")]),
+                  durability,
+                  bodyType,
+                })
+              ),
+
+              xdr.LedgerKey.contractData(
+                new xdr.LedgerKeyContractData({
+                  contract: contract.address().toScAddress(),
+                  key: xdr.ScVal.scvVec([xdr.ScVal.scvSymbol("IRParams")]),
+                  durability,
+                  bodyType,
+                })
+              ),
+
+              xdr.LedgerKey.contractData(
+                new xdr.LedgerKeyContractData({
+                  contract: contract.address().toScAddress(),
+                  key: xdr.ScVal.scvVec([xdr.ScVal.scvSymbol("Pause")]),
+                  durability,
+                  bodyType,
+                })
+              ),
             ],
           }),
           instructions: 100_000_000,
