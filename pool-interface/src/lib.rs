@@ -30,7 +30,8 @@ pub enum Error {
     UserConfigInvalidIndex = 200,
     NotEnoughAvailableUserBalance = 201,
     UserConfigNotExists = 202,
-    MustNotHaveDebt = 203,
+    MustHaveDebt = 203,
+    MustNotHaveDebt = 204,
 
     BorrowingNotEnabled = 300,
     CollateralNotCoverNewBorrow = 301,
@@ -102,6 +103,8 @@ pub trait LendingPoolTrait {
     fn ir_params(env: Env) -> Option<IRParams>;
 
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
+
+    fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     #[allow(clippy::too_many_arguments)]
     fn finalize_transfer(
