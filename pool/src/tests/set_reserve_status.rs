@@ -12,7 +12,7 @@ fn shoould_require_admin() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
 
     sut.pool.set_reserve_status(&asset_address.clone(), &true);
@@ -38,7 +38,7 @@ fn shoould_set_reserve_status() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
 
     sut.pool.set_reserve_status(&asset_address.clone(), &false);
@@ -57,7 +57,7 @@ fn should_be_active_when_reserve_initialized() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let reserve = sut.pool.get_reserve(&sut.token().address).unwrap();
 
     assert_eq!(reserve.configuration.is_active, true);
@@ -68,7 +68,7 @@ fn should_emit_events() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let asset = sut.token().address.clone();
 
     assert_eq!(sut.pool.set_reserve_status(&asset, &true), ());

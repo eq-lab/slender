@@ -22,7 +22,7 @@
                 // }
             },
             "args": [
-                "tests::test_file::test_name",
+                "tests::upgrade::shoould_require_admin",
                 "--exact",
                 "--nocapture"
             ],

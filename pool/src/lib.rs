@@ -139,7 +139,8 @@ impl LendingPoolTrait for LendingPool {
     /// - Panics if the caller is not the admin.
     ///
     fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), Error> {
-        require_admin(&env).unwrap();
+        require_admin(&env)?;
+
         env.deployer().update_current_contract_wasm(new_wasm_hash);
 
         Ok(())

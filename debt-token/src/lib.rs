@@ -110,7 +110,7 @@ impl DebtTokenTrait for DebtToken {
     ///
     /// Currently the same as `balance(id)`
     fn spendable_balance(env: Env, id: Address) -> i128 {
-        Self::balance(env, id)
+        read_balance(&env, id)
     }
 
     /// Checks whether a specified `id` is authorized.

@@ -147,7 +147,7 @@ fn should_emit_events() {
 /// Init for set_as_collateral tests.
 /// Returns Sut, user address, reserve index and token address
 fn init(env: &Env) -> (Sut, Address, u8, Address) {
-    let sut = init_pool(env);
+    let sut = init_pool(env, false);
 
     let user = Address::random(env);
     deposit(&sut.pool, sut.token_admin(), &user);

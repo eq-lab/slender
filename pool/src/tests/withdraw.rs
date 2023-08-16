@@ -10,7 +10,7 @@ fn should_require_authorized_caller() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
@@ -39,7 +39,7 @@ fn should_fail_when_pool_paused() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
@@ -62,7 +62,7 @@ fn should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
@@ -83,7 +83,7 @@ fn should_fail_when_reserve_deactivated() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
@@ -106,7 +106,7 @@ fn should_fail_when_not_enough_stoken_balance() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
@@ -128,7 +128,7 @@ fn should_fail_when_bad_position() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
@@ -151,7 +151,7 @@ fn should_fail_when_unknown_asset() {
     env.mock_all_auths();
 
     let unknown_asset = Address::random(&env);
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
 
     sut.pool
@@ -172,7 +172,7 @@ fn should_change_user_config() {
     env.mock_all_auths();
 
     let user = Address::random(&env);
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
     sut.token_admin().mint(&user, &1_000_000_000);
@@ -201,7 +201,7 @@ fn should_partially_withdraw() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let (lender, _, _, debt_config) = fill_pool_two(&env, &sut);
     let debt_token = &debt_config.token.address;
@@ -240,7 +240,7 @@ fn should_fully_withdraw() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let (lender, _, _, debt_config) = fill_pool_two(&env, &sut);
     let debt_token = &debt_config.token.address;
@@ -279,7 +279,7 @@ fn should_affect_coeffs() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let (lender, _, _, debt_config) = fill_pool_two(&env, &sut);
     let debt_token = &debt_config.token.address;
@@ -305,7 +305,7 @@ fn should_affect_account_data() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
@@ -326,7 +326,7 @@ fn should_allow_withdraw_to_other_address() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let (lender, borrower, _, debt_config) = fill_pool_two(&env, &sut);
     let debt_token = &debt_config.token.address;
@@ -373,7 +373,7 @@ fn should_emit_events() {
     let user_1 = Address::random(&env);
     let user_2 = Address::random(&env);
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
     sut.token_admin().mint(&user_1, &1_000_000_000);

@@ -13,6 +13,10 @@ use soroban_sdk::{
     IntoVal,
 };
 
+mod pool {
+    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/pool.wasm");
+}
+
 mod s_token {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/s_token.wasm");
 }
@@ -40,8 +44,17 @@ pub(crate) fn create_token_contract<'a>(
     )
 }
 
-pub(crate) fn create_pool_contract<'a>(e: &Env, admin: &Address) -> LendingPoolClient<'a> {
-    let client = LendingPoolClient::new(e, &e.register_contract(None, LendingPool));
+pub(crate) fn create_pool_contract<'a>(
+    e: &Env,
+    admin: &Address,
+    use_wasm: bool,
+) -> LendingPoolClient<'a> {
+    let client = if use_wasm {
+        LendingPoolClient::new(e, &e.register_contract_wasm(None, pool::WASM))
+    } else {
+        LendingPoolClient::new(e, &e.register_contract(None, LendingPool))
+    };
+
     let treasury = Address::random(e);
     client.initialize(
         &admin,
@@ -95,13 +108,13 @@ pub(crate) fn create_price_feed_contract<'a>(e: &Env) -> PriceFeedClient<'a> {
     PriceFeedClient::new(&e, &e.register_contract_wasm(None, price_feed::WASM))
 }
 
-pub(crate) fn init_pool<'a>(env: &Env) -> Sut<'a> {
+pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
     env.budget().reset_unlimited();
 
     let admin = Address::random(&env);
     let token_admin = Address::random(&env);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, use_pool_wasm);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
 
     let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..3)

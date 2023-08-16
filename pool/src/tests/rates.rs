@@ -181,7 +181,7 @@ fn should_update_rates_over_time() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let debt_asset_1 = sut.reserves[1].token.address.clone();
 

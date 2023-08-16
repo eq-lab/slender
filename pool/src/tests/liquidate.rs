@@ -8,7 +8,7 @@ fn should_require_authorized_caller() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, _) = fill_pool_three(&env, &sut);
 
     sut.pool.liquidate(&liquidator, &borrower, &false);
@@ -29,7 +29,7 @@ fn should_fail_when_pool_paused() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, _) = fill_pool_three(&env, &sut);
 
     sut.pool.set_pause(&true);
@@ -50,7 +50,7 @@ fn should_fail_when_reserve_deactivated() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, _) = fill_pool_three(&env, &sut);
     let collat_reserve = sut.reserves[0].token.address.clone();
 
@@ -73,7 +73,7 @@ fn should_fail_when_good_position() {
     env.mock_all_auths();
 
     let liquidator = Address::random(&env);
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, false);
 
     let position = sut.pool.account_position(&borrower);
@@ -96,7 +96,7 @@ fn should_fail_when_oracle_price_is_negative() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
     let token_address = debt_config.token.address.clone();
 
@@ -118,7 +118,7 @@ fn sould_fail_when_not_enough_collateral() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
     let token_address = debt_config.token.address.clone();
 
@@ -141,7 +141,7 @@ fn sould_fail_when_liquidator_has_not_enough_underlying_asset() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
     let token_address = debt_config.token.address.clone();
 
@@ -162,7 +162,7 @@ fn should_liquidate_and_receive_collateral_partially() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
     let token_address = debt_config.token.address.clone();
 
@@ -232,7 +232,7 @@ fn should_receive_stokens_when_requested() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
     let token_address = debt_config.token.address.clone();
 
@@ -302,7 +302,7 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
     let token_address = debt_config.token.address.clone();
     let treasury = sut.pool.treasury();
@@ -387,7 +387,7 @@ fn should_change_user_config() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
     let token_address = debt_config.token.address.clone();
     let reserve_1 = sut
@@ -463,7 +463,7 @@ fn should_affect_account_data() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, _) = fill_pool_three(&env, &sut);
 
     let borrower_account_position_before = sut.pool.account_position(&borrower);
@@ -490,7 +490,7 @@ fn should_affect_coeffs() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, _) = fill_pool_three(&env, &sut);
     let asset_1 = sut.reserves[0].token.address.clone();
     let asset_2 = sut.reserves[1].token.address.clone();
@@ -518,7 +518,7 @@ fn should_emit_events() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, liquidator, _) = fill_pool_three(&env, &sut);
 
     sut.pool.liquidate(&liquidator, &borrower, &false);
