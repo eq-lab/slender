@@ -226,12 +226,12 @@ fn should_partially_withdraw() {
 
     assert_eq!(lender_stoken_balance_before, 100_000_000);
     assert_eq!(lender_underlying_balance_before, 900_000_000);
-    assert_eq!(s_token_supply_before, 200_000_000);
+    assert_eq!(s_token_supply_before, 200_000_220);
     assert_eq!(s_token_underlying_supply_before, 160_000_000);
 
-    assert_eq!(lender_stoken_balance, 50_040_651);
+    assert_eq!(lender_stoken_balance, 50_028_949);
     assert_eq!(lender_underlying_balance, 950_000_000);
-    assert_eq!(s_token_supply, 150_040_651);
+    assert_eq!(s_token_supply, 150_029_169);
     assert_eq!(s_token_underlying_supply, 110_000_000);
 }
 
@@ -265,13 +265,13 @@ fn should_fully_withdraw() {
 
     assert_eq!(lender_stoken_balance_before, 100_000_000);
     assert_eq!(lender_underlying_balance_before, 900_000_000);
-    assert_eq!(s_token_supply_before, 200_000_000);
+    assert_eq!(s_token_supply_before, 200_000_220);
     assert_eq!(s_token_underlying_supply_before, 160_000_000);
 
     assert_eq!(lender_stoken_balance, 0);
-    assert_eq!(lender_underlying_balance, 1_000_081_366);
-    assert_eq!(s_token_supply, 100_000_000);
-    assert_eq!(s_token_underlying_supply, 59_918_634);
+    assert_eq!(lender_underlying_balance, 1_000_057_931);
+    assert_eq!(s_token_supply, 100_000_220);
+    assert_eq!(s_token_underlying_supply, 59_942_069);
 }
 
 #[test]
@@ -284,14 +284,14 @@ fn should_affect_coeffs() {
     let (lender, _, _, debt_config) = fill_pool_two(&env, &sut);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = DAY);
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     let collat_coeff_prev = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_prev = sut.pool.debt_coeff(&debt_token);
 
     sut.pool.withdraw(&lender, debt_token, &i128::MAX, &lender);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
 
     let collat_coeff = sut.pool.collat_coeff(&debt_token);
     let debt_coeff = sut.pool.debt_coeff(&debt_token);
@@ -355,13 +355,13 @@ fn should_allow_withdraw_to_other_address() {
     assert_eq!(borrower_underlying_balance_before, 900_000_000);
     assert_eq!(lender_stoken_balance_before, 100_000_000);
     assert_eq!(lender_underlying_balance_before, 900_000_000);
-    assert_eq!(s_token_supply_before, 200_000_000);
+    assert_eq!(s_token_supply_before, 200_000_220);
     assert_eq!(s_token_underlying_supply_before, 160_000_000);
 
     assert_eq!(borrower_underlying_balance, 950000000);
-    assert_eq!(lender_stoken_balance, 50_040_651);
+    assert_eq!(lender_stoken_balance, 50_028_949);
     assert_eq!(lender_underlying_balance, 900_000_000);
-    assert_eq!(s_token_supply, 150_040_651);
+    assert_eq!(s_token_supply, 150_029_169);
     assert_eq!(s_token_underlying_supply, 110_000_000);
 }
 

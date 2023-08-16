@@ -243,14 +243,14 @@ fn should_change_user_config() {
     let is_borrowing_token_1_after_borrow = user_config.is_borrowing(&env, reserve_1.get_id());
     let is_borrowing_token_2_after_borrow = user_config.is_borrowing(&env, reserve_2.get_id());
 
-    sut.pool.deposit(&borrower, &token_1_address, &i128::MAX);
+    sut.pool.repay(&borrower, &token_1_address, &i128::MAX);
 
     let user_config = sut.pool.user_configuration(&borrower);
     let is_borrowing_any_after_repay_1 = user_config.is_borrowing_any();
     let is_borrowing_token_1_after_repay_1 = user_config.is_borrowing(&env, reserve_1.get_id());
     let is_borrowing_token_2_after_repay_1 = user_config.is_borrowing(&env, reserve_2.get_id());
 
-    sut.pool.deposit(&borrower, &token_2_address, &i128::MAX);
+    sut.pool.repay(&borrower, &token_2_address, &i128::MAX);
 
     let user_config = sut.pool.user_configuration(&borrower);
     let is_borrowing_any_after_repay_2 = user_config.is_borrowing_any();
@@ -283,14 +283,14 @@ fn should_affect_coeffs() {
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
-    env.ledger().with_mut(|li| li.timestamp = DAY);
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     let collat_coeff_prev = sut.pool.collat_coeff(&token_address);
     let debt_coeff_prev = sut.pool.debt_coeff(&token_address);
 
     sut.pool.borrow(&borrower, &token_address, &20_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
 
     let collat_coeff = sut.pool.collat_coeff(&token_address);
     let debt_coeff = sut.pool.debt_coeff(&token_address);
@@ -329,7 +329,7 @@ fn should_change_balances_when_borrow_and_repay() {
     let token_address = debt_config.token.address.clone();
     let treasury = sut.pool.treasury();
 
-    env.ledger().with_mut(|li| li.timestamp = DAY);
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     let treasury_before = debt_config.token.balance(&treasury);
     let debt_balance_before = debt_config.debt_token.balance(&borrower);
@@ -351,7 +351,7 @@ fn should_change_balances_when_borrow_and_repay() {
 
     env.ledger().with_mut(|li| li.timestamp = 30 * DAY);
 
-    sut.pool.deposit(&borrower, &token_address, &i128::MAX);
+    sut.pool.repay(&borrower, &token_address, &i128::MAX);
 
     let treasury_after_repay = debt_config.token.balance(&treasury);
     let debt_balance_after_repay = debt_config.debt_token.balance(&borrower);
@@ -368,16 +368,16 @@ fn should_change_balances_when_borrow_and_repay() {
     assert_eq!(underlying_supply_before, 100_000_000);
 
     assert_eq!(treasury_after_borrow, 0);
-    assert_eq!(debt_balance_after_borrow, 19_998_904);
-    assert_eq!(debt_total_after_borrow, 19_998_904);
+    assert_eq!(debt_balance_after_borrow, 19_997_809);
+    assert_eq!(debt_total_after_borrow, 19_997_809);
     assert_eq!(borrower_balance_after_borrow, 1_020_000_000);
     assert_eq!(underlying_supply_after_borrow, 80_000_000);
 
-    assert_eq!(treasury_after_repay, 36_949);
+    assert_eq!(treasury_after_repay, 37_168);
     assert_eq!(debt_balance_after_repay, 0);
     assert_eq!(debt_total_after_repay, 0);
-    assert_eq!(borrower_balance_after_repay, 999_956_305);
-    assert_eq!(underlying_supply_after_repay, 100_006_746);
+    assert_eq!(borrower_balance_after_repay, 999_957_400);
+    assert_eq!(underlying_supply_after_repay, 100_005_432);
 }
 
 #[test]

@@ -222,7 +222,7 @@ fn should_update_rates_over_time() {
 
     let updated = sut.pool.get_reserve(&debt_asset_1).unwrap();
     let ir_params = sut.pool.ir_params().unwrap();
-    let debt_ir = calc_interest_rate(100_000_000, 40_000_000, &ir_params).unwrap();
+    let debt_ir = calc_interest_rate(200_000_000, 40_000_000, &ir_params).unwrap();
     let lender_ir = debt_ir
         .checked_mul(FixedI128::from_percentage(ir_params.scaling_coeff).unwrap())
         .unwrap();

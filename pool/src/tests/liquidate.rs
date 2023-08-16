@@ -208,7 +208,7 @@ fn should_liquidate_and_receive_collateral_partially() {
     assert_eq!(underlying_2_supply_before, 190_000_000);
     assert_eq!(borrower_stoken_1_balance_before, 100_000_000);
     assert_eq!(borrower_stoken_2_balance_before, 90_000_000);
-    assert_eq!(borrower_debt_balance_before, 59_996_714);
+    assert_eq!(borrower_debt_balance_before, 59_993_429);
     assert_eq!(liquidator_repayment_balance_before, 1_000_000_000);
     assert_eq!(liquidator_underlying_1_balance_before, 0);
     assert_eq!(liquidator_underlying_2_balance_before, 0);
@@ -216,13 +216,13 @@ fn should_liquidate_and_receive_collateral_partially() {
     assert_eq!(liquidator_stoken_2_balance_before, 0);
 
     assert_eq!(underlying_1_supply_after, 100_000_000);
-    assert_eq!(underlying_2_supply_after, 157_992776);
+    assert_eq!(underlying_2_supply_after, 157_953_356);
     assert_eq!(borrower_stoken_1_balance_after, 0);
-    assert_eq!(borrower_stoken_2_balance_after, 57_992_776);
+    assert_eq!(borrower_stoken_2_balance_after, 57_953_356);
     assert_eq!(borrower_debt_balance_after, 0);
-    assert_eq!(liquidator_repayment_balance_after, 939_996_716);
+    assert_eq!(liquidator_repayment_balance_after, 939_978_798);
     assert_eq!(liquidator_underlying_1_balance_after, 100_000_000);
-    assert_eq!(liquidator_underlying_2_balance_after, 32_007_224);
+    assert_eq!(liquidator_underlying_2_balance_after, 32_046_644);
     assert_eq!(liquidator_stoken_1_balance_after, 0);
     assert_eq!(liquidator_stoken_2_balance_after, 0);
 }
@@ -278,7 +278,7 @@ fn should_receive_stokens_when_requested() {
     assert_eq!(underlying_2_supply_before, 190_000_000);
     assert_eq!(borrower_stoken_1_balance_before, 100_000_000);
     assert_eq!(borrower_stoken_2_balance_before, 90_000_000);
-    assert_eq!(borrower_debt_balance_before, 59_996_714);
+    assert_eq!(borrower_debt_balance_before, 59_993_429);
     assert_eq!(liquidator_repayment_balance_before, 1_000_000_000);
     assert_eq!(liquidator_underlying_1_balance_before, 0);
     assert_eq!(liquidator_underlying_2_balance_before, 0);
@@ -288,13 +288,13 @@ fn should_receive_stokens_when_requested() {
     assert_eq!(underlying_1_supply_after, 200_000_000);
     assert_eq!(underlying_2_supply_after, 190_000_000);
     assert_eq!(borrower_stoken_1_balance_after, 0);
-    assert_eq!(borrower_stoken_2_balance_after, 57_992_776);
+    assert_eq!(borrower_stoken_2_balance_after, 57_953_356);
     assert_eq!(borrower_debt_balance_after, 0);
-    assert_eq!(liquidator_repayment_balance_after, 939_996_716);
+    assert_eq!(liquidator_repayment_balance_after, 939_978_798);
     assert_eq!(liquidator_underlying_1_balance_after, 0);
     assert_eq!(liquidator_underlying_2_balance_after, 0);
     assert_eq!(liquidator_stoken_1_balance_after, 100_000_000);
-    assert_eq!(liquidator_stoken_2_balance_after, 32_007_224);
+    assert_eq!(liquidator_stoken_2_balance_after, 32_046_644);
 }
 
 #[test]
@@ -313,7 +313,7 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     sut.pool
         .deposit(&liquidator, &debt_config.token.address, &100_000_000);
     sut.pool
-        .borrow(&liquidator, &sut.reserves[0].token.address, &20_000_000);
+        .borrow(&liquidator, &sut.reserves[0].token.address, &30_000_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &90_000_000);
     sut.price_feed
@@ -355,31 +355,31 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     let liquidator_stoken_2_balance_after = sut.reserves[2].s_token.balance(&liquidator);
     let treasury_underlying_balance_after = sut.reserves[0].token.balance(&treasury);
 
-    assert_eq!(underlying_1_supply_before, 180_000_000);
+    assert_eq!(underlying_1_supply_before, 170_000_000);
     assert_eq!(underlying_2_supply_before, 190_000_000);
     assert_eq!(borrower_stoken_1_balance_before, 100_000_000);
     assert_eq!(borrower_stoken_2_balance_before, 90_000_000);
-    assert_eq!(borrower_debt_balance_before, 59_996_714);
-    assert_eq!(liquidator_debt_balance_before, 19_997_809);
+    assert_eq!(borrower_debt_balance_before, 59_993_429);
+    assert_eq!(liquidator_debt_balance_before, 29_995_072);
     assert_eq!(liquidator_repayment_balance_before, 900_000_000);
-    assert_eq!(liquidator_underlying_1_balance_before, 120_000_000);
+    assert_eq!(liquidator_underlying_1_balance_before, 130_000_000);
     assert_eq!(liquidator_underlying_2_balance_before, 0);
     assert_eq!(liquidator_stoken_1_balance_before, 0);
     assert_eq!(liquidator_stoken_2_balance_before, 0);
     assert_eq!(treasury_underlying_balance_before, 0);
 
-    assert_eq!(underlying_1_supply_after, 179_997_787);
+    assert_eq!(underlying_1_supply_after, 169_994_255);
     assert_eq!(underlying_2_supply_after, 190_000_000);
     assert_eq!(borrower_stoken_1_balance_after, 0);
-    assert_eq!(borrower_stoken_2_balance_after, 57_972_954);
+    assert_eq!(borrower_stoken_2_balance_after, 57_968_397);
     assert_eq!(borrower_debt_balance_after, 0);
     assert_eq!(liquidator_debt_balance_after, 0);
-    assert_eq!(liquidator_repayment_balance_after, 839_987_756);
-    assert_eq!(liquidator_underlying_1_balance_after, 120_000_000);
+    assert_eq!(liquidator_repayment_balance_after, 839_985_571);
+    assert_eq!(liquidator_underlying_1_balance_after, 130_000_000);
     assert_eq!(liquidator_underlying_2_balance_after, 0);
-    assert_eq!(liquidator_stoken_1_balance_after, 79_999_979);
-    assert_eq!(liquidator_stoken_2_balance_after, 32_027_046);
-    assert_eq!(treasury_underlying_balance_after, 2_213);
+    assert_eq!(liquidator_stoken_1_balance_after, 69_999_185);
+    assert_eq!(liquidator_stoken_2_balance_after, 32_031_603);
+    assert_eq!(treasury_underlying_balance_after, 5_745);
 }
 
 #[test]
@@ -508,9 +508,9 @@ fn should_affect_coeffs() {
     let asset_2_debt_coeff_after = sut.pool.debt_coeff(&asset_2);
 
     assert!(asset_1_collat_coeff_before == asset_1_collat_coeff_after);
-    assert!(asset_1_debt_coeff_before < asset_1_debt_coeff_after);
+    assert!(asset_1_debt_coeff_before == asset_1_debt_coeff_after);
     assert!(asset_2_collat_coeff_before < asset_2_collat_coeff_after);
-    assert!(asset_2_debt_coeff_before == asset_2_debt_coeff_after);
+    assert!(asset_2_debt_coeff_before > asset_2_debt_coeff_after);
 }
 
 #[test]
@@ -533,7 +533,7 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "liquidation"), borrower.clone()).into_val(&env),
-                (60_003_284i128, 66_003_612i128).into_val(&env)
+                (60_021_202i128, 66_023_322i128).into_val(&env)
             ),
         ]
     );

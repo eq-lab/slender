@@ -456,14 +456,19 @@ impl LendingPoolTrait for LendingPool {
 
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
         let total_collat = s_token.total_supply();
+        let total_debt = debt_token.total_supply();
+
+        let debt_coeff = get_debt_coeff(&env, &reserve)?;
+        let collat_coeff = get_collat_coeff(&env, &reserve, total_collat, total_debt)?;
 
         let (is_repayed, total_debt_after) = do_repay(
             &env,
             &who,
             &asset,
             &reserve,
-            total_collat,
-            debt_token.total_supply(),
+            collat_coeff,
+            debt_coeff,
+            total_debt,
             who_debt,
             amount,
         )?;
@@ -1093,14 +1098,12 @@ fn do_repay(
     who: &Address,
     asset: &Address,
     reserve: &ReserveData,
-    total_collat: i128,
+    collat_coeff: FixedI128,
+    debt_coeff: FixedI128,
     total_debt: i128,
     who_debt: i128,
     amount: i128,
 ) -> Result<(bool, i128), Error> {
-    let debt_coeff = get_debt_coeff(env, reserve)?;
-    let collat_coeff = get_collat_coeff(env, reserve, total_collat, total_debt)?;
-
     let borrower_actual_debt = debt_coeff
         .mul_int(who_debt)
         .ok_or(Error::MathOverflowError)?;
@@ -1474,7 +1477,8 @@ fn do_liquidate(
                         liquidator,
                         &asset,
                         &reserve,
-                        total_collat,
+                        coll_coeff,
+                        debt_coeff,
                         total_debt,
                         liquidator_debt,
                         repayment_amount,

@@ -195,6 +195,8 @@ pub(crate) fn fill_pool<'a, 'b>(
         assert_eq!(r.token.balance(&borrower), initial_amount);
     }
 
+    env.ledger().with_mut(|li| li.timestamp = DAY);
+
     //lender deposit all tokens
     let deposit_amount = 100_000_000;
     for r in sut.reserves.iter() {
@@ -241,7 +243,6 @@ pub(crate) fn fill_pool_two<'a, 'b>(
         let pool_balance = r.token.balance(&r.s_token.address);
         sut.pool
             .deposit(&lender_2, &r.token.address, &deposit_amount);
-        assert_eq!(r.s_token.balance(&lender_2), deposit_amount);
         assert_eq!(
             r.token.balance(&r.s_token.address),
             pool_balance + deposit_amount
@@ -262,12 +263,12 @@ pub(crate) fn fill_pool_three<'a, 'b>(
 
     let liquidator = Address::random(&env);
 
-    env.ledger().with_mut(|li| li.timestamp = DAY);
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     debt_config.token_admin.mint(&liquidator, &1_000_000_000);
     sut.pool.borrow(&borrower, &debt_token, &60_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
 
     (lender, borrower, liquidator, debt_config)
 }

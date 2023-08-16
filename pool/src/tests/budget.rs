@@ -225,10 +225,10 @@ fn repay() {
     let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = DAY);
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     measure_budget(&env, nameof(repay), || {
-        sut.pool.deposit(&borrower, &debt_token.clone(), &i128::MAX);
+        sut.pool.repay(&borrower, &debt_token.clone(), &i128::MAX);
     });
 }
 
