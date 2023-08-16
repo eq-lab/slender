@@ -10,7 +10,7 @@ use common_token::{
     verify_caller_is_pool,
 };
 use debt_token_interface::DebtTokenTrait;
-use soroban_sdk::{contract, contractimpl, token, Address, Env, String};
+use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, String};
 use soroban_token_sdk::TokenMetadata;
 
 #[contract]
@@ -62,6 +62,27 @@ impl DebtTokenTrait for DebtToken {
         );
 
         event::initialized(&e, underlying_asset, pool, decimal, name, symbol);
+    }
+
+    /// Upgrades the deployed contract wasm preserving the contract id.
+    ///
+    /// # Arguments
+    ///
+    /// - new_wasm_hash - The new version of the WASM hash.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the caller is not the pool associated with this token.
+    ///
+    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) {
+        verify_caller_is_pool(&env);
+
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    /// Returns the current version of the contract.
+    fn version() -> u32 {
+        1
     }
 
     /// Returns the balance of tokens for a specified `id`.

@@ -127,6 +127,79 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
+    /// Upgrades the deployed contract wasm preserving the contract id.
+    ///
+    /// # Arguments
+    ///
+    /// - new_wasm_hash - The new version of the WASM hash.
+    ///
+    /// # Panics
+    ///
+    /// - Panics with `Uninitialized` if the admin key is not exist in storage.
+    /// - Panics if the caller is not the admin.
+    ///
+    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), Error> {
+        require_admin(&env).unwrap();
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
+
+        Ok(())
+    }
+
+    /// Upgrades the deployed s_token contract wasm preserving the contract id.
+    ///
+    /// # Arguments
+    ///
+    /// - new_wasm_hash - The new version of the WASM hash.
+    /// - asset - The address of the asset associated with the reserve.
+    ///
+    /// # Panics
+    ///
+    /// - Panics with `Uninitialized` if the admin key is not exist in storage.
+    /// - Panics with `NoReserveExistForAsset` if no reserve exists for the specified asset.
+    /// - Panics if the caller is not the admin.
+    ///
+    fn upgrade_s_token(env: Env, asset: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error> {
+        require_admin(&env).unwrap();
+
+        let reserve = read_reserve(&env, &asset)?;
+        let s_token = STokenClient::new(&env, &reserve.s_token_address);
+        s_token.upgrade(&new_wasm_hash);
+
+        Ok(())
+    }
+
+    /// Upgrades the deployed debt_token contract wasm preserving the contract id.
+    ///
+    /// # Arguments
+    ///
+    /// - new_wasm_hash - The new version of the WASM hash.
+    /// - asset - The address of the asset associated with the reserve.
+    ///
+    /// # Panics
+    ///
+    /// - Panics with `Uninitialized` if the admin key is not exist in storage.
+    /// - Panics with `NoReserveExistForAsset` if no reserve exists for the specified asset.
+    /// - Panics if the caller is not the admin.
+    ///
+    fn upgrade_debt_token(
+        env: Env,
+        asset: Address,
+        new_wasm_hash: BytesN<32>,
+    ) -> Result<(), Error> {
+        require_admin(&env).unwrap();
+
+        let reserve = read_reserve(&env, &asset)?;
+        let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
+        debt_token.upgrade(&new_wasm_hash);
+
+        Ok(())
+    }
+
+    /// Returns the current version of the contract.
+    fn version() -> u32 {
+        1
+    }
+
     /// Initializes a reserve for a given asset.
     ///
     /// # Arguments

@@ -9,7 +9,7 @@ use crate::storage::*;
 use common_token::{balance::*, require_nonnegative_amount, storage::*, verify_caller_is_pool};
 use pool_interface::LendingPoolClient;
 use s_token_interface::STokenTrait;
-use soroban_sdk::{contract, contractimpl, token, Address, Env, String};
+use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, String};
 use soroban_token_sdk::TokenMetadata;
 
 #[contract]
@@ -62,6 +62,16 @@ impl STokenTrait for SToken {
         );
 
         event::initialized(&e, underlying_asset, pool, decimal, name, symbol);
+    }
+
+    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) {
+        verify_caller_is_pool(&env);
+
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    fn version() -> u32 {
+        1
     }
 
     /// Returns the amount of tokens that the `spender` is allowed to withdraw from the `from` address.

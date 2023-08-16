@@ -2,7 +2,9 @@
 #![no_std]
 
 pub use reserve_config::*;
-use soroban_sdk::{contractclient, contracterror, contractspecfn, contracttype, Address, Env, Vec};
+use soroban_sdk::{
+    contractclient, contracterror, contractspecfn, contracttype, Address, BytesN, Env, Vec,
+};
 pub use user_config::*;
 
 mod reserve_config;
@@ -75,6 +77,15 @@ pub trait LendingPoolTrait {
         treasury: Address,
         ir_params: IRParams,
     ) -> Result<(), Error>;
+
+    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), Error>;
+
+    fn upgrade_s_token(env: Env, asset: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error>;
+
+    fn upgrade_debt_token(env: Env, asset: Address, new_wasm_hash: BytesN<32>)
+        -> Result<(), Error>;
+
+    fn version() -> u32;
 
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
 

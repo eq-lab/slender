@@ -1,7 +1,7 @@
 #![deny(warnings)]
 #![no_std]
 
-use soroban_sdk::{contractclient, contractspecfn, Address, Env, String};
+use soroban_sdk::{contractclient, contractspecfn, Address, BytesN, Env, String};
 pub struct Spec;
 
 /// Interface for SToken
@@ -9,6 +9,10 @@ pub struct Spec;
 #[contractclient(name = "STokenClient")]
 pub trait STokenTrait {
     fn initialize(e: Env, name: String, symbol: String, pool: Address, underlying_asset: Address);
+
+    fn upgrade(env: Env, new_wasm_hash: BytesN<32>);
+
+    fn version() -> u32;
 
     fn allowance(e: Env, from: Address, spender: Address) -> i128;
 
