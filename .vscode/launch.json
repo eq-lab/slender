@@ -22,7 +22,7 @@
                 // }
             },
             "args": [
-                "tests::test_file::test_name",
+                "tests::liquidate::should_repay_liquidator_debt_when_stokens_requested",
                 "--exact",
                 "--nocapture"
             ],

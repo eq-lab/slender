@@ -313,7 +313,7 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     sut.pool
         .deposit(&liquidator, &debt_config.token.address, &100_000_000);
     sut.pool
-        .borrow(&liquidator, &sut.reserves[0].token.address, &30_000_000);
+        .borrow(&liquidator, &sut.reserves[0].token.address, &20_000_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &90_000_000);
     sut.price_feed
