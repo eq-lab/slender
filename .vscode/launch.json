@@ -21,11 +21,11 @@
                 //     "kind": "lib"
                 // }
             },
-            "args": [
-                "tests::liquidate::should_repay_liquidator_debt_when_stokens_requested",
-                "--exact",
-                "--nocapture"
-            ],
+            // "args": [
+            //     "tests::test_file::test_name",
+            //     "--exact",
+            //     "--nocapture"
+            // ],
             "cwd": "${workspaceFolder}"
         }
     ]
