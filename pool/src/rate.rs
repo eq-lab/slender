@@ -20,6 +20,11 @@ pub fn calc_interest_rate(
     }
 
     let u = FixedI128::from_rational(total_debt, total_collateral)?;
+
+    if u.is_zero() {
+        return Some(FixedI128::ZERO);
+    }
+
     let max_rate = FixedI128::from_percentage(ir_params.max_rate)?;
 
     if u >= FixedI128::ONE {

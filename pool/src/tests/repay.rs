@@ -24,7 +24,7 @@ fn should_partially_repay() {
     assert_eq!(stoken_underlying_balance, 60_000_000);
     assert_eq!(user_balance, 1_040_000_000);
     assert_eq!(treasury_balance, 0);
-    assert_eq!(user_debt_balance, 39_997_809);
+    assert_eq!(user_debt_balance, 40_000_000);
 
     sut.pool.repay(&borrower, &debt_token, &20_000_000i128);
 
@@ -33,10 +33,10 @@ fn should_partially_repay() {
     let treasury_balance = debt_config.token.balance(&treasury_address);
     let user_debt_balance = debt_config.debt_token.balance(&borrower);
 
-    assert_eq!(stoken_underlying_balance, 79_998_159);
+    assert_eq!(stoken_underlying_balance, 79_997_089);
     assert_eq!(user_balance, 1_020_000_000);
-    assert_eq!(treasury_balance, 1_841);
-    assert_eq!(user_debt_balance, 20_000_000);
+    assert_eq!(treasury_balance, 2_911);
+    assert_eq!(user_debt_balance, 20_004_548);
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn should_fully_repay() {
     assert_eq!(stoken_underlying_balance, 60_000_000);
     assert_eq!(user_balance, 1_040_000_000);
     assert_eq!(treasury_balance, 0);
-    assert_eq!(user_debt_balance, 39_997_809);
+    assert_eq!(user_debt_balance, 40_000_000);
 
     sut.pool.repay(&borrower, &debt_token, &i128::MAX);
 
@@ -69,9 +69,9 @@ fn should_fully_repay() {
     let treasury_balance = debt_config.token.balance(&treasury_address);
     let user_debt_balance = debt_config.debt_token.balance(&borrower);
 
-    assert_eq!(stoken_underlying_balance, 99_998_509);
-    assert_eq!(user_balance, 999_997_811);
-    assert_eq!(treasury_balance, 3_680);
+    assert_eq!(stoken_underlying_balance, 100_003_275);
+    assert_eq!(user_balance, 999_990_903);
+    assert_eq!(treasury_balance, 5_822);
     assert_eq!(user_debt_balance, 0);
 }
 
@@ -113,7 +113,7 @@ fn should_affect_coeffs() {
     let collat_coeff = sut.pool.collat_coeff(&debt_config.token.address);
     let debt_coeff = sut.pool.debt_coeff(&debt_config.token.address);
 
-    assert!(collat_coeff_prev < collat_coeff);
+    assert!(collat_coeff_prev > collat_coeff);
     assert!(debt_coeff_prev < debt_coeff);
 }
 
@@ -163,7 +163,7 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "repay"), borrower.clone()).into_val(&env),
-                (debt_token, 40_002_189i128).into_val(&env)
+                (debt_token, 40_009_097i128).into_val(&env)
             ),
         ]
     );

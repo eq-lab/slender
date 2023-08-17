@@ -368,16 +368,16 @@ fn should_change_balances_when_borrow_and_repay() {
     assert_eq!(underlying_supply_before, 100_000_000);
 
     assert_eq!(treasury_after_borrow, 0);
-    assert_eq!(debt_balance_after_borrow, 19_997_809);
-    assert_eq!(debt_total_after_borrow, 19_997_809);
+    assert_eq!(debt_balance_after_borrow, 20_000_000);
+    assert_eq!(debt_total_after_borrow, 20_000_000);
     assert_eq!(borrower_balance_after_borrow, 1_020_000_000);
     assert_eq!(underlying_supply_after_borrow, 80_000_000);
 
-    assert_eq!(treasury_after_repay, 37_168);
+    assert_eq!(treasury_after_repay, 37_073);
     assert_eq!(debt_balance_after_repay, 0);
     assert_eq!(debt_total_after_repay, 0);
-    assert_eq!(borrower_balance_after_repay, 999_957_400);
-    assert_eq!(underlying_supply_after_repay, 100_005_432);
+    assert_eq!(borrower_balance_after_repay, 999_954_790);
+    assert_eq!(underlying_supply_after_repay, 100_008_137);
 }
 
 #[test]

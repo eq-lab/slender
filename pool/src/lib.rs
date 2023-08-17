@@ -827,9 +827,6 @@ impl LendingPoolTrait for LendingPool {
             .checked_add(amount_of_debt_token)
             .ok_or(Error::MathOverflowError)?;
 
-        // DELETE /Artur
-        let _balance1 = read_stoken_underlying_balance(&env, &s_token.address);
-
         let amount_to_sub = amount.checked_neg().ok_or(Error::MathOverflowError)?;
 
         debt_token.mint(&who, &amount_of_debt_token);
@@ -842,17 +839,7 @@ impl LendingPoolTrait for LendingPool {
 
         event::borrow(&env, &who, &asset, amount);
 
-        // DELETE /Artur
-        let _balance2 = read_stoken_underlying_balance(&env, &s_token.address);
-        let _collar_coeff1 = Self::collat_coeff(env.clone(), asset.clone());
-        let _debt_coeff1 = Self::debt_coeff(env.clone(), asset.clone());
-
         recalculate_reserve_data(&env, &asset, &reserve, total_collat, total_debt_after)?;
-
-        // DELETE /Artur
-        let _balance3 = read_stoken_underlying_balance(&env, &s_token.address);
-        let _collar_coeff2 = Self::collat_coeff(env.clone(), asset.clone());
-        let _debt_coeff2 = Self::debt_coeff(env.clone(), asset.clone());
 
         Ok(())
     }

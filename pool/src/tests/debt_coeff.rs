@@ -54,11 +54,11 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     env.ledger().with_mut(|l| l.timestamp = 6 * DAY);
     let debt_coeff_after_liquidate = sut.pool.debt_coeff(&debt_token);
 
-    assert_eq!(debt_coeff_initial, 1_000_109_516);
-    assert_eq!(debt_coeff_after_withdraw, 1_000_164_276);
-    assert_eq!(debt_coeff_after_borrow, 1_000_498_034);
-    assert_eq!(debt_coeff_after_price_change, 1_000_645_824);
-    assert_eq!(debt_coeff_after_liquidate, 1_000_514_581);
+    assert_eq!(debt_coeff_initial, 1_000_000_000);
+    assert_eq!(debt_coeff_after_withdraw, 1_000_000_000);
+    assert_eq!(debt_coeff_after_borrow, 1_000_443_302);
+    assert_eq!(debt_coeff_after_price_change, 1_000_591_099);
+    assert_eq!(debt_coeff_after_liquidate, 1_000_295_506);
 }
 
 #[test]
@@ -78,9 +78,9 @@ fn should_change_over_time() {
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
     let debt_coeff_3 = sut.pool.debt_coeff(&debt_token);
 
-    assert_eq!(debt_coeff_1, 1_000_462_942);
-    assert_eq!(debt_coeff_2, 1_000_667_057);
-    assert_eq!(debt_coeff_3, 1_000_871_172);
+    assert_eq!(debt_coeff_1, 1_000_612_414);
+    assert_eq!(debt_coeff_2, 1_000_816_608);
+    assert_eq!(debt_coeff_3, 1_001_020_801);
 }
 
 #[test]

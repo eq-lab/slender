@@ -16,14 +16,14 @@ pub fn get_default_ir_params() -> IRParams {
 }
 
 #[test]
-fn should_return_initial_rate_when_utilization_is_zero() {
+fn should_return_zero_when_utilization_is_zero() {
     let total_collateral = 1000;
     let total_debt = 0;
     let ir_params = get_default_ir_params();
 
-    let ir = calc_interest_rate(total_collateral, total_debt, &ir_params);
+    let ir = calc_interest_rate(total_collateral, total_debt, &ir_params).unwrap();
 
-    assert_eq!(ir, FixedI128::from_percentage(ir_params.initial_rate));
+    assert_eq!(ir, FixedI128::ZERO);
 }
 
 #[test]

@@ -208,8 +208,6 @@ pub(crate) fn fill_pool<'a, 'b>(
         assert_eq!(r.token.balance(&borrower), initial_amount);
     }
 
-    env.ledger().with_mut(|li| li.timestamp = DAY);
-
     //lender deposit all tokens
     let deposit_amount = 100_000_000;
     for r in sut.reserves.iter() {
@@ -221,6 +219,8 @@ pub(crate) fn fill_pool<'a, 'b>(
             pool_balance + deposit_amount
         );
     }
+
+    env.ledger().with_mut(|li| li.timestamp = DAY);
 
     //borrower deposit first token and borrow second token
     sut.pool
@@ -249,6 +249,8 @@ pub(crate) fn fill_pool_two<'a, 'b>(
         r.token_admin.mint(&lender_2, &initial_amount);
         assert_eq!(r.token.balance(&lender_2), initial_amount);
     }
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     //lender deposit all tokens
     let deposit_amount = 100_000_000;

@@ -14,6 +14,8 @@ fn should_require_authorized_caller() {
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
     sut.pool
         .withdraw(&borrower, &token_address, &1_000_000, &borrower);
 
@@ -43,6 +45,8 @@ fn should_fail_when_pool_paused() {
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
     sut.pool.set_pause(&true);
     sut.pool
         .withdraw(&borrower, &token_address, &1_000_000, &borrower);
@@ -66,6 +70,8 @@ fn should_fail_when_invalid_amount() {
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
     sut.pool.withdraw(&borrower, &token_address, &-1, &borrower);
 
     // assert_eq!(
@@ -86,6 +92,8 @@ fn should_fail_when_reserve_deactivated() {
     let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     sut.pool.set_reserve_status(&token_address, &false);
     sut.pool
@@ -110,6 +118,8 @@ fn should_fail_when_not_enough_stoken_balance() {
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
     sut.pool
         .withdraw(&borrower, &token_address, &200_000_000, &borrower);
 
@@ -132,6 +142,8 @@ fn should_fail_when_bad_position() {
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
     sut.pool
         .withdraw(&borrower, &token_address, &50_000_000, &borrower);
 
@@ -153,6 +165,8 @@ fn should_fail_when_unknown_asset() {
     let unknown_asset = Address::random(&env);
     let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     sut.pool
         .withdraw(&borrower, &unknown_asset, &1_000_000, &borrower);
@@ -217,6 +231,8 @@ fn should_partially_withdraw() {
 
     sut.pool.withdraw(&lender, debt_token, &50_000_000, &lender);
 
+    env.ledger().with_mut(|li| li.timestamp = 60 * DAY + 1);
+
     let lender_stoken_balance = debt_config.s_token.balance(&lender);
     let lender_underlying_balance = debt_config.token.balance(&lender);
     let s_token_supply = debt_config.s_token.total_supply();
@@ -226,12 +242,12 @@ fn should_partially_withdraw() {
 
     assert_eq!(lender_stoken_balance_before, 100_000_000);
     assert_eq!(lender_underlying_balance_before, 900_000_000);
-    assert_eq!(s_token_supply_before, 200_000_220);
+    assert_eq!(s_token_supply_before, 199_991_812);
     assert_eq!(s_token_underlying_supply_before, 160_000_000);
 
-    assert_eq!(lender_stoken_balance, 50_028_949);
+    assert_eq!(lender_stoken_balance, 50_043_048);
     assert_eq!(lender_underlying_balance, 950_000_000);
-    assert_eq!(s_token_supply, 150_029_169);
+    assert_eq!(s_token_supply, 150_034_860);
     assert_eq!(s_token_underlying_supply, 110_000_000);
 }
 
@@ -256,6 +272,8 @@ fn should_fully_withdraw() {
 
     sut.pool.withdraw(&lender, debt_token, &i128::MAX, &lender);
 
+    env.ledger().with_mut(|li| li.timestamp = 60 * DAY + 1);
+
     let lender_stoken_balance = debt_config.s_token.balance(&lender);
     let lender_underlying_balance = debt_config.token.balance(&lender);
     let s_token_supply = debt_config.s_token.total_supply();
@@ -265,13 +283,13 @@ fn should_fully_withdraw() {
 
     assert_eq!(lender_stoken_balance_before, 100_000_000);
     assert_eq!(lender_underlying_balance_before, 900_000_000);
-    assert_eq!(s_token_supply_before, 200_000_220);
+    assert_eq!(s_token_supply_before, 199_991_812);
     assert_eq!(s_token_underlying_supply_before, 160_000_000);
 
     assert_eq!(lender_stoken_balance, 0);
-    assert_eq!(lender_underlying_balance, 1_000_057_931);
-    assert_eq!(s_token_supply, 100_000_220);
-    assert_eq!(s_token_underlying_supply, 59_942_069);
+    assert_eq!(lender_underlying_balance, 1_000_086_169);
+    assert_eq!(s_token_supply, 99_991_812);
+    assert_eq!(s_token_underlying_supply, 59_913_831);
 }
 
 #[test]
@@ -311,13 +329,17 @@ fn should_affect_account_data() {
 
     let account_position_prev = sut.pool.account_position(&borrower);
 
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
     sut.pool
         .withdraw(&borrower, &token_address, &10_000_000, &borrower);
 
     let account_position = sut.pool.account_position(&borrower);
 
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY + 1);
+
     assert!(account_position_prev.discounted_collateral > account_position.discounted_collateral);
-    assert!(account_position_prev.debt == account_position.debt);
+    assert!(account_position_prev.debt < account_position.debt);
     assert!(account_position_prev.npv > account_position.npv);
 }
 
@@ -344,6 +366,8 @@ fn should_allow_withdraw_to_other_address() {
     sut.pool
         .withdraw(&lender, debt_token, &50_000_000, &borrower);
 
+    env.ledger().with_mut(|li| li.timestamp = 60 * DAY + 1);
+
     let borrower_underlying_balance = debt_config.token.balance(&borrower);
     let lender_stoken_balance = debt_config.s_token.balance(&lender);
     let lender_underlying_balance = debt_config.token.balance(&lender);
@@ -355,13 +379,13 @@ fn should_allow_withdraw_to_other_address() {
     assert_eq!(borrower_underlying_balance_before, 900_000_000);
     assert_eq!(lender_stoken_balance_before, 100_000_000);
     assert_eq!(lender_underlying_balance_before, 900_000_000);
-    assert_eq!(s_token_supply_before, 200_000_220);
+    assert_eq!(s_token_supply_before, 199_991_812);
     assert_eq!(s_token_underlying_supply_before, 160_000_000);
 
     assert_eq!(borrower_underlying_balance, 950000000);
-    assert_eq!(lender_stoken_balance, 50_028_949);
+    assert_eq!(lender_stoken_balance, 50_043_048);
     assert_eq!(lender_underlying_balance, 900_000_000);
-    assert_eq!(s_token_supply, 150_029_169);
+    assert_eq!(s_token_supply, 150_034_860);
     assert_eq!(s_token_underlying_supply, 110_000_000);
 }
 
