@@ -39,6 +39,7 @@ fn shoould_return_reserve() {
 
     pool.init_reserve(
         &underlying_token.address.clone(),
+        &false,
         &init_reserve_input.clone(),
     );
 

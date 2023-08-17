@@ -30,6 +30,7 @@ fn should_require_admin() {
 
     pool.init_reserve(
         &underlying_token.address.clone(),
+        &false,
         &init_reserve_input.clone(),
     );
 
@@ -41,7 +42,12 @@ fn should_require_admin() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     Symbol::new(&env, "init_reserve"),
-                    (underlying_token.address.clone(), init_reserve_input.clone()).into_val(&env)
+                    (
+                        underlying_token.address.clone(),
+                        false,
+                        init_reserve_input.clone()
+                    )
+                        .into_val(&env)
                 )),
                 sub_invocations: std::vec![]
             }
@@ -63,7 +69,7 @@ fn should_fail_when_calling_second_time() {
     };
 
     sut.pool
-        .init_reserve(&sut.token().address, &init_reserve_input);
+        .init_reserve(&sut.token().address, &false, &init_reserve_input);
 
     // assert_eq!(
     //     sut.pool
@@ -95,7 +101,7 @@ fn should_fail_when_pool_not_initialized() {
         debt_token_address: debt_token.address.clone(),
     };
 
-    pool.init_reserve(&underlying_token.address, &init_reserve_input);
+    pool.init_reserve(&underlying_token.address, &false, &init_reserve_input);
 
     // assert_eq!(
     //     sut.pool
@@ -128,6 +134,7 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
 
     pool.init_reserve(
         &underlying_token.address.clone(),
+        &false,
         &init_reserve_input.clone(),
     );
 
@@ -139,4 +146,43 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
         init_reserve_input.debt_token_address,
         reserve.debt_token_address
     );
+}
+
+#[test]
+fn should_set_reserve_with_base_asset() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let user = Address::random(&env);
+    let sut = init_pool(&env, false);
+
+    let base_asset = sut.reserves[2].token.address.clone();
+    let base_admin = &sut.reserves[2].token_admin;
+    let base_reserve = sut.pool.get_reserve(&base_asset).unwrap();
+
+    let not_base_asset = sut.reserves[1].token.address.clone();
+    let not_base_admin = &sut.reserves[1].token_admin;
+    let not_base_reserve = sut.pool.get_reserve(&not_base_asset).unwrap();
+
+    sut.price_feed
+        .set_price(&base_asset, &(10i128.pow(sut.price_feed.decimals()) * 2));
+    sut.price_feed.set_price(
+        &not_base_asset,
+        &(10i128.pow(sut.price_feed.decimals()) * 2),
+    );
+
+    base_admin.mint(&user, &1_000_000_000);
+    sut.pool.deposit(&user, &base_asset, &1_000_000_000);
+
+    let account_position_before = sut.pool.account_position(&user);
+
+    not_base_admin.mint(&user, &1_000_000_000);
+    sut.pool.deposit(&user, &not_base_asset, &1_000_000_000);
+
+    let account_position_after = sut.pool.account_position(&user);
+
+    assert_eq!(base_reserve.configuration.is_base_asset, true);
+    assert_eq!(not_base_reserve.configuration.is_base_asset, false);
+    assert_eq!(account_position_before.npv, 600_000_000);
+    assert_eq!(account_position_after.npv, 1_800_000_000);
 }
