@@ -1,8 +1,8 @@
 #![cfg(test)]
 extern crate std;
 
-use soroban_sdk::{symbol_short, IntoVal};
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
+use soroban_sdk::{symbol_short, IntoVal};
 
 use crate::tests::sut::init_pool;
 use crate::*;
