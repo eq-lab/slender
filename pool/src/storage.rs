@@ -2,6 +2,8 @@ use crate::Error;
 use pool_interface::{IRParams, ReserveData, UserConfiguration};
 use soroban_sdk::{assert_with_error, contracttype, vec, Address, Env, Vec};
 
+pub(crate) const USER_DATA_BUMP_AMOUNT: u32 = 518_400; // 30 days
+
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
@@ -72,16 +74,20 @@ pub fn write_reserves(env: &Env, reserves: &Vec<Address>) {
 }
 
 pub fn read_user_config(env: &Env, user: &Address) -> Result<UserConfiguration, Error> {
-    env.storage()
-        .persistent()
-        .get(&DataKey::UserConfig(user.clone()))
-        .ok_or(Error::UserConfigNotExists)
+    let key = DataKey::UserConfig(user.clone());
+    let user_config = env.storage().persistent().get(&key);
+
+    if user_config.is_some() {
+        env.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
+    }
+
+    user_config.ok_or(Error::UserConfigNotExists)
 }
 
 pub fn write_user_config(env: &Env, user: &Address, config: &UserConfiguration) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::UserConfig(user.clone()), config);
+    let key = DataKey::UserConfig(user.clone());
+    env.storage().persistent().set(&key, config);
+    env.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
 }
 
 pub fn read_price_feed(env: &Env, asset: &Address) -> Result<Address, Error> {
