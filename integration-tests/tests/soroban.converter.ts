@@ -1,12 +1,73 @@
 import { Address, xdr } from 'soroban-client';
-import { Buffer } from "buffer";
+import { Buffer } from "node:buffer";
 import { bufToBigint } from 'bigint-conversion';
 
 type ElementType<T> = T extends Array<infer U> ? U : never;
 type KeyType<T> = T extends Map<infer K, any> ? K : never;
 type ValueType<T> = T extends Map<any, infer V> ? V : never;
 
-export function scvalToBigInt(scval: xdr.ScVal | undefined): BigInt {
+export function convertToScvAddress(value: string): xdr.ScVal {
+    let addrObj = Address.fromString(value);
+    return addrObj.toScVal();
+}
+
+export function convertToScvBool(value: boolean): xdr.ScVal {
+    return xdr.ScVal.scvBool(value);
+}
+
+export function convertToScvMap(value: object): xdr.ScVal {
+    const map = Object
+        .keys(value)
+        .map(k => new xdr.ScMapEntry({
+            key: xdr.ScVal.scvSymbol(k),
+            val: value[k]
+        }));
+
+    return xdr.ScVal.scvMap(map);
+}
+
+export function convertToScvVec(value: xdr.ScVal[]): xdr.ScVal {
+    return xdr.ScVal.scvVec(value);
+}
+
+export function convertToScvI128(value: bigint): xdr.ScVal {
+    return xdr.ScVal.scvI128(new xdr.Int128Parts({
+        lo: xdr.Uint64.fromString((value & BigInt(0xFFFFFFFFFFFFFFFFn)).toString()),
+        hi: xdr.Int64.fromString(((value >> BigInt(64)) & BigInt(0xFFFFFFFFFFFFFFFFn)).toString()),
+    }))
+}
+
+export function convertToScvU128(value: bigint): xdr.ScVal {
+    return xdr.ScVal.scvU128(new xdr.UInt128Parts({
+        lo: xdr.Uint64.fromString((value & BigInt(0xFFFFFFFFFFFFFFFFn)).toString()),
+        hi: xdr.Int64.fromString(((value >> BigInt(64)) & BigInt(0xFFFFFFFFFFFFFFFFn)).toString()),
+    }))
+}
+
+export function convertToScvU32(value: number): xdr.ScVal {
+    return xdr.ScVal.scvU32(value);
+}
+
+export function convertToScvString(value: string): xdr.ScVal {
+    return xdr.ScVal.scvString(value);
+}
+
+export function convertToScvBytes(value: string, encoding: BufferEncoding): xdr.ScVal {
+    const bytes = Buffer.from(value, encoding);
+    return xdr.ScVal.scvBytes(bytes);
+}
+
+export function parseMetaXdrToJs<T>(value: string): T {
+    const val = xdr.TransactionMeta
+        .fromXDR(value, "base64")
+        .v3()
+        .sorobanMeta()
+        .returnValue();
+
+    return parseScvToJs(val);
+}
+
+function parseScvToBigInt(scval: xdr.ScVal | undefined): BigInt {
     switch (scval?.switch()) {
         case undefined: {
             return undefined;
@@ -37,12 +98,7 @@ export function scvalToBigInt(scval: xdr.ScVal | undefined): BigInt {
     };
 }
 
-export function scValStrToJs<T>(base64Xdr: string): T {
-    let scval = xdr.ScVal.fromXDR(Buffer.from(base64Xdr, 'base64'));
-    return scValToJs(scval);
-}
-
-export function scValToJs<T>(val: xdr.ScVal): T {
+function parseScvToJs<T>(val: xdr.ScVal): T {
     switch (val?.switch()) {
         case xdr.ScValType.scvBool(): {
             return val.b() as unknown as T;
@@ -63,7 +119,7 @@ export function scValToJs<T>(val: xdr.ScVal): T {
         case xdr.ScValType.scvI128():
         case xdr.ScValType.scvU256():
         case xdr.ScValType.scvI256(): {
-            return scvalToBigInt(val) as unknown as T;
+            return parseScvToBigInt(val) as unknown as T;
         }
         case xdr.ScValType.scvAddress(): {
             return Address.fromScVal(val).toString() as unknown as T;
@@ -79,14 +135,14 @@ export function scValToJs<T>(val: xdr.ScVal): T {
         }
         case xdr.ScValType.scvVec(): {
             type Element = ElementType<T>;
-            return val.vec().map(v => scValToJs<Element>(v)) as unknown as T;
+            return val.vec().map(v => parseScvToJs<Element>(v)) as unknown as T;
         }
         case xdr.ScValType.scvMap(): {
             type Key = KeyType<T>;
             type Value = ValueType<T>;
             let res: any = {};
             val.map().forEach((e) => {
-                let key = scValToJs<Key>(e.key());
+                let key = parseScvToJs<Key>(e.key());
                 let value;
                 let v: xdr.ScVal = e.val();
 
@@ -94,15 +150,15 @@ export function scValToJs<T>(val: xdr.ScVal): T {
                     case xdr.ScValType.scvMap(): {
                         let inner_map = new Map() as Map<any, any>;
                         v.map().forEach((e) => {
-                            let key = scValToJs<Key>(e.key());
-                            let value = scValToJs<Value>(e.val());
+                            let key = parseScvToJs<Key>(e.key());
+                            let value = parseScvToJs<Value>(e.val());
                             inner_map.set(key, value);
                         });
                         value = inner_map;
                         break;
                     }
                     default: {
-                        value = scValToJs<Value>(e.val());
+                        value = parseScvToJs<Value>(e.val());
                     }
                 }
 
@@ -110,8 +166,6 @@ export function scValToJs<T>(val: xdr.ScVal): T {
             });
             return res as unknown as T
         }
-        case xdr.ScValType.scvContractExecutable():
-            return val.exec() as unknown as T;
         case xdr.ScValType.scvLedgerKeyNonce():
             return val.nonceKey() as unknown as T;
         case xdr.ScValType.scvTimepoint():
@@ -123,49 +177,4 @@ export function scValToJs<T>(val: xdr.ScVal): T {
             throw new Error(`type not implemented yet: ${val?.switch().name}`);
         }
     };
-}
-
-export function addressToScVal(addr: string): xdr.ScVal {
-    let addrObj = Address.fromString(addr);
-    return addrObj.toScVal();
-}
-
-export function objectToScVal(obj: object): xdr.ScVal {
-    const map = Object
-        .keys(obj)
-        .map(k => new xdr.ScMapEntry({
-            key: xdr.ScVal.scvSymbol(k),
-            val: obj[k]
-        }));
-
-    return xdr.ScVal.scvMap(map);
-}
-
-export function arrayToScVal(obj: xdr.ScVal[]): xdr.ScVal {
-    return xdr.ScVal.scvVec(obj);
-}
-
-export function i128ToScVal(i: bigint): xdr.ScVal {
-    return xdr.ScVal.scvI128(new xdr.Int128Parts({
-        lo: xdr.Uint64.fromString((i & BigInt(0xFFFFFFFFFFFFFFFFn)).toString()),
-        hi: xdr.Int64.fromString(((i >> BigInt(64)) & BigInt(0xFFFFFFFFFFFFFFFFn)).toString()),
-    }))
-}
-
-export function u128ToScVal(i: bigint): xdr.ScVal {
-    return xdr.ScVal.scvU128(new xdr.UInt128Parts({
-        lo: xdr.Uint64.fromString((i & BigInt(0xFFFFFFFFFFFFFFFFn)).toString()),
-        hi: xdr.Int64.fromString(((i >> BigInt(64)) & BigInt(0xFFFFFFFFFFFFFFFFn)).toString()),
-    }))
-}
-
-export function parseScVal(resultXdr) {
-    const val = xdr.TransactionResult.fromXDR(Buffer.from(resultXdr, "base64"))
-        .result()
-        .results()[0]
-        .tr()
-        .invokeHostFunctionResult()
-        .success()[0];
-
-    return scValToJs(val);
 }
