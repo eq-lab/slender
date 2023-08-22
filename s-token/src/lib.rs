@@ -205,7 +205,9 @@ impl STokenTrait for SToken {
     /// Panics if overflow happens
     ///
     fn clawback(e: Env, from: Address, amount: i128) {
-        verify_caller_is_pool(&e);
+        if cfg!(not(feature = "exceeded-limit-fix")) {
+            verify_caller_is_pool(&e);
+        }
 
         spend_balance(&e, from.clone(), amount);
         add_total_supply(&e, amount.checked_neg().expect("s-token: no overflow"));
@@ -243,7 +245,11 @@ impl STokenTrait for SToken {
     /// Panics if the caller is not the pool associated with this token.
     ///
     fn mint(e: Env, to: Address, amount: i128) {
-        let pool = verify_caller_is_pool(&e);
+        let pool = if cfg!(not(feature = "exceeded-limit-fix")) {
+            verify_caller_is_pool(&e)
+        } else {
+            read_pool(&e)
+        };
 
         Self::do_mint(&e, to.clone(), amount);
         event::mint(&e, pool, to, amount);
@@ -264,7 +270,9 @@ impl STokenTrait for SToken {
     /// Panics if the caller is not the pool associated with this token.
     ///
     fn burn(e: Env, from: Address, amount_to_burn: i128, amount_to_withdraw: i128, to: Address) {
-        verify_caller_is_pool(&e);
+        if cfg!(not(feature = "exceeded-limit-fix")) {
+            verify_caller_is_pool(&e);
+        }
 
         Self::do_burn(&e, from.clone(), amount_to_burn, amount_to_withdraw, to);
         event::burn(&e, from, amount_to_burn);
@@ -342,7 +350,9 @@ impl STokenTrait for SToken {
     ///
     fn transfer_underlying_to(e: Env, to: Address, amount: i128) {
         require_nonnegative_amount(amount);
-        verify_caller_is_pool(&e);
+        if cfg!(not(feature = "exceeded-limit-fix")) {
+            verify_caller_is_pool(&e);
+        }
 
         let underlying_asset = read_underlying_asset(&e);
         let current_address = e.current_contract_address();

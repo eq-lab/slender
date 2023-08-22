@@ -9,7 +9,7 @@ use rate::{calc_accrued_rates, calc_next_accrued_rate};
 use s_token_interface::STokenClient;
 use soroban_sdk::{
     assert_with_error, contract, contractimpl, contracttype, panic_with_error, token, vec, Address,
-    BytesN, Env, Map, Vec,
+    BytesN, Env, Map, Vec, xdr::Asset,
 };
 use user_configurator::UserConfigurator;
 
@@ -90,6 +90,13 @@ impl AssetBalance {
     fn new(asset: Address, balance: i128) -> Self {
         Self { asset, balance }
     }
+}
+
+#[cfg(feature = "exceeded-limit-fix")]
+struct MintBurn {
+    asset_balance: AssetBalance,
+    mint: bool,
+    who: Address
 }
 
 #[contract]

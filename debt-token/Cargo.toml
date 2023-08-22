@@ -17,3 +17,6 @@ common-token = { path = "../common-token", version = "0.1.0", package = "common-
 [dev_dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
 debt-token-interface = { path = "../debt-token-interface" }
+
+[features]
+exceeded-limit-fix = []

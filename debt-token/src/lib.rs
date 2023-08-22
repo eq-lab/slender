@@ -119,7 +119,9 @@ impl DebtTokenTrait for DebtToken {
     /// Panics if overflow happens
     ///
     fn burn(env: Env, from: Address, amount: i128) {
-        verify_caller_is_pool(&env);
+        if cfg!(not(feature = "exceeded-limit-fix")) {
+            verify_caller_is_pool(&env);
+        }
 
         spend_balance(&env, from.clone(), amount);
         add_total_supply(&env, amount.checked_neg().expect("debt-token: no overflow"));
@@ -162,7 +164,11 @@ impl DebtTokenTrait for DebtToken {
     /// Panics if the caller is not the pool associated with this token.
     ///
     fn mint(env: Env, to: Address, amount: i128) {
-        let pool = verify_caller_is_pool(&env);
+        let pool = if cfg!(not(feature = "exceeded-limit-fix")) {
+             verify_caller_is_pool(&env)
+        } else {
+            read_pool(&env)
+        };
 
         receive_balance(&env, to.clone(), amount);
         add_total_supply(&env, amount);
@@ -183,7 +189,9 @@ impl DebtTokenTrait for DebtToken {
     /// Panics if overflow happens
     ///
     fn clawback(env: Env, from: Address, amount: i128) {
-        verify_caller_is_pool(&env);
+        if cfg!(not(feature = "exceeded-limit-fix")) {
+            verify_caller_is_pool(&env);
+        }
 
         spend_balance(&env, from.clone(), amount);
         add_total_supply(&env, amount.checked_neg().expect("debt-token: no overflow"));
