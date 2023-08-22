@@ -1,4 +1,4 @@
-import { Server, Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc } from "soroban-client";
+import { Server, Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc, Account } from "soroban-client";
 import { promisify } from "util";
 import "./soroban.config";
 
@@ -10,6 +10,10 @@ export class SorobanClient {
             allowHttp: true
         });
         this.client.getHealth();
+    }
+
+    async registerAccount(publicKey: string): Promise<Account> {
+        return await this.client.requestAirdrop(publicKey, process.env.FRIENDBOT_URL);
     }
 
     async sendTransaction(

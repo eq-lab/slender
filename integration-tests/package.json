@@ -14,12 +14,11 @@
     "@types/node": "^20.4.1",
     "bigint-conversion": "^2.4.1",
     "bignumber.js": "^9.1.1",
-    "buffer": "^6.0.3",
     "chai": "^4.3.7",
     "cross-env": "^7.0.3",
     "dotenv": "^16.3.1",
     "mocha": "^10.2.0",
-    "soroban-client": "^0.8.1",
+    "soroban-client": "0.9.1",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
   }
