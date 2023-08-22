@@ -473,7 +473,7 @@ impl LendingPoolTrait for LendingPool {
 
         let mut user_configurator = UserConfigurator::new(&env, &who, true);
         let user_config = user_configurator.user_config()?;
-        require_zero_debt(&env, &user_config, reserve.get_id());
+        require_zero_debt(&env, user_config, reserve.get_id());
 
         let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
@@ -536,7 +536,7 @@ impl LendingPoolTrait for LendingPool {
 
         let mut user_configurator = UserConfigurator::new(&env, &who, false);
         let user_config = user_configurator.user_config()?;
-        require_debt(&env, &user_config, reserve.get_id());
+        require_debt(&env, user_config, reserve.get_id());
 
         let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
@@ -609,7 +609,7 @@ impl LendingPoolTrait for LendingPool {
         let mut to_configurator = UserConfigurator::new(&env, &to, true);
         let to_config = to_configurator.user_config()?;
 
-        require_zero_debt(&env, &to_config, reserve.get_id());
+        require_zero_debt(&env, to_config, reserve.get_id());
         reserve.s_token_address.require_auth();
 
         let debt_token_supply = debt_token.total_supply();
