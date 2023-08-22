@@ -165,7 +165,7 @@ impl DebtTokenTrait for DebtToken {
     ///
     fn mint(env: Env, to: Address, amount: i128) {
         let pool = if cfg!(not(feature = "exceeded-limit-fix")) {
-             verify_caller_is_pool(&env)
+            verify_caller_is_pool(&env)
         } else {
             read_pool(&env)
         };
