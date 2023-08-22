@@ -169,16 +169,17 @@ pub fn add_token_total_supply(env: &Env, token: &Address, amount: i128) -> Resul
         .checked_add(amount)
         .ok_or(Error::MathOverflowError)?;
 
-    let data_key = DataKey::TokenSupply(token.clone());
-    env.storage().instance().set(&data_key, &total_supply);
+    let key = DataKey::TokenSupply(token.clone());
+    env.storage().instance().set(&key, &total_supply);
+    env.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
 
     Ok(total_supply)
 }
 
 #[cfg(feature = "exceeded-limit-fix")]
 pub fn read_token_total_supply(env: &Env, token: &Address) -> i128 {
-    let data_key = DataKey::TokenSupply(token.clone());
-    env.storage().instance().get(&data_key).unwrap_or(0i128)
+    let key = DataKey::TokenSupply(token.clone());
+    env.storage().instance().get(&key).unwrap_or(0i128)
 }
 
 #[cfg(feature = "exceeded-limit-fix")]
@@ -194,14 +195,15 @@ pub fn add_token_balance(
         .checked_add(amount)
         .ok_or(Error::MathOverflowError)?;
 
-    let data_key = DataKey::TokenBalance(token.clone(), account.clone());
-    env.storage().instance().set(&data_key, &total_supply);
+    let key = DataKey::TokenBalance(token.clone(), account.clone());
+    env.storage().persistent().set(&key, &total_supply);
+    env.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
 
     Ok(total_supply)
 }
 
 #[cfg(feature = "exceeded-limit-fix")]
 pub fn read_token_balance(env: &Env, token: &Address, account: &Address) -> i128 {
-    let data_key = DataKey::TokenBalance(token.clone(), account.clone());
-    env.storage().instance().get(&data_key).unwrap_or(0i128)
+    let key = DataKey::TokenBalance(token.clone(), account.clone());
+    env.storage().persistent().get(&key).unwrap_or(0i128)
 }
