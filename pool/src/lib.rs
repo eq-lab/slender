@@ -1,4 +1,4 @@
-#![deny(warnings)]
+// #![deny(warnings)]
 #![no_std]
 
 use crate::price_provider::PriceProvider;
@@ -506,10 +506,10 @@ impl LendingPoolTrait for LendingPool {
 
     #[cfg(feature = "exceeded-limit-fix")]
     fn deposit(
-        env: Env,
-        who: Address,
-        asset: Address,
-        amount: i128,
+        _env: Env,
+        _who: Address,
+        _asset: Address,
+        _amount: i128,
     ) -> Result<Vec<MintBurn>, Error> {
         unimplemented!()
     }
@@ -807,6 +807,7 @@ impl LendingPoolTrait for LendingPool {
     /// - Panics with `MustNotBeInCollateralAsset` if there is a collateral in borrowing asset.
     /// - Panics with `UtilizationCapExceeded` if utilization after borrow is above the limit.
     ///
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
 
@@ -883,6 +884,113 @@ impl LendingPoolTrait for LendingPool {
         )?;
 
         Ok(())
+    }
+
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn borrow(
+        env: Env,
+        who: Address,
+        asset: Address,
+        amount: i128,
+    ) -> Result<Vec<MintBurn>, Error> {
+        who.require_auth();
+
+        require_not_paused(&env);
+        require_positive_amount(&env, amount);
+
+        let reserve = read_reserve(&env, &asset)?;
+        require_active_reserve(&env, &reserve);
+        require_borrowing_enabled(&env, &reserve);
+
+        let collat_balance = read_token_balance(&env, &reserve.s_token_address, &who);
+
+        require_not_in_collateral_asset(&env, collat_balance);
+
+        let util_cap = reserve.configuration.util_cap;
+        let s_token_supply = read_token_total_supply(&env, &reserve.s_token_address);
+        let debt_token_supply = read_token_total_supply(&env, &reserve.debt_token_address);
+        require_util_cap_not_exceeded(&env, s_token_supply, debt_token_supply, util_cap, amount)?;
+
+        let asset_price = get_asset_price(&env, &asset, reserve.configuration.is_base_asset)?;
+        let amount_in_xlm = asset_price
+            .mul_int(amount)
+            .ok_or(Error::ValidateBorrowMathError)?;
+        require_positive_amount(&env, amount_in_xlm);
+
+        let mut user_configurator = UserConfigurator::new(&env, &who, false);
+        let user_config = user_configurator.user_config()?;
+        let debt_balance = read_token_balance(&env, &reserve.debt_token_address, &who);
+
+        let account_data = calc_account_data(
+            &env,
+            &who,
+            None,
+            Some(&AssetBalance::new(
+                reserve.debt_token_address.clone(),
+                debt_balance,
+            )),
+            None,
+            None,
+            user_config,
+            false,
+        )?;
+
+        assert_with_error!(
+            env,
+            account_data.npv >= amount_in_xlm,
+            Error::CollateralNotCoverNewBorrow
+        );
+
+        let debt_coeff = get_debt_coeff(&env, &reserve)?;
+        let amount_of_debt_token = debt_coeff
+            .recip_mul_int(amount)
+            .ok_or(Error::MathOverflowError)?;
+        let debt_token_supply_after = debt_token_supply
+            .checked_add(amount_of_debt_token)
+            .ok_or(Error::MathOverflowError)?;
+
+        let amount_to_sub = amount.checked_neg().ok_or(Error::MathOverflowError)?;
+
+        add_token_balance(
+            &env,
+            &reserve.debt_token_address,
+            &who,
+            amount_of_debt_token,
+        )?;
+        add_token_balance(&env, &asset, &who, amount)?;
+        add_token_balance(&env, &asset, &env.current_contract_address(), amount_to_sub)?;
+        add_stoken_underlying_balance(&env, &reserve.s_token_address, amount_to_sub)?;
+
+        user_configurator
+            .borrow(reserve.get_id(), debt_balance == 0)?
+            .write();
+
+        event::borrow(&env, &who, &asset, amount);
+
+        recalculate_reserve_data(
+            &env,
+            &asset,
+            &reserve,
+            s_token_supply,
+            debt_token_supply_after,
+        )?;
+
+        let _ = add_token_total_supply(&env, &reserve.debt_token_address, amount_of_debt_token);
+
+        Ok(vec![
+            &env,
+            MintBurn::new(
+                AssetBalance::new(reserve.debt_token_address, amount_of_debt_token),
+                true,
+                who.clone(),
+            ),
+            MintBurn::new(AssetBalance::new(asset.clone(), amount), true, who),
+            MintBurn::new(
+                AssetBalance::new(asset, amount),
+                false,
+                env.current_contract_address(),
+            ),
+        ])
     }
 
     fn set_pause(env: Env, value: bool) -> Result<(), Error> {
@@ -1308,18 +1416,30 @@ fn calc_account_data(
             curr_reserve.configuration.is_base_asset,
         )?;
 
+        #[cfg(not(feature = "exceeded-limit-fix"))]
         let s_token = STokenClient::new(env, &curr_reserve.s_token_address);
+        #[cfg(not(feature = "exceeded-limit-fix"))]
         let debt_token = DebtTokenClient::new(env, &curr_reserve.debt_token_address);
 
         if user_config.is_using_as_collateral(env, i) {
             let s_token_supply = mb_s_token_supply
                 .filter(|x| x.asset == curr_reserve.s_token_address)
                 .map(|x| x.balance)
-                .unwrap_or(s_token.total_supply());
+                .unwrap_or_else(|| {
+                    #[cfg(not(feature = "exceeded-limit-fix"))]
+                    return s_token.total_supply();
+                    #[cfg(feature = "exceeded-limit-fix")]
+                    return read_token_total_supply(env, &curr_reserve.s_token_address);
+                });
             let debt_token_supply = mb_debt_token_supply
                 .filter(|x| x.asset == curr_reserve.debt_token_address)
                 .map(|x| x.balance)
-                .unwrap_or(debt_token.total_supply());
+                .unwrap_or_else(||{
+                    #[cfg(not(feature = "exceeded-limit-fix"))]
+                    return debt_token.total_supply();
+                    #[cfg(feature = "exceeded-limit-fix")]
+                    return read_token_total_supply(env, &curr_reserve.debt_token_address);
+                });
 
             let collat_coeff =
                 get_collat_coeff(env, &curr_reserve, s_token_supply, debt_token_supply)?;
@@ -1327,7 +1447,12 @@ fn calc_account_data(
             let who_collat = mb_who_collat
                 .filter(|x| x.asset == curr_reserve.s_token_address)
                 .map(|x| x.balance)
-                .unwrap_or(s_token.balance(who));
+                .unwrap_or_else(|| {
+                    #[cfg(not(feature = "exceeded-limit-fix"))]
+                    return s_token.balance(who);
+                    #[cfg(feature = "exceeded-limit-fix")]
+                    return read_token_balance(env, &curr_reserve.s_token_address, &who);
+                });
 
             let discount = FixedI128::from_percentage(curr_reserve.configuration.discount)
                 .ok_or(Error::CalcAccountDataMathError)?;
@@ -1367,7 +1492,12 @@ fn calc_account_data(
             let who_debt = mb_who_debt
                 .filter(|x| x.asset == curr_reserve.debt_token_address)
                 .map(|x| x.balance)
-                .unwrap_or(debt_token.balance(who));
+                .unwrap_or_else(|| {
+                    #[cfg(not(feature = "exceeded-limit-fix"))]
+                    return debt_token.balance(who);
+                    #[cfg(feature = "exceeded-limit-fix")]
+                    return read_token_balance(env, &curr_reserve.debt_token_address, &who);
+                });
 
             let compounded_balance = debt_coeff
                 .mul_int(who_debt)
