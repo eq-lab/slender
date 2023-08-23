@@ -460,7 +460,7 @@ impl LendingPoolTrait for LendingPool {
     /// If the deposit amount is invalid or does not meet the reserve requirements.
     /// If the reserve data cannot be retrieved from storage.
     ///
-    #[cfg(not(feature = "exceeded-limit-fix"))]
+    #[cfg(feature = "exceeded-limit-fix")]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
 
@@ -504,9 +504,74 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
-    #[cfg(feature = "exceeded-limit-fix")]
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<MintBurn, Error> {
-        unimplemented!()
+        who.require_auth();
+
+        require_not_paused(&env);
+        require_positive_amount(&env, amount);
+
+        let reserve = read_reserve(&env, &asset)?;
+        require_active_reserve(&env, &reserve);
+
+        let mut user_configurator = UserConfigurator::new(&env, &who, true);
+        let user_config = user_configurator.user_config()?;
+        require_zero_debt(&env, user_config, reserve.get_id());
+
+        let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
+        let s_token = STokenClient::new(&env, &reserve.s_token_address);
+        let debt_token_supply = debt_token.total_supply();
+        let s_token_supply = s_token.total_supply();
+
+        let balance = read_stoken_underlying_balance(&env, &reserve.s_token_address);
+        require_liq_cap_not_exceeded(&env, &reserve, debt_token_supply, balance, amount)?;
+
+        let collat_coeff = get_collat_coeff(&env, &reserve, s_token_supply, debt_token_supply)?;
+        let amount_to_mint = collat_coeff
+            .recip_mul_int(amount)
+            .ok_or(Error::MathOverflowError)?;
+        let s_token_supply_after = s_token_supply
+            .checked_add(amount_to_mint)
+            .ok_or(Error::MathOverflowError)?;
+
+        // token::Client::new(env, asset).transfer(who, &reserve.s_token_address, &amount);
+        let mint_burn_1 = MintBurn {
+            asset_balance: AssetBalance {
+                asset,
+                balance: amount,
+            },
+            mint: false,
+            who,
+        };
+        add_stoken_underlying_balance(&env, &reserve.s_token_address, amount)?;
+
+        // STokenClient::new(env, &reserve.s_token_address).mint(who, &amount_to_mint);
+        let mint_burn_2 = MintBurn {
+            asset_balance: AssetBalance {
+                asset: reserve.s_token_address,
+                balance: amount_to_mint,
+            },
+            mint: true,
+            who,
+        };
+
+        event::deposit(&env, &who, &asset, amount);
+
+        let is_first_deposit = read_token_balance(&env, &asset, &who) == 0;
+
+        user_configurator
+            .deposit(reserve.get_id(), &asset, is_first_deposit)?
+            .write();
+
+        recalculate_reserve_data(
+            &env,
+            &asset,
+            &reserve,
+            s_token_supply_after,
+            debt_token_supply,
+        )?;
+
+        Ok()
     }
 
     /// Repays a borrowed amount on a specific reserve, burning the equivalent debt tokens owned.

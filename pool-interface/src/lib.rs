@@ -79,7 +79,7 @@ impl AssetBalance {
     }
 }
 
-#[cfg(feature = "exceeded-limit-fix")]
+// #[cfg(feature = "exceeded-limit-fix")]
 #[contracttype]
 pub struct MintBurn {
     pub asset_balance: AssetBalance,
@@ -138,10 +138,10 @@ pub trait LendingPoolTrait {
 
     fn ir_params(env: Env) -> Option<IRParams>;
 
-    #[cfg(feature = "exceeded-limit-fix")]
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<MintBurn, Error>;
 
-    #[cfg(not(feature = "exceeded-limit-fix"))]
+    #[cfg(feature = "exceeded-limit-fix")]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;

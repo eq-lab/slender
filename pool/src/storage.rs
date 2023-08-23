@@ -161,7 +161,7 @@ pub fn add_stoken_underlying_balance(
     Ok(total_supply)
 }
 
-#[cfg(feature = "exceeded-limit-fix")]
+// #[cfg(feature = "exceeded-limit-fix")]
 pub fn add_token_total_supply(env: &Env, token: &Address, amount: i128) -> Result<i128, Error> {
     let mut total_supply = read_token_total_supply(env, token);
 
@@ -176,13 +176,13 @@ pub fn add_token_total_supply(env: &Env, token: &Address, amount: i128) -> Resul
     Ok(total_supply)
 }
 
-#[cfg(feature = "exceeded-limit-fix")]
+// #[cfg(feature = "exceeded-limit-fix")]
 pub fn read_token_total_supply(env: &Env, token: &Address) -> i128 {
     let key = DataKey::TokenSupply(token.clone());
     env.storage().instance().get(&key).unwrap_or(0i128)
 }
 
-#[cfg(feature = "exceeded-limit-fix")]
+// #[cfg(feature = "exceeded-limit-fix")]
 pub fn add_token_balance(
     env: &Env,
     token: &Address,
@@ -202,7 +202,7 @@ pub fn add_token_balance(
     Ok(total_supply)
 }
 
-#[cfg(feature = "exceeded-limit-fix")]
+// #[cfg(feature = "exceeded-limit-fix")]
 pub fn read_token_balance(env: &Env, token: &Address, account: &Address) -> i128 {
     let key = DataKey::TokenBalance(token.clone(), account.clone());
     env.storage().persistent().get(&key).unwrap_or(0i128)
