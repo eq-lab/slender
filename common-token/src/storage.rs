@@ -1,6 +1,8 @@
 use soroban_sdk::{contracttype, Address, Env, String};
 use soroban_token_sdk::{TokenMetadata, TokenUtils};
 
+pub(crate) const USER_DATA_BUMP_AMOUNT: u32 = 518_400; // 30 days
+
 #[derive(Clone)]
 #[contracttype]
 pub enum CommonDataKey {
@@ -26,27 +28,37 @@ pub fn has_pool(e: &Env) -> bool {
 }
 
 pub fn read_balance(e: &Env, addr: Address) -> i128 {
-    e.storage()
-        .persistent()
-        .get(&CommonDataKey::Balance(addr))
-        .unwrap_or(0)
+    let key = CommonDataKey::Balance(addr);
+    let balance = e.storage().persistent().get(&key);
+
+    if balance.is_some() {
+        e.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
+    }
+
+    balance.unwrap_or(0)
 }
 
 pub fn write_balance(e: &Env, addr: Address, amount: i128) {
     let key = CommonDataKey::Balance(addr);
     e.storage().persistent().set(&key, &amount);
+    e.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
 }
 
 pub fn is_authorized(e: &Env, addr: Address) -> bool {
-    e.storage()
-        .persistent()
-        .get(&CommonDataKey::State(addr))
-        .unwrap_or(true)
+    let key = CommonDataKey::State(addr);
+    let is_authorized = e.storage().persistent().get(&key);
+
+    if is_authorized.is_some() {
+        e.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
+    }
+
+    is_authorized.unwrap_or(true)
 }
 
 pub fn write_authorization(e: &Env, addr: Address, is_authorized: bool) {
     let key = CommonDataKey::State(addr);
     e.storage().persistent().set(&key, &is_authorized);
+    e.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
 }
 
 pub fn read_decimal(e: &Env) -> u32 {

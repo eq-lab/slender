@@ -118,7 +118,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
 
     let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..3)
-        .map(|_i| {
+        .map(|i| {
             let (token, token_admin_client) = create_token_contract(&env, &token_admin);
             let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
             let s_token = create_s_token_contract(&env, &pool.address, &token.address);
@@ -127,6 +127,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
 
             pool.init_reserve(
                 &token.address,
+                &(i == 2),
                 &InitReserveInput {
                     s_token_address: s_token.address.clone(),
                     debt_token_address: debt_token.address.clone(),

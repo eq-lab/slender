@@ -79,24 +79,6 @@ impl LiquidationData {
     }
 }
 
-struct AssetBalance {
-    asset: Address,
-    balance: i128,
-}
-
-impl AssetBalance {
-    fn new(asset: Address, balance: i128) -> Self {
-        Self { asset, balance }
-    }
-}
-
-#[cfg(feature = "exceeded-limit-fix")]
-struct MintBurn {
-    asset_balance: AssetBalance,
-    mint: bool,
-    who: Address,
-}
-
 #[contract]
 pub struct LendingPool;
 
@@ -213,6 +195,7 @@ impl LendingPoolTrait for LendingPool {
     /// # Arguments
     ///
     /// - asset - The address of the asset associated with the reserve.
+    /// - is_base_asset - The flag indicating the reserve is in the base asset.
     /// - input - The input parameters for initializing the reserve.
     ///
     /// # Panics
@@ -223,7 +206,12 @@ impl LendingPoolTrait for LendingPool {
     /// - Panics with `MustBeLtPercentageFactor` if scaling_coeff is invalid.
     /// - Panics if the caller is not the admin.
     ///
-    fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error> {
+    fn init_reserve(
+        env: Env,
+        asset: Address,
+        is_base_asset: bool,
+        input: InitReserveInput,
+    ) -> Result<(), Error> {
         require_admin(&env)?;
         require_uninitialized_reserve(&env, &asset);
 
@@ -238,7 +226,10 @@ impl LendingPoolTrait for LendingPool {
         );
 
         let id = reserves_len as u8;
+
         reserve_data.id = BytesN::from_array(&env, &[id; 1]);
+        reserve_data.configuration.is_base_asset = is_base_asset;
+
         reserves.push_back(asset.clone());
 
         write_reserves(&env, &reserves);
@@ -469,6 +460,7 @@ impl LendingPoolTrait for LendingPool {
     /// If the deposit amount is invalid or does not meet the reserve requirements.
     /// If the reserve data cannot be retrieved from storage.
     ///
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
 
@@ -510,6 +502,16 @@ impl LendingPoolTrait for LendingPool {
         )?;
 
         Ok(())
+    }
+
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn deposit(
+        env: Env,
+        who: Address,
+        asset: Address,
+        amount: i128,
+    ) -> Result<Vec<MintBurn>, Error> {
+        unimplemented!()
     }
 
     /// Repays a borrowed amount on a specific reserve, burning the equivalent debt tokens owned.
@@ -825,7 +827,7 @@ impl LendingPoolTrait for LendingPool {
         let debt_token_supply = debt_token.total_supply();
         require_util_cap_not_exceeded(&env, s_token_supply, debt_token_supply, util_cap, amount)?;
 
-        let asset_price = get_asset_price(&env, &asset)?;
+        let asset_price = get_asset_price(&env, &asset, reserve.configuration.is_base_asset)?;
         let amount_in_xlm = asset_price
             .mul_int(amount)
             .ok_or(Error::ValidateBorrowMathError)?;
@@ -1300,7 +1302,11 @@ fn calc_account_data(
             Error::NoActiveReserve
         );
 
-        let reserve_price = get_asset_price(env, &curr_reserve_asset)?;
+        let asset_price = get_asset_price(
+            env,
+            &curr_reserve_asset,
+            curr_reserve.configuration.is_base_asset,
+        )?;
 
         let s_token = STokenClient::new(env, &curr_reserve.s_token_address);
         let debt_token = DebtTokenClient::new(env, &curr_reserve.debt_token_address);
@@ -1330,7 +1336,7 @@ fn calc_account_data(
                 .mul_int(who_collat)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
-            let compounded_balance_in_xlm = reserve_price
+            let compounded_balance_in_xlm = asset_price
                 .mul_int(compounded_balance)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
@@ -1350,7 +1356,7 @@ fn calc_account_data(
                 collateral_to_receive.push_back((
                     curr_reserve,
                     who_collat,
-                    reserve_price.into_inner(),
+                    asset_price.into_inner(),
                     collat_coeff.into_inner(),
                 ));
                 sorted_collateral_to_receive.set(curr_discount, collateral_to_receive);
@@ -1367,7 +1373,7 @@ fn calc_account_data(
                 .mul_int(who_debt)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
-            let debt_balance_in_xlm = reserve_price
+            let debt_balance_in_xlm = asset_price
                 .mul_int(compounded_balance)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
@@ -1419,7 +1425,11 @@ fn calc_account_data(
 }
 
 /// Returns price of asset expressed in XLM token and denominator 10^decimals
-fn get_asset_price(env: &Env, asset: &Address) -> Result<FixedI128, Error> {
+fn get_asset_price(env: &Env, asset: &Address, is_base_asset: bool) -> Result<FixedI128, Error> {
+    if is_base_asset {
+        return Ok(FixedI128::ONE);
+    }
+
     let price_feed = read_price_feed(env, asset)?;
     let provider = PriceProvider::new(env, &price_feed);
 

@@ -2,6 +2,8 @@ use crate::Error;
 use pool_interface::{IRParams, ReserveData, UserConfiguration};
 use soroban_sdk::{assert_with_error, contracttype, vec, Address, Env, Vec};
 
+pub(crate) const USER_DATA_BUMP_AMOUNT: u32 = 518_400; // 30 days
+
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
@@ -14,6 +16,8 @@ pub enum DataKey {
     PriceFeed(Address),
     Pause,
     STokenUnderlyingBalance(Address),
+    TokenSupply(Address),           // exceeded-limit-fix (S/Debt Token Address)
+    TokenBalance(Address, Address), // exceeded-limit-fix (S/Debt/Underlying Token Address, Account Address)
 }
 
 pub fn has_admin(env: &Env) -> bool {
@@ -72,16 +76,20 @@ pub fn write_reserves(env: &Env, reserves: &Vec<Address>) {
 }
 
 pub fn read_user_config(env: &Env, user: &Address) -> Result<UserConfiguration, Error> {
-    env.storage()
-        .persistent()
-        .get(&DataKey::UserConfig(user.clone()))
-        .ok_or(Error::UserConfigNotExists)
+    let key = DataKey::UserConfig(user.clone());
+    let user_config = env.storage().persistent().get(&key);
+
+    if user_config.is_some() {
+        env.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
+    }
+
+    user_config.ok_or(Error::UserConfigNotExists)
 }
 
 pub fn write_user_config(env: &Env, user: &Address, config: &UserConfiguration) {
-    env.storage()
-        .persistent()
-        .set(&DataKey::UserConfig(user.clone()), config);
+    let key = DataKey::UserConfig(user.clone());
+    env.storage().persistent().set(&key, config);
+    env.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
 }
 
 pub fn read_price_feed(env: &Env, asset: &Address) -> Result<Address, Error> {
@@ -151,4 +159,51 @@ pub fn add_stoken_underlying_balance(
     write_stoken_underlying_balance(env, s_token_address, total_supply)?;
 
     Ok(total_supply)
+}
+
+#[cfg(feature = "exceeded-limit-fix")]
+pub fn add_token_total_supply(env: &Env, token: &Address, amount: i128) -> Result<i128, Error> {
+    let mut total_supply = read_token_total_supply(env, token);
+
+    total_supply = total_supply
+        .checked_add(amount)
+        .ok_or(Error::MathOverflowError)?;
+
+    let key = DataKey::TokenSupply(token.clone());
+    env.storage().instance().set(&key, &total_supply);
+    env.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
+
+    Ok(total_supply)
+}
+
+#[cfg(feature = "exceeded-limit-fix")]
+pub fn read_token_total_supply(env: &Env, token: &Address) -> i128 {
+    let key = DataKey::TokenSupply(token.clone());
+    env.storage().instance().get(&key).unwrap_or(0i128)
+}
+
+#[cfg(feature = "exceeded-limit-fix")]
+pub fn add_token_balance(
+    env: &Env,
+    token: &Address,
+    account: &Address,
+    amount: i128,
+) -> Result<i128, Error> {
+    let mut total_supply = read_token_balance(env, token, account);
+
+    total_supply = total_supply
+        .checked_add(amount)
+        .ok_or(Error::MathOverflowError)?;
+
+    let key = DataKey::TokenBalance(token.clone(), account.clone());
+    env.storage().persistent().set(&key, &total_supply);
+    env.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
+
+    Ok(total_supply)
+}
+
+#[cfg(feature = "exceeded-limit-fix")]
+pub fn read_token_balance(env: &Env, token: &Address, account: &Address) -> i128 {
+    let key = DataKey::TokenBalance(token.clone(), account.clone());
+    env.storage().persistent().get(&key).unwrap_or(0i128)
 }

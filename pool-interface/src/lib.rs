@@ -67,6 +67,26 @@ pub struct AccountPosition {
     pub npv: i128,
 }
 
+#[contracttype]
+pub struct AssetBalance {
+    pub asset: Address,
+    pub balance: i128,
+}
+
+impl AssetBalance {
+    pub fn new(asset: Address, balance: i128) -> Self {
+        Self { asset, balance }
+    }
+}
+
+#[cfg(feature = "exceeded-limit-fix")]
+#[contracttype]
+pub struct MintBurn {
+    pub asset_balance: AssetBalance,
+    pub mint: bool,
+    pub who: Address,
+}
+
 /// Interface for SToken
 #[contractspecfn(name = "Spec", export = false)]
 #[contractclient(name = "LendingPoolClient")]
@@ -87,7 +107,12 @@ pub trait LendingPoolTrait {
 
     fn version() -> u32;
 
-    fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
+    fn init_reserve(
+        env: Env,
+        asset: Address,
+        is_base_asset: bool,
+        input: InitReserveInput,
+    ) -> Result<(), Error>;
 
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error>;
 
@@ -113,6 +138,15 @@ pub trait LendingPoolTrait {
 
     fn ir_params(env: Env) -> Option<IRParams>;
 
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn deposit(
+        env: Env,
+        who: Address,
+        asset: Address,
+        amount: i128,
+    ) -> Result<Vec<MintBurn>, Error>;
+
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
