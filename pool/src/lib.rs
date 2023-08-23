@@ -826,7 +826,6 @@ impl LendingPoolTrait for LendingPool {
         let util_cap = reserve.configuration.util_cap;
         let s_token_supply = s_token.total_supply();
         let debt_token_supply = debt_token.total_supply();
-        require_util_cap_not_exceeded(&env, s_token_supply, debt_token_supply, util_cap, amount)?;
 
         let asset_price = get_asset_price(&env, &asset, reserve.configuration.is_base_asset)?;
         let amount_in_xlm = asset_price
@@ -859,6 +858,7 @@ impl LendingPoolTrait for LendingPool {
         let amount_of_debt_token = debt_coeff
             .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
+        require_util_cap_not_exceeded(&env, s_token_supply, debt_token_supply, util_cap, amount_of_debt_token)?;
         let debt_token_supply_after = debt_token_supply
             .checked_add(amount_of_debt_token)
             .ok_or(Error::MathOverflowError)?;
