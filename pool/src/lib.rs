@@ -820,7 +820,7 @@ impl LendingPoolTrait for LendingPool {
         let s_token = STokenClient::new(&env, &reserve.s_token_address);
         let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
         let collat_balance = s_token.balance(&who);
-        require_not_int_collateral_asset(&env, collat_balance);
+        require_not_in_collateral_asset(&env, collat_balance);
 
         let util_cap = reserve.configuration.util_cap;
         let s_token_supply = s_token.total_supply();
@@ -1257,7 +1257,7 @@ fn do_repay(
     Ok((is_repayed, debt_token_supply_after))
 }
 
-fn require_not_int_collateral_asset(env: &Env, collat_balance: i128) {
+fn require_not_in_collateral_asset(env: &Env, collat_balance: i128) {
     // `is_using_as_collateral` is skipped to avoid case when user:
     // makes deposit => disables `is_using_as_collateral` => borrows the asset
     assert_with_error!(env, collat_balance == 0, Error::MustNotBeInCollateralAsset);
@@ -1603,21 +1603,19 @@ fn do_liquidate(
                 s_token.burn(who, &s_token_to_burn, &repayment_amount, liquidator);
                 add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
 
-                if liquidator_debt > 0 {
-                    let (is_repayed, debt_token_supply_after) = do_repay(
-                        env,
-                        liquidator,
-                        &asset,
-                        &reserve,
-                        coll_coeff,
-                        debt_coeff,
-                        debt_token_supply,
-                        liquidator_debt,
-                        repayment_amount,
-                    )?;
-                    is_debt_repayed = is_repayed;
-                    debt_token_supply = debt_token_supply_after;
-                }
+                let (is_repayed, debt_token_supply_after) = do_repay(
+                    env,
+                    liquidator,
+                    &asset,
+                    &reserve,
+                    coll_coeff,
+                    debt_coeff,
+                    debt_token_supply,
+                    liquidator_debt,
+                    repayment_amount,
+                )?;
+                is_debt_repayed = is_repayed;
+                debt_token_supply = debt_token_supply_after;
 
                 liquidator_collat_amount = s_token_amount
                     .checked_sub(s_token_to_burn)
