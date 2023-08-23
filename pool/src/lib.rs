@@ -816,7 +816,7 @@ impl LendingPoolTrait for LendingPool {
                     s_token_supply_after,
                 )),
                 Some(&AssetBalance::new(
-                    debt_token.address.clone(),
+                    debt_token.address,
                     debt_token_supply,
                 )),
                 user_config,
@@ -914,7 +914,13 @@ impl LendingPoolTrait for LendingPool {
         let amount_of_debt_token = debt_coeff
             .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
-        require_util_cap_not_exceeded(&env, s_token_supply, debt_token_supply, util_cap, amount_of_debt_token)?;
+        require_util_cap_not_exceeded(
+            &env,
+            s_token_supply,
+            debt_token_supply,
+            util_cap,
+            amount_of_debt_token,
+        )?;
         let debt_token_supply_after = debt_token_supply
             .checked_add(amount_of_debt_token)
             .ok_or(Error::MathOverflowError)?;
@@ -1214,6 +1220,11 @@ impl LendingPoolTrait for LendingPool {
     fn stoken_underlying_balance(env: Env, stoken_address: Address) -> i128 {
         read_stoken_underlying_balance(&env, &stoken_address)
     }
+
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn set_price(env: Env, asset: Address, price: i128) {
+        write_price(&env, &asset, price);
+    }
 }
 
 fn require_admin(env: &Env) -> Result<(), Error> {
@@ -1491,7 +1502,7 @@ fn calc_account_data(
             let debt_token_supply = mb_debt_token_supply
                 .filter(|x| x.asset == curr_reserve.debt_token_address)
                 .map(|x| x.balance)
-                .unwrap_or_else(||{
+                .unwrap_or_else(|| {
                     #[cfg(not(feature = "exceeded-limit-fix"))]
                     return debt_token.total_supply();
                     #[cfg(feature = "exceeded-limit-fix")]
@@ -1617,13 +1628,21 @@ fn get_asset_price(env: &Env, asset: &Address, is_base_asset: bool) -> Result<Fi
         return Ok(FixedI128::ONE);
     }
 
-    let price_feed = read_price_feed(env, asset)?;
-    let provider = PriceProvider::new(env, &price_feed);
+    #[cfg(not(feature = "exceeded-limit-fix"))]
+    {
+        let price_feed = read_price_feed(env, asset)?;
+        let provider = PriceProvider::new(env, &price_feed);
 
-    provider.get_price(asset).map(|price_data| {
-        FixedI128::from_rational(price_data.price, 10i128.pow(price_data.decimals))
-            .ok_or(Error::AssetPriceMathError)
-    })?
+        provider.get_price(asset).map(|price_data| {
+            FixedI128::from_rational(price_data.price, 10i128.pow(price_data.decimals))
+                .ok_or(Error::AssetPriceMathError)
+        })?
+    }
+
+    #[cfg(feature = "exceeded-limit-fix")]
+    {
+        Ok(FixedI128::from_inner(read_price(env, asset)))
+    }
 }
 
 /// Returns lender accrued rate corrected for the current time

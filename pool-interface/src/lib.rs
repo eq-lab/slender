@@ -209,4 +209,7 @@ pub trait LendingPoolTrait {
     ) -> Result<(), Error>;
 
     fn user_configuration(env: Env, who: Address) -> Result<UserConfiguration, Error>;
+
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn set_price(env: Env, asset: Address, price: i128);
 }
