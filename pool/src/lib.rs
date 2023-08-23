@@ -815,10 +815,7 @@ impl LendingPoolTrait for LendingPool {
                     s_token.address.clone(),
                     s_token_supply_after,
                 )),
-                Some(&AssetBalance::new(
-                    debt_token.address,
-                    debt_token_supply,
-                )),
+                Some(&AssetBalance::new(debt_token.address, debt_token_supply)),
                 user_config,
                 false,
             )?;
