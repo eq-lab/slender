@@ -505,7 +505,7 @@ impl LendingPoolTrait for LendingPool {
     }
 
     #[cfg(feature = "exceeded-limit-fix")]
-    fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<MintBurn, Error> {
+    fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<Vec<MintBurn>, Error> {
         unimplemented!()
     }
 

@@ -139,7 +139,12 @@ pub trait LendingPoolTrait {
     fn ir_params(env: Env) -> Option<IRParams>;
 
     #[cfg(feature = "exceeded-limit-fix")]
-    fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<MintBurn, Error>;
+    fn deposit(
+        env: Env,
+        who: Address,
+        asset: Address,
+        amount: i128,
+    ) -> Result<Vec<MintBurn>, Error>;
 
     #[cfg(not(feature = "exceeded-limit-fix"))]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
