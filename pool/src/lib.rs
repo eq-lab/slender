@@ -79,24 +79,6 @@ impl LiquidationData {
     }
 }
 
-struct AssetBalance {
-    asset: Address,
-    balance: i128,
-}
-
-impl AssetBalance {
-    fn new(asset: Address, balance: i128) -> Self {
-        Self { asset, balance }
-    }
-}
-
-#[cfg(feature = "exceeded-limit-fix")]
-struct MintBurn {
-    asset_balance: AssetBalance,
-    mint: bool,
-    who: Address,
-}
-
 #[contract]
 pub struct LendingPool;
 
@@ -478,6 +460,7 @@ impl LendingPoolTrait for LendingPool {
     /// If the deposit amount is invalid or does not meet the reserve requirements.
     /// If the reserve data cannot be retrieved from storage.
     ///
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
 
@@ -519,6 +502,11 @@ impl LendingPoolTrait for LendingPool {
         )?;
 
         Ok(())
+    }
+
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<MintBurn, Error> {
+        unimplemented!()
     }
 
     /// Repays a borrowed amount on a specific reserve, burning the equivalent debt tokens owned.
