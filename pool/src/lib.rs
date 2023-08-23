@@ -195,7 +195,6 @@ impl LendingPoolTrait for LendingPool {
     /// # Arguments
     ///
     /// - asset - The address of the asset associated with the reserve.
-    /// - is_base_asset - The flag indicating the reserve is in the base asset.
     /// - input - The input parameters for initializing the reserve.
     ///
     /// # Panics
@@ -206,12 +205,7 @@ impl LendingPoolTrait for LendingPool {
     /// - Panics with `MustBeLtPercentageFactor` if scaling_coeff is invalid.
     /// - Panics if the caller is not the admin.
     ///
-    fn init_reserve(
-        env: Env,
-        asset: Address,
-        is_base_asset: bool,
-        input: InitReserveInput,
-    ) -> Result<(), Error> {
+    fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error> {
         require_admin(&env)?;
         require_uninitialized_reserve(&env, &asset);
 
@@ -228,8 +222,6 @@ impl LendingPoolTrait for LendingPool {
         let id = reserves_len as u8;
 
         reserve_data.id = BytesN::from_array(&env, &[id; 1]);
-        reserve_data.configuration.is_base_asset = is_base_asset;
-
         reserves.push_back(asset.clone());
 
         write_reserves(&env, &reserves);
@@ -460,7 +452,7 @@ impl LendingPoolTrait for LendingPool {
     /// If the deposit amount is invalid or does not meet the reserve requirements.
     /// If the reserve data cannot be retrieved from storage.
     ///
-    #[cfg(feature = "exceeded-limit-fix")]
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
 
@@ -504,8 +496,13 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
-    #[cfg(not(feature = "exceeded-limit-fix"))]
-    fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<MintBurn, Error> {
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn deposit(
+        env: Env,
+        who: Address,
+        asset: Address,
+        amount: i128,
+    ) -> Result<Vec<MintBurn>, Error> {
         who.require_auth();
 
         require_not_paused(&env);
@@ -518,10 +515,8 @@ impl LendingPoolTrait for LendingPool {
         let user_config = user_configurator.user_config()?;
         require_zero_debt(&env, user_config, reserve.get_id());
 
-        let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
-        let s_token = STokenClient::new(&env, &reserve.s_token_address);
-        let debt_token_supply = debt_token.total_supply();
-        let s_token_supply = s_token.total_supply();
+        let debt_token_supply = read_token_total_supply(&env, &reserve.debt_token_address);
+        let s_token_supply = read_token_total_supply(&env, &reserve.s_token_address);
 
         let balance = read_stoken_underlying_balance(&env, &reserve.s_token_address);
         require_liq_cap_not_exceeded(&env, &reserve, debt_token_supply, balance, amount)?;
@@ -533,31 +528,30 @@ impl LendingPoolTrait for LendingPool {
         let s_token_supply_after = s_token_supply
             .checked_add(amount_to_mint)
             .ok_or(Error::MathOverflowError)?;
+        let is_first_deposit = read_token_balance(&env, &reserve.s_token_address, &who) == 0i128;
 
         // token::Client::new(env, asset).transfer(who, &reserve.s_token_address, &amount);
         let mint_burn_1 = MintBurn {
             asset_balance: AssetBalance {
-                asset,
+                asset: asset.clone(),
                 balance: amount,
             },
             mint: false,
-            who,
+            who: who.clone(),
         };
         add_stoken_underlying_balance(&env, &reserve.s_token_address, amount)?;
 
         // STokenClient::new(env, &reserve.s_token_address).mint(who, &amount_to_mint);
         let mint_burn_2 = MintBurn {
             asset_balance: AssetBalance {
-                asset: reserve.s_token_address,
+                asset: reserve.s_token_address.clone(),
                 balance: amount_to_mint,
             },
             mint: true,
-            who,
+            who: who.clone(),
         };
-
-        event::deposit(&env, &who, &asset, amount);
-
-        let is_first_deposit = read_token_balance(&env, &asset, &who) == 0;
+        add_token_balance(&env, &reserve.s_token_address, &who, amount_to_mint)?;
+        add_token_total_supply(&env, &reserve.s_token_address, amount_to_mint)?;
 
         user_configurator
             .deposit(reserve.get_id(), &asset, is_first_deposit)?
@@ -571,7 +565,9 @@ impl LendingPoolTrait for LendingPool {
             debt_token_supply,
         )?;
 
-        Ok()
+        event::deposit(&env, &who, &asset, amount);
+
+        Ok(vec![&env, mint_burn_1, mint_burn_2])
     }
 
     /// Repays a borrowed amount on a specific reserve, burning the equivalent debt tokens owned.
@@ -1232,6 +1228,7 @@ fn require_good_position(env: &Env, account_data: &AccountData) {
 }
 
 #[allow(clippy::too_many_arguments)]
+#[cfg(not(feature = "exceeded-limit-fix"))]
 fn do_deposit(
     env: &Env,
     who: &Address,

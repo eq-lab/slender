@@ -107,12 +107,7 @@ pub trait LendingPoolTrait {
 
     fn version() -> u32;
 
-    fn init_reserve(
-        env: Env,
-        asset: Address,
-        is_base_asset: bool,
-        input: InitReserveInput,
-    ) -> Result<(), Error>;
+    fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
 
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error>;
 
@@ -138,7 +133,7 @@ pub trait LendingPoolTrait {
 
     fn ir_params(env: Env) -> Option<IRParams>;
 
-    #[cfg(not(feature = "exceeded-limit-fix"))]
+    #[cfg(feature = "exceeded-limit-fix")]
     fn deposit(
         env: Env,
         who: Address,
@@ -146,7 +141,7 @@ pub trait LendingPoolTrait {
         amount: i128,
     ) -> Result<Vec<MintBurn>, Error>;
 
-    #[cfg(feature = "exceeded-limit-fix")]
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
