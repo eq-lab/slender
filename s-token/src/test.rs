@@ -99,7 +99,11 @@ fn test() {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
     };
-    pool.init_reserve(&underlying.address, &false, &init_reserve_input);
+    pool.init_reserve(
+        &underlying.address,
+        // &false,
+        &init_reserve_input,
+    );
 
     e.budget().reset_default();
 

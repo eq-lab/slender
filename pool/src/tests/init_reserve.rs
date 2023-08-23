@@ -44,7 +44,7 @@ fn should_require_admin() {
                     Symbol::new(&env, "init_reserve"),
                     (
                         underlying_token.address.clone(),
-                        false,
+                        // false,
                         init_reserve_input.clone()
                     )
                         .into_val(&env)
@@ -155,41 +155,41 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
     );
 }
 
-#[test]
-fn should_set_reserve_with_base_asset() {
-    let env = Env::default();
-    env.mock_all_auths();
+// #[test]
+// fn should_set_reserve_with_base_asset() {
+//     let env = Env::default();
+//     env.mock_all_auths();
 
-    let user = Address::random(&env);
-    let sut = init_pool(&env, false);
+//     let user = Address::random(&env);
+//     let sut = init_pool(&env, false);
 
-    let base_asset = sut.reserves[2].token.address.clone();
-    let base_admin = &sut.reserves[2].token_admin;
-    let base_reserve = sut.pool.get_reserve(&base_asset).unwrap();
+//     let base_asset = sut.reserves[2].token.address.clone();
+//     let base_admin = &sut.reserves[2].token_admin;
+//     let base_reserve = sut.pool.get_reserve(&base_asset).unwrap();
 
-    let not_base_asset = sut.reserves[1].token.address.clone();
-    let not_base_admin = &sut.reserves[1].token_admin;
-    let not_base_reserve = sut.pool.get_reserve(&not_base_asset).unwrap();
+//     let not_base_asset = sut.reserves[1].token.address.clone();
+//     let not_base_admin = &sut.reserves[1].token_admin;
+//     let not_base_reserve = sut.pool.get_reserve(&not_base_asset).unwrap();
 
-    sut.price_feed
-        .set_price(&base_asset, &(10i128.pow(sut.price_feed.decimals()) * 2));
-    sut.price_feed.set_price(
-        &not_base_asset,
-        &(10i128.pow(sut.price_feed.decimals()) * 2),
-    );
+//     sut.price_feed
+//         .set_price(&base_asset, &(10i128.pow(sut.price_feed.decimals()) * 2));
+//     sut.price_feed.set_price(
+//         &not_base_asset,
+//         &(10i128.pow(sut.price_feed.decimals()) * 2),
+//     );
 
-    base_admin.mint(&user, &1_000_000_000);
-    sut.pool.deposit(&user, &base_asset, &1_000_000_000);
+//     base_admin.mint(&user, &1_000_000_000);
+//     sut.pool.deposit(&user, &base_asset, &1_000_000_000);
 
-    let account_position_before = sut.pool.account_position(&user);
+//     let account_position_before = sut.pool.account_position(&user);
 
-    not_base_admin.mint(&user, &1_000_000_000);
-    sut.pool.deposit(&user, &not_base_asset, &1_000_000_000);
+//     not_base_admin.mint(&user, &1_000_000_000);
+//     sut.pool.deposit(&user, &not_base_asset, &1_000_000_000);
 
-    let account_position_after = sut.pool.account_position(&user);
+//     let account_position_after = sut.pool.account_position(&user);
 
-    assert_eq!(base_reserve.configuration.is_base_asset, true);
-    assert_eq!(not_base_reserve.configuration.is_base_asset, false);
-    assert_eq!(account_position_before.npv, 600_000_000);
-    assert_eq!(account_position_after.npv, 1_800_000_000);
-}
+//     assert_eq!(base_reserve.configuration.is_base_asset, true);
+//     assert_eq!(not_base_reserve.configuration.is_base_asset, false);
+//     assert_eq!(account_position_before.npv, 600_000_000);
+//     assert_eq!(account_position_after.npv, 1_800_000_000);
+// }
