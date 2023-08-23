@@ -9,7 +9,7 @@ export async function init(client: SorobanClient): Promise<void> {
     let salt = 0;
     const generateSalt = (value: number): string => String(value).padStart(64, '0');
 
-    await initToken(client, "XLM", "Lumne");
+    await initToken(client, "XLM", "Lumens");
     await initToken(client, "XRP", "Ripple");
     await initToken(client, "USDC", "USD Coin");
 
