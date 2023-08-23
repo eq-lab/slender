@@ -17,6 +17,7 @@ pub enum DataKey {
     Pause,
     TokenBalance(Address, Address), // (S/Debt/Underlying Token Address, Account Address)
     TokenSupply(Address),           // exceeded-limit-fix (S/Debt Token Address)
+    Price(Address),                 // exceeded-limit-fix (Underlying Token Address)
 }
 
 pub fn has_admin(env: &Env) -> bool {
@@ -168,4 +169,21 @@ pub fn add_token_balance(
 pub fn read_token_balance(env: &Env, token: &Address, account: &Address) -> i128 {
     let key = DataKey::TokenBalance(token.clone(), account.clone());
     env.storage().instance().get(&key).unwrap_or(0i128)
+}
+
+#[cfg(feature = "exceeded-limit-fix")]
+pub fn read_price(env: &Env, token: &Address) -> i128 {
+    use common::FixedI128;
+
+    let key = DataKey::Price(token.clone());
+    env.storage()
+        .instance()
+        .get(&key)
+        .unwrap_or(FixedI128::DENOMINATOR)
+}
+
+#[cfg(feature = "exceeded-limit-fix")]
+pub fn write_price(env: &Env, token: &Address, price: i128) {
+    let key = DataKey::Price(token.clone());
+    env.storage().instance().set(&key, &price);
 }

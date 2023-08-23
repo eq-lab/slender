@@ -87,6 +87,17 @@ pub struct MintBurn {
     pub who: Address,
 }
 
+#[cfg(feature = "exceeded-limit-fix")]
+impl MintBurn {
+    pub fn new(asset_balance: AssetBalance, mint: bool, who: Address) -> Self {
+        Self {
+            asset_balance,
+            mint,
+            who,
+        }
+    }
+}
+
 /// Interface for SToken
 #[contractspecfn(name = "Spec", export = false)]
 #[contractclient(name = "LendingPoolClient")]
@@ -178,6 +189,11 @@ pub trait LendingPoolTrait {
 
     fn stoken_underlying_balance(env: Env, asset: Address, stoken_address: Address) -> i128;
 
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn borrow(env: Env, who: Address, asset: Address, amount: i128)
+        -> Result<Vec<MintBurn>, Error>;
+
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn set_pause(env: Env, value: bool) -> Result<(), Error>;
@@ -203,4 +219,7 @@ pub trait LendingPoolTrait {
     ) -> Result<(), Error>;
 
     fn user_configuration(env: Env, who: Address) -> Result<UserConfiguration, Error>;
+
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn set_price(env: Env, asset: Address, price: i128);
 }
