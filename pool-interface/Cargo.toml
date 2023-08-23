@@ -8,7 +8,7 @@ description = "Liquidity pool interface"
 
 [dependencies]
 soroban-sdk = { workspace = true }
-common = { path = "../common", version="0.1.0", package = "common"}
+common = { path = "../common", version = "0.1.0", package = "common" }
 
 [features]
 testutils = []
