@@ -158,6 +158,16 @@ pub trait LendingPoolTrait {
         total_supply: i128,
     ) -> Result<(), Error>;
 
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn withdraw(
+        env: Env,
+        who: Address,
+        asset: Address,
+        amount: i128,
+        to: Address,
+    ) -> Result<Vec<MintBurn>, Error>;
+
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn withdraw(
         env: Env,
         who: Address,
@@ -166,7 +176,7 @@ pub trait LendingPoolTrait {
         to: Address,
     ) -> Result<(), Error>;
 
-    fn stoken_underlying_balance(env: Env, stoken_address: Address) -> i128;
+    fn stoken_underlying_balance(env: Env, asset: Address, stoken_address: Address) -> i128;
 
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 

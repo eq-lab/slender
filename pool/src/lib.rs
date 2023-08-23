@@ -380,7 +380,7 @@ impl LendingPoolTrait for LendingPool {
         let debt_token_supply =
             DebtTokenClient::new(&env, &reserve.debt_token_address).total_supply();
 
-        get_collat_coeff(&env, &reserve, s_token_supply, debt_token_supply)
+        get_collat_coeff(&env, &reserve, &asset, s_token_supply, debt_token_supply)
             .map(|fixed| fixed.into_inner())
     }
 
@@ -518,10 +518,11 @@ impl LendingPoolTrait for LendingPool {
         let debt_token_supply = read_token_total_supply(&env, &reserve.debt_token_address);
         let s_token_supply = read_token_total_supply(&env, &reserve.s_token_address);
 
-        let balance = read_stoken_underlying_balance(&env, &reserve.s_token_address);
+        let balance = read_token_balance(&env, &asset, &reserve.s_token_address);
         require_liq_cap_not_exceeded(&env, &reserve, debt_token_supply, balance, amount)?;
 
-        let collat_coeff = get_collat_coeff(&env, &reserve, s_token_supply, debt_token_supply)?;
+        let collat_coeff =
+            get_collat_coeff(&env, &reserve, &asset, s_token_supply, debt_token_supply)?;
         let amount_to_mint = collat_coeff
             .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
@@ -539,10 +540,18 @@ impl LendingPoolTrait for LendingPool {
             mint: false,
             who: who.clone(),
         };
-        add_stoken_underlying_balance(&env, &reserve.s_token_address, amount)?;
+        let mint_burn_2 = MintBurn {
+            asset_balance: AssetBalance {
+                asset: asset.clone(),
+                balance: amount,
+            },
+            mint: true,
+            who: reserve.s_token_address.clone(),
+        };
+        add_token_balance(&env, &asset, &reserve.s_token_address, amount)?;
 
         // STokenClient::new(env, &reserve.s_token_address).mint(who, &amount_to_mint);
-        let mint_burn_2 = MintBurn {
+        let mint_burn_3 = MintBurn {
             asset_balance: AssetBalance {
                 asset: reserve.s_token_address.clone(),
                 balance: amount_to_mint,
@@ -567,7 +576,7 @@ impl LendingPoolTrait for LendingPool {
 
         event::deposit(&env, &who, &asset, amount);
 
-        Ok(vec![&env, mint_burn_1, mint_burn_2])
+        Ok(vec![&env, mint_burn_1, mint_burn_2, mint_burn_3])
     }
 
     /// Repays a borrowed amount on a specific reserve, burning the equivalent debt tokens owned.
@@ -609,7 +618,8 @@ impl LendingPoolTrait for LendingPool {
         let debt_token_supply = debt_token.total_supply();
 
         let debt_coeff = get_debt_coeff(&env, &reserve)?;
-        let collat_coeff = get_collat_coeff(&env, &reserve, s_token_supply, debt_token_supply)?;
+        let collat_coeff =
+            get_collat_coeff(&env, &reserve, &asset, s_token_supply, debt_token_supply)?;
 
         let (is_repayed, debt_token_supply_after) = do_repay(
             &env,
@@ -749,6 +759,7 @@ impl LendingPoolTrait for LendingPool {
     /// Panics if the caller is not authorized.
     /// Panics if the withdrawal amount is invalid or does not meet the reserve requirements.
     ///
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn withdraw(
         env: Env,
         who: Address,
@@ -849,6 +860,158 @@ impl LendingPoolTrait for LendingPool {
         Ok(())
     }
 
+    /// Withdraws a specified amount of an asset from the reserve and transfers it to the caller.
+    /// Burn s-tokens from depositor according to the current index value.
+    ///
+    /// # Arguments
+    ///
+    /// - who - The address of the user making the withdrawal.
+    /// - asset - The address of the asset to be withdrawn.
+    /// - amount - The amount to be withdrawn. Use i128::MAX to withdraw the maximum available amount.
+    /// - to - The address of the recipient of the withdrawn asset.
+    ///
+    /// # Errors
+    ///
+    /// Returns `NoReserveExistForAsset` if no reserve exists for the specified asset.
+    /// Returns `UserConfigNotExists` if the user configuration does not exist in storage.
+    /// Returns `MathOverflowError' if an overflow occurs when calculating the amount of the s-token to be burned.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the caller is not authorized.
+    /// Panics if the withdrawal amount is invalid or does not meet the reserve requirements.
+    ///
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn withdraw(
+        env: Env,
+        who: Address,
+        asset: Address,
+        amount: i128,
+        to: Address,
+    ) -> Result<Vec<MintBurn>, Error> {
+        who.require_auth();
+
+        require_not_paused(&env);
+        require_positive_amount(&env, amount);
+
+        let reserve = read_reserve(&env, &asset)?;
+        require_active_reserve(&env, &reserve);
+
+        let debt_token_supply = read_token_total_supply(&env, &reserve.debt_token_address);
+        let s_token_supply = read_token_total_supply(&env, &reserve.s_token_address);
+
+        let collat_coeff =
+            get_collat_coeff(&env, &reserve, &asset, s_token_supply, debt_token_supply)?;
+
+        let collat_balance = read_token_balance(&env, &reserve.s_token_address, &who);
+        let underlying_balance = collat_coeff
+            .mul_int(collat_balance)
+            .ok_or(Error::MathOverflowError)?;
+
+        let (underlying_to_withdraw, s_token_to_burn) = if amount == i128::MAX {
+            (underlying_balance, collat_balance)
+        } else {
+            let s_token_to_burn = collat_coeff
+                .recip_mul_int(amount)
+                .ok_or(Error::MathOverflowError)?;
+            (amount, s_token_to_burn)
+        };
+
+        assert_with_error!(
+            env,
+            underlying_to_withdraw <= underlying_balance,
+            Error::NotEnoughAvailableUserBalance
+        );
+
+        let mut user_configurator = UserConfigurator::new(&env, &who, false);
+        let user_config = user_configurator.user_config()?;
+        let collat_balance_after = collat_balance
+            .checked_sub(s_token_to_burn)
+            .ok_or(Error::InvalidAmount)?;
+        let s_token_supply_after = s_token_supply
+            .checked_sub(s_token_to_burn)
+            .ok_or(Error::InvalidAmount)?;
+
+        if user_config.is_borrowing_any()
+            && user_config.is_using_as_collateral(&env, reserve.get_id())
+        {
+            let account_data = calc_account_data(
+                &env,
+                &who,
+                Some(&AssetBalance::new(
+                    reserve.s_token_address.clone(),
+                    collat_balance_after,
+                )),
+                None,
+                Some(&AssetBalance::new(
+                    reserve.s_token_address.clone(),
+                    s_token_supply_after,
+                )),
+                Some(&AssetBalance::new(
+                    reserve.debt_token_address.clone(),
+                    debt_token_supply,
+                )),
+                user_config,
+                false,
+            )?;
+            require_good_position(&env, &account_data);
+        }
+        let amount_to_sub = underlying_to_withdraw
+            .checked_neg()
+            .ok_or(Error::MathOverflowError)?;
+
+        let s_token_to_sub = s_token_to_burn
+            .checked_neg()
+            .ok_or(Error::MathOverflowError)?;
+
+        // s_token.burn(&who, &s_token_to_burn, &underlying_to_withdraw, &to);
+        let mint_burn_1 = MintBurn {
+            asset_balance: AssetBalance {
+                asset: reserve.s_token_address.clone(),
+                balance: s_token_to_burn,
+            },
+            mint: false,
+            who: who.clone(),
+        };
+        let mint_burn_2 = MintBurn {
+            asset_balance: AssetBalance {
+                asset: asset.clone(),
+                balance: underlying_to_withdraw,
+            },
+            mint: true,
+            who: to.clone(),
+        };
+        let mint_burn_3 = MintBurn {
+            asset_balance: AssetBalance {
+                asset: asset.clone(),
+                balance: underlying_to_withdraw,
+            },
+            mint: false,
+            who: reserve.s_token_address.clone(),
+        };
+
+        add_token_balance(&env, &reserve.s_token_address, &who, s_token_to_sub)?;
+        add_token_total_supply(&env, &reserve.s_token_address, s_token_to_sub)?;
+        add_token_balance(&env, &asset, &reserve.s_token_address, amount_to_sub)?;
+
+        let is_full_withdraw = underlying_to_withdraw == underlying_balance;
+        user_configurator
+            .withdraw(reserve.get_id(), &asset, is_full_withdraw)?
+            .write();
+
+        event::withdraw(&env, &who, &asset, &to, underlying_to_withdraw);
+
+        recalculate_reserve_data(
+            &env,
+            &asset,
+            &reserve,
+            s_token_supply_after,
+            debt_token_supply,
+        )?;
+
+        Ok(vec![&env, mint_burn_1, mint_burn_2, mint_burn_3])
+    }
+
     /// Allows users to borrow a specific `amount` of the reserve underlying asset, provided that the borrower
     /// already deposited enough collateral
     ///
@@ -922,7 +1085,7 @@ impl LendingPoolTrait for LendingPool {
 
         debt_token.mint(&who, &amount_of_debt_token);
         s_token.transfer_underlying_to(&who, &amount);
-        add_stoken_underlying_balance(&env, &s_token.address, amount_to_sub)?;
+        add_token_balance(&env, &asset, &s_token.address, amount_to_sub)?;
 
         user_configurator
             .borrow(reserve.get_id(), debt_balance == 0)?
@@ -1103,8 +1266,8 @@ impl LendingPoolTrait for LendingPool {
         read_user_config(&env, &who)
     }
 
-    fn stoken_underlying_balance(env: Env, stoken_address: Address) -> i128 {
-        read_stoken_underlying_balance(&env, &stoken_address)
+    fn stoken_underlying_balance(env: Env, asset: Address, stoken_address: Address) -> i128 {
+        read_token_balance(&env, &asset, &stoken_address)
     }
 }
 
@@ -1305,7 +1468,7 @@ fn do_repay(
     let underlying_asset = token::Client::new(env, asset);
 
     underlying_asset.transfer(who, &reserve.s_token_address, &lender_part);
-    add_stoken_underlying_balance(env, &reserve.s_token_address, lender_part)?;
+    add_token_balance(env, &asset, &reserve.s_token_address, lender_part)?;
     underlying_asset.transfer(who, &treasury_address, &treasury_part);
     DebtTokenClient::new(env, &reserve.debt_token_address).burn(who, &borrower_debt_to_burn);
 
@@ -1378,8 +1541,13 @@ fn calc_account_data(
                 .map(|x| x.balance)
                 .unwrap_or(debt_token.total_supply());
 
-            let collat_coeff =
-                get_collat_coeff(env, &curr_reserve, s_token_supply, debt_token_supply)?;
+            let collat_coeff = get_collat_coeff(
+                env,
+                &curr_reserve,
+                &curr_reserve_asset,
+                s_token_supply,
+                debt_token_supply,
+            )?;
 
             let who_collat = mb_who_collat
                 .filter(|x| x.asset == curr_reserve.s_token_address)
@@ -1518,6 +1686,7 @@ fn get_actual_lender_accrued_rate(env: &Env, reserve: &ReserveData) -> Result<Fi
 fn get_collat_coeff(
     env: &Env,
     reserve: &ReserveData,
+    asset: &Address,
     s_token_supply: i128,
     debt_token_supply: i128,
 ) -> Result<FixedI128, Error> {
@@ -1526,7 +1695,7 @@ fn get_collat_coeff(
     }
 
     let collat_ar = get_actual_lender_accrued_rate(env, reserve)?;
-    let balance = read_stoken_underlying_balance(env, &reserve.s_token_address);
+    let balance = read_token_balance(env, &asset, &reserve.s_token_address);
 
     FixedI128::from_rational(
         balance
@@ -1658,7 +1827,7 @@ fn do_liquidate(
                     .ok_or(Error::MathOverflowError)?;
 
                 s_token.burn(who, &s_token_to_burn, &repayment_amount, liquidator);
-                add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
+                add_token_balance(env, &asset, &s_token.address, amount_to_sub)?;
 
                 let (is_repayed, debt_token_supply_after) = do_repay(
                     env,
@@ -1703,7 +1872,7 @@ fn do_liquidate(
                 .ok_or(Error::MathOverflowError)?;
 
             s_token.burn(who, &s_token_amount, &underlying_amount, liquidator);
-            add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
+            add_token_balance(env, &asset, &s_token.address, amount_to_sub)?;
         }
 
         let is_withdraw = s_token_balance == s_token_amount;
@@ -1721,7 +1890,12 @@ fn do_liquidate(
         let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
 
         underlying_asset.transfer(liquidator, &reserve.s_token_address, &compounded_debt);
-        add_stoken_underlying_balance(env, &s_token.address, compounded_debt)?;
+        add_token_balance(
+            env,
+            &underlying_asset.address,
+            &s_token.address,
+            compounded_debt,
+        )?;
         debt_token.burn(who, &debt_amount);
         user_configurator.repay(reserve.get_id(), true)?;
 
