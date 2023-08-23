@@ -10,6 +10,7 @@ crate-type = ["cdylib"]
 
 [features]
 testutils = ["soroban-sdk/testutils"]
+exceeded-limit-fix = []
 
 [dependencies]
 soroban-sdk = { workspace = true }

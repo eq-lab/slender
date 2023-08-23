@@ -90,6 +90,13 @@ impl AssetBalance {
     }
 }
 
+#[cfg(feature = "exceeded-limit-fix")]
+struct MintBurn {
+    asset_balance: AssetBalance,
+    mint: bool,
+    who: Address,
+}
+
 #[contract]
 pub struct LendingPool;
 
