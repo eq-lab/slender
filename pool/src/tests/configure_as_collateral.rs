@@ -12,7 +12,7 @@ fn shoould_require_admin() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
@@ -47,7 +47,7 @@ fn shoould_fail_when_invalid_discount() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
@@ -75,7 +75,7 @@ fn shoould_fail_when_invalid_util_cap() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
@@ -103,7 +103,7 @@ fn shoould_fail_when_invalid_liq_bonus() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
@@ -131,7 +131,7 @@ fn shoould_fail_when_invalid_liq_cap() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
     let params = CollateralParamsInput {
         liq_bonus: 9_000,
@@ -157,7 +157,7 @@ fn shoould_set_collateral_config() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
@@ -183,7 +183,7 @@ fn should_emit_events() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {

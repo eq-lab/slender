@@ -8,7 +8,7 @@ pub struct FixedI128(i128);
 
 impl FixedI128 {
     pub const DENOMINATOR: i128 = 1_000_000_000;
-
+    pub const ZERO: FixedI128 = FixedI128(0);
     pub const ONE: FixedI128 = FixedI128(Self::DENOMINATOR);
 
     /// Returns inner value
@@ -100,5 +100,10 @@ impl FixedI128 {
     /// Returns true if self is positive, false - when negative or zero
     pub fn is_positive(self) -> bool {
         self.0.is_positive()
+    }
+
+    /// Returns true if self is zero
+    pub fn is_zero(self) -> bool {
+        self.0 == 0
     }
 }

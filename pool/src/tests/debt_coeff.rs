@@ -7,7 +7,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let debt_token = sut.reserves[1].token.address.clone();
     let deposit_token = sut.reserves[0].token.address.clone();
@@ -54,11 +54,11 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     env.ledger().with_mut(|l| l.timestamp = 6 * DAY);
     let debt_coeff_after_liquidate = sut.pool.debt_coeff(&debt_token);
 
-    assert_eq!(debt_coeff_initial, 1_000_109_516);
-    assert_eq!(debt_coeff_after_withdraw, 1_000_164_276);
-    assert_eq!(debt_coeff_after_borrow, 1_000_395_935);
-    assert_eq!(debt_coeff_after_price_change, 1_000_509_679);
-    assert_eq!(debt_coeff_after_liquidate, 1_000_446_514);
+    assert_eq!(debt_coeff_initial, 1_000_000_000);
+    assert_eq!(debt_coeff_after_withdraw, 1_000_000_000);
+    assert_eq!(debt_coeff_after_borrow, 1_000_443_302);
+    assert_eq!(debt_coeff_after_price_change, 1_000_591_099);
+    assert_eq!(debt_coeff_after_liquidate, 1_000_295_506);
 }
 
 #[test]
@@ -66,21 +66,21 @@ fn should_change_over_time() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, _, _, debt_config) = fill_pool_three(&env, &sut);
     let debt_token = debt_config.token.address.clone();
 
     let debt_coeff_1 = sut.pool.debt_coeff(&debt_token);
 
-    env.ledger().with_mut(|l| l.timestamp = 3 * DAY);
+    env.ledger().with_mut(|l| l.timestamp = 4 * DAY);
     let debt_coeff_2 = sut.pool.debt_coeff(&debt_token);
 
-    env.ledger().with_mut(|l| l.timestamp = 4 * DAY);
+    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
     let debt_coeff_3 = sut.pool.debt_coeff(&debt_token);
 
-    assert_eq!(debt_coeff_1, 1_000_109_516);
-    assert_eq!(debt_coeff_2, 1_000_164_276);
-    assert_eq!(debt_coeff_3, 1_000_219_036);
+    assert_eq!(debt_coeff_1, 1_000_612_414);
+    assert_eq!(debt_coeff_2, 1_000_816_608);
+    assert_eq!(debt_coeff_3, 1_001_020_801);
 }
 
 #[test]
@@ -88,7 +88,7 @@ fn should_be_correctly_calculated() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
 

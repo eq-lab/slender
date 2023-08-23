@@ -9,7 +9,7 @@ fn should_require_authorized_caller() {
     env.mock_all_auths();
 
     let user = Address::random(&env);
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
     sut.token_admin().mint(&user, &1_000_000_000);
@@ -32,7 +32,7 @@ fn should_fail_when_pool_paused() {
     env.mock_all_auths();
 
     let user = Address::random(&env);
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
     sut.pool.set_pause(&true);
@@ -54,7 +54,7 @@ fn should_fail_when_invalid_amount() {
     env.mock_all_auths();
 
     let user = Address::random(&env);
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
     sut.pool.deposit(&user, &token_address, &-1);
@@ -75,7 +75,7 @@ fn should_fail_when_reserve_deactivated() {
     env.mock_all_auths();
 
     let user = Address::random(&env);
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
     sut.pool.set_reserve_status(&token_address, &false);
@@ -96,7 +96,7 @@ fn should_fail_when_liq_cap_exceeded() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let token = &sut.reserves[0].token;
     let token_admin = &sut.reserves[0].token_admin;
@@ -127,7 +127,7 @@ fn should_change_user_config() {
     env.mock_all_auths();
 
     let user = Address::random(&env);
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
     sut.token_admin().mint(&user, &1_000_000_000);
@@ -148,7 +148,7 @@ fn should_change_balances() {
     env.mock_all_auths();
 
     let user = Address::random(&env);
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
     sut.token_admin().mint(&user, &10_000_000_000);
@@ -168,11 +168,11 @@ fn should_affect_coeffs() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (lender, _, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = DAY);
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     let collat_coeff_prev = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_prev = sut.pool.debt_coeff(&debt_token);
@@ -180,7 +180,7 @@ fn should_affect_coeffs() {
     sut.pool
         .deposit(&lender, &sut.reserves[1].token.address, &100_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
 
     let collat_coeff = sut.pool.collat_coeff(&debt_token);
     let debt_coeff = sut.pool.debt_coeff(&debt_token);
@@ -194,7 +194,7 @@ fn should_affect_account_data() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
 
     let account_position_prev = sut.pool.account_position(&borrower);
@@ -214,7 +214,7 @@ fn should_emit_events() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let user = Address::random(&env);
     let token_address = sut.token().address.clone();

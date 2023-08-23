@@ -8,7 +8,7 @@ fn should_require_authorized_caller() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
@@ -30,7 +30,7 @@ fn should_fail_when_pool_paused() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
@@ -52,7 +52,7 @@ fn should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
@@ -73,7 +73,7 @@ fn should_fail_when_reserve_deactivated() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
@@ -95,7 +95,7 @@ fn should_fail_when_borrowing_disabled() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
@@ -117,7 +117,7 @@ fn should_fail_when_borrowing_collat_asset() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
@@ -139,7 +139,7 @@ fn should_fail_when_util_cap_exceeded() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
@@ -160,7 +160,7 @@ fn should_fail_when_oracle_price_is_negative() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
@@ -182,7 +182,7 @@ fn should_fail_when_collat_not_covers_amount() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
@@ -203,7 +203,7 @@ fn should_fail_when_user_config_not_exist() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let borrower = Address::random(&env);
 
     sut.pool.borrow(&borrower, &sut.token().address, &1);
@@ -222,7 +222,7 @@ fn should_change_user_config() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_1_address = debt_config.token.address.clone();
     let token_2_address = sut.reserves[2].token.address.clone();
@@ -243,14 +243,14 @@ fn should_change_user_config() {
     let is_borrowing_token_1_after_borrow = user_config.is_borrowing(&env, reserve_1.get_id());
     let is_borrowing_token_2_after_borrow = user_config.is_borrowing(&env, reserve_2.get_id());
 
-    sut.pool.deposit(&borrower, &token_1_address, &i128::MAX);
+    sut.pool.repay(&borrower, &token_1_address, &i128::MAX);
 
     let user_config = sut.pool.user_configuration(&borrower);
     let is_borrowing_any_after_repay_1 = user_config.is_borrowing_any();
     let is_borrowing_token_1_after_repay_1 = user_config.is_borrowing(&env, reserve_1.get_id());
     let is_borrowing_token_2_after_repay_1 = user_config.is_borrowing(&env, reserve_2.get_id());
 
-    sut.pool.deposit(&borrower, &token_2_address, &i128::MAX);
+    sut.pool.repay(&borrower, &token_2_address, &i128::MAX);
 
     let user_config = sut.pool.user_configuration(&borrower);
     let is_borrowing_any_after_repay_2 = user_config.is_borrowing_any();
@@ -279,18 +279,18 @@ fn should_affect_coeffs() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
-    env.ledger().with_mut(|li| li.timestamp = DAY);
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     let collat_coeff_prev = sut.pool.collat_coeff(&token_address);
     let debt_coeff_prev = sut.pool.debt_coeff(&token_address);
 
     sut.pool.borrow(&borrower, &token_address, &20_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
 
     let collat_coeff = sut.pool.collat_coeff(&token_address);
     let debt_coeff = sut.pool.debt_coeff(&token_address);
@@ -304,7 +304,7 @@ fn should_affect_account_data() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
@@ -324,12 +324,12 @@ fn should_change_balances_when_borrow_and_repay() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
     let treasury = sut.pool.treasury();
 
-    env.ledger().with_mut(|li| li.timestamp = DAY);
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     let treasury_before = debt_config.token.balance(&treasury);
     let debt_balance_before = debt_config.debt_token.balance(&borrower);
@@ -351,7 +351,7 @@ fn should_change_balances_when_borrow_and_repay() {
 
     env.ledger().with_mut(|li| li.timestamp = 30 * DAY);
 
-    sut.pool.deposit(&borrower, &token_address, &i128::MAX);
+    sut.pool.repay(&borrower, &token_address, &i128::MAX);
 
     let treasury_after_repay = debt_config.token.balance(&treasury);
     let debt_balance_after_repay = debt_config.debt_token.balance(&borrower);
@@ -368,16 +368,16 @@ fn should_change_balances_when_borrow_and_repay() {
     assert_eq!(underlying_supply_before, 100_000_000);
 
     assert_eq!(treasury_after_borrow, 0);
-    assert_eq!(debt_balance_after_borrow, 19_998_904);
-    assert_eq!(debt_total_after_borrow, 19_998_904);
+    assert_eq!(debt_balance_after_borrow, 20_000_000);
+    assert_eq!(debt_total_after_borrow, 20_000_000);
     assert_eq!(borrower_balance_after_borrow, 1_020_000_000);
     assert_eq!(underlying_supply_after_borrow, 80_000_000);
 
-    assert_eq!(treasury_after_repay, 36_949);
+    assert_eq!(treasury_after_repay, 37_073);
     assert_eq!(debt_balance_after_repay, 0);
     assert_eq!(debt_total_after_repay, 0);
-    assert_eq!(borrower_balance_after_repay, 999_956_305);
-    assert_eq!(underlying_supply_after_repay, 100_006_746);
+    assert_eq!(borrower_balance_after_repay, 999_954_790);
+    assert_eq!(underlying_supply_after_repay, 100_008_137);
 }
 
 #[test]
@@ -385,7 +385,7 @@ fn should_emit_events() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 

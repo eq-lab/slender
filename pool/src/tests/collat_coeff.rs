@@ -7,7 +7,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let debt_token = sut.reserves[1].token.address.clone();
     let deposit_token = sut.reserves[0].token.address.clone();
@@ -54,11 +54,11 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     env.ledger().with_mut(|l| l.timestamp = 6 * DAY);
     let collat_coeff_after_liquidate = sut.pool.collat_coeff(&debt_token);
 
-    assert_eq!(collat_coeff_initial, 1_000_017_510);
-    assert_eq!(collat_coeff_after_withdraw, 1_000_037_220);
-    assert_eq!(collat_coeff_after_borrow, 1_000_128_020);
-    assert_eq!(collat_coeff_after_price_change, 1_000_179_190);
-    assert_eq!(collat_coeff_after_liquidate, 1_000_204_680);
+    assert_eq!(collat_coeff_initial, 1_000_000_000);
+    assert_eq!(collat_coeff_after_withdraw, 1_000_000_000);
+    assert_eq!(collat_coeff_after_borrow, 1_000_199_480);
+    assert_eq!(collat_coeff_after_price_change, 1_000_265_990);
+    assert_eq!(collat_coeff_after_liquidate, 1_000_295_540);
 }
 
 #[test]
@@ -66,19 +66,19 @@ fn should_change_over_time() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, _, _, debt_config) = fill_pool_three(&env, &sut);
     let debt_token = debt_config.token.address.clone();
 
     let collat_coeff_1 = sut.pool.collat_coeff(&debt_token);
 
-    env.ledger().with_mut(|l| l.timestamp = 3 * DAY);
+    env.ledger().with_mut(|l| l.timestamp = 4 * DAY);
     let collat_coeff_2 = sut.pool.collat_coeff(&debt_token);
 
-    env.ledger().with_mut(|l| l.timestamp = 4 * DAY);
+    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
     let collat_coeff_3 = sut.pool.collat_coeff(&debt_token);
 
-    assert_eq!(collat_coeff_1, 1_000_026_270);
-    assert_eq!(collat_coeff_2, 1_000_055_840);
-    assert_eq!(collat_coeff_3, 1_000_085_410);
+    assert_eq!(collat_coeff_1, 1_000_330_690);
+    assert_eq!(collat_coeff_2, 1_000_440_950);
+    assert_eq!(collat_coeff_3, 1_000_551_210);
 }

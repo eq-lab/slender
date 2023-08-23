@@ -19,7 +19,7 @@ fn should_require_admin() {
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
@@ -55,7 +55,7 @@ fn should_fail_when_calling_second_time() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let init_reserve_input = InitReserveInput {
         s_token_address: sut.s_token().address.clone(),
@@ -117,7 +117,7 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 

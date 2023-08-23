@@ -2,7 +2,9 @@
 #![no_std]
 
 pub use reserve_config::*;
-use soroban_sdk::{contractclient, contracterror, contractspecfn, contracttype, Address, Env, Vec};
+use soroban_sdk::{
+    contractclient, contracterror, contractspecfn, contracttype, Address, BytesN, Env, Vec,
+};
 pub use user_config::*;
 
 mod reserve_config;
@@ -30,7 +32,8 @@ pub enum Error {
     UserConfigInvalidIndex = 200,
     NotEnoughAvailableUserBalance = 201,
     UserConfigNotExists = 202,
-    MustNotHaveDebt = 203,
+    MustHaveDebt = 203,
+    MustNotHaveDebt = 204,
 
     BorrowingNotEnabled = 300,
     CollateralNotCoverNewBorrow = 301,
@@ -75,6 +78,15 @@ pub trait LendingPoolTrait {
         ir_params: IRParams,
     ) -> Result<(), Error>;
 
+    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), Error>;
+
+    fn upgrade_s_token(env: Env, asset: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error>;
+
+    fn upgrade_debt_token(env: Env, asset: Address, new_wasm_hash: BytesN<32>)
+        -> Result<(), Error>;
+
+    fn version() -> u32;
+
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
 
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error>;
@@ -102,6 +114,8 @@ pub trait LendingPoolTrait {
     fn ir_params(env: Env) -> Option<IRParams>;
 
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
+
+    fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     #[allow(clippy::too_many_arguments)]
     fn finalize_transfer(

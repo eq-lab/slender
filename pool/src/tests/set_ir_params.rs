@@ -11,7 +11,7 @@ fn shoould_require_admin() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let ir_params_input = IRParams {
         alpha: 144,
@@ -44,7 +44,7 @@ fn should_fail_when_invalid_initial_rate() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let ir_params_input = IRParams {
         alpha: 144,
@@ -70,7 +70,7 @@ fn should_fail_when_invalid_max_rate() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let ir_params_input = IRParams {
         alpha: 144,
@@ -96,7 +96,7 @@ fn should_fail_when_invalid_scaling_coeff() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let ir_params_input = IRParams {
         alpha: 144,
@@ -121,7 +121,7 @@ fn should_set_ir_params() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let ir_params_input = IRParams {
         alpha: 144,

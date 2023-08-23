@@ -10,7 +10,7 @@ fn should_be_none_when_not_initialized() {
     env.mock_all_auths();
 
     let uninitialized_asset = Address::random(&env);
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let reserve = sut.pool.get_reserve(&uninitialized_asset);
 
@@ -28,7 +28,7 @@ fn shoould_return_reserve() {
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 

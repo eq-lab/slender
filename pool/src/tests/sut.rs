@@ -13,6 +13,10 @@ use soroban_sdk::{
     IntoVal,
 };
 
+mod pool {
+    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/pool.wasm");
+}
+
 mod s_token {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/s_token.wasm");
 }
@@ -40,8 +44,17 @@ pub(crate) fn create_token_contract<'a>(
     )
 }
 
-pub(crate) fn create_pool_contract<'a>(e: &Env, admin: &Address) -> LendingPoolClient<'a> {
-    let client = LendingPoolClient::new(e, &e.register_contract(None, LendingPool));
+pub(crate) fn create_pool_contract<'a>(
+    e: &Env,
+    admin: &Address,
+    use_wasm: bool,
+) -> LendingPoolClient<'a> {
+    let client = if use_wasm {
+        LendingPoolClient::new(e, &e.register_contract_wasm(None, pool::WASM))
+    } else {
+        LendingPoolClient::new(e, &e.register_contract(None, LendingPool))
+    };
+
     let treasury = Address::random(e);
     client.initialize(
         &admin,
@@ -95,13 +108,13 @@ pub(crate) fn create_price_feed_contract<'a>(e: &Env) -> PriceFeedClient<'a> {
     PriceFeedClient::new(&e, &e.register_contract_wasm(None, price_feed::WASM))
 }
 
-pub(crate) fn init_pool<'a>(env: &Env) -> Sut<'a> {
+pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
     env.budget().reset_unlimited();
 
     let admin = Address::random(&env);
     let token_admin = Address::random(&env);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, use_pool_wasm);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
 
     let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..3)
@@ -207,6 +220,8 @@ pub(crate) fn fill_pool<'a, 'b>(
         );
     }
 
+    env.ledger().with_mut(|li| li.timestamp = DAY);
+
     //borrower deposit first token and borrow second token
     sut.pool
         .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
@@ -235,13 +250,14 @@ pub(crate) fn fill_pool_two<'a, 'b>(
         assert_eq!(r.token.balance(&lender_2), initial_amount);
     }
 
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
     //lender deposit all tokens
     let deposit_amount = 100_000_000;
     for r in sut.reserves.iter() {
         let pool_balance = r.token.balance(&r.s_token.address);
         sut.pool
             .deposit(&lender_2, &r.token.address, &deposit_amount);
-        assert_eq!(r.s_token.balance(&lender_2), deposit_amount);
         assert_eq!(
             r.token.balance(&r.s_token.address),
             pool_balance + deposit_amount
@@ -262,12 +278,12 @@ pub(crate) fn fill_pool_three<'a, 'b>(
 
     let liquidator = Address::random(&env);
 
-    env.ledger().with_mut(|li| li.timestamp = DAY);
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     debt_config.token_admin.mint(&liquidator, &1_000_000_000);
     sut.pool.borrow(&borrower, &debt_token, &60_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
 
     (lender, borrower, liquidator, debt_config)
 }

@@ -9,7 +9,7 @@ use crate::storage::*;
 use common_token::{balance::*, require_nonnegative_amount, storage::*, verify_caller_is_pool};
 use pool_interface::LendingPoolClient;
 use s_token_interface::STokenTrait;
-use soroban_sdk::{contract, contractimpl, token, Address, Env, String};
+use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, String};
 use soroban_token_sdk::TokenMetadata;
 
 #[contract]
@@ -62,6 +62,16 @@ impl STokenTrait for SToken {
         );
 
         event::initialized(&e, underlying_asset, pool, decimal, name, symbol);
+    }
+
+    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) {
+        verify_caller_is_pool(&env);
+
+        env.deployer().update_current_contract_wasm(new_wasm_hash);
+    }
+
+    fn version() -> u32 {
+        1
     }
 
     /// Returns the amount of tokens that the `spender` is allowed to withdraw from the `from` address.
@@ -129,7 +139,7 @@ impl STokenTrait for SToken {
     ///
     /// Currently the same as `balance(id)`
     fn spendable_balance(e: Env, id: Address) -> i128 {
-        Self::balance(e, id)
+        read_balance(&e, id)
     }
 
     /// Checks whether a specified `id` is authorized.
@@ -162,7 +172,7 @@ impl STokenTrait for SToken {
         from.require_auth();
         require_nonnegative_amount(amount);
 
-        Self::do_transfer(&e, from, to, amount, true);
+        do_transfer(&e, from, to, amount, true);
     }
 
     /// Transfers a specified amount of tokens from the from account to the to account on behalf of the spender account.
@@ -182,9 +192,9 @@ impl STokenTrait for SToken {
     ///
     fn transfer_from(e: Env, spender: Address, from: Address, to: Address, amount: i128) {
         spender.require_auth();
-        Self::spend_allowance(&e, from.clone(), spender, amount);
+        spend_allowance(&e, from.clone(), spender, amount);
 
-        Self::do_transfer(&e, from, to, amount, true);
+        do_transfer(&e, from, to, amount, true);
     }
 
     fn burn_from(_e: Env, _spender: Address, _from: Address, _amount: i128) {
@@ -245,7 +255,7 @@ impl STokenTrait for SToken {
     fn mint(e: Env, to: Address, amount: i128) {
         let pool = verify_caller_is_pool(&e);
 
-        Self::do_mint(&e, to.clone(), amount);
+        do_mint(&e, to.clone(), amount);
         event::mint(&e, pool, to, amount);
     }
 
@@ -266,7 +276,7 @@ impl STokenTrait for SToken {
     fn burn(e: Env, from: Address, amount_to_burn: i128, amount_to_withdraw: i128, to: Address) {
         verify_caller_is_pool(&e);
 
-        Self::do_burn(&e, from.clone(), amount_to_burn, amount_to_withdraw, to);
+        do_burn(&e, from.clone(), amount_to_burn, amount_to_withdraw, to);
         event::burn(&e, from, amount_to_burn);
     }
 
@@ -325,7 +335,7 @@ impl STokenTrait for SToken {
     fn transfer_on_liquidation(e: Env, from: Address, to: Address, amount: i128) {
         verify_caller_is_pool(&e);
 
-        Self::do_transfer(&e, from, to, amount, false);
+        do_transfer(&e, from, to, amount, false);
     }
 
     /// Transfers the underlying asset to the specified recipient.
@@ -374,75 +384,67 @@ impl STokenTrait for SToken {
     }
 }
 
-impl SToken {
-    fn do_transfer(e: &Env, from: Address, to: Address, amount: i128, validate: bool) {
-        let from_balance_prev = read_balance(e, from.clone());
-        let to_balance_prev = read_balance(e, to.clone());
+fn do_transfer(e: &Env, from: Address, to: Address, amount: i128, validate: bool) {
+    let from_balance_prev = read_balance(e, from.clone());
+    let to_balance_prev = read_balance(e, to.clone());
 
-        spend_balance(e, from.clone(), amount);
-        receive_balance(e, to.clone(), amount);
+    spend_balance(e, from.clone(), amount);
+    receive_balance(e, to.clone(), amount);
 
-        if validate && cfg!(not(feature = "testutils")) {
-            let underlying_asset = read_underlying_asset(e);
-            let total_supply = read_total_supply(e);
-            let pool_client = LendingPoolClient::new(e, &read_pool(e));
-            pool_client.finalize_transfer(
-                &underlying_asset,
-                &from,
-                &to,
-                &amount,
-                &from_balance_prev,
-                &to_balance_prev,
-                &total_supply,
-            );
-        }
-
-        event::transfer(e, from, to, amount)
-    }
-
-    fn spend_allowance(e: &Env, from: Address, spender: Address, amount: i128) {
-        let allowance = read_allowance(e, from.clone(), spender.clone());
-        if allowance.amount < amount {
-            panic!("s-token: insufficient allowance");
-        }
-        write_allowance(
-            e,
-            from,
-            spender,
-            allowance.amount - amount,
-            allowance.expiration_ledger,
+    if validate && cfg!(not(feature = "testutils")) {
+        let underlying_asset = read_underlying_asset(e);
+        let total_supply = read_total_supply(e);
+        let pool_client = LendingPoolClient::new(e, &read_pool(e));
+        pool_client.finalize_transfer(
+            &underlying_asset,
+            &from,
+            &to,
+            &amount,
+            &from_balance_prev,
+            &to_balance_prev,
+            &total_supply,
         );
     }
 
-    /// Makes mint and returns updates total supply
-    fn do_mint(e: &Env, user: Address, amount: i128) {
-        if amount == 0 {
-            panic!("s-token: invalid mint amount");
-        }
+    event::transfer(e, from, to, amount)
+}
 
-        receive_balance(e, user, amount);
-        add_total_supply(e, amount);
+fn spend_allowance(e: &Env, from: Address, spender: Address, amount: i128) {
+    let allowance = read_allowance(e, from.clone(), spender.clone());
+    if allowance.amount < amount {
+        panic!("s-token: insufficient allowance");
+    }
+    write_allowance(
+        e,
+        from,
+        spender,
+        allowance.amount - amount,
+        allowance.expiration_ledger,
+    );
+}
+
+/// Makes mint and returns updates total supply
+fn do_mint(e: &Env, user: Address, amount: i128) {
+    if amount == 0 {
+        panic!("s-token: invalid mint amount");
     }
 
-    /// Makes burn and returns updates total supply
-    fn do_burn(
-        e: &Env,
-        from: Address,
-        amount_to_burn: i128,
-        amount_to_withdraw: i128,
-        to: Address,
-    ) {
-        if amount_to_burn == 0 {
-            panic!("s-token: invalid burn amount");
-        }
+    receive_balance(e, user, amount);
+    add_total_supply(e, amount);
+}
 
-        spend_balance(e, from, amount_to_burn);
-        add_total_supply(
-            e,
-            amount_to_burn.checked_neg().expect("s-token: no overflow"),
-        );
-
-        let underlying_asset_client = token::Client::new(e, &read_underlying_asset(e));
-        underlying_asset_client.transfer(&e.current_contract_address(), &to, &amount_to_withdraw);
+/// Makes burn and returns updates total supply
+fn do_burn(e: &Env, from: Address, amount_to_burn: i128, amount_to_withdraw: i128, to: Address) {
+    if amount_to_burn == 0 {
+        panic!("s-token: invalid burn amount");
     }
+
+    spend_balance(e, from, amount_to_burn);
+    add_total_supply(
+        e,
+        amount_to_burn.checked_neg().expect("s-token: no overflow"),
+    );
+
+    let underlying_asset_client = token::Client::new(e, &read_underlying_asset(e));
+    underlying_asset_client.transfer(&e.current_contract_address(), &to, &amount_to_withdraw);
 }

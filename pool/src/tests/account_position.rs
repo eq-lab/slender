@@ -9,7 +9,7 @@ fn should_fail_when_user_config_not_exist() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, _, liquidator, _) = fill_pool_three(&env, &sut);
 
     sut.pool.account_position(&liquidator);
@@ -28,7 +28,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let debt_token = sut.reserves[1].token.address.clone();
     let deposit_token = sut.reserves[0].token.address.clone();

@@ -8,7 +8,7 @@ fn should_fail_when_user_config_not_exist() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, _, liquidator, _) = fill_pool_three(&env, &sut);
 
     sut.pool.user_configuration(&liquidator);
@@ -27,7 +27,7 @@ fn should_return_user_config() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
     let (_, borrower, _, debt_config) = fill_pool_three(&env, &sut);
     let debt_address = debt_config.token.address.clone();
     let collat_address = sut.reserves[0].token.address.clone();

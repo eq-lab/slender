@@ -23,5 +23,6 @@ pub mod set_reserve_status;
 pub mod stoken_underlying_balance;
 mod sut;
 pub mod treasury;
+pub mod upgrade;
 pub mod user_configuration;
 pub mod withdraw;

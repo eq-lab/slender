@@ -16,14 +16,14 @@ pub fn get_default_ir_params() -> IRParams {
 }
 
 #[test]
-fn should_return_initial_rate_when_utilization_is_zero() {
+fn should_return_zero_when_utilization_is_zero() {
     let total_collateral = 1000;
     let total_debt = 0;
     let ir_params = get_default_ir_params();
 
-    let ir = calc_interest_rate(total_collateral, total_debt, &ir_params);
+    let ir = calc_interest_rate(total_collateral, total_debt, &ir_params).unwrap();
 
-    assert_eq!(ir, FixedI128::from_percentage(ir_params.initial_rate));
+    assert_eq!(ir, FixedI128::ZERO);
 }
 
 #[test]
@@ -181,7 +181,7 @@ fn should_update_rates_over_time() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env);
+    let sut = init_pool(&env, false);
 
     let debt_asset_1 = sut.reserves[1].token.address.clone();
 
@@ -222,7 +222,7 @@ fn should_update_rates_over_time() {
 
     let updated = sut.pool.get_reserve(&debt_asset_1).unwrap();
     let ir_params = sut.pool.ir_params().unwrap();
-    let debt_ir = calc_interest_rate(100_000_000, 40_000_000, &ir_params).unwrap();
+    let debt_ir = calc_interest_rate(200_000_000, 40_000_000, &ir_params).unwrap();
     let lender_ir = debt_ir
         .checked_mul(FixedI128::from_percentage(ir_params.scaling_coeff).unwrap())
         .unwrap();
