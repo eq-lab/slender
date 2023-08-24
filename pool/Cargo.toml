@@ -29,4 +29,6 @@ testutils = [
     "pool-interface/testutils",
 ]
 budget = []
-exceeded-limit-fix = []
+exceeded-limit-fix = [
+    "pool-interface/exceeded-limit-fix"
+]
