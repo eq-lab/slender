@@ -79,7 +79,7 @@ impl AssetBalance {
     }
 }
 
-// #[cfg(feature = "exceeded-limit-fix")]
+#[cfg(feature = "exceeded-limit-fix")]
 #[contracttype]
 pub struct MintBurn {
     pub asset_balance: AssetBalance,
