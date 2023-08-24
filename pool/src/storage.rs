@@ -16,8 +16,8 @@ pub enum DataKey {
     PriceFeed(Address),
     Pause,
     STokenUnderlyingBalance(Address),
-    TokenSupply(Address),           // exceeded-limit-fix (S/Debt Token Address)
     TokenBalance(Address, Address), // exceeded-limit-fix (S/Debt/Underlying Token Address, Account Address)
+    TokenSupply(Address),           // exceeded-limit-fix (S/Debt Token Address)
     Price(Address),                 // exceeded-limit-fix (Underlying Token Address)
 }
 
@@ -197,8 +197,7 @@ pub fn add_token_balance(
         .ok_or(Error::MathOverflowError)?;
 
     let key = DataKey::TokenBalance(token.clone(), account.clone());
-    env.storage().persistent().set(&key, &total_supply);
-    env.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
+    env.storage().instance().set(&key, &total_supply);
 
     Ok(total_supply)
 }
@@ -206,7 +205,7 @@ pub fn add_token_balance(
 #[cfg(feature = "exceeded-limit-fix")]
 pub fn read_token_balance(env: &Env, token: &Address, account: &Address) -> i128 {
     let key = DataKey::TokenBalance(token.clone(), account.clone());
-    env.storage().persistent().get(&key).unwrap_or(0i128)
+    env.storage().instance().get(&key).unwrap_or(0i128)
 }
 
 #[cfg(feature = "exceeded-limit-fix")]

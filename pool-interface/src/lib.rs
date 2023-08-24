@@ -79,7 +79,7 @@ impl AssetBalance {
     }
 }
 
-// #[cfg(feature = "exceeded-limit-fix")]
+#[cfg(feature = "exceeded-limit-fix")]
 #[contracttype]
 pub struct MintBurn {
     pub asset_balance: AssetBalance,
@@ -169,6 +169,16 @@ pub trait LendingPoolTrait {
         total_supply: i128,
     ) -> Result<(), Error>;
 
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn withdraw(
+        env: Env,
+        who: Address,
+        asset: Address,
+        amount: i128,
+        to: Address,
+    ) -> Result<Vec<MintBurn>, Error>;
+
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn withdraw(
         env: Env,
         who: Address,
@@ -209,6 +219,9 @@ pub trait LendingPoolTrait {
     ) -> Result<(), Error>;
 
     fn user_configuration(env: Env, who: Address) -> Result<UserConfiguration, Error>;
+
+    #[cfg(not(feature = "exceeded-limit-fix"))]
+    fn set_price(env: Env, asset: Address, price: i128);
 
     #[cfg(feature = "exceeded-limit-fix")]
     fn set_price(env: Env, asset: Address, price: i128);

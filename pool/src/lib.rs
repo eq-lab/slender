@@ -539,10 +539,18 @@ impl LendingPoolTrait for LendingPool {
             mint: false,
             who: who.clone(),
         };
+        let mint_burn_2 = MintBurn {
+            asset_balance: AssetBalance {
+                asset: asset.clone(),
+                balance: amount,
+            },
+            mint: true,
+            who: reserve.s_token_address.clone(),
+        };
         add_stoken_underlying_balance(&env, &reserve.s_token_address, amount)?;
 
         // STokenClient::new(env, &reserve.s_token_address).mint(who, &amount_to_mint);
-        let mint_burn_2 = MintBurn {
+        let mint_burn_3 = MintBurn {
             asset_balance: AssetBalance {
                 asset: reserve.s_token_address.clone(),
                 balance: amount_to_mint,
@@ -567,7 +575,7 @@ impl LendingPoolTrait for LendingPool {
 
         event::deposit(&env, &who, &asset, amount);
 
-        Ok(vec![&env, mint_burn_1, mint_burn_2])
+        Ok(vec![&env, mint_burn_1, mint_burn_2, mint_burn_3])
     }
 
     /// Repays a borrowed amount on a specific reserve, burning the equivalent debt tokens owned.
@@ -749,6 +757,7 @@ impl LendingPoolTrait for LendingPool {
     /// Panics if the caller is not authorized.
     /// Panics if the withdrawal amount is invalid or does not meet the reserve requirements.
     ///
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn withdraw(
         env: Env,
         who: Address,
@@ -844,6 +853,157 @@ impl LendingPoolTrait for LendingPool {
         )?;
 
         Ok(())
+    }
+
+    /// Withdraws a specified amount of an asset from the reserve and transfers it to the caller.
+    /// Burn s-tokens from depositor according to the current index value.
+    ///
+    /// # Arguments
+    ///
+    /// - who - The address of the user making the withdrawal.
+    /// - asset - The address of the asset to be withdrawn.
+    /// - amount - The amount to be withdrawn. Use i128::MAX to withdraw the maximum available amount.
+    /// - to - The address of the recipient of the withdrawn asset.
+    ///
+    /// # Errors
+    ///
+    /// Returns `NoReserveExistForAsset` if no reserve exists for the specified asset.
+    /// Returns `UserConfigNotExists` if the user configuration does not exist in storage.
+    /// Returns `MathOverflowError' if an overflow occurs when calculating the amount of the s-token to be burned.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the caller is not authorized.
+    /// Panics if the withdrawal amount is invalid or does not meet the reserve requirements.
+    ///
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn withdraw(
+        env: Env,
+        who: Address,
+        asset: Address,
+        amount: i128,
+        to: Address,
+    ) -> Result<Vec<MintBurn>, Error> {
+        who.require_auth();
+
+        require_not_paused(&env);
+        require_positive_amount(&env, amount);
+
+        let reserve = read_reserve(&env, &asset)?;
+        require_active_reserve(&env, &reserve);
+
+        let debt_token_supply = read_token_total_supply(&env, &reserve.debt_token_address);
+        let s_token_supply = read_token_total_supply(&env, &reserve.s_token_address);
+
+        let collat_coeff = get_collat_coeff(&env, &reserve, s_token_supply, debt_token_supply)?;
+
+        let collat_balance = read_token_balance(&env, &reserve.s_token_address, &who);
+        let underlying_balance = collat_coeff
+            .mul_int(collat_balance)
+            .ok_or(Error::MathOverflowError)?;
+
+        let (underlying_to_withdraw, s_token_to_burn) = if amount == i128::MAX {
+            (underlying_balance, collat_balance)
+        } else {
+            let s_token_to_burn = collat_coeff
+                .recip_mul_int(amount)
+                .ok_or(Error::MathOverflowError)?;
+            (amount, s_token_to_burn)
+        };
+
+        assert_with_error!(
+            env,
+            underlying_to_withdraw <= underlying_balance,
+            Error::NotEnoughAvailableUserBalance
+        );
+
+        let mut user_configurator = UserConfigurator::new(&env, &who, false);
+        let user_config = user_configurator.user_config()?;
+        let collat_balance_after = collat_balance
+            .checked_sub(s_token_to_burn)
+            .ok_or(Error::InvalidAmount)?;
+        let s_token_supply_after = s_token_supply
+            .checked_sub(s_token_to_burn)
+            .ok_or(Error::InvalidAmount)?;
+
+        if user_config.is_borrowing_any()
+            && user_config.is_using_as_collateral(&env, reserve.get_id())
+        {
+            let account_data = calc_account_data(
+                &env,
+                &who,
+                Some(&AssetBalance::new(
+                    reserve.s_token_address.clone(),
+                    collat_balance_after,
+                )),
+                None,
+                Some(&AssetBalance::new(
+                    reserve.s_token_address.clone(),
+                    s_token_supply_after,
+                )),
+                Some(&AssetBalance::new(
+                    reserve.debt_token_address.clone(),
+                    debt_token_supply,
+                )),
+                user_config,
+                false,
+            )?;
+            require_good_position(&env, &account_data);
+        }
+        let amount_to_sub = underlying_to_withdraw
+            .checked_neg()
+            .ok_or(Error::MathOverflowError)?;
+
+        let s_token_to_sub = s_token_to_burn
+            .checked_neg()
+            .ok_or(Error::MathOverflowError)?;
+
+        // s_token.burn(&who, &s_token_to_burn, &underlying_to_withdraw, &to);
+        let mint_burn_1 = MintBurn {
+            asset_balance: AssetBalance {
+                asset: reserve.s_token_address.clone(),
+                balance: s_token_to_burn,
+            },
+            mint: false,
+            who: who.clone(),
+        };
+        let mint_burn_2 = MintBurn {
+            asset_balance: AssetBalance {
+                asset: asset.clone(),
+                balance: underlying_to_withdraw,
+            },
+            mint: true,
+            who: to.clone(),
+        };
+        let mint_burn_3 = MintBurn {
+            asset_balance: AssetBalance {
+                asset: asset.clone(),
+                balance: underlying_to_withdraw,
+            },
+            mint: false,
+            who: reserve.s_token_address.clone(),
+        };
+
+        add_token_balance(&env, &reserve.s_token_address, &who, s_token_to_sub)?;
+        add_token_total_supply(&env, &reserve.s_token_address, s_token_to_sub)?;
+        add_token_balance(&env, &asset, &reserve.s_token_address, amount_to_sub)?;
+
+        let is_full_withdraw = underlying_to_withdraw == underlying_balance;
+        user_configurator
+            .withdraw(reserve.get_id(), &asset, is_full_withdraw)?
+            .write();
+
+        event::withdraw(&env, &who, &asset, &to, underlying_to_withdraw);
+
+        recalculate_reserve_data(
+            &env,
+            &asset,
+            &reserve,
+            s_token_supply_after,
+            debt_token_supply,
+        )?;
+
+        Ok(vec![&env, mint_burn_1, mint_burn_2, mint_burn_3])
     }
 
     /// Allows users to borrow a specific `amount` of the reserve underlying asset, provided that the borrower
@@ -1228,6 +1388,11 @@ impl LendingPoolTrait for LendingPool {
     #[cfg(feature = "exceeded-limit-fix")]
     fn set_price(env: Env, asset: Address, price: i128) {
         write_price(&env, &asset, price);
+    }
+
+    #[cfg(not(feature = "exceeded-limit-fix"))]
+    fn set_price(_env: Env, _asset: Address, _price: i128) {
+        unimplemented!()
     }
 }
 
