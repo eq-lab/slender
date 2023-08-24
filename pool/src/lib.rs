@@ -965,10 +965,8 @@ impl LendingPoolTrait for LendingPool {
 
         require_not_in_collateral_asset(&env, collat_balance);
 
-        let util_cap = reserve.configuration.util_cap;
         let s_token_supply = read_token_total_supply(&env, &reserve.s_token_address);
         let debt_token_supply = read_token_total_supply(&env, &reserve.debt_token_address);
-        require_util_cap_not_exceeded(&env, s_token_supply, debt_token_supply, util_cap, amount)?;
 
         let asset_price = get_asset_price(&env, &asset, reserve.configuration.is_base_asset)?;
         let amount_in_xlm = asset_price
@@ -1004,10 +1002,19 @@ impl LendingPoolTrait for LendingPool {
         let amount_of_debt_token = debt_coeff
             .recip_mul_int(amount)
             .ok_or(Error::MathOverflowError)?;
+        let util_cap = reserve.configuration.util_cap;
+
+        require_util_cap_not_exceeded(
+            &env,
+            s_token_supply,
+            debt_token_supply,
+            util_cap,
+            amount_of_debt_token,
+        )?;
+
         let debt_token_supply_after = debt_token_supply
             .checked_add(amount_of_debt_token)
             .ok_or(Error::MathOverflowError)?;
-
         let amount_to_sub = amount.checked_neg().ok_or(Error::MathOverflowError)?;
 
         add_token_balance(
@@ -1017,7 +1024,7 @@ impl LendingPoolTrait for LendingPool {
             amount_of_debt_token,
         )?;
         add_token_balance(&env, &asset, &who, amount)?;
-        add_token_balance(&env, &asset, &env.current_contract_address(), amount_to_sub)?;
+        add_token_balance(&env, &asset, &reserve.s_token_address, amount_to_sub)?;
         add_stoken_underlying_balance(&env, &reserve.s_token_address, amount_to_sub)?;
 
         user_configurator
@@ -1034,7 +1041,7 @@ impl LendingPoolTrait for LendingPool {
             debt_token_supply_after,
         )?;
 
-        let _ = add_token_total_supply(&env, &reserve.debt_token_address, amount_of_debt_token);
+        add_token_total_supply(&env, &reserve.debt_token_address, amount_of_debt_token)?;
 
         Ok(vec![
             &env,
@@ -1047,7 +1054,7 @@ impl LendingPoolTrait for LendingPool {
             MintBurn::new(
                 AssetBalance::new(asset, amount),
                 false,
-                env.current_contract_address(),
+                reserve.s_token_address,
             ),
         ])
     }
