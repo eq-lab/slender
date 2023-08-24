@@ -79,5 +79,18 @@ describe("LendingPool", function () {
             lenderWithdrawResponse.resultMetaXdr
         );
         console.log(JSON.stringify(lenderWithdrawResult, null, 2));
+
+        const borrowerRepayResponse = await client.sendTransaction(
+            process.env.SLENDER_POOL,
+            "repay",
+            borrower1Keys,
+            convertToScvAddress(borrower1Address),
+            convertToScvAddress(process.env.SLENDER_TOKEN_XLM),
+            convertToScvI128(1000000n),
+        );
+        const borrowerRepayResult = parseMetaXdrToJs(
+            borrowerRepayResponse.resultMetaXdr
+        );
+        console.log(JSON.stringify(borrowerRepayResult, null, 2));
     });
 });

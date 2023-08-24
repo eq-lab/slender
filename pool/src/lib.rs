@@ -598,6 +598,7 @@ impl LendingPoolTrait for LendingPool {
     /// If the deposit amount is invalid or does not meet the reserve requirements.
     /// If the reserve data cannot be retrieved from storage.
     ///
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         who.require_auth();
 
@@ -644,6 +645,73 @@ impl LendingPoolTrait for LendingPool {
         )?;
 
         Ok(())
+    }
+
+    /// Repays a borrowed amount on a specific reserve, burning the equivalent debt tokens owned.
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// - who - The address of the user making the repayment.
+    /// - asset - The address of the asset to be repayed.
+    /// - amount - The amount to be repayed. Use i128::MAX to repay the maximum available amount.
+    ///
+    /// # Errors
+    ///
+    /// Returns `NoReserveExistForAsset` if no reserve exists for the specified asset.
+    /// Returns `MathOverflowError' if an overflow occurs when calculating the amount of tokens.
+    ///
+    /// # Panics
+    ///
+    /// If the caller is not authorized.
+    /// If the deposit amount is invalid or does not meet the reserve requirements.
+    /// If the reserve data cannot be retrieved from storage.
+    ///
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<Vec<MintBurn>, Error> {
+        who.require_auth();
+
+        require_not_paused(&env);
+        require_positive_amount(&env, amount);
+
+        let reserve = read_reserve(&env, &asset)?;
+        require_active_reserve(&env, &reserve);
+
+        let mut user_configurator = UserConfigurator::new(&env, &who, false);
+        let user_config = user_configurator.user_config()?;
+        require_debt(&env, user_config, reserve.get_id());
+
+        let s_token_supply = read_token_total_supply(&env, &reserve.s_token_address);
+        let debt_token_supply = read_token_total_supply(&env, &reserve.debt_token_address);
+
+        let debt_coeff = get_debt_coeff(&env, &reserve)?;
+        let collat_coeff = get_collat_coeff(&env, &reserve, s_token_supply, debt_token_supply)?;
+
+        let (is_repayed, debt_token_supply_after, mints_burns) = do_repay(
+            &env,
+            &who,
+            &asset,
+            &reserve,
+            collat_coeff,
+            debt_coeff,
+            debt_token_supply,
+            read_token_balance(&env, &reserve.debt_token_address, &who),
+            amount,
+        )?;
+
+        user_configurator
+            .repay(reserve.get_id(), is_repayed)?
+            .write();
+
+        recalculate_reserve_data(
+            &env,
+            &asset,
+            &reserve,
+            s_token_supply,
+            debt_token_supply_after,
+        )?;
+
+        Ok(mints_burns)
     }
 
     /// Callback that should be called by s-token after transfer to ensure user have good position after transfer
@@ -1183,9 +1251,8 @@ impl LendingPoolTrait for LendingPool {
             &who,
             amount_of_debt_token,
         )?;
-        add_token_balance(&env, &asset, &who, amount)?;
-        add_token_balance(&env, &asset, &reserve.s_token_address, amount_to_sub)?;
         add_stoken_underlying_balance(&env, &reserve.s_token_address, amount_to_sub)?;
+        add_token_total_supply(&env, &reserve.debt_token_address, amount_of_debt_token)?;
 
         user_configurator
             .borrow(reserve.get_id(), debt_balance == 0)?
@@ -1200,8 +1267,6 @@ impl LendingPoolTrait for LendingPool {
             s_token_supply,
             debt_token_supply_after,
         )?;
-
-        add_token_total_supply(&env, &reserve.debt_token_address, amount_of_debt_token)?;
 
         Ok(vec![
             &env,
@@ -1553,6 +1618,7 @@ fn do_deposit(
 /// bool: the flag indicating the debt is fully repayed
 /// i128: total debt after repayment
 #[allow(clippy::too_many_arguments)]
+#[cfg(not(feature = "exceeded-limit-fix"))]
 fn do_repay(
     env: &Env,
     who: &Address,
@@ -1590,6 +1656,7 @@ fn do_repay(
         .ok_or(Error::MathOverflowError)?;
 
     let treasury_address = read_treasury(env);
+
     let underlying_asset = token::Client::new(env, asset);
 
     underlying_asset.transfer(who, &reserve.s_token_address, &lender_part);
@@ -1600,6 +1667,99 @@ fn do_repay(
     event::repay(env, who, asset, borrower_payback_amount);
 
     Ok((is_repayed, debt_token_supply_after))
+}
+
+/// Returns
+/// bool: the flag indicating the debt is fully repayed
+/// i128: total debt after repayment
+#[allow(clippy::too_many_arguments)]
+#[cfg(feature = "exceeded-limit-fix")]
+fn do_repay(
+    env: &Env,
+    who: &Address,
+    asset: &Address,
+    reserve: &ReserveData,
+    collat_coeff: FixedI128,
+    debt_coeff: FixedI128,
+    debt_token_supply: i128,
+    who_debt: i128,
+    amount: i128,
+) -> Result<(bool, i128, Vec<MintBurn>), Error> {
+    let borrower_actual_debt = debt_coeff
+        .mul_int(who_debt)
+        .ok_or(Error::MathOverflowError)?;
+
+    let (borrower_payback_amount, borrower_debt_to_burn, is_repayed) =
+        if amount >= borrower_actual_debt {
+            // To avoid dust in debt_token borrower balance in case of full repayment
+            (borrower_actual_debt, who_debt, true)
+        } else {
+            let borrower_debt_to_burn = debt_coeff
+                .recip_mul_int(amount)
+                .ok_or(Error::MathOverflowError)?;
+            (amount, borrower_debt_to_burn, false)
+        };
+
+    let lender_part = collat_coeff
+        .mul_int(borrower_debt_to_burn)
+        .ok_or(Error::MathOverflowError)?;
+    let treasury_part = borrower_payback_amount
+        .checked_sub(lender_part)
+        .ok_or(Error::MathOverflowError)?;
+    let debt_token_supply_after = debt_token_supply
+        .checked_sub(borrower_debt_to_burn)
+        .ok_or(Error::MathOverflowError)?;
+
+    let treasury_address = read_treasury(env);
+
+    let debt_to_sub = borrower_debt_to_burn
+        .checked_neg()
+        .ok_or(Error::MathOverflowError)?;
+
+    add_token_balance(env, &reserve.debt_token_address, &who, debt_to_sub)?;
+    add_token_total_supply(env, &reserve.debt_token_address, debt_to_sub)?;
+    add_stoken_underlying_balance(env, &reserve.s_token_address, lender_part)?;
+
+    let mint_burn_1 = MintBurn::new(
+        AssetBalance::new(reserve.debt_token_address.clone(), borrower_debt_to_burn),
+        false,
+        who.clone(),
+    );
+    let mint_burn_2 = MintBurn::new(
+        AssetBalance::new(asset.clone(), lender_part),
+        false,
+        who.clone(),
+    );
+    let mint_burn_3 = MintBurn::new(
+        AssetBalance::new(asset.clone(), lender_part),
+        true,
+        reserve.s_token_address.clone(),
+    );
+    let mint_burn_4 = MintBurn::new(
+        AssetBalance::new(asset.clone(), treasury_part),
+        false,
+        who.clone(),
+    );
+    let mint_burn_5 = MintBurn::new(
+        AssetBalance::new(asset.clone(), treasury_part),
+        true,
+        treasury_address.clone(),
+    );
+
+    event::repay(env, who, asset, borrower_payback_amount);
+
+    Ok((
+        is_repayed,
+        debt_token_supply_after,
+        vec![
+            &env,
+            mint_burn_1,
+            mint_burn_2,
+            mint_burn_3,
+            mint_burn_4,
+            mint_burn_5,
+        ],
+    ))
 }
 
 fn require_not_in_collateral_asset(env: &Env, collat_balance: i128) {
@@ -1900,6 +2060,7 @@ fn require_zero_debt(env: &Env, user_config: &UserConfiguration, reserve_id: u8)
     );
 }
 
+#[cfg(not(feature = "exceeded-limit-fix"))]
 fn do_liquidate(
     env: &Env,
     liquidator: &Address,
@@ -2055,6 +2216,18 @@ fn do_liquidate(
     user_configurator.write();
 
     Ok(())
+}
+
+#[cfg(feature = "exceeded-limit-fix")]
+fn do_liquidate(
+    env: &Env,
+    liquidator: &Address,
+    who: &Address,
+    user_configurator: &mut UserConfigurator,
+    liquidation_data: &LiquidationData,
+    receive_stoken: bool,
+) -> Result<Vec<MintBurn>, Error> {
+    unimplemented!()
 }
 
 fn recalculate_reserve_data(
