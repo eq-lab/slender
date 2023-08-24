@@ -155,6 +155,10 @@ pub trait LendingPoolTrait {
     #[cfg(not(feature = "exceeded-limit-fix"))]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<Vec<MintBurn>, Error>;
+
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     #[allow(clippy::too_many_arguments)]
