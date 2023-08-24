@@ -208,12 +208,21 @@ pub trait LendingPoolTrait {
 
     fn account_position(env: Env, who: Address) -> Result<AccountPosition, Error>;
 
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn liquidate(
         env: Env,
         liquidator: Address,
         who: Address,
         receive_stoken: bool,
     ) -> Result<(), Error>;
+
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn liquidate(
+        env: Env,
+        liquidator: Address,
+        who: Address,
+        receive_stoken: bool,
+    ) -> Result<Vec<MintBurn>, Error>;
 
     fn set_as_collateral(
         env: Env,
