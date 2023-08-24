@@ -1389,6 +1389,11 @@ impl LendingPoolTrait for LendingPool {
     fn set_price(env: Env, asset: Address, price: i128) {
         write_price(&env, &asset, price);
     }
+
+    #[cfg(not(feature = "exceeded-limit-fix"))]
+    fn set_price(_env: Env, _asset: Address, _price: i128) {
+        unimplemented!()
+    }
 }
 
 fn require_admin(env: &Env) -> Result<(), Error> {
