@@ -187,7 +187,7 @@ pub trait LendingPoolTrait {
         to: Address,
     ) -> Result<(), Error>;
 
-    fn stoken_underlying_balance(env: Env, asset: Address, stoken_address: Address) -> i128;
+    fn stoken_underlying_balance(env: Env, stoken_address: Address) -> i128;
 
     #[cfg(feature = "exceeded-limit-fix")]
     fn borrow(env: Env, who: Address, asset: Address, amount: i128)

@@ -1,6 +1,6 @@
 use crate::Error;
 use pool_interface::{IRParams, ReserveData, UserConfiguration};
-use soroban_sdk::{contracttype, vec, Address, Env, Vec};
+use soroban_sdk::{assert_with_error, contracttype, vec, Address, Env, Vec};
 
 pub(crate) const USER_DATA_BUMP_AMOUNT: u32 = 518_400; // 30 days
 
@@ -15,7 +15,8 @@ pub enum DataKey {
     UserConfig(Address),
     PriceFeed(Address),
     Pause,
-    TokenBalance(Address, Address), // (S/Debt/Underlying Token Address, Account Address)
+    STokenUnderlyingBalance(Address),
+    TokenBalance(Address, Address), // exceeded-limit-fix (S/Debt/Underlying Token Address, Account Address)
     TokenSupply(Address),           // exceeded-limit-fix (S/Debt Token Address)
     Price(Address),                 // exceeded-limit-fix (Underlying Token Address)
 }
@@ -127,6 +128,40 @@ pub fn read_treasury(e: &Env) -> Address {
     e.storage().instance().get(&DataKey::Treasury).unwrap()
 }
 
+pub fn write_stoken_underlying_balance(
+    env: &Env,
+    s_token_address: &Address,
+    total_supply: i128,
+) -> Result<(), Error> {
+    assert_with_error!(env, !total_supply.is_negative(), Error::MustBePositive);
+
+    let data_key = DataKey::STokenUnderlyingBalance(s_token_address.clone());
+    env.storage().instance().set(&data_key, &total_supply);
+
+    Ok(())
+}
+
+pub fn read_stoken_underlying_balance(env: &Env, s_token_address: &Address) -> i128 {
+    let data_key = DataKey::STokenUnderlyingBalance(s_token_address.clone());
+    env.storage().instance().get(&data_key).unwrap_or(0i128)
+}
+
+pub fn add_stoken_underlying_balance(
+    env: &Env,
+    s_token_address: &Address,
+    amount: i128,
+) -> Result<i128, Error> {
+    let mut total_supply = read_stoken_underlying_balance(env, s_token_address);
+
+    total_supply = total_supply
+        .checked_add(amount)
+        .ok_or(Error::MathOverflowError)?;
+
+    write_stoken_underlying_balance(env, s_token_address, total_supply)?;
+
+    Ok(total_supply)
+}
+
 #[cfg(feature = "exceeded-limit-fix")]
 pub fn add_token_total_supply(env: &Env, token: &Address, amount: i128) -> Result<i128, Error> {
     let mut total_supply = read_token_total_supply(env, token);
@@ -148,6 +183,7 @@ pub fn read_token_total_supply(env: &Env, token: &Address) -> i128 {
     env.storage().instance().get(&key).unwrap_or(0i128)
 }
 
+#[cfg(feature = "exceeded-limit-fix")]
 pub fn add_token_balance(
     env: &Env,
     token: &Address,
@@ -166,6 +202,7 @@ pub fn add_token_balance(
     Ok(total_supply)
 }
 
+#[cfg(feature = "exceeded-limit-fix")]
 pub fn read_token_balance(env: &Env, token: &Address, account: &Address) -> i128 {
     let key = DataKey::TokenBalance(token.clone(), account.clone());
     env.storage().instance().get(&key).unwrap_or(0i128)
