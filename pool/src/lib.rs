@@ -1455,9 +1455,9 @@ impl LendingPoolTrait for LendingPool {
         write_price(&env, &asset, price);
     }
 
-    #[cfg(feature = "testutils")]
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn set_price(_env: Env, _asset: Address, _price: i128) {
-        unimplemented!();
+        unimplemented!()
     }
 }
 
