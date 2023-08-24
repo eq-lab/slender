@@ -160,7 +160,7 @@ fn init_reserve() {
     measure_budget(&env, nameof(init_reserve), || {
         pool.init_reserve(
             &underlying_token.address.clone(),
-            &false,
+            // &false,
             &init_reserve_input.clone(),
         );
     });

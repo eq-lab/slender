@@ -79,7 +79,7 @@ impl AssetBalance {
     }
 }
 
-#[cfg(feature = "exceeded-limit-fix")]
+// #[cfg(feature = "exceeded-limit-fix")]
 #[contracttype]
 pub struct MintBurn {
     pub asset_balance: AssetBalance,
@@ -107,12 +107,7 @@ pub trait LendingPoolTrait {
 
     fn version() -> u32;
 
-    fn init_reserve(
-        env: Env,
-        asset: Address,
-        is_base_asset: bool,
-        input: InitReserveInput,
-    ) -> Result<(), Error>;
+    fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
 
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error>;
 
