@@ -74,3 +74,15 @@ pub(crate) fn liquidation(e: &Env, who: &Address, covered_debt: i128, liquidated
     e.events()
         .publish(topics, (covered_debt, liquidated_collateral));
 }
+
+pub(crate) fn flash_loan(
+    e: &Env,
+    who: &Address,
+    receiver: &Address,
+    asset: &Address,
+    amount: i128,
+    premium: i128,
+) {
+    let topics = (Symbol::new(e, "flash_loan"), who, receiver, asset);
+    e.events().publish(topics, (amount, premium));
+}

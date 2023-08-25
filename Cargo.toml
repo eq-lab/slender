@@ -5,6 +5,7 @@ members = [
     "common",
     "common-token",
     "deployer",
+    "flash-loan-receiver-interface",
     "mocks/price-feed-mock",
     "pool",
     "pool-interface",

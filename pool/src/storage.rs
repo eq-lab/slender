@@ -15,6 +15,7 @@ pub enum DataKey {
     UserConfig(Address),
     PriceFeed(Address),
     Pause,
+    FlashLoanFee,
     STokenUnderlyingBalance(Address),
     TokenBalance(Address, Address), // exceeded-limit-fix (S/Debt/Underlying Token Address, Account Address)
     TokenSupply(Address),           // exceeded-limit-fix (S/Debt Token Address)
@@ -126,6 +127,14 @@ pub fn write_treasury(e: &Env, treasury: &Address) {
 
 pub fn read_treasury(e: &Env) -> Address {
     e.storage().instance().get(&DataKey::Treasury).unwrap()
+}
+
+pub fn write_flash_loan_fee(e: &Env, fee: &u32) {
+    e.storage().instance().set(&DataKey::FlashLoanFee, fee);
+}
+
+pub fn read_flash_loan_fee(e: &Env) -> u32 {
+    e.storage().instance().get(&DataKey::FlashLoanFee).unwrap()
 }
 
 pub fn write_stoken_underlying_balance(

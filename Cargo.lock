@@ -444,6 +444,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7d8c494ccd0b270d97dc51d5f0de703b9d18a489c26f0328e409f6feba55a640"
 
 [[package]]
+name = "flash-loan-receiver-interface"
+version = "0.1.0"
+dependencies = [
+ "soroban-sdk",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -741,6 +748,7 @@ version = "0.1.0"
 dependencies = [
  "common",
  "debt-token-interface",
+ "flash-loan-receiver-interface",
  "pool-interface",
  "price-feed-interface",
  "s-token-interface",
