@@ -56,10 +56,6 @@ PRICE_FEED=$(deploy "../target/wasm32-unknown-unknown/release/price_feed_mock.wa
 PRICE_FEED=$(addressFromResult $PRICE_FEED)
 echo "Price Feed contract address: $PRICE_FEED"
 
-FLASH_LOAN_RECEIVER=$(deploy "../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm" $ADMIN_SECRET)
-FLASH_LOAN_RECEIVER=$(addressFromResult $FLASH_LOAN_RECEIVER)
-echo "Flash loan receiver contract address: $FLASH_LOAN_RECEIVER"
-
 contracts=".contracts"
 {
     echo "SLENDER_TOKEN_XLM=$TOKEN_XLM"
@@ -70,7 +66,6 @@ contracts=".contracts"
     echo "SLENDER_DEPLOYER=$DEPLOYER"
     echo "SLENDER_PRICE_FEED=$PRICE_FEED"
     echo "SLENDER_POOL_HASH=$POOL_HASH"
-    echo "FLASH_LOAN_RECEIVER=$FLASH_LOAN_RECEIVER"
 } >$contracts
 
 echo "Contracts deployed"

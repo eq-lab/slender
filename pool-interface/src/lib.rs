@@ -243,6 +243,7 @@ pub trait LendingPoolTrait {
 
     fn flash_loan_fee(env: Env) -> u32;
 
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn flash_loan(
         env: Env,
         who: Address,
@@ -250,4 +251,13 @@ pub trait LendingPoolTrait {
         assets: Vec<FlashLoanAsset>,
         params: Bytes,
     ) -> Result<(), Error>;
+
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn flash_loan(
+        env: Env,
+        who: Address,
+        receiver: Address,
+        assets: Vec<FlashLoanAsset>,
+        params: Bytes,
+    ) -> Result<Vec<MintBurn>, Error>;
 }

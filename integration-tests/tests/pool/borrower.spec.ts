@@ -4,7 +4,10 @@ import { adminKeys, borrower1Keys, lender1Keys } from "../soroban.config";
 import {
     convertToScvAddress,
     convertToScvBool,
+    convertToScvBytes,
     convertToScvI128,
+    convertToScvMap,
+    convertToScvVec,
     parseMetaXdrToJs,
 } from "../soroban.converter";
 
@@ -18,17 +21,18 @@ describe("LendingPool", function () {
 
     it("should TBD", async function () {
         // let lender1 = await registerAccount(client, "LENDER_1", lender1Keys);
+        // let borrower1 = await registerAccount(client, "BORROWER_1", borrower1Keys);
         let lender1Address = lender1Keys.publicKey();
         let borrower1Address = borrower1Keys.publicKey();
 
-        // await mintUnderlyingTo(client, "XLM", lender1Address, 100_000_000_000n);
-        // await mintUnderlyingTo(client, "XRP", lender1Address, 100_000_000_000n);
-        // await mintUnderlyingTo(client, "USDC", lender1Address, 100_000_000_000n);
+        await mintUnderlyingTo(client, "XLM", lender1Address, 100_000_000_000n);
+        await mintUnderlyingTo(client, "XRP", lender1Address, 100_000_000_000n);
+        await mintUnderlyingTo(client, "USDC", lender1Address, 100_000_000_000n);
 
-        // await mintUnderlyingTo(client, "XRP", borrower1Address, 100_000_000_000n);
-        // let lender1XlmBalance = await balanceOf(client, lender1Keys, lender1Address, "XLM");
-        // let lender1XrpBalance = await balanceOf(client, lender1Keys, lender1Address, "XRP");
-        // let lender1UsdcBalance = await balanceOf(client, lender1Keys, lender1Address, "USDC");
+        await mintUnderlyingTo(client, "XRP", borrower1Address, 100_000_000_000n);
+        let lender1XlmBalance = await balanceOf(client, lender1Keys, lender1Address, "XLM");
+        let lender1XrpBalance = await balanceOf(client, lender1Keys, lender1Address, "XRP");
+        let lender1UsdcBalance = await balanceOf(client, lender1Keys, lender1Address, "USDC");
 
         const lenderDepositResponse = await client.sendTransaction(
             process.env.SLENDER_POOL,
@@ -94,22 +98,20 @@ describe("LendingPool", function () {
         );
         console.log(JSON.stringify(borrowerRepayResult, null, 2));
 
-        const flashLoanReceiverInitResponse = await client.sendTransaction(
-            process.env.FLASH_LOAN_RECEIVER,
-            "initialize",
-            borrower1Keys,
-            convertToScvAddress(borrower1Address),
-            convertToScvAddress(process.env.SLENDER_POOL),
-            convertToScvBool(false),
-        );
-
         const flashLoanResponse = await client.sendTransaction(
-            process.env.FLASH_LOAN_RECEIVER,
+            process.env.SLENDER_POOL,
             "flash_loan",
             borrower1Keys,
             convertToScvAddress(borrower1Address),
-            convertToScvAddress(process.env.SLENDER_POOL),
-            convertToScvBool(false),
+            convertToScvAddress(process.env.FLASH_LOAN_RECEIVER),
+            convertToScvVec([
+                convertToScvMap({
+                    "amount": convertToScvI128(1000n),
+                    "asset": convertToScvAddress(process.env.SLENDER_TOKEN_XLM),
+                    "borrow": convertToScvBool(false)
+                })
+            ]),
+            convertToScvBytes("test", "base64"),
         );
         const flashLoanResult = parseMetaXdrToJs(
             flashLoanResponse.resultMetaXdr
