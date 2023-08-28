@@ -2194,7 +2194,6 @@ fn do_liquidate(
         let mut debt_token_supply = debt_token.total_supply();
 
         if receive_stoken {
-            (debt_token.balance(liquidator), s_token.balance(liquidator));
             let liquidator_debt = debt_token.balance(liquidator);
             let liquidator_collat_before = s_token.balance(liquidator);
 
