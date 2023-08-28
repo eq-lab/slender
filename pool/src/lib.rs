@@ -11,8 +11,8 @@ use s_token_interface::STokenClient;
 #[cfg(not(feature = "exceeded-limit-fix"))]
 use soroban_sdk::token;
 use soroban_sdk::{
-    assert_with_error, contract, contractimpl, panic_with_error, vec, Address, Bytes, BytesN, Env,
-    Map, Vec, contracttype,
+    assert_with_error, contract, contractimpl, contracttype, panic_with_error, vec, Address, Bytes,
+    BytesN, Env, Map, Vec,
 };
 use user_configurator::UserConfigurator;
 
