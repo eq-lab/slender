@@ -1,4 +1,4 @@
-// #![deny(warnings)]
+#![deny(warnings)]
 #![no_std]
 
 use crate::price_provider::PriceProvider;
@@ -7,9 +7,11 @@ use debt_token_interface::DebtTokenClient;
 use pool_interface::*;
 use rate::{calc_accrued_rates, calc_next_accrued_rate};
 use s_token_interface::STokenClient;
+#[cfg(not(feature = "exceeded-limit-fix"))]
+use soroban_sdk::token;
 use soroban_sdk::{
-    assert_with_error, contract, contractimpl, panic_with_error, token, vec, Address, BytesN, Env,
-    Map, Vec,
+    assert_with_error, contract, contractimpl, contracttype, panic_with_error, vec, Address,
+    BytesN, Env, Map, Vec,
 };
 use user_configurator::UserConfigurator;
 
@@ -61,12 +63,21 @@ impl AccountData {
 }
 
 #[derive(Debug, Clone)]
+#[contracttype]
+struct LiquidationCollateral {
+    asset: Address,
+    reserve_data: ReserveData,
+    s_token_balance: i128,
+    asset_price: i128,
+    collat_coeff: i128,
+}
+
+#[derive(Debug, Clone)]
 struct LiquidationData {
     total_debt_with_penalty_in_xlm: i128,
-    /// reserve data, compounded debt, debtToken balance
-    debt_to_cover: Vec<(ReserveData, i128, i128)>,
-    /// reserve data, stoken balance, collateral asset price, AR coefficient
-    collateral_to_receive: Vec<(ReserveData, i128, i128, i128)>,
+    /// asset, reserve data, compounded debt, debtToken balance
+    debt_to_cover: Vec<(Address, ReserveData, i128, i128)>,
+    collateral_to_receive: Vec<LiquidationCollateral>,
 }
 
 impl LiquidationData {
@@ -1334,6 +1345,7 @@ impl LendingPoolTrait for LendingPool {
     /// - who The address of the user whose position will be liquidated
     /// - receive_stoken `true` if the liquidators wants to receive the collateral sTokens, `false` if he wants
     /// to receive the underlying asset
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn liquidate(
         env: Env,
         liquidator: Address,
@@ -1370,6 +1382,55 @@ impl LendingPoolTrait for LendingPool {
         );
 
         Ok(())
+    }
+
+    /// Liqudate a bad position with NPV less or equal to 0.
+    /// The caller (liquidator) covers amount of debt of the user getting liquidated, and receives
+    /// a proportionally amount of the `collateralAsset` plus a bonus to cover market risk.
+    ///
+    /// # Arguments
+    ///
+    /// - liquidator The caller, that covers debt and take collateral with bonus
+    /// - who The address of the user whose position will be liquidated
+    /// - receive_stoken `true` if the liquidators wants to receive the collateral sTokens, `false` if he wants
+    /// to receive the underlying asset
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn liquidate(
+        env: Env,
+        liquidator: Address,
+        who: Address,
+        receive_stoken: bool,
+    ) -> Result<Vec<MintBurn>, Error> {
+        liquidator.require_auth();
+
+        require_not_paused(&env);
+
+        let mut user_configurator = UserConfigurator::new(&env, &who, false);
+        let user_config = user_configurator.user_config()?;
+        let account_data =
+            calc_account_data(&env, &who, None, None, None, None, user_config, true)?;
+
+        assert_with_error!(&env, !account_data.is_good_position(), Error::GoodPosition);
+
+        let liquidation = account_data.liquidation.ok_or(Error::LiquidateMathError)?;
+
+        let mint_burn_vec = do_liquidate(
+            &env,
+            &liquidator,
+            &who,
+            &mut user_configurator,
+            &liquidation,
+            receive_stoken,
+        )?;
+
+        event::liquidation(
+            &env,
+            &who,
+            account_data.debt,
+            liquidation.total_debt_with_penalty_in_xlm,
+        );
+
+        Ok(mint_burn_vec)
     }
 
     /// Enables or disables asset for using as collateral.
@@ -1457,6 +1518,16 @@ impl LendingPoolTrait for LendingPool {
 
     #[cfg(not(feature = "exceeded-limit-fix"))]
     fn set_price(_env: Env, _asset: Address, _price: i128) {
+        unimplemented!()
+    }
+
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn get_price(env: Env, asset: Address) -> i128 {
+        read_price(&env, &asset)
+    }
+
+    #[cfg(not(feature = "exceeded-limit-fix"))]
+    fn get_price(_env: Env, _asset: Address) -> i128 {
         unimplemented!()
     }
 }
@@ -1875,12 +1946,13 @@ fn calc_account_data(
                 let mut collateral_to_receive = sorted_collateral_to_receive
                     .get(curr_discount)
                     .unwrap_or(Vec::new(env));
-                collateral_to_receive.push_back((
-                    curr_reserve,
-                    who_collat,
-                    asset_price.into_inner(),
-                    collat_coeff.into_inner(),
-                ));
+                collateral_to_receive.push_back(LiquidationCollateral {
+                    reserve_data: curr_reserve,
+                    asset: curr_reserve_asset,
+                    s_token_balance: who_collat,
+                    asset_price: asset_price.into_inner(),
+                    collat_coeff: collat_coeff.into_inner(),
+                });
                 sorted_collateral_to_receive.set(curr_discount, collateral_to_receive);
             }
         } else if user_config.is_borrowing(env, i) {
@@ -1918,7 +1990,12 @@ fn calc_account_data(
                     .checked_add(liquidation_debt)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
-                debt_to_cover.push_back((curr_reserve, compounded_balance, who_debt));
+                debt_to_cover.push_back((
+                    curr_reserve_asset,
+                    curr_reserve,
+                    compounded_balance,
+                    who_debt,
+                ));
             }
         }
     }
@@ -2071,8 +2148,13 @@ fn do_liquidate(
 ) -> Result<(), Error> {
     let mut debt_with_penalty = liquidation_data.total_debt_with_penalty_in_xlm;
 
-    for (reserve, s_token_balance, price_fixed, coll_coeff_fixed) in
-        liquidation_data.collateral_to_receive.iter()
+    for LiquidationCollateral {
+        asset,
+        reserve_data: reserve,
+        s_token_balance,
+        asset_price: price_fixed,
+        collat_coeff: coll_coeff_fixed,
+    } in liquidation_data.collateral_to_receive.iter()
     {
         if debt_with_penalty == 0 {
             break;
@@ -2108,7 +2190,6 @@ fn do_liquidate(
         let s_token = STokenClient::new(env, &reserve.s_token_address);
         let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
 
-        let asset = s_token.underlying_asset();
         let mut s_token_supply = s_token.total_supply();
         let mut debt_token_supply = debt_token.total_supply();
 
@@ -2193,10 +2274,10 @@ fn do_liquidate(
 
     assert_with_error!(env, debt_with_penalty == 0, Error::NotEnoughCollateral);
 
-    for (reserve, compounded_debt, debt_amount) in liquidation_data.debt_to_cover.iter() {
+    for (asset, reserve, compounded_debt, debt_amount) in liquidation_data.debt_to_cover.iter() {
         let s_token = STokenClient::new(env, &reserve.s_token_address);
         let s_token_supply = s_token.total_supply();
-        let underlying_asset = token::Client::new(env, &s_token.underlying_asset());
+        let underlying_asset = token::Client::new(env, &asset);
         let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
 
         underlying_asset.transfer(liquidator, &reserve.s_token_address, &compounded_debt);
@@ -2227,7 +2308,250 @@ fn do_liquidate(
     liquidation_data: &LiquidationData,
     receive_stoken: bool,
 ) -> Result<Vec<MintBurn>, Error> {
-    unimplemented!()
+    let mut debt_with_penalty = liquidation_data.total_debt_with_penalty_in_xlm;
+
+    let mut mint_burn_vec = vec![env];
+
+    for LiquidationCollateral {
+        asset,
+        reserve_data: reserve,
+        s_token_balance,
+        asset_price: price_fixed,
+        collat_coeff: coll_coeff_fixed,
+    } in liquidation_data.collateral_to_receive.iter()
+    {
+        if debt_with_penalty == 0 {
+            break;
+        }
+
+        let price = FixedI128::from_inner(price_fixed);
+
+        let coll_coeff = FixedI128::from_inner(coll_coeff_fixed);
+        let compounded_balance = coll_coeff
+            .mul_int(s_token_balance)
+            .ok_or(Error::LiquidateMathError)?;
+        let compounded_balance_in_xlm = price
+            .mul_int(compounded_balance)
+            .ok_or(Error::CalcAccountDataMathError)?;
+
+        let withdraw_amount_in_xlm = compounded_balance_in_xlm.min(debt_with_penalty);
+        // no overflow as withdraw_amount_in_xlm guaranteed less or equal to debt_to_cover
+        debt_with_penalty -= withdraw_amount_in_xlm;
+
+        let (s_token_amount, underlying_amount) =
+            if withdraw_amount_in_xlm != compounded_balance_in_xlm {
+                let underlying_amount = price
+                    .recip_mul_int(withdraw_amount_in_xlm)
+                    .ok_or(Error::LiquidateMathError)?;
+                let s_token_amount = coll_coeff
+                    .recip_mul_int(underlying_amount)
+                    .ok_or(Error::LiquidateMathError)?;
+                (s_token_amount, underlying_amount)
+            } else {
+                (s_token_balance, compounded_balance)
+            };
+
+        let mut s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
+        let mut debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
+
+        if receive_stoken {
+            let liquidator_debt = read_token_balance(env, &reserve.debt_token_address, liquidator);
+            let liquidator_collat_before =
+                read_token_balance(env, &reserve.s_token_address, liquidator);
+
+            let mut liquidator_collat_amount = s_token_amount;
+            let mut is_debt_repayed = false;
+
+            if liquidator_debt > 0 {
+                let debt_coeff = get_debt_coeff(env, &reserve)?;
+
+                let liquidator_actual_debt = debt_coeff
+                    .mul_int(liquidator_debt)
+                    .ok_or(Error::LiquidateMathError)?;
+
+                let repayment_amount = liquidator_actual_debt.min(underlying_amount);
+
+                let s_token_to_burn = coll_coeff
+                    .recip_mul_int(repayment_amount)
+                    .ok_or(Error::LiquidateMathError)?;
+
+                let amount_to_sub = repayment_amount
+                    .checked_neg()
+                    .ok_or(Error::MathOverflowError)?;
+
+                mint_burn_vec.push_back(MintBurn::new(
+                    AssetBalance::new(reserve.s_token_address.clone(), s_token_to_burn),
+                    false,
+                    who.clone(),
+                ));
+                add_token_total_supply(
+                    env,
+                    &reserve.s_token_address,
+                    s_token_to_burn.checked_neg().unwrap(),
+                )?;
+                mint_burn_vec.push_back(MintBurn::new(
+                    AssetBalance::new(asset.clone(), repayment_amount),
+                    true,
+                    liquidator.clone(),
+                ));
+                add_token_balance(
+                    env,
+                    &reserve.s_token_address,
+                    who,
+                    s_token_to_burn.checked_neg().unwrap(),
+                )?;
+                add_stoken_underlying_balance(env, &reserve.s_token_address, amount_to_sub)?;
+
+                let (is_repayed, debt_token_supply_after, mint_burn_repay) = do_repay(
+                    env,
+                    liquidator,
+                    &asset,
+                    &reserve,
+                    coll_coeff,
+                    debt_coeff,
+                    debt_token_supply,
+                    liquidator_debt,
+                    repayment_amount,
+                )?;
+
+                for repay in mint_burn_repay {
+                    mint_burn_vec.push_back(repay);
+                }
+
+                is_debt_repayed = is_repayed;
+                debt_token_supply = debt_token_supply_after;
+
+                liquidator_collat_amount = s_token_amount
+                    .checked_sub(s_token_to_burn)
+                    .ok_or(Error::LiquidateMathError)?;
+
+                s_token_supply = s_token_supply
+                    .checked_sub(s_token_to_burn)
+                    .ok_or(Error::MathOverflowError)?;
+            }
+
+            if liquidator_collat_amount > 0 {
+                mint_burn_vec.push_back(MintBurn::new(
+                    AssetBalance::new(reserve.s_token_address.clone(), liquidator_collat_amount),
+                    false,
+                    who.clone(),
+                ));
+                mint_burn_vec.push_back(MintBurn::new(
+                    AssetBalance::new(reserve.s_token_address.clone(), liquidator_collat_amount),
+                    true,
+                    liquidator.clone(),
+                ));
+
+                add_token_balance(
+                    env,
+                    &reserve.s_token_address,
+                    who,
+                    liquidator_collat_amount.checked_neg().unwrap(),
+                )?;
+                add_token_balance(
+                    env,
+                    &reserve.s_token_address,
+                    liquidator,
+                    liquidator_collat_amount,
+                )?;
+            }
+
+            let use_as_collat = liquidator_collat_before == 0 && liquidator_collat_amount > 0;
+            let reserve_id = reserve.get_id();
+
+            UserConfigurator::new(env, liquidator, true)
+                .deposit(reserve_id, &asset, use_as_collat)?
+                .repay(reserve_id, is_debt_repayed)?
+                .write();
+        } else {
+            let amount_to_sub = underlying_amount
+                .checked_neg()
+                .ok_or(Error::MathOverflowError)?;
+            s_token_supply = s_token_supply
+                .checked_sub(s_token_amount)
+                .ok_or(Error::MathOverflowError)?;
+
+            mint_burn_vec.push_back(MintBurn::new(
+                AssetBalance::new(reserve.s_token_address.clone(), s_token_amount),
+                false,
+                who.clone(),
+            ));
+            add_token_total_supply(
+                env,
+                &reserve.s_token_address,
+                s_token_amount.checked_neg().unwrap(),
+            )?;
+            mint_burn_vec.push_back(MintBurn::new(
+                AssetBalance::new(asset.clone(), underlying_amount),
+                true,
+                liquidator.clone(),
+            ));
+            add_token_balance(
+                env,
+                &reserve.s_token_address,
+                who,
+                s_token_amount.checked_neg().unwrap(),
+            )?;
+
+            add_stoken_underlying_balance(env, &reserve.s_token_address, amount_to_sub)?;
+        }
+
+        let is_withdraw = s_token_balance == s_token_amount;
+        user_configurator.withdraw(reserve.get_id(), &asset, is_withdraw)?;
+
+        recalculate_reserve_data(env, &asset, &reserve, s_token_supply, debt_token_supply)?;
+    }
+
+    assert_with_error!(env, debt_with_penalty == 0, Error::NotEnoughCollateral);
+
+    for (asset, reserve, compounded_debt, debt_amount) in liquidation_data.debt_to_cover.iter() {
+        // let s_token = STokenClient::new(env, &reserve.s_token_address);
+        let s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
+        // let underlying_asset = token::Client::new(env, &s_token.underlying_asset());
+        // let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
+
+        mint_burn_vec.push_back(MintBurn::new(
+            AssetBalance::new(asset.clone(), compounded_debt),
+            false,
+            liquidator.clone(),
+        ));
+        mint_burn_vec.push_back(MintBurn::new(
+            AssetBalance::new(asset.clone(), compounded_debt),
+            true,
+            reserve.s_token_address.clone(),
+        ));
+        add_stoken_underlying_balance(env, &reserve.s_token_address, compounded_debt)?;
+
+        mint_burn_vec.push_back(MintBurn::new(
+            AssetBalance::new(reserve.debt_token_address.clone(), debt_amount),
+            false,
+            who.clone(),
+        ));
+        add_token_balance(
+            env,
+            &reserve.debt_token_address,
+            who,
+            debt_amount.checked_neg().unwrap(),
+        )?;
+        add_token_total_supply(
+            env,
+            &reserve.debt_token_address,
+            debt_amount.checked_neg().unwrap(),
+        )?;
+        user_configurator.repay(reserve.get_id(), true)?;
+
+        recalculate_reserve_data(
+            env,
+            &asset,
+            &reserve,
+            s_token_supply,
+            read_token_total_supply(env, &reserve.debt_token_address),
+        )?;
+    }
+
+    user_configurator.write();
+
+    Ok(mint_burn_vec)
 }
 
 fn recalculate_reserve_data(
