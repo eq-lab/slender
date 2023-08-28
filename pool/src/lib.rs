@@ -1456,6 +1456,7 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// # Panics
     ///
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn flash_loan(
         env: Env,
         who: Address,
@@ -1524,6 +1525,115 @@ impl LendingPoolTrait for LendingPool {
                     &amount_with_premium,
                 );
                 s_token.transfer_underlying_to(&treasury, &received_asset.premium);
+            } else {
+                let s_token = STokenClient::new(&env, &reserve.s_token_address);
+                let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);
+                let s_token_supply = s_token.total_supply();
+
+                let debt_token_supply_after = do_borrow(
+                    &env,
+                    &who,
+                    &received_asset.asset,
+                    &reserve,
+                    s_token.balance(&who),
+                    debt_token.balance(&who),
+                    s_token_supply,
+                    debt_token.total_supply(),
+                    received_asset.amount,
+                )?;
+
+                recalculate_reserve_data(
+                    &env,
+                    &received_asset.asset,
+                    &reserve,
+                    s_token_supply,
+                    debt_token_supply_after,
+                )?;
+            }
+
+            event::flash_loan(
+                &env,
+                &who,
+                &receiver,
+                &received_asset.asset,
+                received_asset.amount,
+                received_asset.premium,
+            );
+        }
+
+        Ok(())
+    }
+
+    /// Allows the end-users to borrow the assets within one transaction
+    /// ensuring the the amount taken + fee is returned.
+    ///
+    /// # Arguments
+    /// - receiver - The contract address that implements the FlashLoanReceiverTrait
+    /// and receives the requested assets.
+    /// - assets - The assets being flash borrowed. If the `borrow` flag is set to true,
+    /// opens debt for the flash-borrowed amount to the `who` address.
+    /// - params - An extra information for the receiver.
+    ///
+    /// # Panics
+    ///
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn flash_loan(
+        env: Env,
+        who: Address,
+        receiver: Address,
+        loan_assets: Vec<FlashLoanAsset>,
+        params: Bytes,
+    ) -> Result<(), Error> {
+        who.require_auth();
+        require_not_paused(&env);
+
+        let fee = FixedI128::from_percentage(read_flash_loan_fee(&env))
+            .ok_or(Error::MathOverflowError)?;
+
+        let loan_asset_len = loan_assets.len();
+        assert_with_error!(env, loan_asset_len > 0, Error::MustBePositive);
+
+        let mut receiver_assets = vec![&env];
+        let mut reserves = vec![&env];
+
+        let mut mints_burns = vec![&env];
+
+        for i in 0..loan_asset_len {
+            let loan_asset = loan_assets.get_unchecked(i);
+
+            require_positive_amount(&env, loan_asset.amount);
+
+            let reserve = read_reserve(&env, &loan_asset.asset)?;
+            require_active_reserve(&env, &reserve);
+            require_borrowing_enabled(&env, &reserve);
+
+            reserves.push_back(reserve);
+            receiver_assets.push_back(ReceiverAsset {
+                asset: loan_asset.asset,
+                amount: loan_asset.amount,
+                premium: fee
+                    .mul_int(loan_asset.amount)
+                    .ok_or(Error::MathOverflowError)?,
+            });
+        }
+
+        let loan_receiver = FlashLoanReceiverClient::new(&env, &receiver);
+        let loan_received = loan_receiver.receive(&receiver_assets, &params);
+        assert_with_error!(env, loan_received, Error::FlashLoanReceiverError);
+
+        let treasury = read_treasury(&env);
+
+        for i in 0..loan_asset_len {
+            let loan_asset = loan_assets.get_unchecked(i);
+            let received_asset = receiver_assets.get_unchecked(i);
+            let reserve = reserves.get_unchecked(i);
+
+            if !loan_asset.borrow {
+                mints_burns.push_back(MintBurn::new(
+                    AssetBalance::new(received_asset.asset.clone(), received_asset.premium),
+                    true,
+                    treasury.clone(),
+                ));
             } else {
                 let s_token = STokenClient::new(&env, &reserve.s_token_address);
                 let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);

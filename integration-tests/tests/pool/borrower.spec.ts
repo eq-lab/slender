@@ -3,6 +3,7 @@ import { balanceOf, init, mintUnderlyingTo, registerAccount } from "../pool.sut"
 import { adminKeys, borrower1Keys, lender1Keys } from "../soroban.config";
 import {
     convertToScvAddress,
+    convertToScvBool,
     convertToScvI128,
     parseMetaXdrToJs,
 } from "../soroban.converter";
@@ -20,11 +21,11 @@ describe("LendingPool", function () {
         let lender1Address = lender1Keys.publicKey();
         let borrower1Address = borrower1Keys.publicKey();
 
-        await mintUnderlyingTo(client, "XLM", lender1Address, 100_000_000_000n);
-        await mintUnderlyingTo(client, "XRP", lender1Address, 100_000_000_000n);
-        await mintUnderlyingTo(client, "USDC", lender1Address, 100_000_000_000n);
+        // await mintUnderlyingTo(client, "XLM", lender1Address, 100_000_000_000n);
+        // await mintUnderlyingTo(client, "XRP", lender1Address, 100_000_000_000n);
+        // await mintUnderlyingTo(client, "USDC", lender1Address, 100_000_000_000n);
 
-        await mintUnderlyingTo(client, "XRP", borrower1Address, 100_000_000_000n);
+        // await mintUnderlyingTo(client, "XRP", borrower1Address, 100_000_000_000n);
         // let lender1XlmBalance = await balanceOf(client, lender1Keys, lender1Address, "XLM");
         // let lender1XrpBalance = await balanceOf(client, lender1Keys, lender1Address, "XRP");
         // let lender1UsdcBalance = await balanceOf(client, lender1Keys, lender1Address, "USDC");
@@ -92,5 +93,27 @@ describe("LendingPool", function () {
             borrowerRepayResponse.resultMetaXdr
         );
         console.log(JSON.stringify(borrowerRepayResult, null, 2));
+
+        const flashLoanReceiverInitResponse = await client.sendTransaction(
+            process.env.FLASH_LOAN_RECEIVER,
+            "initialize",
+            borrower1Keys,
+            convertToScvAddress(borrower1Address),
+            convertToScvAddress(process.env.SLENDER_POOL),
+            convertToScvBool(false),
+        );
+
+        const flashLoanResponse = await client.sendTransaction(
+            process.env.FLASH_LOAN_RECEIVER,
+            "flash_loan",
+            borrower1Keys,
+            convertToScvAddress(borrower1Address),
+            convertToScvAddress(process.env.SLENDER_POOL),
+            convertToScvBool(false),
+        );
+        const flashLoanResult = parseMetaXdrToJs(
+            flashLoanResponse.resultMetaXdr
+        );
+        console.log(JSON.stringify(flashLoanResult, null, 2));
     });
 });
