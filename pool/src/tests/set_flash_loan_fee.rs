@@ -24,7 +24,7 @@ fn shoould_require_admin() {
                 function: AuthorizedFunction::Contract((
                     sut.pool.address.clone(),
                     Symbol::new(&env, "set_flash_loan_fee"),
-                    vec![&env, 10.into_val(&env)]
+                    vec![&env, 10u32.into_val(&env)]
                 )),
                 sub_invocations: std::vec![]
             }

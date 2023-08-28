@@ -1,212 +1,146 @@
-use crate::tests::sut::{fill_pool, init_pool, DAY};
-use crate::*;
-use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
-use soroban_sdk::{symbol_short, vec, IntoVal, Symbol};
+use crate::tests::sut::{fill_pool, init_pool};
+use pool_interface::FlashLoanAsset;
+use soroban_sdk::testutils::Events;
+use soroban_sdk::{vec, Bytes, Env, IntoVal, Symbol, Val, Vec};
 
 #[test]
-fn should_require_authorized_caller() {
+#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+fn should_fail_when_receiver_receive_returns_false() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let user = Address::random(&env);
     let sut = init_pool(&env, false);
-    let token_address = sut.token().address.clone();
+    let (_, borrower, _) = fill_pool(&env, &sut, false);
 
-    sut.token_admin().mint(&user, &1_000_000_000);
-    sut.pool.deposit(&user, &token_address, &1_000_000_000);
-
-    assert_eq!(
-        env.auths().pop().map(|f| f.1.function).unwrap(),
-        AuthorizedFunction::Contract((
-            sut.pool.address.clone(),
-            symbol_short!("deposit"),
-            (user.clone(), token_address, 1_000_000_000i128).into_val(&env)
-        )),
+    let _: Val = env.invoke_contract(
+        &sut.flash_loan_receiver.address,
+        &Symbol::new(&env, "initialize"),
+        vec![
+            &env,
+            borrower.into_val(&env),
+            sut.pool.address.into_val(&env),
+            true.into_val(&env),
+        ],
     );
-}
 
-#[test]
-#[should_panic(expected = "HostError: Error(Contract, #3)")]
-fn should_fail_when_pool_paused() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let user = Address::random(&env);
-    let sut = init_pool(&env, false);
-    let token_address = sut.token().address.clone();
-
-    sut.pool.set_pause(&true);
-    sut.pool.deposit(&user, &token_address, &1);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_deposit(&user, &token_address, &1)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::Paused
-    // )
-}
-
-#[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-fn should_fail_when_invalid_amount() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let user = Address::random(&env);
-    let sut = init_pool(&env, false);
-    let token_address = sut.token().address.clone();
-
-    sut.pool.deposit(&user, &token_address, &-1);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_deposit(&user, &token_address, &-1)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::InvalidAmount
-    // )
-}
-
-#[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-fn should_fail_when_reserve_deactivated() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let user = Address::random(&env);
-    let sut = init_pool(&env, false);
-    let token_address = sut.token().address.clone();
-
-    sut.pool.set_reserve_status(&token_address, &false);
-    sut.pool.deposit(&user, &token_address, &1);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_deposit(&user, &token_address, &1)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::NoActiveReserve
-    // )
-}
-
-#[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-fn should_fail_when_liq_cap_exceeded() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, false);
-
-    let token = &sut.reserves[0].token;
-    let token_admin = &sut.reserves[0].token_admin;
-    let s_token = &sut.reserves[0].s_token;
-    let decimals = s_token.decimals();
-
-    let user = Address::random(&env);
-    let initial_balance = 1_000_000_000 * 10i128.pow(decimals);
-
-    token_admin.mint(&user, &initial_balance);
-    assert_eq!(token.balance(&user), initial_balance);
-
-    let deposit_amount = initial_balance;
-    sut.pool.deposit(&user, &token.address, &deposit_amount);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_deposit(&user, &token.address, &deposit_amount)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::LiqCapExceeded
-    // )
-}
-
-#[test]
-fn should_change_user_config() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let user = Address::random(&env);
-    let sut = init_pool(&env, false);
-    let token_address = sut.token().address.clone();
-
-    sut.token_admin().mint(&user, &1_000_000_000);
-    sut.pool.deposit(&user, &token_address, &1_000_000_000);
-
-    let user_config = sut.pool.user_configuration(&user);
-    let reserve = sut.pool.get_reserve(&token_address).unwrap();
-
-    assert_eq!(
-        user_config.is_using_as_collateral(&env, reserve.get_id()),
-        true
+    let loan_assets = Vec::from_array(
+        &env,
+        [FlashLoanAsset {
+            asset: sut.reserves[0].token.address.clone(),
+            amount: 1000000,
+            borrow: false,
+        }],
     );
+
+    sut.pool.flash_loan(
+        &borrower,
+        &sut.flash_loan_receiver.address,
+        &loan_assets,
+        &Bytes::new(&env),
+    );
+
+    // assert_eq!(
+    //     sut.pool
+    //         .try_flash_loan(
+    //             &borrower,
+    //             &sut.flash_loan_receiver.address,
+    //             &loan_assets,
+    //             &Bytes::new(&env)
+    //         )
+    //         .unwrap_err()
+    //         .unwrap(),
+    //     Error::FlashLoanReceiverError
+    // )
 }
 
 #[test]
-fn should_change_balances() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let user = Address::random(&env);
-    let sut = init_pool(&env, false);
-    let token_address = sut.token().address.clone();
-
-    sut.token_admin().mint(&user, &10_000_000_000);
-    sut.pool.deposit(&user, &token_address, &3_000_000_000);
-
-    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&sut.s_token().address);
-    let user_balance = sut.token().balance(&user);
-    let user_stoken_balance = sut.s_token().balance(&user);
-
-    assert_eq!(stoken_underlying_balance, 3_000_000_000);
-    assert_eq!(user_balance, 7_000_000_000);
-    assert_eq!(user_stoken_balance, 3_000_000_000);
-}
-
-#[test]
-fn should_affect_coeffs() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, false);
-    let (lender, _, debt_config) = fill_pool(&env, &sut, true);
-    let debt_token = &debt_config.token.address;
-
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
-
-    let collat_coeff_prev = sut.pool.collat_coeff(&debt_token);
-    let debt_coeff_prev = sut.pool.debt_coeff(&debt_token);
-
-    sut.pool
-        .deposit(&lender, &sut.reserves[1].token.address, &100_000_000);
-
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
-
-    let collat_coeff = sut.pool.collat_coeff(&debt_token);
-    let debt_coeff = sut.pool.debt_coeff(&debt_token);
-
-    assert!(collat_coeff_prev < collat_coeff);
-    assert!(debt_coeff_prev < debt_coeff);
-}
-
-#[test]
-fn should_affect_account_data() {
+fn should_require_borrower_to_pay_fee() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
-    let (_, borrower, _) = fill_pool(&env, &sut, true);
+    let (_, borrower, _) = fill_pool(&env, &sut, false);
 
-    let account_position_prev = sut.pool.account_position(&borrower);
+    let _: Val = env.invoke_contract(
+        &sut.flash_loan_receiver.address,
+        &Symbol::new(&env, "initialize"),
+        vec![
+            &env,
+            borrower.into_val(&env),
+            sut.pool.address.into_val(&env),
+            false.into_val(&env),
+        ],
+    );
 
-    sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &200_000_000);
+    let loan_assets = Vec::from_array(
+        &env,
+        [
+            FlashLoanAsset {
+                asset: sut.reserves[0].token.address.clone(),
+                amount: 1000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[1].token.address.clone(),
+                amount: 2000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[2].token.address.clone(),
+                amount: 3000000,
+                borrow: false,
+            },
+        ],
+    );
 
-    let account_position = sut.pool.account_position(&borrower);
+    let treasury_asset_0_before = sut.reserves[0].token.balance(&sut.pool.treasury());
+    let treasury_asset_1_before = sut.reserves[1].token.balance(&sut.pool.treasury());
+    let treasury_asset_2_before = sut.reserves[2].token.balance(&sut.pool.treasury());
 
-    assert!(account_position_prev.discounted_collateral < account_position.discounted_collateral);
-    assert!(account_position_prev.debt == account_position.debt);
-    assert!(account_position_prev.npv < account_position.npv);
+    let s_token_undetlying_asset_0_before = sut.reserves[0]
+        .token
+        .balance(&sut.reserves[0].s_token.address);
+    let s_token_undetlying_asset_1_before = sut.reserves[0]
+        .token
+        .balance(&sut.reserves[1].s_token.address);
+    let s_token_undetlying_asset_2_before = sut.reserves[0]
+        .token
+        .balance(&sut.reserves[2].s_token.address);
+
+    sut.pool.flash_loan(
+        &borrower,
+        &sut.flash_loan_receiver.address,
+        &loan_assets,
+        &Bytes::new(&env),
+    );
+
+    let treasury_asset_0_after = sut.reserves[0].token.balance(&sut.pool.treasury());
+    let treasury_asset_1_after = sut.reserves[1].token.balance(&sut.pool.treasury());
+    let treasury_asset_2_after = sut.reserves[2].token.balance(&sut.pool.treasury());
+
+    let s_token_undetlying_asset_0_after = sut.reserves[0]
+        .token
+        .balance(&sut.reserves[0].s_token.address);
+    let s_token_undetlying_asset_1_after = sut.reserves[0]
+        .token
+        .balance(&sut.reserves[1].s_token.address);
+    let s_token_undetlying_asset_2_after = sut.reserves[0]
+        .token
+        .balance(&sut.reserves[2].s_token.address);
+
+    assert_eq!(treasury_asset_0_before, 0);
+    assert_eq!(treasury_asset_1_before, 0);
+    assert_eq!(treasury_asset_2_before, 0);
+    assert_eq!(s_token_undetlying_asset_0_before, 200_000_000);
+    assert_eq!(s_token_undetlying_asset_1_before, 0);
+    assert_eq!(s_token_undetlying_asset_2_before, 0);
+
+    assert_eq!(treasury_asset_0_after, 500);
+    assert_eq!(treasury_asset_1_after, 1000);
+    assert_eq!(treasury_asset_2_after, 1500);
+    assert_eq!(s_token_undetlying_asset_0_after, 200_000_000);
+    assert_eq!(s_token_undetlying_asset_1_after, 0);
+    assert_eq!(s_token_undetlying_asset_2_after, 0);
 }
 
 #[test]
@@ -215,44 +149,51 @@ fn should_emit_events() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, false);
 
-    let user = Address::random(&env);
-    let token_address = sut.token().address.clone();
+    let _: Val = env.invoke_contract(
+        &sut.flash_loan_receiver.address,
+        &Symbol::new(&env, "initialize"),
+        vec![
+            &env,
+            borrower.into_val(&env),
+            sut.pool.address.into_val(&env),
+            false.into_val(&env),
+        ],
+    );
 
-    sut.token_admin().mint(&user, &10_000_000_000);
-    assert_eq!(sut.token().balance(&user), 10_000_000_000);
+    let loan_assets = Vec::from_array(
+        &env,
+        [FlashLoanAsset {
+            asset: sut.reserves[0].token.address.clone(),
+            amount: 1000000,
+            borrow: false,
+        }],
+    );
 
-    sut.pool.deposit(&user, &token_address, &5_000_000_000);
+    sut.pool.flash_loan(
+        &borrower,
+        &sut.flash_loan_receiver.address,
+        &loan_assets,
+        &Bytes::new(&env),
+    );
 
-    let mut events = env.events().all();
-    let event = events.pop_back_unchecked();
+    let events = env.events().all().pop_back_unchecked();
 
     assert_eq!(
-        vec![&env, event],
+        vec![&env, events],
         vec![
             &env,
             (
                 sut.pool.address.clone(),
                 (
-                    Symbol::new(&env, "reserve_used_as_coll_enabled"),
-                    user.clone()
+                    Symbol::new(&env, "flash_loan"),
+                    &borrower,
+                    &sut.flash_loan_receiver.address,
+                    &sut.reserves[0].token.address
                 )
                     .into_val(&env),
-                (token_address.clone()).into_val(&env)
-            ),
-        ]
-    );
-
-    let event = events.pop_back_unchecked();
-
-    assert_eq!(
-        vec![&env, event],
-        vec![
-            &env,
-            (
-                sut.pool.address.clone(),
-                (Symbol::new(&env, "deposit"), user.clone()).into_val(&env),
-                (token_address, 5_000_000_000i128).into_val(&env)
+                (1000000i128, 500i128).into_val(&env)
             ),
         ]
     );

@@ -7,3 +7,6 @@ description = "Flash loan receiver interface"
 
 [dependencies]
 soroban-sdk = { workspace = true }
+
+[features]
+testutils = ["soroban-sdk/testutils"]

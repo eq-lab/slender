@@ -1509,20 +1509,21 @@ impl LendingPoolTrait for LendingPool {
             let reserve = reserves.get_unchecked(i);
 
             if !loan_asset.borrow {
+                let amount_with_premium = received_asset
+                    .amount
+                    .checked_add(received_asset.premium)
+                    .ok_or(Error::MathOverflowError)?;
+
                 let underlying_asset = token::Client::new(&env, &received_asset.asset);
+                let s_token = STokenClient::new(&env, &reserve.s_token_address);
 
                 underlying_asset.transfer_from(
                     &env.current_contract_address(),
                     &receiver,
                     &reserve.s_token_address,
-                    &received_asset.amount,
+                    &amount_with_premium,
                 );
-                underlying_asset.transfer_from(
-                    &env.current_contract_address(),
-                    &receiver,
-                    &treasury,
-                    &received_asset.premium,
-                );
+                s_token.transfer_underlying_to(&treasury, &received_asset.premium);
             } else {
                 let s_token = STokenClient::new(&env, &reserve.s_token_address);
                 let debt_token = DebtTokenClient::new(&env, &reserve.debt_token_address);

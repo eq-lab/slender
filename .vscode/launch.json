@@ -21,11 +21,11 @@
                 //     "kind": "lib"
                 // }
             },
-            "args": [
-                "tests::set_flash_loan_fee::shoould_set_flash_loan_fee",
-                "--exact",
-                "--nocapture"
-            ],
+            // "args": [
+            //     "tests::test_file::test_name",
+            //     "--exact",
+            //     "--nocapture"
+            // ],
             "cwd": "${workspaceFolder}"
         },
         {
