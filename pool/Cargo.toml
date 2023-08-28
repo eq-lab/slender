@@ -20,7 +20,8 @@ common = { path = "../common", version = "0.1.0", package = "common" }
 
 [dev_dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
-s-token-interface = { path = "../s-token-interface" }
+s-token-interface = { path = "../s-token-interface", features = ["testutils"] }
+pool-interface = { path = "../pool-interface", features = ["testutils"] }
 
 [features]
 testutils = [

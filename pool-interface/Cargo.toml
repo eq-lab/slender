@@ -11,5 +11,7 @@ soroban-sdk = { workspace = true }
 common = { path = "../common", version = "0.1.0", package = "common" }
 
 [features]
-testutils = []
+testutils = [
+    "soroban-sdk/testutils"
+]
 exceeded-limit-fix = []
