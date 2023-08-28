@@ -2384,6 +2384,11 @@ fn do_liquidate(
                     false,
                     who.clone(),
                 ));
+                add_token_total_supply(
+                    env,
+                    &reserve.s_token_address,
+                    s_token_to_burn.checked_neg().unwrap(),
+                )?;
                 mint_burn_vec.push_back(MintBurn::new(
                     AssetBalance::new(asset.clone(), repayment_amount),
                     true,
@@ -2471,6 +2476,11 @@ fn do_liquidate(
                 false,
                 who.clone(),
             ));
+            add_token_total_supply(
+                env,
+                &reserve.s_token_address,
+                s_token_amount.checked_neg().unwrap(),
+            )?;
             mint_burn_vec.push_back(MintBurn::new(
                 AssetBalance::new(asset.clone(), underlying_amount),
                 true,
