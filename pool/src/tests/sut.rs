@@ -56,9 +56,12 @@ pub(crate) fn create_pool_contract<'a>(
     };
 
     let treasury = Address::random(e);
+    let flash_loan_fee = 5;
+
     client.initialize(
         &admin,
         &treasury,
+        &flash_loan_fee,
         &IRParams {
             alpha: 143,
             initial_rate: 200,

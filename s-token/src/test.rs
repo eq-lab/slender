@@ -40,10 +40,12 @@ fn create_token<'a>(
     let pool = pool::Client::new(e, &e.register_contract_wasm(None, pool::WASM));
     let pool_admin = Address::random(e);
     let treasury = Address::random(e);
+    let flash_loan_fee = 5;
 
     pool.initialize(
         &pool_admin,
         &treasury,
+        &flash_loan_fee,
         &IRParams {
             alpha: 143,
             initial_rate: 200,

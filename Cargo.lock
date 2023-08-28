@@ -451,6 +451,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "flash-loan-receiver-mock"
+version = "0.1.0"
+dependencies = [
+ "flash-loan-receiver-interface",
+ "soroban-sdk",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
