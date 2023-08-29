@@ -25,7 +25,7 @@ describe("LendingPool", function () {
             .fromXDR(poolInstanceLedgerEntriesRaw.entries[0].xdr, "base64");
         const poolInstanceStorageEntries = (poolInstanceLedgerEntries.value() as any).body().value().val().value().storage();
 
-        const asdqweqweq1 = parseScvToJs(poolInstanceStorageEntries[1].val());
-        console.log(JSON.stringify(asdqweqweq1, null, 2));
+        const vec_value_1 = parseScvToJs(poolInstanceStorageEntries[1].val());
+        console.log(JSON.stringify(vec_value_1, null, 2));
     });
 });
