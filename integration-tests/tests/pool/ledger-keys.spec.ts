@@ -30,6 +30,11 @@ describe("LendingPool", function () {
         const vec_value_1 = parseScvToJs(poolInstanceStorageEntries[1].val());
         console.log(`KEY: ${vec_key_1} \nVALUE: ${JSON.stringify(vec_value_1, null, 2)}`);
 
+        // treasury
+        const vec_key_12 = parseScvToJs(poolInstanceStorageEntries[12].key());
+        const vec_value_12 = parseScvToJs(poolInstanceStorageEntries[12].val());
+        console.log(`KEY: ${vec_key_12} \nVALUE: ${JSON.stringify(vec_value_12, null, 2)}`);
+
         for (let i = 0; i < poolInstanceStorageEntries.length; i++) {
             console.log(`KEY ${i + 1}: ${parseScvToJs(poolInstanceStorageEntries[i].key())}`);
         }
