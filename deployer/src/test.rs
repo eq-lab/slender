@@ -31,6 +31,7 @@ fn deploy_pool_and_s_token() {
         max_rate: 50_000,
         scaling_coeff: 9_000,
     };
+    let flash_loan_fee = 5;
     let pool_contract_id = {
         // Install the WASM code to be deployed from the deployer contract.
         let pool_wasm_hash = env.deployer().upload_contract_wasm(pool::WASM);
@@ -45,6 +46,7 @@ fn deploy_pool_and_s_token() {
             &pool_wasm_hash,
             &pool_admin,
             &treasury,
+            &flash_loan_fee,
             &pool_ir_params,
         );
         assert!(init_result.is_void());

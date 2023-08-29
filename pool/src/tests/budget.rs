@@ -334,10 +334,12 @@ fn treasury() {
     env.mock_all_auths();
 
     let pool = LendingPoolClient::new(&env, &env.register_contract(None, LendingPool));
+    let flash_loan_fee = 5;
 
     pool.initialize(
         &Address::random(&env),
         &Address::random(&env),
+        &flash_loan_fee,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
@@ -406,6 +408,30 @@ pub fn measure_budget(env: &Env, function: &str, callback: impl FnOnce()) {
     if let Err(e) = result {
         panic!("Failed to write budget consumption: {}", e);
     }
+}
+
+#[test]
+fn flash_loan_fee() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+
+    measure_budget(&env, nameof(flash_loan_fee), || {
+        sut.pool.flash_loan_fee();
+    });
+}
+
+#[test]
+fn set_flash_loan_fee() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+
+    measure_budget(&env, nameof(set_flash_loan_fee), || {
+        sut.pool.set_flash_loan_fee(&15);
+    });
 }
 
 fn nameof<F>(_: F) -> &'static str

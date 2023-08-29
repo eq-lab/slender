@@ -3,7 +3,7 @@
 
 pub use reserve_config::*;
 use soroban_sdk::{
-    contractclient, contracterror, contractspecfn, contracttype, Address, BytesN, Env, Vec,
+    contractclient, contracterror, contractspecfn, contracttype, Address, Bytes, BytesN, Env, Vec,
 };
 pub use user_config::*;
 
@@ -48,6 +48,7 @@ pub enum Error {
     MustNotBeInCollateralAsset = 310,
     UtilizationCapExceeded = 311,
     LiqCapExceeded = 312,
+    FlashLoanReceiverError = 313,
 
     MathOverflowError = 400,
     MustBeLtePercentageFactor = 401,
@@ -71,6 +72,13 @@ pub struct AccountPosition {
 pub struct AssetBalance {
     pub asset: Address,
     pub balance: i128,
+}
+
+#[contracttype]
+pub struct FlashLoanAsset {
+    pub asset: Address,
+    pub amount: i128,
+    pub borrow: bool,
 }
 
 impl AssetBalance {
@@ -106,6 +114,7 @@ pub trait LendingPoolTrait {
         env: Env,
         admin: Address,
         treasury: Address,
+        flash_loan_fee: u32,
         ir_params: IRParams,
     ) -> Result<(), Error>;
 
@@ -238,6 +247,28 @@ pub trait LendingPoolTrait {
 
     #[cfg(feature = "exceeded-limit-fix")]
     fn set_price(env: Env, asset: Address, price: i128);
+
+    fn set_flash_loan_fee(env: Env, fee: u32) -> Result<(), Error>;
+
+    fn flash_loan_fee(env: Env) -> u32;
+
+    #[cfg(not(feature = "exceeded-limit-fix"))]
+    fn flash_loan(
+        env: Env,
+        who: Address,
+        receiver: Address,
+        assets: Vec<FlashLoanAsset>,
+        params: Bytes,
+    ) -> Result<(), Error>;
+
+    #[cfg(feature = "exceeded-limit-fix")]
+    fn flash_loan(
+        env: Env,
+        who: Address,
+        receiver: Address,
+        assets: Vec<FlashLoanAsset>,
+        params: Bytes,
+    ) -> Result<Vec<MintBurn>, Error>;
 
     #[cfg(feature = "exceeded-limit-fix")]
     fn get_price(env: Env, asset: Address) -> i128;

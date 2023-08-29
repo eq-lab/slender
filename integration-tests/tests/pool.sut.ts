@@ -182,6 +182,7 @@ async function initPool(client: SorobanClient, salt: string): Promise<void> {
             convertToScvBytes(process.env.SLENDER_POOL_HASH, "hex"),
             convertToScvAddress(adminKeys.publicKey()),
             convertToScvAddress(treasuryKeys.publicKey()),
+            convertToScvU32(5),
             convertToScvMap({
                 "alpha": convertToScvU32(143),
                 "initial_rate": convertToScvU32(200),

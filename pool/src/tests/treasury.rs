@@ -10,10 +10,12 @@ fn should_return_treasury_address() {
 
     let admin = Address::random(&env);
     let treasury = Address::random(&env);
+    let flash_loan_fee = 5;
 
     pool.initialize(
         &admin,
         &treasury,
+        &flash_loan_fee,
         &IRParams {
             alpha: 143,
             initial_rate: 200,

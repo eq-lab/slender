@@ -17,6 +17,12 @@ mod pool {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/pool.wasm");
 }
 
+mod flash_loan_receiver {
+    soroban_sdk::contractimport!(
+        file = "../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm"
+    );
+}
+
 mod s_token {
     soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/s_token.wasm");
 }
@@ -56,9 +62,12 @@ pub(crate) fn create_pool_contract<'a>(
     };
 
     let treasury = Address::random(e);
+    let flash_loan_fee = 5;
+
     client.initialize(
         &admin,
         &treasury,
+        &flash_loan_fee,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
@@ -108,6 +117,13 @@ pub(crate) fn create_price_feed_contract<'a>(e: &Env) -> PriceFeedClient<'a> {
     PriceFeedClient::new(&e, &e.register_contract_wasm(None, price_feed::WASM))
 }
 
+pub(crate) fn create_flash_loan_receiver_contract<'a>(e: &Env) -> FlashLoanReceiverClient<'a> {
+    FlashLoanReceiverClient::new(
+        &e,
+        &e.register_contract_wasm(None, flash_loan_receiver::WASM),
+    )
+}
+
 pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
     env.budget().reset_unlimited();
 
@@ -116,6 +132,8 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
 
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, use_pool_wasm);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
+    let flash_loan_receiver: FlashLoanReceiverClient<'_> =
+        create_flash_loan_receiver_contract(&env);
 
     let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..3)
         .map(|_| {
@@ -182,6 +200,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
     Sut {
         pool,
         price_feed,
+        flash_loan_receiver,
         pool_admin: admin,
         token_admin: token_admin,
         reserves,
@@ -301,6 +320,7 @@ pub struct ReserveConfig<'a> {
 pub struct Sut<'a> {
     pub pool: LendingPoolClient<'a>,
     pub price_feed: PriceFeedClient<'a>,
+    pub flash_loan_receiver: FlashLoanReceiverClient<'a>,
     pub pool_admin: Address,
     pub token_admin: Address,
     pub reserves: std::vec::Vec<ReserveConfig<'a>>,

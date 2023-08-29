@@ -1,6 +1,7 @@
 import { Server, Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc, Account } from "soroban-client";
 import { promisify } from "util";
 import "./soroban.config";
+import { convertToScvAddress } from "./soroban.converter";
 
 export class SorobanClient {
     client: Server;
