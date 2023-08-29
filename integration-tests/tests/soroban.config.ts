@@ -3,7 +3,7 @@ import { Keypair } from "soroban-client";
 
 export const contractsFilename = ".contracts";
 
-require("dotenv").config({ path: `.${process.env.NODE_ENV}.env` });
+require("dotenv").config({ path: `.futurenet.env` });
 require("dotenv").config({ path: contractsFilename });
 
 export const adminKeys = Keypair.fromSecret(process.env.ADMIN_SECRET);

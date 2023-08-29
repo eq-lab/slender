@@ -98,7 +98,7 @@ function parseScvToBigInt(scval: xdr.ScVal | undefined): BigInt {
     };
 }
 
-function parseScvToJs<T>(val: xdr.ScVal): T {
+export function parseScvToJs<T>(val: xdr.ScVal): T {
     switch (val?.switch()) {
         case xdr.ScValType.scvBool(): {
             return val.b() as unknown as T;
