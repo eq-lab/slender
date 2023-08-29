@@ -168,6 +168,8 @@ export function parseScvToJs<T>(val: xdr.ScVal): T {
         }
         case xdr.ScValType.scvLedgerKeyNonce():
             return val.nonceKey() as unknown as T;
+        case xdr.ScValType.scvContractInstance():
+            return val.instance() as unknown as T;
         case xdr.ScValType.scvTimepoint():
             return val.timepoint() as unknown as T;
         case xdr.ScValType.scvDuration():
