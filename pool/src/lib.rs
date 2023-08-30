@@ -4,6 +4,9 @@
 use crate::price_provider::PriceProvider;
 use common::{FixedI128, PERCENTAGE_FACTOR};
 use debt_token_interface::DebtTokenClient;
+#[cfg(feature = "exceeded-limit-fix")]
+use flash_loan_receiver_interface::Asset as ReceiverAsset;
+#[cfg(not(feature = "exceeded-limit-fix"))]
 use flash_loan_receiver_interface::{Asset as ReceiverAsset, FlashLoanReceiverClient};
 use pool_interface::*;
 use rate::{calc_accrued_rates, calc_next_accrued_rate};
@@ -1969,6 +1972,7 @@ fn do_deposit(
 }
 
 #[allow(clippy::too_many_arguments)]
+#[cfg(not(feature = "exceeded-limit-fix"))]
 fn do_borrow(
     env: &Env,
     who: &Address,
