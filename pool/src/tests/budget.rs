@@ -186,10 +186,8 @@ fn liquidate() {
     let sut = init_pool(&env, false);
     let (_, borrower, liquidator, _) = fill_pool_three(&env, &sut);
 
-    sut.pool.liquidate(&liquidator, &borrower, &true);
-
     measure_budget(&env, nameof(liquidate), || {
-        sut.pool.ir_params();
+        sut.pool.liquidate(&liquidator, &borrower, &true);
     });
 }
 
@@ -381,13 +379,17 @@ fn withdraw() {
 }
 
 pub fn measure_budget(env: &Env, function: &str, callback: impl FnOnce()) {
-    env.budget().reset_tracker();
+    let cpu_before = env.budget().cpu_instruction_cost();
+    // TODO: bug in v0.9.2 (returns CPU cost)
+    let memory_before = env.budget().memory_bytes_cost();
 
     callback();
 
-    let cpu = env.budget().cpu_instruction_cost();
-    // TODO: bug in v0.9.2 (returns CPU cost)
-    let memory = env.budget().memory_bytes_cost();
+    let cpu_after = env.budget().cpu_instruction_cost();
+    let memory_after = env.budget().memory_bytes_cost();
+
+    let cpu = cpu_after - cpu_before;
+    let memory = memory_after - memory_before;
 
     let budget = &[
         std::format!("['{}'] = {{\n", function),
