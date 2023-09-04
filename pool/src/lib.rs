@@ -394,9 +394,15 @@ impl LendingPoolTrait for LendingPool {
     /// - asset - The address of underlying asset
     fn collat_coeff(env: Env, asset: Address) -> Result<i128, Error> {
         let reserve = read_reserve(&env, &asset)?;
+        #[cfg(not(feature = "exceeded-limit-fix"))]
         let s_token_supply = STokenClient::new(&env, &reserve.s_token_address).total_supply();
+        #[cfg(not(feature = "exceeded-limit-fix"))]
         let debt_token_supply =
             DebtTokenClient::new(&env, &reserve.debt_token_address).total_supply();
+        #[cfg(feature = "exceeded-limit-fix")]
+        let s_token_supply = read_token_total_supply(&env, &reserve.s_token_address);
+        #[cfg(feature = "exceeded-limit-fix")]
+        let debt_token_supply = read_token_total_supply(&env, &reserve.debt_token_address);
 
         get_collat_coeff(&env, &reserve, s_token_supply, debt_token_supply)
             .map(|fixed| fixed.into_inner())
