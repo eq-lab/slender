@@ -11,6 +11,9 @@ test: build
 	cargo test -p pool budget --features budget -- --test-threads=1
 	cargo test -p debt-token
 
+budget: build
+	cargo test -p pool budget --features budget -- --test-threads=1 --nocapture
+
 integration-test: build
 	yarn --cwd integration-tests test-$(env)
 
