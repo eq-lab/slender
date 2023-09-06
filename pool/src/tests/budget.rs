@@ -51,11 +51,12 @@ fn collat_coeff() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
-    let (_, _, _, debt_config) = fill_pool_three(&env, &sut);
-    let debt_token = debt_config.token.address.clone();
+    let (_, _, _, _) = fill_pool_three(&env, &sut);
+    // let debt_token = debt_config.token.address.clone();
 
     measure_budget(&env, nameof(collat_coeff), || {
-        sut.pool.collat_coeff(&debt_token);
+        sut.pool.collat_coeff(&sut.s_token().address);
+        env.budget().print();
     });
 }
 

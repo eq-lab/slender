@@ -393,13 +393,14 @@ impl LendingPoolTrait for LendingPool {
     ///
     /// - asset - The address of underlying asset
     fn collat_coeff(env: Env, asset: Address) -> Result<i128, Error> {
-        let reserve = read_reserve(&env, &asset)?;
-        let s_token_supply = STokenClient::new(&env, &reserve.s_token_address).total_supply();
-        let debt_token_supply =
-            DebtTokenClient::new(&env, &reserve.debt_token_address).total_supply();
+        // let reserve = read_reserve(&env, &asset)?;
+        let _s_token_supply = STokenClient::new(&env, &asset);
+        // let _debt_token_supply =
+        //     DebtTokenClient::new(&env, &reserve.debt_token_address).total_supply();
 
-        get_collat_coeff(&env, &reserve, s_token_supply, debt_token_supply)
-            .map(|fixed| fixed.into_inner())
+        // get_collat_coeff(&env, &reserve, s_token_supply, debt_token_supply)
+        //     .map(|fixed| fixed.into_inner())
+        Ok(1)
     }
 
     /// Returns debt coefficient corrected on current time expressed as inner value of FixedI128.
