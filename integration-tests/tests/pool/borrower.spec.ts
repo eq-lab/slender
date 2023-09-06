@@ -25,6 +25,13 @@ describe("LendingPool", function () {
         let lender1Address = lender1Keys.publicKey();
         let borrower1Address = borrower1Keys.publicKey();
 
+        const collatCoeffResponse = await client.sendTransaction(
+            process.env.SLENDER_POOL,
+            "collat_coeff",
+            lender1Keys,
+            convertToScvAddress(process.env.SLENDER_S_TOKEN_XLM)
+        );
+
         await mintUnderlyingTo(client, "XLM", lender1Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "XRP", lender1Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "USDC", lender1Address, 100_000_000_000n);

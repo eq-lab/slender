@@ -33,6 +33,8 @@ export class SorobanClient {
             .setTimeout(TimeoutInfinite)
             .build();
 
+        const simulation = await this.client.simulateTransaction(operation);
+
         const transaction = await this.client.prepareTransaction(
             operation,
             process.env.PASSPHRASE);

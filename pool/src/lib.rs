@@ -394,7 +394,7 @@ impl LendingPoolTrait for LendingPool {
     /// - asset - The address of underlying asset
     fn collat_coeff(env: Env, asset: Address) -> Result<i128, Error> {
         // let reserve = read_reserve(&env, &asset)?;
-        let _s_token_supply = STokenClient::new(&env, &asset);
+        let _s_token_supply = STokenClient::new(&env, &asset).total_supply();
         // let _debt_token_supply =
         //     DebtTokenClient::new(&env, &reserve.debt_token_address).total_supply();
 

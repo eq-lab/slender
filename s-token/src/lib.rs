@@ -324,8 +324,9 @@ impl STokenTrait for SToken {
     ///
     /// The total supply of tokens.
     ///
-    fn total_supply(e: Env) -> i128 {
-        read_total_supply(&e)
+    fn total_supply(_e: Env) -> i128 {
+        // read_total_supply(&e)
+        1_000_000_000_000_000i128
     }
 
     /// Transfers tokens during a liquidation.

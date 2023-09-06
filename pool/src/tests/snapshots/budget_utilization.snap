@@ -1,300 +1,104 @@
 ['pool::tests::budget::account_position'] = {
-    "cpu_cost": 39614757,
-    "memory_cost": 39614757,
+    "cpu_cost": 39660816,
+    "memory_cost": 39660816,
 }
 ['pool::tests::budget::borrow'] = {
-    "cpu_cost": 81031451,
-    "memory_cost": 81031451,
+    "cpu_cost": 81094373,
+    "memory_cost": 81094373,
 }
 ['pool::tests::budget::collat_coeff'] = {
-    "cpu_cost": 15589053,
-    "memory_cost": 15589053,
+    "cpu_cost": 10122617,
+    "memory_cost": 10122617,
 }
 ['pool::tests::budget::configure_as_collateral'] = {
-    "cpu_cost": 1427687,
-    "memory_cost": 1427687,
+    "cpu_cost": 1430983,
+    "memory_cost": 1430983,
 }
 ['pool::tests::budget::debt_coeff'] = {
-    "cpu_cost": 760726,
-    "memory_cost": 760726,
+    "cpu_cost": 760840,
+    "memory_cost": 760840,
 }
 ['pool::tests::budget::deposit'] = {
-    "cpu_cost": 36893246,
-    "memory_cost": 36893246,
+    "cpu_cost": 36912860,
+    "memory_cost": 36912860,
 }
 ['pool::tests::budget::enable_borrowing_on_reserve'] = {
-    "cpu_cost": 1387602,
-    "memory_cost": 1387602,
+    "cpu_cost": 1381506,
+    "memory_cost": 1381506,
 }
 ['pool::tests::budget::flash_loan_fee'] = {
-    "cpu_cost": 678689,
-    "memory_cost": 678689,
+    "cpu_cost": 679307,
+    "memory_cost": 679307,
 }
 ['pool::tests::budget::get_reserve'] = {
-    "cpu_cost": 742342,
-    "memory_cost": 742342,
+    "cpu_cost": 738868,
+    "memory_cost": 738868,
 }
 ['pool::tests::budget::init_reserve'] = {
-    "cpu_cost": 488731,
-    "memory_cost": 488731,
-}
-['pool::tests::budget::ir_params'] = {
-    "cpu_cost": 686806,
-    "memory_cost": 686806,
-}
-['pool::tests::budget::liquidate'] = {
-    "cpu_cost": 101988409,
-    "memory_cost": 101988409,
-}
-['pool::tests::budget::paused'] = {
-    "cpu_cost": 668912,
-    "memory_cost": 668912,
-}
-['pool::tests::budget::price_feed'] = {
-    "cpu_cost": 680627,
-    "memory_cost": 680627,
-}
-['pool::tests::budget::repay'] = {
-    "cpu_cost": 28277074,
-    "memory_cost": 28277074,
-}
-['pool::tests::budget::set_as_collateral'] = {
-    "cpu_cost": 39906978,
-    "memory_cost": 39906978,
-}
-['pool::tests::budget::set_flash_loan_fee'] = {
-    "cpu_cost": 1287301,
-    "memory_cost": 1287301,
-}
-['pool::tests::budget::set_ir_params'] = {
-    "cpu_cost": 1359856,
-    "memory_cost": 1359856,
-}
-['pool::tests::budget::set_pause'] = {
-    "cpu_cost": 1287249,
-    "memory_cost": 1287249,
-}
-['pool::tests::budget::set_price_feed'] = {
-    "cpu_cost": 327508,
-    "memory_cost": 327508,
-}
-['pool::tests::budget::set_reserve_status'] = {
-    "cpu_cost": 1390050,
-    "memory_cost": 1390050,
-}
-['pool::tests::budget::stoken_underlying_balance'] = {
-    "cpu_cost": 706716,
-    "memory_cost": 706716,
-}
-['pool::tests::budget::treasury'] = {
-    "cpu_cost": 119132,
-    "memory_cost": 119132,
-}
-['pool::tests::budget::user_configuration'] = {
-    "cpu_cost": 352511,
-    "memory_cost": 352511,
-}
-['pool::tests::budget::withdraw'] = {
-    "cpu_cost": 37120139,
-    "memory_cost": 37120139,
-}
-['pool::tests::budget::account_position'] = {
-    "cpu_cost": 39623494,
-    "memory_cost": 39623494,
-}
-['pool::tests::budget::borrow'] = {
-    "cpu_cost": 81023550,
-    "memory_cost": 81023550,
-}
-['pool::tests::budget::collat_coeff'] = {
-    "cpu_cost": 15587107,
-    "memory_cost": 15587107,
-}
-['pool::tests::budget::configure_as_collateral'] = {
-    "cpu_cost": 1419531,
-    "memory_cost": 1419531,
-}
-['pool::tests::budget::debt_coeff'] = {
-    "cpu_cost": 760634,
-    "memory_cost": 760634,
-}
-['pool::tests::budget::deposit'] = {
-    "cpu_cost": 36892702,
-    "memory_cost": 36892702,
-}
-['pool::tests::budget::enable_borrowing_on_reserve'] = {
-    "cpu_cost": 1388426,
-    "memory_cost": 1388426,
-}
-['pool::tests::budget::flash_loan_fee'] = {
-    "cpu_cost": 678071,
-    "memory_cost": 678071,
-}
-['pool::tests::budget::get_reserve'] = {
-    "cpu_cost": 735394,
-    "memory_cost": 735394,
-}
-['pool::tests::budget::init_reserve'] = {
-    "cpu_cost": 489761,
-    "memory_cost": 489761,
+    "cpu_cost": 493263,
+    "memory_cost": 493263,
 }
 ['pool::tests::budget::ir_params'] = {
     "cpu_cost": 686188,
     "memory_cost": 686188,
 }
 ['pool::tests::budget::liquidate'] = {
-    "cpu_cost": 101980706,
-    "memory_cost": 101980706,
+    "cpu_cost": 102121490,
+    "memory_cost": 102121490,
 }
 ['pool::tests::budget::paused'] = {
     "cpu_cost": 668912,
     "memory_cost": 668912,
 }
 ['pool::tests::budget::price_feed'] = {
-    "cpu_cost": 680009,
-    "memory_cost": 680009,
+    "cpu_cost": 677507,
+    "memory_cost": 677507,
 }
 ['pool::tests::budget::repay'] = {
-    "cpu_cost": 28264921,
-    "memory_cost": 28264921,
+    "cpu_cost": 28304007,
+    "memory_cost": 28304007,
 }
 ['pool::tests::budget::set_as_collateral'] = {
-    "cpu_cost": 39900692,
-    "memory_cost": 39900692,
+    "cpu_cost": 39950414,
+    "memory_cost": 39950414,
 }
 ['pool::tests::budget::set_flash_loan_fee'] = {
-    "cpu_cost": 1298425,
-    "memory_cost": 1298425,
+    "cpu_cost": 1298013,
+    "memory_cost": 1298013,
 }
 ['pool::tests::budget::set_ir_params'] = {
-    "cpu_cost": 1356560,
-    "memory_cost": 1356560,
+    "cpu_cost": 1359856,
+    "memory_cost": 1359856,
 }
 ['pool::tests::budget::set_pause'] = {
-    "cpu_cost": 1283953,
-    "memory_cost": 1283953,
+    "cpu_cost": 1298785,
+    "memory_cost": 1298785,
 }
 ['pool::tests::budget::set_price_feed'] = {
     "cpu_cost": 329980,
     "memory_cost": 329980,
 }
 ['pool::tests::budget::set_reserve_status'] = {
-    "cpu_cost": 1385518,
-    "memory_cost": 1385518,
+    "cpu_cost": 1384282,
+    "memory_cost": 1384282,
 }
 ['pool::tests::budget::stoken_underlying_balance'] = {
-    "cpu_cost": 706716,
-    "memory_cost": 706716,
+    "cpu_cost": 705892,
+    "memory_cost": 705892,
 }
 ['pool::tests::budget::treasury'] = {
     "cpu_cost": 119132,
     "memory_cost": 119132,
 }
 ['pool::tests::budget::user_configuration'] = {
-    "cpu_cost": 349421,
-    "memory_cost": 349421,
+    "cpu_cost": 350177,
+    "memory_cost": 350177,
 }
 ['pool::tests::budget::withdraw'] = {
-    "cpu_cost": 37138265,
-    "memory_cost": 37138265,
-}
-['pool::tests::budget::account_position'] = {
-    "cpu_cost": 39612416,
-    "memory_cost": 39612416,
-}
-['pool::tests::budget::borrow'] = {
-    "cpu_cost": 81012863,
-    "memory_cost": 81012863,
+    "cpu_cost": 37173318,
+    "memory_cost": 37173318,
 }
 ['pool::tests::budget::collat_coeff'] = {
-    "cpu_cost": 276738,
-    "memory_cost": 276738,
-}
-['pool::tests::budget::configure_as_collateral'] = {
-    "cpu_cost": 1432055,
-    "memory_cost": 1432055,
-}
-['pool::tests::budget::debt_coeff'] = {
-    "cpu_cost": 758780,
-    "memory_cost": 758780,
-}
-['pool::tests::budget::deposit'] = {
-    "cpu_cost": 36910082,
-    "memory_cost": 36910082,
-}
-['pool::tests::budget::enable_borrowing_on_reserve'] = {
-    "cpu_cost": 1389662,
-    "memory_cost": 1389662,
-}
-['pool::tests::budget::flash_loan_fee'] = {
-    "cpu_cost": 675599,
-    "memory_cost": 675599,
-}
-['pool::tests::budget::get_reserve'] = {
-    "cpu_cost": 737014,
-    "memory_cost": 737014,
-}
-['pool::tests::budget::init_reserve'] = {
-    "cpu_cost": 490791,
-    "memory_cost": 490791,
-}
-['pool::tests::budget::ir_params'] = {
-    "cpu_cost": 687424,
-    "memory_cost": 687424,
-}
-['pool::tests::budget::liquidate'] = {
-    "cpu_cost": 101998256,
-    "memory_cost": 101998256,
-}
-['pool::tests::budget::paused'] = {
-    "cpu_cost": 665822,
-    "memory_cost": 665822,
-}
-['pool::tests::budget::price_feed'] = {
-    "cpu_cost": 678773,
-    "memory_cost": 678773,
-}
-['pool::tests::budget::repay'] = {
-    "cpu_cost": 28246298,
-    "memory_cost": 28246298,
-}
-['pool::tests::budget::set_as_collateral'] = {
-    "cpu_cost": 39900770,
-    "memory_cost": 39900770,
-}
-['pool::tests::budget::set_flash_loan_fee'] = {
-    "cpu_cost": 1297189,
-    "memory_cost": 1297189,
-}
-['pool::tests::budget::set_ir_params'] = {
-    "cpu_cost": 1354912,
-    "memory_cost": 1354912,
-}
-['pool::tests::budget::set_pause'] = {
-    "cpu_cost": 1289721,
-    "memory_cost": 1289721,
-}
-['pool::tests::budget::set_price_feed'] = {
-    "cpu_cost": 320710,
-    "memory_cost": 320710,
-}
-['pool::tests::budget::set_reserve_status'] = {
-    "cpu_cost": 1376866,
-    "memory_cost": 1376866,
-}
-['pool::tests::budget::stoken_underlying_balance'] = {
-    "cpu_cost": 705480,
-    "memory_cost": 705480,
-}
-['pool::tests::budget::treasury'] = {
-    "cpu_cost": 119132,
-    "memory_cost": 119132,
-}
-['pool::tests::budget::user_configuration'] = {
-    "cpu_cost": 346812,
-    "memory_cost": 346812,
-}
-['pool::tests::budget::withdraw'] = {
-    "cpu_cost": 37119970,
-    "memory_cost": 37119970,
+    "cpu_cost": 10013179,
+    "memory_cost": 10013179,
 }
