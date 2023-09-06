@@ -98,3 +98,7 @@
     "cpu_cost": 37173318,
     "memory_cost": 37173318,
 }
+['pool::tests::budget::collat_coeff'] = {
+    "cpu_cost": 10013179,
+    "memory_cost": 10013179,
+}
