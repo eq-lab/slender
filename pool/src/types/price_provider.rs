@@ -1,4 +1,4 @@
-use pool_interface::Error;
+use pool_interface::types::error::Error;
 use price_feed_interface::PriceFeedClient;
 use soroban_sdk::{Address, Env};
 

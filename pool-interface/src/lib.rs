@@ -1,110 +1,16 @@
 #![deny(warnings)]
 #![no_std]
 
-pub use reserve_config::*;
-use soroban_sdk::{
-    contractclient, contracterror, contractspecfn, contracttype, Address, Bytes, BytesN, Env, Vec,
+use soroban_sdk::{contractclient, contractspecfn, Address, Bytes, BytesN, Env, Vec};
+use types::{
+    account_position::AccountPosition, collateral_params_input::CollateralParamsInput,
+    error::Error, flash_loan_asset::FlashLoanAsset, init_reserve_input::InitReserveInput,
+    ir_params::IRParams, reserve_data::ReserveData, user_config::UserConfiguration,
 };
-pub use user_config::*;
 
-mod reserve_config;
-mod user_config;
+pub mod types;
 
 pub struct Spec;
-
-#[contracterror]
-#[derive(Copy, Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
-#[repr(u32)]
-pub enum Error {
-    AlreadyInitialized = 0,
-    Uninitialized = 1,
-    NoPriceFeed = 2,
-    Paused = 3,
-
-    NoReserveExistForAsset = 100,
-    NoActiveReserve = 101,
-    ReserveFrozen = 102,
-    ReservesMaxCapacityExceeded = 103,
-    NoPriceForAsset = 104,
-    ReserveAlreadyInitialized = 105,
-    InvalidAssetPrice = 106,
-
-    UserConfigInvalidIndex = 200,
-    NotEnoughAvailableUserBalance = 201,
-    UserConfigNotExists = 202,
-    MustHaveDebt = 203,
-    MustNotHaveDebt = 204,
-
-    BorrowingNotEnabled = 300,
-    CollateralNotCoverNewBorrow = 301,
-    BadPosition = 302,
-    GoodPosition = 303,
-    InvalidAmount = 304,
-    ValidateBorrowMathError = 305,
-    CalcAccountDataMathError = 306,
-    AssetPriceMathError = 307,
-    NotEnoughCollateral = 308,
-    LiquidateMathError = 309,
-    MustNotBeInCollateralAsset = 310,
-    UtilizationCapExceeded = 311,
-    LiqCapExceeded = 312,
-    FlashLoanReceiverError = 313,
-
-    MathOverflowError = 400,
-    MustBeLtePercentageFactor = 401,
-    MustBeLtPercentageFactor = 402,
-    MustBeGtPercentageFactor = 403,
-    MustBePositive = 404,
-
-    AccruedRateMathError = 500,
-    CollateralCoeffMathError = 501,
-    DebtCoeffMathError = 502,
-}
-
-#[contracttype]
-pub struct AccountPosition {
-    pub discounted_collateral: i128,
-    pub debt: i128,
-    pub npv: i128,
-}
-
-#[contracttype]
-pub struct AssetBalance {
-    pub asset: Address,
-    pub balance: i128,
-}
-
-#[contracttype]
-pub struct FlashLoanAsset {
-    pub asset: Address,
-    pub amount: i128,
-    pub borrow: bool,
-}
-
-impl AssetBalance {
-    pub fn new(asset: Address, balance: i128) -> Self {
-        Self { asset, balance }
-    }
-}
-
-#[cfg(feature = "exceeded-limit-fix")]
-#[contracttype]
-pub struct MintBurn {
-    pub asset_balance: AssetBalance,
-    pub mint: bool,
-    pub who: Address,
-}
-
-#[cfg(feature = "exceeded-limit-fix")]
-impl MintBurn {
-    pub fn new(asset_balance: AssetBalance, mint: bool, who: Address) -> Self {
-        Self {
-            asset_balance,
-            mint,
-            who,
-        }
-    }
-}
 
 /// Interface for SToken
 #[contractspecfn(name = "Spec", export = false)]

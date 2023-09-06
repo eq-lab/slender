@@ -3,7 +3,7 @@ use crate::*;
 use soroban_sdk::{
     testutils::{Address as _, Events},
     token::AdminClient as TokenAdminClient,
-    IntoVal, Symbol,
+    vec, IntoVal, Symbol,
 };
 
 #[test]

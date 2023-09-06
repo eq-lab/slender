@@ -1,5 +1,8 @@
 use common::{FixedI128, ALPHA_DENOMINATOR};
-use pool_interface::{IRParams, ReserveData};
+use pool_interface::types::error::Error;
+use pool_interface::types::ir_params::IRParams;
+use pool_interface::types::reserve_data::ReserveData;
+use soroban_sdk::Env;
 
 /// Calculate interest rate IR = MIN [ max_rate, base_rate / (1 - U)^alpha]
 /// where
@@ -121,4 +124,43 @@ pub fn calc_accrued_rates(
         lender_ir,
         borrower_ir,
     })
+}
+
+/// Returns lender accrued rate corrected for the current time
+pub fn get_actual_lender_accrued_rate(
+    env: &Env,
+    reserve: &ReserveData,
+) -> Result<FixedI128, Error> {
+    let current_time = env.ledger().timestamp();
+    let elapsed_time = current_time
+        .checked_sub(reserve.last_update_timestamp)
+        .ok_or(Error::CollateralCoeffMathError)?;
+    let prev_ar = FixedI128::from_inner(reserve.lender_ar);
+
+    if elapsed_time == 0 {
+        Ok(prev_ar)
+    } else {
+        let lender_ir = FixedI128::from_inner(reserve.lender_ir);
+        calc_next_accrued_rate(prev_ar, lender_ir, elapsed_time)
+            .ok_or(Error::CollateralCoeffMathError)
+    }
+}
+
+/// Returns borrower accrued rate corrected for the current time
+pub fn get_actual_borrower_accrued_rate(
+    env: &Env,
+    reserve: &ReserveData,
+) -> Result<FixedI128, Error> {
+    let current_time = env.ledger().timestamp();
+    let elapsed_time = current_time
+        .checked_sub(reserve.last_update_timestamp)
+        .ok_or(Error::DebtCoeffMathError)?;
+    let prev_ar = FixedI128::from_inner(reserve.borrower_ar);
+
+    if elapsed_time == 0 {
+        Ok(prev_ar)
+    } else {
+        let debt_ir = FixedI128::from_inner(reserve.borrower_ir);
+        calc_next_accrued_rate(prev_ar, debt_ir, elapsed_time).ok_or(Error::DebtCoeffMathError)
+    }
 }

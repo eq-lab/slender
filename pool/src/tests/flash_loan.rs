@@ -1,5 +1,5 @@
 use crate::tests::sut::{fill_pool, init_pool};
-use pool_interface::FlashLoanAsset;
+use pool_interface::types::flash_loan_asset::FlashLoanAsset;
 use soroban_sdk::testutils::Events;
 use soroban_sdk::{vec, Bytes, Env, IntoVal, Symbol, Val, Vec};
 

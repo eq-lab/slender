@@ -1,16 +1,18 @@
 #![deny(warnings)]
 #![no_std]
 
-mod event;
-mod storage;
-mod test;
-
 use crate::storage::*;
 use common_token::{balance::*, require_nonnegative_amount, storage::*, verify_caller_is_pool};
 use pool_interface::LendingPoolClient;
 use s_token_interface::STokenTrait;
 use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, String};
 use soroban_token_sdk::TokenMetadata;
+
+mod event;
+mod storage;
+
+#[cfg(test)]
+mod tests;
 
 #[contract]
 pub struct SToken;

@@ -1,5 +1,7 @@
+use crate::methods::rate::calc_next_accrued_rate;
 use crate::tests::sut::{fill_pool, fill_pool_three, init_pool, DAY};
 use crate::*;
+use common::FixedI128;
 use soroban_sdk::testutils::{Address as _, Ledger};
 
 #[test]

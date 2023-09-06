@@ -1,7 +1,7 @@
 #![deny(warnings)]
 #![no_std]
 
-use pool_interface::IRParams;
+use pool_interface::types::ir_params::IRParams;
 use soroban_sdk::{
     contract, contractimpl, vec, Address, BytesN, Env, IntoVal, String, Symbol, Val,
 };

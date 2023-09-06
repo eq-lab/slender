@@ -2,6 +2,7 @@ use crate::tests::sut::{create_pool_contract, create_price_feed_contract};
 use crate::*;
 use price_feed_interface::PriceFeedClient;
 use soroban_sdk::testutils::Address as _;
+use soroban_sdk::vec;
 
 #[test]
 fn should_be_none_when_not_set() {

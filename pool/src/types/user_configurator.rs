@@ -1,10 +1,9 @@
-use pool_interface::{Error, UserConfiguration};
-use soroban_sdk::{Address, Env};
-
 use crate::{
     event,
     storage::{read_user_config, write_user_config},
 };
+use pool_interface::types::{error::Error, user_config::UserConfiguration};
+use soroban_sdk::{Address, Env};
 
 pub struct UserConfigurator<'a> {
     env: &'a Env,

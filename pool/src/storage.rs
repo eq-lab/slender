@@ -1,5 +1,6 @@
-use crate::Error;
-use pool_interface::{IRParams, ReserveData, UserConfiguration};
+use pool_interface::types::{
+    error::Error, ir_params::IRParams, reserve_data::ReserveData, user_config::UserConfiguration,
+};
 use soroban_sdk::{assert_with_error, contracttype, vec, Address, Env, Vec};
 
 pub(crate) const USER_DATA_BUMP_AMOUNT: u32 = 518_400; // 30 days
@@ -129,8 +130,8 @@ pub fn read_treasury(e: &Env) -> Address {
     e.storage().instance().get(&DataKey::Treasury).unwrap()
 }
 
-pub fn write_flash_loan_fee(e: &Env, fee: &u32) {
-    e.storage().instance().set(&DataKey::FlashLoanFee, fee);
+pub fn write_flash_loan_fee(e: &Env, fee: u32) {
+    e.storage().instance().set(&DataKey::FlashLoanFee, &fee);
 }
 
 pub fn read_flash_loan_fee(e: &Env) -> u32 {

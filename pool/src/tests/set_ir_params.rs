@@ -4,7 +4,7 @@ extern crate std;
 use crate::tests::sut::init_pool;
 use crate::*;
 use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
-use soroban_sdk::{IntoVal, Symbol};
+use soroban_sdk::{vec, IntoVal, Symbol};
 
 #[test]
 fn shoould_require_admin() {

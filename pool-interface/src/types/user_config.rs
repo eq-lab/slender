@@ -1,6 +1,5 @@
+use crate::types::error::Error;
 use soroban_sdk::{assert_with_error, contracttype, Env};
-
-use crate::Error;
 
 const BORROWING_MASK: u128 = 0x55555555555555555555555555555555;
 

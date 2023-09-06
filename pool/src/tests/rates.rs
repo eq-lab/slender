@@ -1,10 +1,11 @@
+use crate::methods::rate::{calc_accrued_rates, calc_interest_rate, calc_next_accrued_rate};
+use crate::tests::sut::{init_pool, DAY};
 use common::FixedI128;
-use pool_interface::{IRParams, InitReserveInput, ReserveData};
+use pool_interface::types::{
+    init_reserve_input::InitReserveInput, ir_params::IRParams, reserve_data::ReserveData,
+};
 use soroban_sdk::testutils::{Address as _, Ledger};
 use soroban_sdk::{Address, Env};
-
-use crate::rate::*;
-use crate::tests::sut::{init_pool, DAY};
 
 pub fn get_default_ir_params() -> IRParams {
     IRParams {
@@ -141,7 +142,7 @@ fn should_calc_borrower_and_lender_rates() {
         s_token_address: Address::random(env),
         debt_token_address: Address::random(env),
     };
-    let reserve_data = ReserveData::new(env, input);
+    let reserve_data = ReserveData::new(env, &input);
     let ir_params = get_default_ir_params();
 
     let accrued_rates =
@@ -168,7 +169,7 @@ fn should_fail_when_collateral_is_zero() {
         s_token_address: Address::random(env),
         debt_token_address: Address::random(env),
     };
-    let reserve_data = ReserveData::new(env, input);
+    let reserve_data = ReserveData::new(env, &input);
     let ir_params = get_default_ir_params();
 
     let mb_accrued_rates =
