@@ -13,4 +13,4 @@ testutils = ["soroban-sdk/testutils"]
 
 [dependencies]
 soroban-sdk = { workspace = true }
-flash-loan-receiver-interface = { path = "../../flash-loan-receiver-interface", version = "0.1.0", package = "flash-loan-receiver-interface" }
+flash-loan-receiver-interface = { path = "../../interfaces/flash-loan-receiver-interface", version = "0.1.0", package = "flash-loan-receiver-interface" }

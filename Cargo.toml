@@ -2,19 +2,19 @@
 resolver = "2"
 
 members = [
-    "common",
-    "common-token",
-    "deployer",
-    "flash-loan-receiver-interface",
+    "contracts/common",
+    "contracts/common-token",
+    "contracts/deployer",
+    "contracts/pool",
+    "contracts/s-token",
+    "contracts/debt-token",
+    "interfaces/pool-interface",
+    "interfaces/price-feed-interface",
+    "interfaces/s-token-interface",
+    "interfaces/debt-token-interface",
+    "interfaces/flash-loan-receiver-interface",
     "mocks/flash-loan-receiver-mock",
     "mocks/price-feed-mock",
-    "pool",
-    "pool-interface",
-    "price-feed-interface",
-    "s-token",
-    "s-token-interface",
-    "debt-token-interface",
-    "debt-token",
 ]
 
 [profile.release]
