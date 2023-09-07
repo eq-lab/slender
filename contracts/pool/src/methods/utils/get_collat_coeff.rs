@@ -1,5 +1,5 @@
 use common::FixedI128;
-use pool_interface::types::{reserve_data::ReserveData, error::Error};
+use pool_interface::types::{error::Error, reserve_data::ReserveData};
 use soroban_sdk::Env;
 
 use crate::storage::read_stoken_underlying_balance;

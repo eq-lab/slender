@@ -1,14 +1,12 @@
 #![cfg(test)]
 extern crate std;
 
-use crate::DebtToken;
 use debt_token_interface::DebtTokenClient;
-use soroban_sdk::{
-    symbol_short,
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
-    token::Client as TokenClient,
-    Address, Env, IntoVal, String, Symbol,
-};
+use soroban_sdk::testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation};
+use soroban_sdk::token::Client as TokenClient;
+use soroban_sdk::{symbol_short, Address, Env, IntoVal, String, Symbol};
+
+use crate::DebtToken;
 
 fn create_token<'a>(e: &Env) -> (DebtTokenClient<'a>, Address) {
     let pool = Address::random(e);

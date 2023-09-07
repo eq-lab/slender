@@ -1,17 +1,15 @@
 #![deny(warnings)]
 #![no_std]
 
-mod event;
-mod test;
-
-use common_token::{
-    balance::{add_total_supply, receive_balance, spend_balance},
-    storage::*,
-    verify_caller_is_pool,
-};
+use common_token::balance::{add_total_supply, receive_balance, spend_balance};
+use common_token::storage::*;
+use common_token::verify_caller_is_pool;
 use debt_token_interface::DebtTokenTrait;
 use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, String};
 use soroban_token_sdk::TokenMetadata;
+
+mod event;
+mod test;
 
 #[contract]
 pub struct DebtToken;

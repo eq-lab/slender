@@ -1,9 +1,9 @@
 import { readFileSync, writeFileSync } from "fs";
 import { Keypair } from "soroban-client";
 
-export const contractsFilename = ".contracts";
+const contractsFilename = "../deploy/artifacts/.contracts";
 
-require("dotenv").config({ path: `.${process.env.NODE_ENV}.env` });
+require("dotenv").config({ path: `../deploy/scripts/.${process.env.NODE_ENV}.env` });
 require("dotenv").config({ path: contractsFilename });
 
 export const adminKeys = Keypair.fromSecret(process.env.ADMIN_SECRET);

@@ -1,8 +1,8 @@
 use soroban_sdk::{Address, Env};
 
-use crate::{
-    require_nonnegative_amount,
-    storage::{is_authorized, read_balance, read_total_supply, write_balance, write_total_supply},
+use crate::require_nonnegative_amount;
+use crate::storage::{
+    is_authorized, read_balance, read_total_supply, write_balance, write_total_supply,
 };
 
 pub fn receive_balance(e: &Env, addr: Address, amount: i128) {

@@ -4,7 +4,7 @@ extern crate std;
 use crate::{tests::sut::init_pool, *};
 use soroban_sdk::{
     testutils::{AuthorizedFunction, AuthorizedInvocation, Events},
-    IntoVal, Symbol, vec,
+    vec, IntoVal, Symbol,
 };
 
 #[test]

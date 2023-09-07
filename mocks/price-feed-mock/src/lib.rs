@@ -5,7 +5,7 @@ mod constants;
 mod storage;
 
 use crate::storage::*;
-use price_feed_interface::{types::price_data::PriceData, PriceFeedTrait};
+use price_feed_interface::{PriceData, PriceFeedTrait};
 use soroban_sdk::{contract, contractimpl, Address, Env, Vec};
 
 #[contract]

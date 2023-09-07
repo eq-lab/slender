@@ -5,12 +5,16 @@
 #![deny(warnings)]
 #![no_std]
 
-use soroban_sdk::{contractclient, contractspecfn, Address, Env, Vec};
-use types::price_data::PriceData;
-
-pub mod types;
+use soroban_sdk::{contractclient, contractspecfn, contracttype, Address, Env, Vec};
 
 pub struct Spec;
+
+/// Price data for an asset at a specific timestamp
+#[contracttype]
+pub struct PriceData {
+    pub price: i128,
+    pub timestamp: u64,
+}
 
 /// Oracle feed interface description
 #[contractspecfn(name = "Spec", export = false)]
