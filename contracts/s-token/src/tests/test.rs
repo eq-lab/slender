@@ -15,16 +15,18 @@ use soroban_sdk::{
 use self::pool::{CollateralParamsInput, IRParams, InitReserveInput};
 
 mod pool {
-    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/pool.wasm");
+    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/pool.wasm");
 }
 
 mod debt_token {
-    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/debt_token.wasm");
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/debt_token.wasm"
+    );
 }
 
 mod oracle {
     soroban_sdk::contractimport!(
-        file = "../target/wasm32-unknown-unknown/release/price_feed_mock.wasm"
+        file = "../../target/wasm32-unknown-unknown/release/price_feed_mock.wasm"
     );
 }
 

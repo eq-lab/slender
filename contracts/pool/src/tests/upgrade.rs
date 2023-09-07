@@ -8,15 +8,15 @@ use crate::tests::sut::init_pool;
 use crate::*;
 
 mod pool_v2 {
-    soroban_sdk::contractimport!(file = "../contracts/pool_v2_mock.wasm");
+    soroban_sdk::contractimport!(file = "../../mocks/pool_v2_mock.wasm");
 }
 
 mod s_token_v2 {
-    soroban_sdk::contractimport!(file = "../contracts/s_token_v2_mock.wasm");
+    soroban_sdk::contractimport!(file = "../../mocks/s_token_v2_mock.wasm");
 }
 
 mod debt_token_v2 {
-    soroban_sdk::contractimport!(file = "../contracts/debt_token_v2_mock.wasm");
+    soroban_sdk::contractimport!(file = "../../mocks/debt_token_v2_mock.wasm");
 }
 
 #[test]

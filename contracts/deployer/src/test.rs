@@ -8,15 +8,17 @@ use soroban_sdk::{
 };
 
 mod pool {
-    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/pool.wasm");
+    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/pool.wasm");
 }
 
 mod s_token {
-    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/s_token.wasm");
+    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/s_token.wasm");
 }
 
 mod debt_token {
-    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/debt_token.wasm");
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/debt_token.wasm"
+    );
 }
 
 #[test]

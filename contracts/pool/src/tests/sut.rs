@@ -14,26 +14,28 @@ use soroban_sdk::Env;
 use soroban_sdk::IntoVal;
 
 mod pool {
-    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/pool.wasm");
+    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/pool.wasm");
 }
 
 mod flash_loan_receiver {
     soroban_sdk::contractimport!(
-        file = "../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm"
+        file = "../../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm"
     );
 }
 
 mod s_token {
-    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/s_token.wasm");
+    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/s_token.wasm");
 }
 
 mod debt_token {
-    soroban_sdk::contractimport!(file = "../target/wasm32-unknown-unknown/release/debt_token.wasm");
+    soroban_sdk::contractimport!(
+        file = "../../target/wasm32-unknown-unknown/release/debt_token.wasm"
+    );
 }
 
 mod price_feed {
     soroban_sdk::contractimport!(
-        file = "../target/wasm32-unknown-unknown/release/price_feed_mock.wasm"
+        file = "../../target/wasm32-unknown-unknown/release/price_feed_mock.wasm"
     );
 }
 
