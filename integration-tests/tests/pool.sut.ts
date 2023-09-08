@@ -1,4 +1,4 @@
-import { Account, Keypair, SorobanRpc } from "soroban-client";
+import { Account, Address, Keypair, SorobanRpc } from "soroban-client";
 import { SorobanClient } from "./soroban.client";
 import { adminKeys, setEnv, treasuryKeys } from "./soroban.config";
 import { convertToScvAddress, convertToScvVec, convertToScvBool, convertToScvI128, convertToScvU32, convertToScvMap, parseMetaXdrToJs, convertToScvBytes, convertToScvString } from "./soroban.converter";
@@ -240,4 +240,15 @@ async function initPoolBorrowing(client: SorobanClient, asset: SlenderAsset): Pr
             convertToScvBool(true)
         )
     );
+}
+
+export interface AssetBalance {
+    asset: Address;
+    balance: bigint;
+}
+
+export interface MintBurn {
+    asset_balance: AssetBalance;
+    mint: boolean;
+    who: Address;
 }
