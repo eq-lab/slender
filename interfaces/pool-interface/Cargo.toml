@@ -1,0 +1,15 @@
+[package]
+name = "pool-interface"
+authors = ["eq-lab"]
+version = "0.1.0"
+edition = "2021"
+description = "Liquidity pool interface"
+
+
+[dependencies]
+soroban-sdk = { workspace = true }
+common = { path = "../../contracts/common", version = "0.1.0", package = "common" }
+
+[features]
+testutils = ["soroban-sdk/testutils"]
+exceeded-limit-fix = []

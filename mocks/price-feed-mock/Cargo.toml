@@ -13,8 +13,8 @@ testutils = ["soroban-sdk/testutils"]
 
 [dependencies]
 soroban-sdk = { workspace = true }
-price-feed-interface = { path = "../../price-feed-interface", version = "0.1.0", package = "price-feed-interface" }
-common = { path = "../../common", version = "0.1.0", package = "common" }
+price-feed-interface = { path = "../../interfaces/price-feed-interface", version = "0.1.0", package = "price-feed-interface" }
+common = { path = "../../contracts/common", version = "0.1.0", package = "common" }
 
 [dev_dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
