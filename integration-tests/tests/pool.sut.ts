@@ -38,18 +38,6 @@ export async function init(client: SorobanClient): Promise<void> {
     await initPoolPriceFeed(client, process.env.SLENDER_PRICE_FEED, ["XLM", "XRP", "USDC"]);
 }
 
-export async function registerAccount(
-    client: SorobanClient,
-    name: string,
-    keys: Keypair
-): Promise<Keypair> {
-    await registerAddress(
-        `${name}_REGISTERED`,
-        () => client.registerAccount(keys.publicKey()));
-
-    return keys;
-}
-
 export async function mintUnderlyingTo(
     client: SorobanClient,
     asset: SlenderAsset,

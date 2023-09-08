@@ -1,6 +1,6 @@
 import { SorobanClient } from "../soroban.client";
-import { balanceOf, init, mintUnderlyingTo, registerAccount } from "../pool.sut";
-import { adminKeys, borrower1Keys, lender1Keys } from "../soroban.config";
+import { init, mintUnderlyingTo } from "../pool.sut";
+import { borrower1Keys, lender1Keys } from "../soroban.config";
 import {
     convertToScvAddress,
     convertToScvBool,
@@ -20,19 +20,20 @@ describe("LendingPool", function () {
     });
 
     it("should TBD", async function () {
-        // let lender1 = await registerAccount(client, "LENDER_1", lender1Keys);
-        // let borrower1 = await registerAccount(client, "BORROWER_1", borrower1Keys);
         let lender1Address = lender1Keys.publicKey();
         let borrower1Address = borrower1Keys.publicKey();
+
+        await client.registerAccount(lender1Address);
+        await client.registerAccount(borrower1Address);
 
         await mintUnderlyingTo(client, "XLM", lender1Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "XRP", lender1Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "USDC", lender1Address, 100_000_000_000n);
-
         await mintUnderlyingTo(client, "XRP", borrower1Address, 100_000_000_000n);
-        let lender1XlmBalance = await balanceOf(client, lender1Keys, lender1Address, "XLM");
-        let lender1XrpBalance = await balanceOf(client, lender1Keys, lender1Address, "XRP");
-        let lender1UsdcBalance = await balanceOf(client, lender1Keys, lender1Address, "USDC");
+
+        // let lender1XlmBalance = await balanceOf(client, lender1Keys, lender1Address, "XLM");
+        // let lender1XrpBalance = await balanceOf(client, lender1Keys, lender1Address, "XRP");
+        // let lender1UsdcBalance = await balanceOf(client, lender1Keys, lender1Address, "USDC");
 
         const lenderDepositResponse = await client.sendTransaction(
             process.env.SLENDER_POOL,

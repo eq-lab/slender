@@ -13,8 +13,10 @@ export class SorobanClient {
         this.client.getHealth();
     }
 
-    async registerAccount(publicKey: string): Promise<Account> {
-        return await this.client.requestAirdrop(publicKey, process.env.FRIENDBOT_URL);
+    async registerAccount(publicKey: string): Promise<void> {
+        await this.client
+            .requestAirdrop(publicKey, process.env.FRIENDBOT_URL)
+            .catch(_ => { });
     }
 
     async sendTransaction(
