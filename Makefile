@@ -18,7 +18,7 @@ build:
 build-exceeded-limit-fix:
 	cargo build --target wasm32-unknown-unknown --release --features exceeded-limit-fix
 
-deploy-contracts: build
+deploy-contracts:
 	./deploy/scripts/deploy.sh $(env)
 
 init-contracts: deploy-contracts
