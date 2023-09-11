@@ -32,6 +32,7 @@ install() {
 
 POOL_HASH=$(install "../target/wasm32-unknown-unknown/release/pool.wasm" $ADMIN_SECRET)
 echo "Pool wasm hash: $POOL_HASH"
+echo "$POOL_HASH">$BASEDIR/../artifacts/pool.wasm.upgrades.hash
 
 invoke $SLENDER_POOL $ADMIN_SECRET "upgrade \
     --new_wasm_hash $POOL_HASH"
