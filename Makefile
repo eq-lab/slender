@@ -27,6 +27,9 @@ init-contracts: deploy-contracts
 integration-test: init-contracts
 	yarn --cwd integration-tests test-$(env)
 
+upgrade-pool-contract:
+	./deploy/scripts/upgrade.sh $(env)
+
 check:
 	cargo check --target wasm32-unknown-unknown --release
 
