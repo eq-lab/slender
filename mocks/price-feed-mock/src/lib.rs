@@ -38,8 +38,12 @@ impl PriceFeedTrait for PriceFeedMock {
     }
 
     fn lastprice(env: Env, asset: Address) -> Option<PriceData> {
-        let price = read_asset_price(&env, asset)
-            .or(10i128.checked_pow(constants::DECIMALS))
+        let price = read_asset_price(&env, asset.clone())
+            .or_else(|| {
+                let default_price = 10i128.checked_pow(constants::DECIMALS).unwrap();
+                write_asset_price(&env, asset, default_price);
+                Some(default_price)
+            })
             .unwrap();
 
         Some(PriceData {
