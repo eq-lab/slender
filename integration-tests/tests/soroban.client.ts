@@ -1,7 +1,6 @@
 import { Server, Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc, Account } from "soroban-client";
 import { promisify } from "util";
 import "./soroban.config";
-import { convertToScvAddress } from "./soroban.converter";
 
 export class SorobanClient {
     client: Server;
@@ -51,6 +50,8 @@ export class SorobanClient {
             result = await this.client.getTransaction(response.hash);
             attempts--;
         } while (result.status === "NOT_FOUND" && attempts > 0);
+
+        console.log(`${signer.publicKey()} => ${method} => ${result.status}`);
 
         return result;
     }

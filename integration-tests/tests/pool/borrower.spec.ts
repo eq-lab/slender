@@ -1,147 +1,352 @@
 import { SorobanClient } from "../soroban.client";
-import { MintBurn, init, mintUnderlyingTo } from "../pool.sut";
-import { adminKeys, borrower1Keys, lender1Keys } from "../soroban.config";
 import {
-    convertToScvAddress,
-    convertToScvBool,
-    convertToScvBytes,
-    convertToScvI128,
-    convertToScvMap,
-    convertToScvVec,
-    parseMetaXdrToJs,
-} from "../soroban.converter";
+    borrow,
+    collatCoeff,
+    debtTokenBalanceOf,
+    debtTokenTotalSupply,
+    deposit,
+    init,
+    mintUnderlyingTo,
+    repay,
+    sTokenBalanceOf,
+    sTokenTotalSupply,
+    sTokenUnderlyingBalanceOf,
+    tokenBalanceOf,
+    withdraw
+} from "../pool.sut";
+import {
+    borrower1Keys,
+    borrower2Keys,
+    lender1Keys,
+    lender2Keys,
+    treasuryKeys
+} from "../soroban.config";
+import { assert, expect, use } from "chai";
+import chaiAsPromised from 'chai-as-promised';
+use(chaiAsPromised);
 
 describe("LendingPool", function () {
     let client: SorobanClient;
+    let lender1Address: string;
+    let borrower1Address: string;
+    let lender2Address: string;
+    let borrower2Address: string;
+    let treasuryAddress: string;
 
     before(async function () {
         client = new SorobanClient();
         await init(client);
-    });
 
-    it("should TBD", async function () {
-        let lender1Address = lender1Keys.publicKey();
-        let borrower1Address = borrower1Keys.publicKey();
+        lender1Address = lender1Keys.publicKey();
+        lender2Address = lender2Keys.publicKey();
+        borrower1Address = borrower1Keys.publicKey();
+        borrower2Address = borrower2Keys.publicKey();
+        treasuryAddress = treasuryKeys.publicKey();
 
         await client.registerAccount(lender1Address);
+        await client.registerAccount(lender2Address);
         await client.registerAccount(borrower1Address);
+        await client.registerAccount(borrower2Address);
 
         await mintUnderlyingTo(client, "XLM", lender1Address, 100_000_000_000n);
-        await mintUnderlyingTo(client, "XRP", lender1Address, 100_000_000_000n);
-        await mintUnderlyingTo(client, "USDC", lender1Address, 100_000_000_000n);
-        await mintUnderlyingTo(client, "XRP", borrower1Address, 100_000_000_000n);
+        await mintUnderlyingTo(client, "XRP", lender2Address, 100_000_000_000n);
+        await mintUnderlyingTo(client, "USDC", borrower1Address, 100_000_000_000n);
+        await mintUnderlyingTo(client, "USDC", borrower2Address, 100_000_000_000n);
+    });
 
-        // let lender1XlmBalance = await balanceOf(client, lender1Keys, lender1Address, "XLM");
-        // let lender1XrpBalance = await balanceOf(client, lender1Keys, lender1Address, "XRP");
-        // let lender1UsdcBalance = await balanceOf(client, lender1Keys, lender1Address, "USDC");
+    it("Case 1: Lenders & borrowers deposit into pool", async function () {
+        // Lender1 deposits 10_000_000_000 XLM
+        await deposit(client, lender1Keys, "XLM", 10_000_000_000n);
 
-        // const lenderDepositResponse = await client.sendTransaction(
-        //     process.env.SLENDER_POOL,
-        //     "deposit",
-        //     lender1Keys,
-        //     convertToScvAddress(lender1Address),
-        //     convertToScvAddress(process.env.SLENDER_TOKEN_XLM),
-        //     convertToScvI128(10000000000n)
-        // );
-        let asd = "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"
+        // Lender2 deposits 10_000_000_000 XRP
+        await deposit(client, lender2Keys, "XRP", 10_000_000_000n);
 
-        const lenderDepositResult = parseMetaXdrToJs<Array<MintBurn>>(asd);
-        for (let i = 0; i < lenderDepositResult.length; i++) {
-            if (lenderDepositResult[i].mint) {
-                await client.sendTransaction(
-                    lenderDepositResult[i].asset_balance.asset.toString(),
-                    "mint",
-                    adminKeys,
-                    convertToScvAddress(lenderDepositResult[i].who.toString()),
-                    convertToScvI128(lenderDepositResult[i].asset_balance.balance)
-                );
-            } else {
-                await client.sendTransaction(
-                    lenderDepositResult[i].asset_balance.asset.toString(),
-                    "mint",
-                    adminKeys,
-                    convertToScvAddress(lenderDepositResult[i].who.toString()),
-                    convertToScvI128(lenderDepositResult[i].asset_balance.balance)
-                );
-            }
+        // Borrower1 deposits 10_000_000_000 USDC
+        await deposit(client, borrower1Keys, "USDC", 20_000_000_000n);
 
+        // Borrower2 deposits 10_000_000_000 USDC
+        await deposit(client, borrower2Keys, "USDC", 20_000_000_000n);
 
-        }
-        // const lenderDepositResult = parseMetaXdrToJs<>(
-        //     lenderDepositResponse.resultMetaXdr
-        // );
+        const lender1XlmBalanceResult = await tokenBalanceOf(client, "XLM", lender1Address);
+        const lender1SXlmBalanceResult = await sTokenBalanceOf(client, "XLM", lender1Address);
+        const lender2XrpBalanceResult = await tokenBalanceOf(client, "XRP", lender2Address);
+        const lender2SXrpBalanceResult = await sTokenBalanceOf(client, "XRP", lender2Address);
 
+        const borrower1UsdcBalanceResult = await tokenBalanceOf(client, "USDC", borrower1Address);
+        const borrower1SUsdcBalanceResult = await sTokenBalanceOf(client, "USDC", borrower1Address);
+        const borrower2UsdcBalanceResult = await tokenBalanceOf(client, "USDC", borrower2Address);
+        const borrower2SUsdcBalanceResult = await sTokenBalanceOf(client, "USDC", borrower2Address);
 
-        const borrowerDepositResponse = await client.sendTransaction(
-            process.env.SLENDER_POOL,
-            "deposit",
-            borrower1Keys,
-            convertToScvAddress(borrower1Address),
-            convertToScvAddress(process.env.SLENDER_TOKEN_XRP),
-            convertToScvI128(10000000000n)
-        );
-        const borrowerDepositResult = parseMetaXdrToJs(
-            borrowerDepositResponse.resultMetaXdr
-        );
+        const sXlmBalanceResult = await sTokenUnderlyingBalanceOf(client, "XLM");
+        const sXrpBalanceResult = await sTokenUnderlyingBalanceOf(client, "XRP");
+        const sUsdcBalanceResult = await sTokenUnderlyingBalanceOf(client, "USDC");
 
-        const borrowerBorrowResponse = await client.sendTransaction(
-            process.env.SLENDER_POOL,
-            "borrow",
-            borrower1Keys,
-            convertToScvAddress(borrower1Address),
-            convertToScvAddress(process.env.SLENDER_TOKEN_XLM),
-            convertToScvI128(10000000n)
-        );
-        const borrowerBorrowResult = parseMetaXdrToJs(
-            borrowerBorrowResponse.resultMetaXdr
-        );
-        console.log(JSON.stringify(borrowerBorrowResult, null, 2));
+        const sXlmSupplyResult = await sTokenTotalSupply(client, "XLM");
+        const sXrpSupplyResult = await sTokenTotalSupply(client, "XRP");
+        const sUsdcSupplyResult = await sTokenTotalSupply(client, "USDC");
 
-        const lenderWithdrawResponse = await client.sendTransaction(
-            process.env.SLENDER_POOL,
-            "withdraw",
-            lender1Keys,
-            convertToScvAddress(lender1Address),
-            convertToScvAddress(process.env.SLENDER_TOKEN_XLM),
-            convertToScvI128(100000n),
-            convertToScvAddress(lender1Address),
-        );
-        const lenderWithdrawResult = parseMetaXdrToJs(
-            lenderWithdrawResponse.resultMetaXdr
-        );
-        console.log(JSON.stringify(lenderWithdrawResult, null, 2));
+        assert.equal(lender1XlmBalanceResult, 90_000_000_000n);
+        assert.equal(lender1SXlmBalanceResult, 10_000_000_000n);
+        assert.equal(lender2XrpBalanceResult, 90_000_000_000n);
+        assert.equal(lender2SXrpBalanceResult, 10_000_000_000n);
 
-        const borrowerRepayResponse = await client.sendTransaction(
-            process.env.SLENDER_POOL,
-            "repay",
-            borrower1Keys,
-            convertToScvAddress(borrower1Address),
-            convertToScvAddress(process.env.SLENDER_TOKEN_XLM),
-            convertToScvI128(1000000n),
-        );
-        const borrowerRepayResult = parseMetaXdrToJs(
-            borrowerRepayResponse.resultMetaXdr
-        );
-        console.log(JSON.stringify(borrowerRepayResult, null, 2));
+        assert.equal(borrower1UsdcBalanceResult, 80_000_000_000n);
+        assert.equal(borrower1SUsdcBalanceResult, 20_000_000_000n);
+        assert.equal(borrower2UsdcBalanceResult, 80_000_000_000n);
+        assert.equal(borrower2SUsdcBalanceResult, 20_000_000_000n);
 
-        const flashLoanResponse = await client.sendTransaction(
-            process.env.SLENDER_POOL,
-            "flash_loan",
-            borrower1Keys,
-            convertToScvAddress(borrower1Address),
-            convertToScvAddress(process.env.FLASH_LOAN_RECEIVER),
-            convertToScvVec([
-                convertToScvMap({
-                    "amount": convertToScvI128(1000n),
-                    "asset": convertToScvAddress(process.env.SLENDER_TOKEN_XLM),
-                    "borrow": convertToScvBool(false)
-                })
-            ]),
-            convertToScvBytes("test", "base64"),
-        );
-        const flashLoanResult = parseMetaXdrToJs(
-            flashLoanResponse.resultMetaXdr
-        );
-        console.log(JSON.stringify(flashLoanResult, null, 2));
+        assert.equal(sXlmBalanceResult, 10_000_000_000n);
+        assert.equal(sXrpBalanceResult, 10_000_000_000n);
+        assert.equal(sUsdcBalanceResult, 40_000_000_000n);
+
+        assert.equal(sXlmSupplyResult, 10_000_000_000n);
+        assert.equal(sXrpSupplyResult, 10_000_000_000n);
+        assert.equal(sUsdcSupplyResult, 40_000_000_000n);
+    });
+
+    it("Case 2: Borrowers borrow assets from pool with max utilization", async function () {
+        // Borrower1 borrows 10_000_000_000 XLM
+        await borrow(client, borrower1Keys, "XLM", 9_000_000_000n);
+
+        // Borrower2 borrows 10_000_000_000 XRP
+        await borrow(client, borrower2Keys, "XRP", 9_000_000_000n);
+
+        const borrower1XlmBalanceResult = await tokenBalanceOf(client, "XLM", borrower1Address);
+        const borrower2XrpBalanceResult = await tokenBalanceOf(client, "XRP", borrower2Address);
+
+        const borrower1DXlmBalanceResult = await debtTokenBalanceOf(client, "XLM", borrower1Address);
+        const borrower2DXrpBalanceResult = await debtTokenBalanceOf(client, "XRP", borrower2Address);
+
+        const sXlmBalanceResult = await sTokenUnderlyingBalanceOf(client, "XLM");
+        const sXrpBalanceResult = await sTokenUnderlyingBalanceOf(client, "XRP");
+
+        const dXlmSupplyResult = await debtTokenTotalSupply(client, "XLM");
+        const dXrpSupplyResult = await debtTokenTotalSupply(client, "XRP");
+
+        assert.equal(borrower1XlmBalanceResult, 9_000_000_000n);
+        assert.equal(borrower2XrpBalanceResult, 9_000_000_000n);
+
+        assert.equal(borrower1DXlmBalanceResult, 9_000_000_000n);
+        assert.equal(borrower2DXrpBalanceResult, 9_000_000_000n);
+
+        assert.equal(sXlmBalanceResult, 1_000_000_000n);
+        assert.equal(sXrpBalanceResult, 1_000_000_000n);
+
+        assert.equal(dXlmSupplyResult, 9_000_000_000n);
+        assert.equal(dXrpSupplyResult, 9_000_000_000n);
+    });
+
+    it("Case 3: Borrowers try to borrow more when max utilization exceeded", async function () {
+        // Borrower1 borrows 1_000_000_000 XLM
+        await expect(borrow(client, borrower1Keys, "XLM", 1_000_000_000n)).to.eventually.rejected;
+
+        // Borrower2 borrows 1_000_000_000 XRP
+        await expect(borrow(client, borrower2Keys, "XRP", 1_000_000_000n)).to.eventually.rejected;
+
+        const borrower1XlmBalanceResult = await tokenBalanceOf(client, "XLM", borrower1Address);
+        const borrower2XrpBalanceResult = await tokenBalanceOf(client, "XRP", borrower2Address);
+
+        const sXlmBalanceResult = await sTokenUnderlyingBalanceOf(client, "XLM");
+        const sXrpBalanceResult = await sTokenUnderlyingBalanceOf(client, "XRP");
+
+        assert.equal(borrower1XlmBalanceResult, 9_000_000_000n);
+        assert.equal(borrower2XrpBalanceResult, 9_000_000_000n);
+
+        assert.equal(sXlmBalanceResult, 1_000_000_000n);
+        assert.equal(sXrpBalanceResult, 1_000_000_000n);
+    });
+
+    it("Case 4: Collateral coefficient should be increased as time goes", async function () {
+        const xlmCollatCoeff = await collatCoeff(client, "XLM");
+        const xrpCollatCoeff = await collatCoeff(client, "XRP");
+        const usdcCollatCoeff = await collatCoeff(client, "USDC");
+
+        assert(xlmCollatCoeff > 1_000_000_000n);
+        assert(xrpCollatCoeff > 1_000_000_000n);
+        assert(usdcCollatCoeff == 1_000_000_000n);
+    });
+
+    it("Case 5: Lenders withdraw to make utilization ~ 1", async function () {
+        // Lender1 withdraws 1_000_000_000 XLM
+        await withdraw(client, lender1Keys, "XLM", 1_000_000_000n);
+
+        // Lender2 withdraws 1_000_000_000 XRP
+        await withdraw(client, lender2Keys, "XRP", 1_000_000_000n);
+
+        const lender1XlmBalanceResult = await tokenBalanceOf(client, "XLM", lender1Address);
+        const lender1SXlmBalanceResult = await sTokenBalanceOf(client, "XLM", lender1Address);
+        const lender2XrpBalanceResult = await tokenBalanceOf(client, "XRP", lender2Address);
+        const lender2SXrpBalanceResult = await sTokenBalanceOf(client, "XRP", lender2Address);
+
+        const sXlmBalanceResult = await sTokenUnderlyingBalanceOf(client, "XLM");
+        const sXrpBalanceResult = await sTokenUnderlyingBalanceOf(client, "XRP");
+
+        const sXlmSupplyResult = await sTokenTotalSupply(client, "XLM");
+        const sXrpSupplyResult = await sTokenTotalSupply(client, "XRP");
+
+        assert.equal(lender1XlmBalanceResult, 91_000_000_000n);
+        assert(lender1SXlmBalanceResult < 9_001_000_000n
+            && lender1SXlmBalanceResult > 9_000_000_000n);
+        assert.equal(lender2XrpBalanceResult, 91_000_000_000n);
+        assert(lender2SXrpBalanceResult < 9_001_000_000n
+            && lender2SXrpBalanceResult > 9_000_000_000n);
+
+        assert.equal(sXlmBalanceResult, 0n);
+        assert.equal(sXrpBalanceResult, 0n);
+
+        assert.equal(sXlmSupplyResult, lender1SXlmBalanceResult);
+        assert.equal(sXrpSupplyResult, lender2SXrpBalanceResult);
+    });
+
+    it("Case 6: Lenders try to make overwithdraw when utilization ~ 1", async function () {
+        // Lender1 withdraws 1_000_000_000 XLM
+        await expect(withdraw(client, lender1Keys, "XLM", 1_000_000_000n)).to.eventually.rejected;
+
+        // Lender2 withdraws 1_000_000_000 XRP
+        await expect(withdraw(client, lender2Keys, "XRP", 1_000_000_000n)).to.eventually.rejected;
+
+        const lender1XlmBalanceResult = await tokenBalanceOf(client, "XLM", lender1Address);
+        const lender1SXlmBalanceResult = await sTokenBalanceOf(client, "XLM", lender1Address);
+        const lender2XrpBalanceResult = await tokenBalanceOf(client, "XRP", lender2Address);
+        const lender2SXrpBalanceResult = await sTokenBalanceOf(client, "XRP", lender2Address);
+
+        const sXlmBalanceResult = await sTokenUnderlyingBalanceOf(client, "XLM");
+        const sXrpBalanceResult = await sTokenUnderlyingBalanceOf(client, "XRP");
+
+        const sXlmSupplyResult = await sTokenTotalSupply(client, "XLM");
+        const sXrpSupplyResult = await sTokenTotalSupply(client, "XRP");
+
+        assert.equal(lender1XlmBalanceResult, 91_000_000_000n);
+        assert.equal(lender2XrpBalanceResult, 91_000_000_000n);
+
+        assert.equal(sXlmBalanceResult, 0n);
+        assert.equal(sXrpBalanceResult, 0n);
+
+        assert.equal(sXlmSupplyResult, lender1SXlmBalanceResult);
+        assert.equal(sXrpSupplyResult, lender2SXrpBalanceResult);
+    });
+
+    it("Case 7: Borrower1 makes partial repay", async function () {
+        // Borrower1 repays 1_000_000_000 XLM
+        await repay(client, borrower1Keys, "XLM", 1_000_000_000n);
+
+        const borrower1XlmBalanceResult = await tokenBalanceOf(client, "XLM", borrower1Address);
+        const treasuryXlmBalanceResult = await tokenBalanceOf(client, "XLM", treasuryAddress);
+        const borrower1DXlmBalanceResult = await debtTokenBalanceOf(client, "XLM", borrower1Address);
+        const sXlmBalanceResult = await sTokenUnderlyingBalanceOf(client, "XLM");
+        const dXlmSupplyResult = await debtTokenTotalSupply(client, "XLM");
+
+        assert.equal(borrower1XlmBalanceResult, 8_000_000_000n);
+        assert(treasuryXlmBalanceResult > 0 && treasuryXlmBalanceResult < 100_000n);
+        assert(borrower1DXlmBalanceResult > 8_000_000_000n
+            && borrower1DXlmBalanceResult < 8_001_000_000n);
+        assert.equal(sXlmBalanceResult + treasuryXlmBalanceResult, 1_000_000_000n);
+        assert.equal(dXlmSupplyResult, borrower1DXlmBalanceResult);
+    });
+
+    it("Case 8: Borrower1 makes full repay", async function () {
+        // Borrower1 repays 9_000_000_000 XLM
+        await mintUnderlyingTo(client, "XLM", borrower1Address, 1_000_000_000n);
+        await repay(client, borrower1Keys, "XLM", 9_000_000_000n);
+
+        const borrower1XlmBalanceResult = await tokenBalanceOf(client, "XLM", borrower1Address);
+        const treasuryXlmBalanceResult = await tokenBalanceOf(client, "XLM", treasuryAddress);
+        const borrower1DXlmBalanceResult = await debtTokenBalanceOf(client, "XLM", borrower1Address);
+        const sXlmBalanceResult = await sTokenUnderlyingBalanceOf(client, "XLM");
+        const dXlmSupplyResult = await debtTokenTotalSupply(client, "XLM");
+
+        assert(borrower1XlmBalanceResult < 1_000_000_000n
+            && borrower1XlmBalanceResult > 999_000_000n);
+        assert(treasuryXlmBalanceResult > 0 && treasuryXlmBalanceResult < 100_000n);
+        assert.equal(borrower1DXlmBalanceResult, 0n);
+        assert(sXlmBalanceResult + treasuryXlmBalanceResult > 9_000_000_000n
+            && sXlmBalanceResult + treasuryXlmBalanceResult < 9_001_000_000n);
+        assert.equal(dXlmSupplyResult, borrower1DXlmBalanceResult);
+    });
+
+    it("Case 9: Borrower2 makes full repay", async function () {
+        // Borrower2 repays 10_000_000_000 XRP
+        await mintUnderlyingTo(client, "XRP", borrower2Address, 1_000_000_000n);
+        await repay(client, borrower2Keys, "XRP", 10_000_000_000n);
+
+        const borrower2XrpBalanceResult = await tokenBalanceOf(client, "XRP", borrower2Address);
+        const treasuryXrpBalanceResult = await tokenBalanceOf(client, "XRP", treasuryAddress);
+        const borrower2DXrpBalanceResult = await debtTokenBalanceOf(client, "XRP", borrower2Address);
+        const sXrpBalanceResult = await sTokenUnderlyingBalanceOf(client, "XRP");
+        const dXrpSupplyResult = await debtTokenTotalSupply(client, "XRP");
+
+        assert(borrower2XrpBalanceResult < 1_000_000_000n
+            && borrower2XrpBalanceResult > 999_000_000n);
+        assert(treasuryXrpBalanceResult > 0 && treasuryXrpBalanceResult < 100_000n);
+        assert.equal(borrower2DXrpBalanceResult, 0n);
+        assert(sXrpBalanceResult + treasuryXrpBalanceResult > 9_000_000_000n
+            && sXrpBalanceResult + treasuryXrpBalanceResult < 9_001_000_000n);
+        assert.equal(dXrpSupplyResult, borrower2DXrpBalanceResult);
+    });
+
+    it("Case 10: Lenders make partial withdraw", async function () {
+        // Lender1 withdraws 1_000_000_000 XLM
+        await withdraw(client, lender1Keys, "XLM", 1_000_000_000n);
+
+        // Lender2 withdraws 1_000_000_000 XRP
+        await withdraw(client, lender2Keys, "XRP", 1_000_000_000n);
+
+        const lender1XlmBalanceResult = await tokenBalanceOf(client, "XLM", lender1Address);
+        const lender1SXlmBalanceResult = await sTokenBalanceOf(client, "XLM", lender1Address);
+        const lender2XrpBalanceResult = await tokenBalanceOf(client, "XRP", lender2Address);
+        const lender2SXrpBalanceResult = await sTokenBalanceOf(client, "XRP", lender2Address);
+
+        const sXlmBalanceResult = await sTokenUnderlyingBalanceOf(client, "XLM");
+        const sXrpBalanceResult = await sTokenUnderlyingBalanceOf(client, "XRP");
+
+        const sXlmSupplyResult = await sTokenTotalSupply(client, "XLM");
+        const sXrpSupplyResult = await sTokenTotalSupply(client, "XRP");
+
+        assert.equal(lender1XlmBalanceResult, 92_000_000_000n);
+        assert(lender1SXlmBalanceResult < 8_001_000_000n
+            && lender1SXlmBalanceResult > 8_000_000_000n);
+        assert.equal(lender2XrpBalanceResult, 92_000_000_000n);
+        assert(lender2SXrpBalanceResult < 8_001_000_000n
+            && lender2SXrpBalanceResult > 8_000_000_000n);
+
+        assert(sXlmBalanceResult > 8_000_000_000n
+            && sXlmBalanceResult < 8_001_000_000n);
+        assert(sXrpBalanceResult > 8_000_000_000n
+            && sXrpBalanceResult < 8_001_000_000n);
+
+        assert.equal(sXlmSupplyResult, lender1SXlmBalanceResult);
+        assert.equal(sXrpSupplyResult, lender2SXrpBalanceResult);
+    });
+
+    it("Case 11: Lenders make full withdraw", async function () {
+        // Lender1 withdraws 10_000_000_000 XLM
+        await withdraw(client, lender1Keys, "XLM", 10_000_000_000n);
+
+        // Lender2 withdraws 10_000_000_000 XRP
+        await withdraw(client, lender2Keys, "XRP", 10_000_000_000n);
+
+        const lender1XlmBalanceResult = await tokenBalanceOf(client, "XLM", lender1Address);
+        const lender1SXlmBalanceResult = await sTokenBalanceOf(client, "XLM", lender1Address);
+        const lender2XrpBalanceResult = await tokenBalanceOf(client, "XRP", lender2Address);
+        const lender2SXrpBalanceResult = await sTokenBalanceOf(client, "XRP", lender2Address);
+
+        const sXlmBalanceResult = await sTokenUnderlyingBalanceOf(client, "XLM");
+        const sXrpBalanceResult = await sTokenUnderlyingBalanceOf(client, "XRP");
+
+        const sXlmSupplyResult = await sTokenTotalSupply(client, "XLM");
+        const sXrpSupplyResult = await sTokenTotalSupply(client, "XRP");
+
+        assert(lender1XlmBalanceResult > 100_000_000_000n
+            && lender1XlmBalanceResult < 100_001_000_000n);
+        assert.equal(lender1SXlmBalanceResult, 0n);
+        assert(lender2XrpBalanceResult > 100_000_000_000n
+            && lender2XrpBalanceResult < 100_001_000_000n);
+        assert.equal(lender2SXrpBalanceResult, 0n);
+
+        assert(sXlmBalanceResult < 1_000n);
+        assert(sXrpBalanceResult < 1_000n);
+
+        assert.equal(sXlmSupplyResult, lender1SXlmBalanceResult);
+        assert.equal(sXrpSupplyResult, lender2SXrpBalanceResult);
     });
 });
