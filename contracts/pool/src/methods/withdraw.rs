@@ -42,7 +42,7 @@ pub fn withdraw(
         .mul_int(collat_balance)
         .ok_or(Error::MathOverflowError)?;
 
-    let (underlying_to_withdraw, s_token_to_burn) = if amount == i128::MAX {
+    let (underlying_to_withdraw, s_token_to_burn) = if amount >= underlying_balance {
         (underlying_balance, collat_balance)
     } else {
         let s_token_to_burn = collat_coeff
