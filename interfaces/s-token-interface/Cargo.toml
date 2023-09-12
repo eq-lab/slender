@@ -10,4 +10,3 @@ soroban-sdk = { workspace = true }
 
 [features]
 testutils = ["soroban-sdk/testutils"]
-exceeded-limit-fix = []
