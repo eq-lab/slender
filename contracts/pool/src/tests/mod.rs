@@ -2,6 +2,7 @@ pub mod account_position;
 pub mod borrow;
 #[cfg(feature = "budget")]
 pub mod budget;
+pub mod change_decimals;
 pub mod collat_coeff;
 pub mod configure_as_collateral;
 pub mod debt_coeff;

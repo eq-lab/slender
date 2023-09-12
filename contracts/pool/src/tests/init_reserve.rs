@@ -148,15 +148,16 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
         // &false,
         &init_reserve_input.clone(),
     );
+    assert!(pool.get_reserve(&underlying_token.address).is_some());
 
     let reserve = pool.get_reserve(&underlying_token.address).unwrap();
 
-    assert!(pool.get_reserve(&underlying_token.address).is_some());
     assert_eq!(init_reserve_input.s_token_address, reserve.s_token_address);
     assert_eq!(
         init_reserve_input.debt_token_address,
         reserve.debt_token_address
     );
+    assert_eq!(init_reserve_input.decimals, reserve.configuration.decimals);
 }
 
 // #[test]
