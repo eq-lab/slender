@@ -11,8 +11,8 @@ use crate::methods::utils::validation::{
     require_active_reserve, require_good_position, require_not_paused, require_positive_amount,
 };
 use crate::storage::{
-    add_token_balance, add_token_total_supply, read_reserve, read_token_balance,
-    read_token_total_supply,
+    add_stoken_underlying_balance, add_token_balance, add_token_total_supply, read_reserve,
+    read_token_balance, read_token_total_supply,
 };
 use crate::types::user_configurator::UserConfigurator;
 
@@ -41,7 +41,7 @@ pub fn withdraw(
         .mul_int(collat_balance)
         .ok_or(Error::MathOverflowError)?;
 
-    let (underlying_to_withdraw, s_token_to_burn) = if amount == i128::MAX {
+    let (underlying_to_withdraw, s_token_to_burn) = if amount >= underlying_balance {
         (underlying_balance, collat_balance)
     } else {
         let s_token_to_burn = collat_coeff
@@ -123,7 +123,7 @@ pub fn withdraw(
 
     add_token_balance(env, &reserve.s_token_address, who, s_token_to_sub)?;
     add_token_total_supply(env, &reserve.s_token_address, s_token_to_sub)?;
-    add_token_balance(env, asset, &reserve.s_token_address, amount_to_sub)?;
+    add_stoken_underlying_balance(env, &reserve.s_token_address, amount_to_sub)?;
 
     let is_full_withdraw = underlying_to_withdraw == underlying_balance;
     user_configurator

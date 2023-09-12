@@ -3,7 +3,7 @@ default: build
 all: test
 
 test: build
-	rm -f pool/src/tests/snapshots/*
+	rm -f contracts/pool/src/tests/snapshots/*
 	cargo test -p common
 	cargo test -p deployer
 	cargo test -p s-token --features testutils
@@ -19,12 +19,14 @@ build-exceeded-limit-fix:
 	cargo build --target wasm32-unknown-unknown --release --features exceeded-limit-fix
 
 deploy-contracts:
+	(cd deploy/artifacts && shopt -s dotglob; rm -rf *)
 	./deploy/scripts/deploy.sh $(env)
 
-init-contracts: deploy-contracts
+init-contracts:
 	yarn --cwd integration-tests init-$(env)
+	./deploy/scripts/create-bindings.sh $(env)
 
-integration-test: init-contracts
+integration-test:
 	yarn --cwd integration-tests test-$(env)
 
 upgrade-pool-contract:

@@ -8,8 +8,10 @@ require("dotenv").config({ path: contractsFilename });
 
 export const adminKeys = Keypair.fromSecret(process.env.ADMIN_SECRET);
 export const treasuryKeys = Keypair.fromSecret(process.env.TREASURY_SECRET);
-export const borrower1Keys = Keypair.fromSecret(process.env.BORROWER_1_SECRET);
 export const lender1Keys = Keypair.fromSecret(process.env.LENDER_1_SECRET);
+export const lender2Keys = Keypair.fromSecret(process.env.LENDER_2_SECRET);
+export const borrower1Keys = Keypair.fromSecret(process.env.BORROWER_1_SECRET);
+export const borrower2Keys = Keypair.fromSecret(process.env.BORROWER_2_SECRET);
 
 export function setEnv(key: string, value: string) {
     const ENV_VARS = readFileSync(contractsFilename, "utf8").split("\n");
