@@ -23,9 +23,9 @@ export async function init(client: SorobanClient): Promise<void> {
     await initDToken(client, "XRP", `${generateSalt(++salt)}`);
     await initDToken(client, "USDC", `${generateSalt(++salt)}`);
 
-    await initPoolReserve(client, "XLM");
-    await initPoolReserve(client, "XRP");
-    await initPoolReserve(client, "USDC");
+    await initPoolReserve(client, "XLM", 9);
+    await initPoolReserve(client, "XRP", 9);
+    await initPoolReserve(client, "USDC", 9);
 
     await initPoolCollateral(client, "XLM");
     await initPoolCollateral(client, "XRP");
@@ -194,7 +194,7 @@ async function initPool(client: SorobanClient, salt: string): Promise<void> {
     );
 }
 
-async function initPoolReserve(client: SorobanClient, asset: SlenderAsset): Promise<void> {
+async function initPoolReserve(client: SorobanClient, asset: SlenderAsset, decimals: number): Promise<void> {
     await initContract(
         `POOL_${asset}_RESERVE_INITIALIZED`,
         () => client.sendTransaction(
@@ -204,7 +204,8 @@ async function initPoolReserve(client: SorobanClient, asset: SlenderAsset): Prom
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvMap({
                 "debt_token_address": convertToScvAddress(process.env[`SLENDER_DEBT_TOKEN_${asset}`]),
-                "s_token_address": convertToScvAddress(process.env[`SLENDER_S_TOKEN_${asset}`])
+                "s_token_address": convertToScvAddress(process.env[`SLENDER_S_TOKEN_${asset}`]),
+                "decimals": convertToScvU32(decimals)
             })
         )
     );
