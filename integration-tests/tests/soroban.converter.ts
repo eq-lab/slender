@@ -88,9 +88,7 @@ function parseScvToBigInt(scval: xdr.ScVal | undefined): BigInt {
         }
         case xdr.ScValType.scvI128(): {
             const parts = scval.i128();
-            const a = parts.hi();
-            const b = parts.lo();
-            return bufToBigint(new Uint32Array([a.high, a.low, b.high, b.low]));
+            return BigInt(parts.lo().toString()) | (BigInt(parts.hi().toString()) << BigInt(64));
         }
         default: {
             throw new Error(`Invalid type for scvalToBigInt: ${scval?.switch().name}`);
