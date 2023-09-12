@@ -2,6 +2,7 @@
 pub mod account_position;
 #[cfg(not(feature = "exceeded-limit-fix"))]
 pub mod borrow;
+pub mod change_decimals;
 #[cfg(not(feature = "exceeded-limit-fix"))]
 pub mod collat_coeff;
 pub mod configure_as_collateral;

@@ -16,12 +16,12 @@ pub struct ReserveConfiguration {
 }
 
 impl ReserveConfiguration {
-    pub(crate) fn default() -> Self {
+    pub(crate) fn default(decimals: u32) -> Self {
         Self {
             liq_bonus: Default::default(),
             liq_cap: Default::default(),
             util_cap: Default::default(),
-            decimals: Default::default(),
+            decimals,
             is_active: true,
             is_base_asset: false,
             borrowing_enabled: false,
