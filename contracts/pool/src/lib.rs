@@ -147,6 +147,16 @@ impl LendingPoolTrait for LendingPool {
         init_reserve(&env, &asset, &input)
     }
 
+    /// Set decimals that used by reserve for a given asset
+    ///
+    /// # Arguments
+    /// - asset - The address of the asset associated with the reserve.
+    /// - decimals - New decimals value
+    ///
+    /// - Panics with `Uninitialized` if the admin key is not exist in storage.
+    /// - Panics with `NoReserveExistForAsset` if no reserve exists for the specified asset.
+    /// - Panics if the caller is not the admin.
+    ///
     fn set_decimals(env: Env, asset: Address, decimals: u32) -> Result<(), Error> {
         set_decimals(&env, &asset, decimals)
     }
