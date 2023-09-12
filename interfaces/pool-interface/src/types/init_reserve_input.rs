@@ -5,4 +5,5 @@ use soroban_sdk::{contracttype, Address};
 pub struct InitReserveInput {
     pub s_token_address: Address,
     pub debt_token_address: Address,
+    pub decimals: u32,
 }

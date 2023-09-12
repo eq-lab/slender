@@ -156,6 +156,7 @@ fn init_reserve() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
+        decimals: 9,
     };
 
     measure_budget(&env, nameof(init_reserve), || {
@@ -382,13 +383,17 @@ fn withdraw() {
 }
 
 pub fn measure_budget(env: &Env, function: &str, callback: impl FnOnce()) {
-    env.budget().reset_tracker();
+    let cpu_before = env.budget().cpu_instruction_cost();
+    // TODO: bug in v0.9.2 (returns CPU cost)
+    let memory_before = env.budget().memory_bytes_cost();
 
     callback();
 
-    let cpu = env.budget().cpu_instruction_cost();
-    // TODO: bug in v0.9.2 (returns CPU cost)
-    let memory = env.budget().memory_bytes_cost();
+    let cpu_after = env.budget().cpu_instruction_cost();
+    let memory_after = env.budget().memory_bytes_cost();
+
+    let cpu = cpu_after - cpu_before;
+    let memory = memory_after - memory_before;
 
     let budget = &[
         std::format!("['{}'] = {{\n", function),
