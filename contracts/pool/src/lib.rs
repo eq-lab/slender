@@ -5,7 +5,8 @@
 use methods::{
     account_position::account_position, borrow::borrow, collat_coeff::collat_coeff,
     deposit::deposit, finalize_transfer::finalize_transfer, flash_loan::flash_loan,
-    liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral, withdraw::withdraw,
+    liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral,
+    set_decimals::set_decimals, withdraw::withdraw,
 };
 use methods::{
     configure_as_collateral::configure_as_collateral, debt_coeff::debt_coeff,
@@ -144,6 +145,10 @@ impl LendingPoolTrait for LendingPool {
     ///
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error> {
         init_reserve(&env, &asset, &input)
+    }
+
+    fn set_decimals(env: Env, asset: Address, decimals: u32) -> Result<(), Error> {
+        set_decimals(&env, &asset, decimals)
     }
 
     /// Activates/De-activates reserve for the specified asset.

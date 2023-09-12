@@ -18,6 +18,7 @@ pub mod price_feed;
 pub mod rates;
 pub mod repay;
 pub mod set_as_collateral;
+pub mod set_decimals;
 pub mod set_flash_loan_fee;
 pub mod set_ir_params;
 pub mod set_pause;
