@@ -16,7 +16,7 @@ fn should_require_admin() {
 
     let sut = init_pool(&env, false);
     let underlying_token = sut.reserves[0].token.address.clone();
-    sut.pool.change_decimals(&underlying_token, &333);
+    sut.pool.set_decimals(&underlying_token, &333);
 
     assert_eq!(
         env.auths(),
@@ -25,7 +25,7 @@ fn should_require_admin() {
             AuthorizedInvocation {
                 function: AuthorizedFunction::Contract((
                     sut.pool.address.clone(),
-                    Symbol::new(&env, "change_decimals"),
+                    Symbol::new(&env, "set_decimals"),
                     (underlying_token, 333u32).into_val(&env)
                 )),
                 sub_invocations: std::vec![]
@@ -45,11 +45,11 @@ fn should_fail_when_reserve_not_exists() {
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
 
-    pool.change_decimals(&underlying_token.address, &333);
+    pool.set_decimals(&underlying_token.address, &333);
 
     // assert_eq!(
     //     sut.pool
-    //         .try_change_decimals(&underlying_token.address, &333)
+    //         .try_set_decimals(&underlying_token.address, &333)
     //         .unwrap_err()
     //         .unwrap(),
     //     Error::NoReserveExistForAsset
@@ -62,7 +62,7 @@ fn should_set_decimals() {
     env.mock_all_auths();
     let sut = init_pool(&env, false);
     let underlying_token = sut.reserves[0].token.address.clone();
-    sut.pool.change_decimals(&underlying_token, &333);
+    sut.pool.set_decimals(&underlying_token, &333);
     let reserve = sut.pool.get_reserve(&underlying_token).unwrap();
     assert_eq!(reserve.configuration.decimals, 333);
 }

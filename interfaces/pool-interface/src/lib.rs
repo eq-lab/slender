@@ -40,7 +40,7 @@ pub trait LendingPoolTrait {
 
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
 
-    fn change_decimals(env: Env, asset: Address, decimals: u32) -> Result<(), Error>;
+    fn set_decimals(env: Env, asset: Address, decimals: u32) -> Result<(), Error>;
 
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error>;
 

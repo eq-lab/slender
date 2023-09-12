@@ -2,7 +2,6 @@ pub mod account_position;
 pub mod borrow;
 #[cfg(feature = "budget")]
 pub mod budget;
-pub mod change_decimals;
 pub mod collat_coeff;
 pub mod configure_as_collateral;
 pub mod debt_coeff;
@@ -19,6 +18,7 @@ pub mod price_feed;
 pub mod rates;
 pub mod repay;
 pub mod set_as_collateral;
+pub mod set_decimals;
 pub mod set_flash_loan_fee;
 pub mod set_ir_params;
 pub mod set_pause;
