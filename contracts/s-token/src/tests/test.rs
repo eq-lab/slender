@@ -102,7 +102,6 @@ fn test() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
-        decimals: 9,
     };
     pool.init_reserve(
         &underlying.address,
