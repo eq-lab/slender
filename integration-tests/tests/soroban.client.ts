@@ -1,6 +1,7 @@
 import { Server, Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc, Account } from "soroban-client";
 import { promisify } from "util";
 import "./soroban.config";
+import { adminKeys } from "./soroban.config";
 
 export class SorobanClient {
     client: Server;
@@ -54,6 +55,29 @@ export class SorobanClient {
         console.log(`${signer.publicKey()} => ${method} => ${result.status}`);
 
         return result;
+    }
+
+    async simulateTransaction(
+        contractId: string,
+        method: string,
+        ...args: xdr.ScVal[]
+    ): Promise<xdr.ScVal> {
+        const source = await this.client.getAccount(adminKeys.publicKey());
+        const contract = new Contract(contractId);
+
+        const operation = new TransactionBuilder(source, {
+            fee: "100",
+            networkPassphrase: process.env.PASSPHRASE,
+        }).addOperation(contract.call(method, ...args || []))
+            .setTimeout(TimeoutInfinite)
+            .build();
+
+        const { results } = await this.client.simulateTransaction(operation);
+        if (!results || results.length !== 1) {
+            throw new Error("Invalid response from simulateTransaction");
+        }
+
+        return xdr.ScVal.fromXDR(results[0].xdr, "base64");
     }
 }
 

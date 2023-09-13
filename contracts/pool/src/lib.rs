@@ -5,15 +5,15 @@
 use methods::{
     account_position::account_position, borrow::borrow, collat_coeff::collat_coeff,
     deposit::deposit, finalize_transfer::finalize_transfer, flash_loan::flash_loan,
-    liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral,
-    set_decimals::set_decimals, withdraw::withdraw,
+    liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral, withdraw::withdraw,
 };
 use methods::{
     configure_as_collateral::configure_as_collateral, debt_coeff::debt_coeff,
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, init_reserve::init_reserve,
-    initialize::initialize, set_flash_loan_fee::set_flash_loan_fee, set_ir_params::set_ir_params,
-    set_pause::set_pause, set_price_feed::set_price_feed, set_reserve_status::set_reserve_status,
-    upgrade::upgrade, upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token,
+    initialize::initialize, set_decimals::set_decimals, set_flash_loan_fee::set_flash_loan_fee,
+    set_ir_params::set_ir_params, set_pause::set_pause, set_price_feed::set_price_feed,
+    set_reserve_status::set_reserve_status, upgrade::upgrade,
+    upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token,
 };
 #[cfg(feature = "exceeded-limit-fix")]
 use methods::{
