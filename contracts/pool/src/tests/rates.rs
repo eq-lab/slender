@@ -141,7 +141,6 @@ fn should_calc_borrower_and_lender_rates() {
     let input = InitReserveInput {
         s_token_address: Address::random(env),
         debt_token_address: Address::random(env),
-        decimals: 9,
     };
     let reserve_data = ReserveData::new(env, &input);
     let ir_params = get_default_ir_params();
@@ -169,7 +168,6 @@ fn should_fail_when_collateral_is_zero() {
     let input = InitReserveInput {
         s_token_address: Address::random(env),
         debt_token_address: Address::random(env),
-        decimals: 9,
     };
     let reserve_data = ReserveData::new(env, &input);
     let ir_params = get_default_ir_params();
