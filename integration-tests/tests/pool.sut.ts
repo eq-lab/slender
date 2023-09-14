@@ -454,6 +454,7 @@ async function initPoolReserve(client: SorobanClient, asset: SlenderAsset, decim
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvMap({
                 "debt_token_address": convertToScvAddress(process.env[`SLENDER_DEBT_TOKEN_${asset}`]),
+                // "decimals": convertToScvU32(9),
                 "s_token_address": convertToScvAddress(process.env[`SLENDER_S_TOKEN_${asset}`]),
             })
         )

@@ -26,6 +26,7 @@ fn should_require_admin() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
+        // decimals: 9,
     };
 
     pool.init_reserve(
@@ -66,6 +67,7 @@ fn should_fail_when_calling_second_time() {
     let init_reserve_input = InitReserveInput {
         s_token_address: sut.s_token().address.clone(),
         debt_token_address: sut.debt_token().address.clone(),
+        // decimals: 9,
     };
 
     sut.pool.init_reserve(
@@ -102,6 +104,7 @@ fn should_fail_when_pool_not_initialized() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
+        // decimals: 9,
     };
 
     pool.init_reserve(
@@ -137,6 +140,7 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
+        // decimals: 9,
     };
 
     pool.init_reserve(
@@ -153,6 +157,7 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
         init_reserve_input.debt_token_address,
         reserve.debt_token_address
     );
+    // assert_eq!(init_reserve_input.decimals, reserve.configuration.decimals);
 }
 
 // #[test]
