@@ -10,9 +10,9 @@ use methods::{
 use methods::{
     configure_as_collateral::configure_as_collateral, debt_coeff::debt_coeff,
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, init_reserve::init_reserve,
-    initialize::initialize, set_decimals::set_decimals, set_flash_loan_fee::set_flash_loan_fee,
-    set_ir_params::set_ir_params, set_pause::set_pause, set_price_feed::set_price_feed,
-    set_reserve_status::set_reserve_status, upgrade::upgrade,
+    initialize::initialize, set_base_asset::set_base_asset, set_decimals::set_decimals,
+    set_flash_loan_fee::set_flash_loan_fee, set_ir_params::set_ir_params, set_pause::set_pause,
+    set_price_feed::set_price_feed, set_reserve_status::set_reserve_status, upgrade::upgrade,
     upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token,
 };
 #[cfg(feature = "exceeded-limit-fix")]
@@ -159,6 +159,20 @@ impl LendingPoolTrait for LendingPool {
     ///
     fn set_decimals(env: Env, asset: Address, decimals: u32) -> Result<(), Error> {
         set_decimals(&env, &asset, decimals)
+    }
+
+    /// Set the flag indicating the reserve asset is base
+    ///
+    /// # Arguments
+    /// - asset - The address of the asset associated with the reserve.
+    /// - is_base - The flag indicating the reserve asset is base.
+    ///
+    /// - Panics with `Uninitialized` if the admin key is not exist in storage.
+    /// - Panics with `NoReserveExistForAsset` if no reserve exists for the specified asset.
+    /// - Panics if the caller is not the admin.
+    ///
+    fn set_base_asset(env: Env, asset: Address, is_base: bool) -> Result<(), Error> {
+        set_base_asset(&env, &asset, is_base)
     }
 
     /// Activates/De-activates reserve for the specified asset.

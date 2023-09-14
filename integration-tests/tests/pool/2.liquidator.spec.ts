@@ -144,9 +144,9 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
             && liquidator1Position.npv < 11_001_000_000n);
     });
 
-    it("Case 4: Drop the XLM price so Borrower's NPV <= 0", async function () {
-        // XLM price is set to 1_000_100_000
-        await setPrice(client, "XLM", 1_000_100_000n);
+    it("Case 4: Drop the XRP price so Borrower's NPV <= 0", async function () {
+        // XLM price is set to 999_800_000
+        await setPrice(client, "XRP", 999_800_000n);
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 

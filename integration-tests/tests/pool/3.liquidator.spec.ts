@@ -183,14 +183,14 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
     //         && liquidator1Position.npv < 4_000_000_000n);
     // });
 
-    it("Case 4: Drop the XRP price so Borrower's NPV <= 0", async function () {
-        // XRP price is set to 1_000_100_000
-        await setPrice(client, "XLM", 1_000_100_000n);
+    it("Case 4: Drop the USDC price so Borrower's NPV <= 0", async function () {
+        // USDC price is set to 999_100_000
+        await setPrice(client, "USDC", 999_100_000n);
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
         assert(borrower1Position.npv < 0n
-            && borrower1Position.npv > -1_000_000n);
+            && borrower1Position.npv > -5_000_000n);
     });
 
     it("Case 5: Liquidator liquidates Borrower's positions", async function () {

@@ -251,6 +251,30 @@ fn set_as_collateral() {
 }
 
 #[test]
+fn set_decimals() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, true);
+
+    measure_budget(&env, nameof(set_as_collateral), || {
+        sut.pool.set_decimals(&sut.token().address, &9);
+    });
+}
+
+#[test]
+fn set_base_asset() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, true);
+
+    measure_budget(&env, nameof(set_as_collateral), || {
+        sut.pool.set_base_asset(&sut.token().address, &true);
+    });
+}
+
+#[test]
 fn set_ir_params() {
     let env = Env::default();
     env.mock_all_auths();
