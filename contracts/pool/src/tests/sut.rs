@@ -140,8 +140,8 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
     let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..3)
         .map(|_| {
             let (token, token_admin_client) = create_token_contract(&env, &token_admin);
-            let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
             let s_token = create_s_token_contract(&env, &pool.address, &token.address);
+            let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
             let decimals = s_token.decimals();
             assert!(pool.get_reserve(&s_token.address).is_none());
 
