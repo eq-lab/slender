@@ -184,7 +184,7 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
     // });
 
     it("Case 4: Drop the XRP price so Borrower's NPV <= 0", async function () {
-        // XRP price is set to 1_000_100_000 USDC
+        // XRP price is set to 1_000_100_000
         await setPrice(client, "XLM", 1_000_100_000n);
 
         const borrower1Position = await accountPosition(client, borrower1Keys);

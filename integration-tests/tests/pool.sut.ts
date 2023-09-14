@@ -331,6 +331,8 @@ export async function collatCoeff(
 }
 
 export async function deploy(): Promise<void> {
+    console.log("    Contracts deployment has been started");
+
     await new Promise((resolve, reject) => {
         exec(`../deploy/scripts/deploy.sh ${process.env.NODE_ENV}`, (error, stdout, _) => {
             if (error) {
@@ -342,6 +344,8 @@ export async function deploy(): Promise<void> {
             resolve(stdout)
         });
     });
+
+    console.log("    Contracts deployment has been finished");
 }
 
 export async function cleanSlenderEnvKeys() {

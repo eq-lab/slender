@@ -52,7 +52,7 @@ export class SorobanClient {
             attempts--;
         } while (result.status === "NOT_FOUND" && attempts > 0);
 
-        console.log(`${signer.publicKey()} => ${method} => ${result.status}`);
+        console.log(`    ${signer.publicKey()} => ${method} => ${result.status}`);
 
         return result;
     }
