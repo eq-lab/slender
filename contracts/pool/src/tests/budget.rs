@@ -24,7 +24,7 @@ fn account_position() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let (_, borrower, _, _) = fill_pool_three(&env, &sut);
 
     measure_budget(&env, nameof(account_position), || {
@@ -37,7 +37,7 @@ fn borrow() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
@@ -51,7 +51,7 @@ fn collat_coeff() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let (_, _, _, debt_config) = fill_pool_three(&env, &sut);
     let debt_token = debt_config.token.address.clone();
 
@@ -65,7 +65,7 @@ fn configure_as_collateral() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
@@ -86,7 +86,7 @@ fn debt_coeff() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let (_, _, _, debt_config) = fill_pool_three(&env, &sut);
     let debt_token = debt_config.token.address.clone();
 
@@ -100,7 +100,7 @@ fn deposit() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
 
     let user = Address::random(&env);
     let token_address = sut.token().address.clone();
@@ -117,7 +117,7 @@ fn enable_borrowing_on_reserve() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let asset = sut.token().address.clone();
 
     measure_budget(&env, nameof(enable_borrowing_on_reserve), || {
@@ -130,7 +130,7 @@ fn get_reserve() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let asset = sut.token().address.clone();
 
     measure_budget(&env, nameof(get_reserve), || {
@@ -172,7 +172,7 @@ fn ir_params() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
 
     measure_budget(&env, nameof(ir_params), || {
         sut.pool.ir_params();
@@ -184,7 +184,7 @@ fn liquidate() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let (_, borrower, liquidator, _) = fill_pool_three(&env, &sut);
 
     sut.pool.liquidate(&liquidator, &borrower, &true);
@@ -199,7 +199,7 @@ fn paused() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
 
     measure_budget(&env, nameof(paused), || {
         sut.pool.paused();
@@ -211,7 +211,7 @@ fn price_feed() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
 
     measure_budget(&env, nameof(price_feed), || {
         sut.pool.price_feed(&sut.token().address);
@@ -223,7 +223,7 @@ fn repay() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
 
@@ -254,7 +254,7 @@ fn set_ir_params() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
 
     let ir_params_input = IRParams {
         alpha: 144,
@@ -273,7 +273,7 @@ fn set_pause() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
 
     measure_budget(&env, nameof(set_pause), || {
         sut.pool.set_pause(&true);
@@ -303,7 +303,7 @@ fn set_reserve_status() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let asset = sut.token().address.clone();
 
     measure_budget(&env, nameof(set_reserve_status), || {
@@ -316,7 +316,7 @@ fn stoken_underlying_balance() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let lender = Address::random(&env);
 
     sut.reserves[0].token_admin.mint(&lender, &2_000_000_000);
@@ -359,7 +359,7 @@ fn user_configuration() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let (_, borrower, _) = fill_pool(&env, &sut, false);
 
     measure_budget(&env, nameof(user_configuration), || {
@@ -372,7 +372,7 @@ fn withdraw() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let (_, borrower, _) = fill_pool(&env, &sut, false);
 
     measure_budget(&env, nameof(withdraw), || {
@@ -420,7 +420,7 @@ fn flash_loan_fee() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
 
     measure_budget(&env, nameof(flash_loan_fee), || {
         sut.pool.flash_loan_fee();
@@ -432,7 +432,7 @@ fn set_flash_loan_fee() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
 
     measure_budget(&env, nameof(set_flash_loan_fee), || {
         sut.pool.set_flash_loan_fee(&15);
