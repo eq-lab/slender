@@ -67,38 +67,7 @@ export function parseMetaXdrToJs<T>(value: string): T {
     return parseScvToJs(val);
 }
 
-function parseScvToBigInt(scval: xdr.ScVal | undefined): BigInt {
-    switch (scval?.switch()) {
-        case undefined: {
-            return undefined;
-        }
-        case xdr.ScValType.scvU64(): {
-            const { high, low } = scval.u64();
-            return bufToBigint(new Uint32Array([high, low]));
-        }
-        case xdr.ScValType.scvI64(): {
-            const { high, low } = scval.i64();
-            return bufToBigint(new Int32Array([high, low]));
-        }
-        case xdr.ScValType.scvU128(): {
-            const parts = scval.u128();
-            const a = parts.hi();
-            const b = parts.lo();
-            return bufToBigint(new Uint32Array([a.high, a.low, b.high, b.low]));
-        }
-        case xdr.ScValType.scvI128(): {
-            const parts = scval.i128();
-            const a = parts.hi();
-            const b = parts.lo();
-            return bufToBigint(new Uint32Array([a.high, a.low, b.high, b.low]));
-        }
-        default: {
-            throw new Error(`Invalid type for scvalToBigInt: ${scval?.switch().name}`);
-        }
-    };
-}
-
-function parseScvToJs<T>(val: xdr.ScVal): T {
+export function parseScvToJs<T>(val: xdr.ScVal): T {
     switch (val?.switch()) {
         case xdr.ScValType.scvBool(): {
             return val.b() as unknown as T;
@@ -175,6 +144,35 @@ function parseScvToJs<T>(val: xdr.ScVal): T {
 
         default: {
             throw new Error(`type not implemented yet: ${val?.switch().name}`);
+        }
+    };
+}
+
+function parseScvToBigInt(scval: xdr.ScVal | undefined): BigInt {
+    switch (scval?.switch()) {
+        case undefined: {
+            return undefined;
+        }
+        case xdr.ScValType.scvU64(): {
+            const { high, low } = scval.u64();
+            return bufToBigint(new Uint32Array([high, low]));
+        }
+        case xdr.ScValType.scvI64(): {
+            const { high, low } = scval.i64();
+            return bufToBigint(new Int32Array([high, low]));
+        }
+        case xdr.ScValType.scvU128(): {
+            const parts = scval.u128();
+            const a = parts.hi();
+            const b = parts.lo();
+            return bufToBigint(new Uint32Array([a.high, a.low, b.high, b.low]));
+        }
+        case xdr.ScValType.scvI128(): {
+            const parts = scval.i128();
+            return BigInt(parts.lo().toString()) | (BigInt(parts.hi().toString()) << BigInt(64));
+        }
+        default: {
+            throw new Error(`Invalid type for scvalToBigInt: ${scval?.switch().name}`);
         }
     };
 }

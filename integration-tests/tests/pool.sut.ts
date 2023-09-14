@@ -1,6 +1,6 @@
 import { Address, Keypair, SorobanRpc } from "soroban-client";
 import { SorobanClient } from "./soroban.client";
-import { adminKeys, setEnv, treasuryKeys } from "./soroban.config";
+import { adminKeys, contractsFilename, setEnv, treasuryKeys } from "./soroban.config";
 import {
     convertToScvAddress,
     convertToScvVec,
@@ -10,8 +10,10 @@ import {
     convertToScvMap,
     parseMetaXdrToJs,
     convertToScvBytes,
-    convertToScvString
+    convertToScvString,
+    parseScvToJs
 } from "./soroban.converter";
+import { exec } from "child_process";
 
 export type SlenderAsset = "XLM" | "XRP" | "USDC";
 
@@ -19,6 +21,12 @@ export interface MintBurn {
     asset_balance: Map<string, any>;
     mint: boolean;
     who: Address;
+}
+
+export interface AccountPosition {
+    debt: bigint;
+    discounted_collateral: bigint;
+    npv: bigint;
 }
 
 export async function init(client: SorobanClient): Promise<void> {
@@ -77,7 +85,7 @@ export async function mintBurn(
     mintsBurns: Array<MintBurn>
 ): Promise<void> {
     for (let i = 0; i < mintsBurns.length; i++) {
-        let response = await client.sendTransaction(
+        const response = await client.sendTransaction(
             mintsBurns[i].asset_balance.get("asset"),
             mintsBurns[i].mint ? "mint" : "clawback",
             adminKeys,
@@ -96,14 +104,13 @@ export async function sTokenBalanceOf(
     asset: SlenderAsset,
     address: string
 ): Promise<bigint> {
-    let response = await client.sendTransaction(
+    const xdrResponse = await client.simulateTransaction(
         process.env[`SLENDER_S_TOKEN_${asset}`],
         "balance",
-        adminKeys,
         convertToScvAddress(address)
     );
 
-    return parseMetaXdrToJs(response.resultMetaXdr);
+    return parseScvToJs(xdrResponse);
 }
 
 export async function debtTokenBalanceOf(
@@ -111,14 +118,13 @@ export async function debtTokenBalanceOf(
     asset: SlenderAsset,
     address: string
 ): Promise<bigint> {
-    let response = await client.sendTransaction(
+    const xdrResponse = await client.simulateTransaction(
         process.env[`SLENDER_DEBT_TOKEN_${asset}`],
         "balance",
-        adminKeys,
         convertToScvAddress(address)
     );
 
-    return parseMetaXdrToJs(response.resultMetaXdr);
+    return parseScvToJs(xdrResponse);
 }
 
 export async function tokenBalanceOf(
@@ -126,54 +132,78 @@ export async function tokenBalanceOf(
     asset: SlenderAsset,
     address: string
 ): Promise<bigint> {
-    let response = await client.sendTransaction(
+    const xdrResponse = await client.simulateTransaction(
         process.env[`SLENDER_TOKEN_${asset}`],
         "balance",
-        adminKeys,
         convertToScvAddress(address)
     );
 
-    return parseMetaXdrToJs(response.resultMetaXdr);
+
+    return parseScvToJs(xdrResponse);
+}
+
+export async function accountPosition(
+    client: SorobanClient,
+    signer: Keypair,
+): Promise<AccountPosition> {
+    const xdrResponse = await client.simulateTransaction(
+        process.env.SLENDER_POOL,
+        "account_position",
+        convertToScvAddress(signer.publicKey())
+    );
+
+    return parseScvToJs<AccountPosition>(xdrResponse);
+}
+
+export async function setPrice(
+    client: SorobanClient,
+    asset: SlenderAsset,
+    amount: bigint
+): Promise<void> {
+    await client.sendTransaction(
+        process.env.SLENDER_POOL,
+        "set_price",
+        adminKeys,
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
+        convertToScvI128(amount)
+    );
 }
 
 export async function sTokenUnderlyingBalanceOf(
     client: SorobanClient,
     asset: SlenderAsset,
 ): Promise<bigint> {
-    let response = await client.sendTransaction(
+    const xdrResponse = await client.simulateTransaction(
         process.env.SLENDER_POOL,
         "stoken_underlying_balance",
-        adminKeys,
         convertToScvAddress(process.env[`SLENDER_S_TOKEN_${asset}`])
     );
 
-    return parseMetaXdrToJs(response.resultMetaXdr);
+    return parseScvToJs(xdrResponse);
 }
 
 export async function sTokenTotalSupply(
     client: SorobanClient,
     asset: SlenderAsset,
 ): Promise<bigint> {
-    let response = await client.sendTransaction(
+    const xdrResponse = await client.simulateTransaction(
         process.env[`SLENDER_S_TOKEN_${asset}`],
         "total_supply",
-        adminKeys
     );
 
-    return parseMetaXdrToJs(response.resultMetaXdr);
+    return parseScvToJs(xdrResponse);
 }
 
 export async function debtTokenTotalSupply(
     client: SorobanClient,
     asset: SlenderAsset,
 ): Promise<bigint> {
-    let response = await client.sendTransaction(
+    const xdrResponse = await client.simulateTransaction(
         process.env[`SLENDER_DEBT_TOKEN_${asset}`],
         "total_supply",
-        adminKeys
     );
 
-    return parseMetaXdrToJs(response.resultMetaXdr);
+    return parseScvToJs(xdrResponse);
 }
 
 export async function borrow(
@@ -265,20 +295,61 @@ export async function withdraw(
     await mintBurn(client, result);
 }
 
+export async function liquidate(
+    client: SorobanClient,
+    signer: Keypair,
+    who: string,
+    receiveStoken: boolean
+): Promise<void> {
+    const response = await client.sendTransaction(
+        process.env.SLENDER_POOL,
+        "liquidate",
+        signer,
+        convertToScvAddress(signer.publicKey()),
+        convertToScvAddress(who),
+        convertToScvBool(receiveStoken)
+    );
+
+    const result = parseMetaXdrToJs<Array<MintBurn>>(
+        response.resultMetaXdr
+    );
+
+    await mintBurn(client, result);
+}
+
 export async function collatCoeff(
     client: SorobanClient,
     asset: SlenderAsset
 ): Promise<bigint> {
-    const response = await client.sendTransaction(
+    const xdrResponse = await client.simulateTransaction(
         process.env.SLENDER_POOL,
         "collat_coeff",
-        adminKeys,
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
     );
 
-    return parseMetaXdrToJs<bigint>(
-        response.resultMetaXdr
-    );
+    return parseScvToJs<bigint>(xdrResponse);
+}
+
+export async function deploy(): Promise<void> {
+    await new Promise((resolve, reject) => {
+        exec(`../deploy/scripts/deploy.sh ${process.env.NODE_ENV}`, (error, stdout, _) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+            require("dotenv").config({ path: contractsFilename });
+
+            resolve(stdout)
+        });
+    });
+}
+
+export async function cleanSlenderEnvKeys() {
+    Object.keys(process.env).forEach(key => {
+        if (key.startsWith("SLENDER_")) {
+            delete process.env[key];
+        }
+    });
 }
 
 async function initContract<T>(
@@ -383,8 +454,8 @@ async function initPoolReserve(client: SorobanClient, asset: SlenderAsset, decim
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvMap({
                 "debt_token_address": convertToScvAddress(process.env[`SLENDER_DEBT_TOKEN_${asset}`]),
+                // "decimals": convertToScvU32(9),
                 "s_token_address": convertToScvAddress(process.env[`SLENDER_S_TOKEN_${asset}`]),
-                "decimals": convertToScvU32(decimals)
             })
         )
     );
