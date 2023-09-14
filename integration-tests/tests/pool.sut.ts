@@ -59,7 +59,9 @@ export async function init(client: SorobanClient): Promise<void> {
     await initPoolBorrowing(client, "XRP");
     await initPoolBorrowing(client, "USDC");
 
-    await initPoolPriceFeed(client, process.env.SLENDER_PRICE_FEED, ["XLM", "XRP", "USDC"]);
+    await initBaseAsset(client, "XLM");
+
+    await initPoolPriceFeed(client, process.env.SLENDER_PRICE_FEED, ["XRP", "USDC"]);
 }
 
 export async function mintUnderlyingTo(
@@ -501,6 +503,19 @@ async function initPoolBorrowing(client: SorobanClient, asset: SlenderAsset): Pr
         () => client.sendTransaction(
             process.env.SLENDER_POOL,
             "enable_borrowing_on_reserve",
+            adminKeys,
+            convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
+            convertToScvBool(true)
+        )
+    );
+}
+
+async function initBaseAsset(client: SorobanClient, asset: SlenderAsset): Promise<void> {
+    await initContract(
+        `POOL_${asset}_BASE_ASSET`,
+        () => client.sendTransaction(
+            process.env.SLENDER_POOL,
+            "set_base_asset",
             adminKeys,
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvBool(true)

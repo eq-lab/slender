@@ -42,6 +42,8 @@ pub trait LendingPoolTrait {
 
     fn set_decimals(env: Env, asset: Address, decimals: u32) -> Result<(), Error>;
 
+    fn set_base_asset(env: Env, asset: Address, is_base: bool) -> Result<(), Error>;
+
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error>;
 
     fn configure_as_collateral(
