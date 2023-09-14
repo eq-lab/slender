@@ -21,7 +21,7 @@ import { assert, expect, use } from "chai";
 import chaiAsPromised from 'chai-as-promised';
 use(chaiAsPromised);
 
-describe("LendingPool: Liquidation (receive STokens)", function () {
+describe("LendingPool: Borrower position", function () {
     let client: SorobanClient;
     let lender1Address: string;
     let borrower1Address: string;
@@ -170,12 +170,12 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
 
         assert(borrower1Position.debt > 10_000_000_000n
             && borrower1Position.debt < 10_001_000_000n);
-        assert.equal(borrower1Position.discounted_collateral, 12_000_000_000n);
+        assert.equal(borrower1Position.discounted_collateral, 9_180_000_000n);
         assert(borrower1Position.npv < 0n
             && borrower1Position.npv > -1_000_000_000n);
     });
 
-    it("Case 4: Borrower tries to withdraw", async function () {
+    it("Case 7: Borrower tries to withdraw", async function () {
         // Borrower1 withdraws 1_000n XRP
         await expect(withdraw(client, borrower1Keys, "XRP", 1_000n)).to.eventually.rejected;
 
@@ -192,8 +192,58 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
 
         assert(borrower1Position.debt > 10_000_000_000n
             && borrower1Position.debt < 10_001_000_000n);
-        assert.equal(borrower1Position.discounted_collateral, 10_200_000_000n);
+        assert.equal(borrower1Position.discounted_collateral, 9_180_000_000n);
         assert(borrower1Position.npv < 0n
             && borrower1Position.npv > -1_000_000_000n);
+    });
+
+    it("Case 8: Borrower deposits more to achieve good NPV", async function () {
+        // Borrower1 deposits 3_000_000_000 XRP
+        await deposit(client, borrower1Keys, "XRP", 3_500_000_000n);
+
+        const borrower1XrpBalance = await tokenBalanceOf(client, "XRP", borrower1Address);
+        const borrower1SXrpBalance = await sTokenBalanceOf(client, "XRP", borrower1Address);
+
+        const sXrpBalance = await sTokenUnderlyingBalanceOf(client, "XRP");
+
+        const sXrpSupply = await sTokenTotalSupply(client, "XRP");
+
+        const borrower1Position = await accountPosition(client, borrower1Keys);
+
+        assert.equal(borrower1XrpBalance, 79_500_000_000n);
+        assert.equal(borrower1SXrpBalance, 20_500_000_000n);
+
+        assert.equal(sXrpBalance, 20_500_000_000n);
+
+        assert.equal(sXrpSupply, 20_500_000_000n);
+
+        assert(borrower1Position.debt > 10_000_000_000n
+            && borrower1Position.debt < 10_001_000_000n);
+        assert.equal(borrower1Position.discounted_collateral, 11_070_000_000n);
+        assert(borrower1Position.npv < 1_100_000_000n
+            && borrower1Position.npv > 1_000_000_000n);
+    });
+
+    it("Case 9: Borrower borrows more with NPV > 0", async function () {
+        // Borrower1 borrows 500_000_000n XLM
+        await borrow(client, borrower1Keys, "XLM", 500_000_000n);
+
+        const borrower1XlmBalance = await tokenBalanceOf(client, "XLM", borrower1Address);
+        const borrower1DXlmBalance = await debtTokenBalanceOf(client, "XLM", borrower1Address);
+        const sXlmBalance = await sTokenUnderlyingBalanceOf(client, "XLM");
+        const dXlmSupply = await debtTokenTotalSupply(client, "XLM");
+        const borrower1Position = await accountPosition(client, borrower1Keys);
+
+        assert.equal(borrower1XlmBalance, 10_500_000_000n);
+        assert(borrower1DXlmBalance > 10_000_000_000n
+            && borrower1DXlmBalance < 10_500_000_000n);
+        assert.equal(sXlmBalance, 39_500_000_000n);
+        assert.equal(dXlmSupply, borrower1DXlmBalance);
+
+        assert(borrower1Position.debt > 10_500_000_000n
+            && borrower1Position.debt < 10_501_000_000n);
+        assert.equal(borrower1Position.discounted_collateral, 11_070_000_000n);
+        assert(borrower1Position.npv > 500_000_000n
+            && borrower1Position.npv < 1_000_000_000n);
     });
 });
