@@ -16,9 +16,28 @@ use super::utils::get_asset_price::get_asset_price;
 use super::utils::get_collat_coeff::get_collat_coeff;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 
+pub struct CalcAccountDataCache<'a> {
+    pub mb_who_collat: Option<&'a AssetBalance>,
+    pub mb_who_debt: Option<&'a AssetBalance>,
+    pub mb_s_token_supply: Option<&'a AssetBalance>,
+    pub mb_debt_token_supply: Option<&'a AssetBalance>,
+}
+
+impl<'a> CalcAccountDataCache<'a> {
+    pub fn none() -> Self {
+        Self {
+            mb_who_collat: None,
+            mb_who_debt: None,
+            mb_s_token_supply: None,
+            mb_debt_token_supply: None,
+        }
+    }
+}
+
 pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Error> {
     let user_config = read_user_config(env, who)?;
-    let account_data = calc_account_data(env, who, None, None, None, None, &user_config, false)?;
+    let account_data =
+        calc_account_data(env, who, CalcAccountDataCache::none(), &user_config, false)?;
 
     Ok(account_data.get_position())
 }
@@ -27,16 +46,20 @@ pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Err
 pub fn calc_account_data(
     env: &Env,
     who: &Address,
-    mb_who_collat: Option<&AssetBalance>,
-    mb_who_debt: Option<&AssetBalance>,
-    mb_s_token_supply: Option<&AssetBalance>,
-    mb_debt_token_supply: Option<&AssetBalance>,
+    cache: CalcAccountDataCache,
     user_config: &UserConfiguration,
     liquidation: bool,
 ) -> Result<AccountData, Error> {
     if user_config.is_empty() {
         return Ok(AccountData::default(env, liquidation));
     }
+
+    let CalcAccountDataCache {
+        mb_who_collat,
+        mb_who_debt,
+        mb_s_token_supply,
+        mb_debt_token_supply,
+    } = cache;
 
     let mut total_discounted_collateral_in_xlm: i128 = 0;
     let mut total_debt_in_xlm: i128 = 0;

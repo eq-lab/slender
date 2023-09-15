@@ -5,7 +5,7 @@ use pool_interface::types::mint_burn::MintBurn;
 use soroban_sdk::{assert_with_error, vec, Address, Env, Vec};
 
 use crate::event;
-use crate::methods::fix_limit::account_position::calc_account_data;
+use crate::methods::fix_limit::account_position::{calc_account_data, CalcAccountDataCache};
 use crate::methods::utils::rate::get_actual_borrower_accrued_rate;
 use crate::methods::utils::recalculate_reserve_data::recalculate_reserve_data;
 use crate::methods::utils::validation::{
@@ -53,13 +53,15 @@ pub fn borrow(
     let account_data = calc_account_data(
         env,
         who,
-        None,
-        Some(&AssetBalance::new(
-            reserve.debt_token_address.clone(),
-            debt_balance,
-        )),
-        None,
-        None,
+        CalcAccountDataCache {
+            mb_who_collat: None,
+            mb_who_debt: Some(&AssetBalance::new(
+                reserve.debt_token_address.clone(),
+                debt_balance,
+            )),
+            mb_s_token_supply: None,
+            mb_debt_token_supply: None,
+        },
         user_config,
         false,
     )?;

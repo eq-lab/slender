@@ -6,7 +6,7 @@ use soroban_sdk::{Address, Env};
 use crate::storage::read_reserve;
 use crate::types::user_configurator::UserConfigurator;
 
-use super::account_position::calc_account_data;
+use super::account_position::{calc_account_data, CalcAccountDataCache};
 use super::utils::validation::{
     require_active_reserve, require_good_position, require_not_paused, require_zero_debt,
 };
@@ -47,19 +47,21 @@ pub fn finalize_transfer(
         let from_account_data = calc_account_data(
             env,
             from,
-            Some(&AssetBalance::new(
-                reserve.s_token_address.clone(),
-                balance_from_after,
-            )),
-            None,
-            Some(&AssetBalance::new(
-                reserve.s_token_address.clone(),
-                s_token_supply,
-            )),
-            Some(&AssetBalance::new(
-                reserve.debt_token_address.clone(),
-                debt_token_supply,
-            )),
+            CalcAccountDataCache {
+                mb_who_collat: Some(&AssetBalance::new(
+                    reserve.s_token_address.clone(),
+                    balance_from_after,
+                )),
+                mb_who_debt: None,
+                mb_s_token_supply: Some(&AssetBalance::new(
+                    reserve.s_token_address.clone(),
+                    s_token_supply,
+                )),
+                mb_debt_token_supply: Some(&AssetBalance::new(
+                    reserve.debt_token_address.clone(),
+                    debt_token_supply,
+                )),
+            },
             from_config,
             false,
         )?;

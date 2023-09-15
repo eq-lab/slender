@@ -5,7 +5,7 @@ use pool_interface::types::mint_burn::MintBurn;
 use soroban_sdk::{assert_with_error, vec, Address, Env, Vec};
 
 use crate::event;
-use crate::methods::fix_limit::account_position::calc_account_data;
+use crate::methods::fix_limit::account_position::{calc_account_data, CalcAccountDataCache};
 use crate::methods::fix_limit::repay::do_repay;
 use crate::methods::utils::rate::get_actual_borrower_accrued_rate;
 use crate::methods::utils::recalculate_reserve_data::recalculate_reserve_data;
@@ -30,7 +30,8 @@ pub fn liquidate(
 
     let mut user_configurator = UserConfigurator::new(env, who, false);
     let user_config = user_configurator.user_config()?;
-    let account_data = calc_account_data(env, who, None, None, None, None, user_config, true)?;
+    let account_data =
+        calc_account_data(env, who, CalcAccountDataCache::none(), user_config, true)?;
 
     assert_with_error!(env, !account_data.is_good_position(), Error::GoodPosition);
 

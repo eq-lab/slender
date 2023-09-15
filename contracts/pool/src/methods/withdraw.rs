@@ -5,6 +5,7 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, Address, Env};
 
 use crate::event;
+use crate::methods::account_position::CalcAccountDataCache;
 use crate::storage::{add_stoken_underlying_balance, read_reserve};
 use crate::types::user_configurator::UserConfigurator;
 
@@ -70,16 +71,21 @@ pub fn withdraw(
         let account_data = calc_account_data(
             env,
             who,
-            Some(&AssetBalance::new(
-                s_token.address.clone(),
-                collat_balance_after,
-            )),
-            None,
-            Some(&AssetBalance::new(
-                s_token.address.clone(),
-                s_token_supply_after,
-            )),
-            Some(&AssetBalance::new(debt_token.address, debt_token_supply)),
+            CalcAccountDataCache {
+                mb_who_collat: Some(&AssetBalance::new(
+                    s_token.address.clone(),
+                    collat_balance_after,
+                )),
+                mb_who_debt: None,
+                mb_s_token_supply: Some(&AssetBalance::new(
+                    s_token.address.clone(),
+                    s_token_supply_after,
+                )),
+                mb_debt_token_supply: Some(&AssetBalance::new(
+                    debt_token.address,
+                    debt_token_supply,
+                )),
+            },
             user_config,
             false,
         )?;

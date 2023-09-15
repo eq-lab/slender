@@ -6,6 +6,7 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, Address, Env};
 
 use crate::event;
+use crate::methods::account_position::CalcAccountDataCache;
 use crate::storage::{add_stoken_underlying_balance, read_reserve};
 use crate::types::user_configurator::UserConfigurator;
 
@@ -82,13 +83,15 @@ pub fn do_borrow(
     let account_data = calc_account_data(
         env,
         who,
-        None,
-        Some(&AssetBalance::new(
-            reserve.debt_token_address.clone(),
-            who_debt,
-        )),
-        None,
-        None,
+        CalcAccountDataCache {
+            mb_who_collat: None,
+            mb_who_debt: Some(&AssetBalance::new(
+                reserve.debt_token_address.clone(),
+                who_debt,
+            )),
+            mb_s_token_supply: None,
+            mb_debt_token_supply: None,
+        },
         user_config,
         false,
     )?;

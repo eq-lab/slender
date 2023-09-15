@@ -1,7 +1,7 @@
 use pool_interface::types::error::Error;
 use soroban_sdk::{assert_with_error, Address, Env};
 
-use crate::methods::fix_limit::account_position::calc_account_data;
+use crate::methods::fix_limit::account_position::{calc_account_data, CalcAccountDataCache};
 use crate::methods::utils::validation::require_good_position;
 use crate::storage::read_reserve;
 use crate::types::user_configurator::UserConfigurator;
@@ -30,7 +30,8 @@ pub fn set_as_collateral(
     {
         user_configurator.withdraw(reserve_id, asset, true)?;
         let user_config = user_configurator.user_config()?;
-        let account_data = calc_account_data(env, who, None, None, None, None, user_config, false)?;
+        let account_data =
+            calc_account_data(env, who, CalcAccountDataCache::none(), user_config, false)?;
 
         require_good_position(env, &account_data);
 
