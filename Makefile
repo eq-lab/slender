@@ -2,7 +2,6 @@ default: build
 
 all: test
 
-
 test: build
 	rm -f contracts/pool/src/tests/snapshots/*
 	cargo test -p common
