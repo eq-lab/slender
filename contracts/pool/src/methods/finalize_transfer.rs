@@ -55,7 +55,7 @@ pub fn finalize_transfer(
                 )),
                 mb_debt_token_supply: Some(&AssetBalance::new(
                     reserve.debt_token_address.clone(),
-                    debt_token_supply,
+                    read_token_total_supply(env, &reserve.debt_token_address),
                 )),
             },
             from_config,
