@@ -84,6 +84,7 @@ pub trait LendingPoolTrait {
     fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     #[allow(clippy::too_many_arguments)]
+    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn finalize_transfer(
         env: Env,
         asset: Address,
