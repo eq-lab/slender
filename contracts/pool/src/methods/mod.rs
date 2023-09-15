@@ -23,12 +23,14 @@ pub mod liquidate;
 pub mod repay;
 #[cfg(not(feature = "exceeded-limit-fix"))]
 pub mod set_as_collateral;
+pub mod set_base_asset;
 pub mod set_decimals;
 pub mod set_flash_loan_fee;
 pub mod set_ir_params;
 pub mod set_pause;
 pub mod set_price_feed;
 pub mod set_reserve_status;
+pub mod token_total_supply;
 pub mod upgrade;
 pub mod upgrade_debt_token;
 pub mod upgrade_s_token;

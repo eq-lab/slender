@@ -1,10 +1,12 @@
-use debt_token_interface::DebtTokenClient;
 use pool_interface::types::{error::Error, reserve_data::ReserveData};
 use s_token_interface::STokenClient;
 use soroban_sdk::{token, Address, Env};
 
 use crate::event;
-use crate::storage::{add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance};
+use crate::storage::{
+    add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
+    read_token_total_supply, write_token_total_supply,
+};
 use crate::types::user_configurator::UserConfigurator;
 
 use super::utils::get_collat_coeff::get_collat_coeff;
@@ -27,16 +29,15 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
     let user_config = user_configurator.user_config()?;
     require_zero_debt(env, user_config, reserve.get_id());
 
-    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
     let s_token = STokenClient::new(env, &reserve.s_token_address);
-    let debt_token_supply = debt_token.total_supply();
+    let debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
 
     let (is_first_deposit, s_token_supply_after) = do_deposit(
         env,
         who,
         asset,
         &reserve,
-        s_token.total_supply(),
+        read_token_total_supply(env, &reserve.s_token_address),
         debt_token_supply,
         s_token.balance(who),
         amount,
@@ -82,8 +83,10 @@ fn do_deposit(
     let is_first_deposit = who_collat == 0;
 
     token::Client::new(env, asset).transfer(who, &reserve.s_token_address, &amount);
-    add_stoken_underlying_balance(env, &reserve.s_token_address, amount)?;
     STokenClient::new(env, &reserve.s_token_address).mint(who, &amount_to_mint);
+
+    add_stoken_underlying_balance(env, &reserve.s_token_address, amount)?;
+    write_token_total_supply(env, &reserve.s_token_address, s_token_supply_after)?;
 
     event::deposit(env, who, asset, amount);
 

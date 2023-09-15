@@ -42,6 +42,8 @@ pub trait LendingPoolTrait {
 
     fn set_decimals(env: Env, asset: Address, decimals: u32) -> Result<(), Error>;
 
+    fn set_base_asset(env: Env, asset: Address, is_base: bool) -> Result<(), Error>;
+
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error>;
 
     fn configure_as_collateral(
@@ -114,6 +116,8 @@ pub trait LendingPoolTrait {
     ) -> Result<(), Error>;
 
     fn stoken_underlying_balance(env: Env, stoken_address: Address) -> i128;
+
+    fn token_total_supply(env: Env, token: Address) -> i128;
 
     #[cfg(feature = "exceeded-limit-fix")]
     fn borrow(env: Env, who: Address, asset: Address, amount: i128)

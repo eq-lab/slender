@@ -1,9 +1,8 @@
-use debt_token_interface::DebtTokenClient;
 use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use soroban_sdk::{Address, Env};
 
-use crate::storage::read_reserve;
+use crate::storage::{read_reserve, read_token_total_supply};
 use crate::types::user_configurator::UserConfigurator;
 
 use super::account_position::{calc_account_data, CalcAccountDataCache};
@@ -28,13 +27,10 @@ pub fn finalize_transfer(
     require_active_reserve(env, &reserve);
     reserve.s_token_address.require_auth();
 
-    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
     let mut to_configurator = UserConfigurator::new(env, to, true);
     let to_config = to_configurator.user_config()?;
 
     require_zero_debt(env, to_config, reserve.get_id());
-
-    let debt_token_supply = debt_token.total_supply();
 
     let balance_from_after = balance_from_before
         .checked_sub(amount)

@@ -11,8 +11,8 @@ use crate::methods::utils::rate::get_actual_borrower_accrued_rate;
 use crate::methods::utils::recalculate_reserve_data::recalculate_reserve_data;
 use crate::methods::utils::validation::require_not_paused;
 use crate::storage::{
-    add_stoken_underlying_balance, add_token_balance, add_token_total_supply, read_token_balance,
-    read_token_total_supply,
+    add_stoken_underlying_balance, add_token_balance, read_token_balance, read_token_total_supply,
+    write_token_total_supply,
 };
 use crate::types::liquidation_collateral::LiquidationCollateral;
 use crate::types::liquidation_data::LiquidationData;
@@ -140,16 +140,12 @@ fn do_liquidate(
                     false,
                     who.clone(),
                 ));
-                add_token_total_supply(
-                    env,
-                    &reserve.s_token_address,
-                    s_token_to_burn.checked_neg().unwrap(),
-                )?;
                 mint_burn_vec.push_back(MintBurn::new(
                     AssetBalance::new(asset.clone(), repayment_amount),
                     true,
                     liquidator.clone(),
                 ));
+
                 add_token_balance(
                     env,
                     &reserve.s_token_address,
@@ -232,28 +228,25 @@ fn do_liquidate(
                 false,
                 who.clone(),
             ));
-            add_token_total_supply(
-                env,
-                &reserve.s_token_address,
-                s_token_amount.checked_neg().unwrap(),
-            )?;
             mint_burn_vec.push_back(MintBurn::new(
                 AssetBalance::new(asset.clone(), underlying_amount),
                 true,
                 liquidator.clone(),
             ));
+
             add_token_balance(
                 env,
                 &reserve.s_token_address,
                 who,
                 s_token_amount.checked_neg().unwrap(),
             )?;
-
             add_stoken_underlying_balance(env, &reserve.s_token_address, amount_to_sub)?;
         }
 
         let is_withdraw = s_token_balance == s_token_amount;
         user_configurator.withdraw(reserve.get_id(), &asset, is_withdraw)?;
+
+        write_token_total_supply(env, &reserve.s_token_address, s_token_supply)?;
 
         recalculate_reserve_data(env, &asset, &reserve, s_token_supply, debt_token_supply)?;
     }
@@ -261,10 +254,8 @@ fn do_liquidate(
     assert_with_error!(env, debt_with_penalty == 0, Error::NotEnoughCollateral);
 
     for (asset, reserve, compounded_debt, debt_amount) in liquidation_data.debt_to_cover.iter() {
-        // let s_token = STokenClient::new(env, &reserve.s_token_address);
         let s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
-        // let underlying_asset = token::Client::new(env, &s_token.underlying_asset());
-        // let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
+        let debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
 
         mint_burn_vec.push_back(MintBurn::new(
             AssetBalance::new(asset.clone(), compounded_debt),
@@ -289,10 +280,10 @@ fn do_liquidate(
             who,
             debt_amount.checked_neg().unwrap(),
         )?;
-        add_token_total_supply(
+        write_token_total_supply(
             env,
             &reserve.debt_token_address,
-            debt_amount.checked_neg().unwrap(),
+            debt_token_supply.checked_sub(debt_amount).unwrap(),
         )?;
         user_configurator.repay(reserve.get_id(), true)?;
 

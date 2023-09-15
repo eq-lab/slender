@@ -6,7 +6,9 @@ use soroban_sdk::{assert_with_error, Address, Env};
 
 use crate::event;
 use crate::methods::account_position::CalcAccountDataCache;
-use crate::storage::{add_stoken_underlying_balance, read_reserve};
+use crate::storage::{
+    add_stoken_underlying_balance, read_reserve, read_token_total_supply, write_token_total_supply,
+};
 use crate::types::user_configurator::UserConfigurator;
 
 use super::account_position::calc_account_data;
@@ -33,8 +35,8 @@ pub fn withdraw(
 
     let s_token = STokenClient::new(env, &reserve.s_token_address);
     let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-    let s_token_supply = s_token.total_supply();
-    let debt_token_supply = debt_token.total_supply();
+    let s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
+    let debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
 
     let collat_coeff = get_collat_coeff(env, &reserve, s_token_supply, debt_token_supply)?;
 
@@ -96,6 +98,8 @@ pub fn withdraw(
         .ok_or(Error::MathOverflowError)?;
 
     s_token.burn(who, &s_token_to_burn, &underlying_to_withdraw, to);
+
+    write_token_total_supply(env, &s_token.address, s_token_supply_after)?;
     add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
 
     let is_full_withdraw = underlying_to_withdraw == underlying_balance;

@@ -15,8 +15,9 @@ use crate::methods::utils::validation::{
     require_not_paused, require_positive_amount, require_util_cap_not_exceeded,
 };
 use crate::storage::{
-    add_stoken_underlying_balance, add_token_balance, add_token_total_supply, read_flash_loan_fee,
-    read_price, read_reserve, read_token_balance, read_token_total_supply, read_treasury,
+    add_stoken_underlying_balance, add_token_balance, read_flash_loan_fee, read_price,
+    read_reserve, read_token_balance, read_token_total_supply, read_treasury,
+    write_token_total_supply,
 };
 use crate::types::user_configurator::UserConfigurator;
 
@@ -136,7 +137,7 @@ pub fn flash_loan(
 
             add_token_balance(env, &reserve.debt_token_address, who, amount_of_debt_token)?;
             add_stoken_underlying_balance(env, &reserve.s_token_address, amount_to_sub)?;
-            add_token_total_supply(env, &reserve.debt_token_address, amount_of_debt_token)?;
+            write_token_total_supply(env, &reserve.debt_token_address, debt_token_supply_after)?;
 
             user_configurator
                 .borrow(reserve.get_id(), debt_balance == 0)?

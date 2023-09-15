@@ -11,8 +11,8 @@ use crate::methods::utils::validation::{
     require_positive_amount, require_zero_debt,
 };
 use crate::storage::{
-    add_stoken_underlying_balance, add_token_balance, add_token_total_supply, read_reserve,
-    read_stoken_underlying_balance, read_token_balance, read_token_total_supply,
+    add_stoken_underlying_balance, add_token_balance, read_reserve, read_stoken_underlying_balance,
+    read_token_balance, read_token_total_supply, write_token_total_supply,
 };
 use crate::types::user_configurator::UserConfigurator;
 
@@ -77,8 +77,9 @@ pub fn deposit(
         mint: true,
         who: who.clone(),
     };
+
     add_token_balance(env, &reserve.s_token_address, who, amount_to_mint)?;
-    add_token_total_supply(env, &reserve.s_token_address, amount_to_mint)?;
+    write_token_total_supply(env, &reserve.s_token_address, s_token_supply_after)?;
 
     user_configurator
         .deposit(reserve.get_id(), asset, is_first_deposit)?

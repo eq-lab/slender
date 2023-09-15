@@ -198,11 +198,17 @@ fn should_affect_account_data() {
     let (_, borrower, _) = fill_pool(&env, &sut, true);
 
     let account_position_prev = sut.pool.account_position(&borrower);
+    let collat_token = &sut.reserves[0];
 
     sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &200_000_000);
+        .deposit(&borrower, &collat_token.token.address, &200_000_000);
 
     let account_position = sut.pool.account_position(&borrower);
+
+    let collat_token_total_supply = collat_token.s_token.total_supply();
+    let pool_collat_token_total_supply = sut.pool.token_total_supply(&collat_token.s_token.address);
+
+    assert_eq!(collat_token_total_supply, pool_collat_token_total_supply);
 
     assert!(account_position_prev.discounted_collateral < account_position.discounted_collateral);
     assert!(account_position_prev.debt == account_position.debt);
