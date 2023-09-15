@@ -14,6 +14,7 @@ use crate::storage::{
     add_stoken_underlying_balance, add_token_balance, read_reserve, read_token_balance,
     read_token_total_supply, write_token_total_supply,
 };
+use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::user_configurator::UserConfigurator;
 
 pub fn withdraw(
@@ -69,19 +70,21 @@ pub fn withdraw(
         let account_data = calc_account_data(
             env,
             who,
-            Some(&AssetBalance::new(
-                reserve.s_token_address.clone(),
-                collat_balance_after,
-            )),
-            None,
-            Some(&AssetBalance::new(
-                reserve.s_token_address.clone(),
-                s_token_supply_after,
-            )),
-            Some(&AssetBalance::new(
-                reserve.debt_token_address.clone(),
-                debt_token_supply,
-            )),
+            &CalcAccountDataCache {
+                mb_who_collat: Some(&AssetBalance::new(
+                    reserve.s_token_address.clone(),
+                    collat_balance_after,
+                )),
+                mb_who_debt: None,
+                mb_s_token_supply: Some(&AssetBalance::new(
+                    reserve.s_token_address.clone(),
+                    s_token_supply_after,
+                )),
+                mb_debt_token_supply: Some(&AssetBalance::new(
+                    reserve.debt_token_address.clone(),
+                    debt_token_supply,
+                )),
+            },
             user_config,
             false,
         )?;

@@ -332,6 +332,23 @@ export async function collatCoeff(
     return parseScvToJs<bigint>(xdrResponse);
 }
 
+export async function transferStoken(
+    client: SorobanClient,
+    asset: SlenderAsset,
+    signer: Keypair,
+    to: string,
+    amount: bigint
+): Promise<void> {
+    await client.sendTransaction(
+        process.env[`SLENDER_S_TOKEN_${asset}`],
+        "transfer",
+        signer,
+        convertToScvAddress(signer.publicKey()),
+        convertToScvAddress(to),
+        convertToScvI128(amount)
+    );
+}
+
 export async function deploy(): Promise<void> {
     console.log("    Contracts deployment has been started");
 
@@ -358,6 +375,30 @@ export async function cleanSlenderEnvKeys() {
     });
 }
 
+export async function finalizeTransfer(
+    client: SorobanClient,
+    asset: SlenderAsset,
+    signer: Keypair,
+    to: string,
+    amount: bigint,
+    from_before: bigint,
+    to_before: bigint,
+    total_supply: bigint
+) {
+    await client.sendTransaction(
+        process.env["SLENDER_POOL"],
+        "finalize_transfer",
+        signer,
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
+        convertToScvAddress(signer.publicKey()),
+        convertToScvAddress(to),
+        convertToScvI128(amount),
+        convertToScvI128(from_before),
+        convertToScvI128(to_before),
+        convertToScvI128(total_supply),
+    );
+}
+
 async function initContract<T>(
     name: string,
     callback: () => Promise<SorobanRpc.GetTransactionResponse>,
@@ -373,7 +414,7 @@ async function initContract<T>(
     if (result.status == "SUCCESS") {
         setEnv(name, success && success(parseMetaXdrToJs(result.resultMetaXdr)) || "TRUE");
     } else {
-        throw Error(`Transaction failed: ${name}`);
+        throw Error(`Transaction failed: ${name} ${JSON.stringify(result)}`);
     }
 }
 

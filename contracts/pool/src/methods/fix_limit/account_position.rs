@@ -1,6 +1,5 @@
 use common::FixedI128;
 use pool_interface::types::account_position::AccountPosition;
-use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use pool_interface::types::user_config::UserConfiguration;
 use soroban_sdk::{assert_with_error, vec, Address, Env, Map, Vec};
@@ -12,30 +11,35 @@ use crate::storage::{
     read_user_config,
 };
 use crate::types::account_data::AccountData;
+use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_collateral::LiquidationCollateral;
 use crate::types::liquidation_data::LiquidationData;
 
 pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Error> {
     let user_config = read_user_config(env, who)?;
-    let account_data = calc_account_data(env, who, None, None, None, None, &user_config, false)?;
+    let account_data =
+        calc_account_data(env, who, &CalcAccountDataCache::none(), &user_config, false)?;
 
     Ok(account_data.get_position())
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn calc_account_data(
     env: &Env,
     who: &Address,
-    mb_who_collat: Option<&AssetBalance>,
-    mb_who_debt: Option<&AssetBalance>,
-    mb_s_token_supply: Option<&AssetBalance>,
-    mb_debt_token_supply: Option<&AssetBalance>,
+    cache: &CalcAccountDataCache,
     user_config: &UserConfiguration,
     liquidation: bool,
 ) -> Result<AccountData, Error> {
     if user_config.is_empty() {
         return Ok(AccountData::default(env, liquidation));
     }
+
+    let CalcAccountDataCache {
+        mb_who_collat,
+        mb_who_debt,
+        mb_s_token_supply,
+        mb_debt_token_supply,
+    } = cache;
 
     let mut total_discounted_collateral_in_xlm: i128 = 0;
     let mut total_debt_in_xlm: i128 = 0;
