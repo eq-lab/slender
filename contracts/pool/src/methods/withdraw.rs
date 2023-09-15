@@ -1,15 +1,14 @@
+use crate::event;
+use crate::storage::{
+    add_stoken_underlying_balance, read_reserve, read_token_total_supply, write_token_total_supply,
+};
+use crate::types::calc_account_data_cache::CalcAccountDataCache;
+use crate::types::user_configurator::UserConfigurator;
 use debt_token_interface::DebtTokenClient;
 use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, Address, Env};
-
-use crate::event;
-use crate::methods::account_position::CalcAccountDataCache;
-use crate::storage::{
-    add_stoken_underlying_balance, read_reserve, read_token_total_supply, write_token_total_supply,
-};
-use crate::types::user_configurator::UserConfigurator;
 
 use super::account_position::calc_account_data;
 use super::utils::get_collat_coeff::get_collat_coeff;
@@ -73,7 +72,7 @@ pub fn withdraw(
         let account_data = calc_account_data(
             env,
             who,
-            CalcAccountDataCache {
+            &CalcAccountDataCache {
                 mb_who_collat: Some(&AssetBalance::new(
                     s_token.address.clone(),
                     collat_balance_after,

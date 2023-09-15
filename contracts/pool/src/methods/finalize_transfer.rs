@@ -3,9 +3,10 @@ use pool_interface::types::error::Error;
 use soroban_sdk::{Address, Env};
 
 use crate::storage::{read_reserve, read_token_total_supply};
+use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::user_configurator::UserConfigurator;
 
-use super::account_position::{calc_account_data, CalcAccountDataCache};
+use super::account_position::calc_account_data;
 use super::utils::validation::{
     require_active_reserve, require_good_position, require_not_paused, require_zero_debt,
 };
@@ -43,7 +44,7 @@ pub fn finalize_transfer(
         let from_account_data = calc_account_data(
             env,
             from,
-            CalcAccountDataCache {
+            &CalcAccountDataCache {
                 mb_who_collat: Some(&AssetBalance::new(
                     reserve.s_token_address.clone(),
                     balance_from_after,

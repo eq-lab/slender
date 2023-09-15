@@ -345,6 +345,7 @@ impl STokenTrait for SToken {
     ///
     fn transfer_on_liquidation(e: Env, from: Address, to: Address, amount: i128) {
         verify_caller_is_pool(&e);
+        require_nonnegative_amount(amount);
 
         do_transfer(&e, from, to, amount, false);
     }

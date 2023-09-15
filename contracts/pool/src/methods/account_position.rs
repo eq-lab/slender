@@ -1,7 +1,6 @@
 use common::FixedI128;
 use debt_token_interface::DebtTokenClient;
 use pool_interface::types::account_position::AccountPosition;
-use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use pool_interface::types::user_config::UserConfiguration;
 use s_token_interface::STokenClient;
@@ -9,6 +8,7 @@ use soroban_sdk::{assert_with_error, vec, Address, Env, Map, Vec};
 
 use crate::storage::{read_reserve, read_reserves, read_token_total_supply, read_user_config};
 use crate::types::account_data::AccountData;
+use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_collateral::LiquidationCollateral;
 use crate::types::liquidation_data::LiquidationData;
 
@@ -16,37 +16,18 @@ use super::utils::get_asset_price::get_asset_price;
 use super::utils::get_collat_coeff::get_collat_coeff;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 
-pub struct CalcAccountDataCache<'a> {
-    pub mb_who_collat: Option<&'a AssetBalance>,
-    pub mb_who_debt: Option<&'a AssetBalance>,
-    pub mb_s_token_supply: Option<&'a AssetBalance>,
-    pub mb_debt_token_supply: Option<&'a AssetBalance>,
-}
-
-impl<'a> CalcAccountDataCache<'a> {
-    pub fn none() -> Self {
-        Self {
-            mb_who_collat: None,
-            mb_who_debt: None,
-            mb_s_token_supply: None,
-            mb_debt_token_supply: None,
-        }
-    }
-}
-
 pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Error> {
     let user_config = read_user_config(env, who)?;
     let account_data =
-        calc_account_data(env, who, CalcAccountDataCache::none(), &user_config, false)?;
+        calc_account_data(env, who, &CalcAccountDataCache::none(), &user_config, false)?;
 
     Ok(account_data.get_position())
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn calc_account_data(
     env: &Env,
     who: &Address,
-    cache: CalcAccountDataCache,
+    cache: &CalcAccountDataCache,
     user_config: &UserConfiguration,
     liquidation: bool,
 ) -> Result<AccountData, Error> {

@@ -3,8 +3,6 @@ import {
     accountPosition,
     borrow,
     cleanSlenderEnvKeys,
-    debtTokenBalanceOf,
-    debtTokenTotalSupply,
     deploy,
     deposit,
     finalizeTransfer,
@@ -13,10 +11,8 @@ import {
     sTokenBalanceOf,
     sTokenTotalSupply,
     sTokenUnderlyingBalanceOf,
-    setPrice,
     tokenBalanceOf,
     transferStoken,
-    withdraw
 } from "../pool.sut";
 import { borrower1Keys, borrower2Keys, lender1Keys, lender2Keys, lender3Keys } from "../soroban.config";
 import { assert, expect, use } from "chai";
