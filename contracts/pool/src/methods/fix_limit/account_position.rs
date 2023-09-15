@@ -23,7 +23,6 @@ pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Err
     Ok(account_data.get_position())
 }
 
-#[allow(clippy::too_many_arguments)]
 pub fn calc_account_data(
     env: &Env,
     who: &Address,
