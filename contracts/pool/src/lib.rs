@@ -12,7 +12,8 @@ use methods::{
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, init_reserve::init_reserve,
     initialize::initialize, set_base_asset::set_base_asset, set_decimals::set_decimals,
     set_flash_loan_fee::set_flash_loan_fee, set_ir_params::set_ir_params, set_pause::set_pause,
-    set_price_feed::set_price_feed, set_reserve_status::set_reserve_status, upgrade::upgrade,
+    set_price_feed::set_price_feed, set_reserve_status::set_reserve_status,
+    token_total_supply::token_total_supply, upgrade::upgrade,
     upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token,
 };
 #[cfg(feature = "exceeded-limit-fix")]
@@ -657,8 +658,22 @@ impl LendingPoolTrait for LendingPool {
         read_user_config(&env, &who)
     }
 
+    /// Returns the underlying balance of the SToken.
+    ///
+    /// # Arguments
+    /// - stoken_address - The Stoken address.
+    ///
     fn stoken_underlying_balance(env: Env, stoken_address: Address) -> i128 {
         read_stoken_underlying_balance(&env, &stoken_address)
+    }
+
+    /// Duplicates the SToken/DebtToken total_supply.
+    ///
+    /// # Arguments
+    /// - token - The address of the corresponsing token.
+    ///
+    fn token_total_supply(env: Env, token: Address) -> i128 {
+        token_total_supply(&env, &token)
     }
 
     #[cfg(feature = "exceeded-limit-fix")]

@@ -355,6 +355,22 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     let liquidator_stoken_1_balance_before = sut.reserves[0].s_token.balance(&liquidator);
     let liquidator_stoken_2_balance_before = sut.reserves[2].s_token.balance(&liquidator);
     let treasury_underlying_balance_before = sut.reserves[0].token.balance(&treasury);
+    let collat_token_0_total_supply_before = sut.reserves[0].s_token.total_supply();
+    let pool_collat_token_0_total_supply_before = sut
+        .pool
+        .token_total_supply(&sut.reserves[0].s_token.address);
+    let debt_token_0_total_supply_before = sut.reserves[0].debt_token.total_supply();
+    let pool_debt_token_0_total_supply_before = sut
+        .pool
+        .token_total_supply(&sut.reserves[0].debt_token.address);
+    let collat_token_2_total_supply_before = sut.reserves[2].s_token.total_supply();
+    let pool_collat_token_2_total_supply_before = sut
+        .pool
+        .token_total_supply(&sut.reserves[2].s_token.address);
+    let debt_token_2_total_supply_before = sut.reserves[2].debt_token.total_supply();
+    let pool_debt_token_2_total_supply_before = sut
+        .pool
+        .token_total_supply(&sut.reserves[2].debt_token.address);
 
     env.ledger().with_mut(|li| li.timestamp = 6 * DAY);
 
@@ -378,6 +394,22 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     let liquidator_stoken_1_balance_after = sut.reserves[0].s_token.balance(&liquidator);
     let liquidator_stoken_2_balance_after = sut.reserves[2].s_token.balance(&liquidator);
     let treasury_underlying_balance_after = sut.reserves[0].token.balance(&treasury);
+    let collat_token_0_total_supply_after = sut.reserves[0].s_token.total_supply();
+    let pool_collat_token_0_total_supply_after = sut
+        .pool
+        .token_total_supply(&sut.reserves[0].s_token.address);
+    let debt_token_0_total_supply_after = sut.reserves[0].debt_token.total_supply();
+    let pool_debt_token_0_total_supply_after = sut
+        .pool
+        .token_total_supply(&sut.reserves[0].debt_token.address);
+    let collat_token_2_total_supply_after = sut.reserves[2].s_token.total_supply();
+    let pool_collat_token_2_total_supply_after = sut
+        .pool
+        .token_total_supply(&sut.reserves[2].s_token.address);
+    let debt_token_2_total_supply_after = sut.reserves[2].debt_token.total_supply();
+    let pool_debt_token_2_total_supply_after = sut
+        .pool
+        .token_total_supply(&sut.reserves[2].debt_token.address);
 
     assert_eq!(underlying_1_supply_before, 180_000_000);
     assert_eq!(underlying_2_supply_before, 190_000_000);
@@ -391,6 +423,22 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     assert_eq!(liquidator_stoken_1_balance_before, 0);
     assert_eq!(liquidator_stoken_2_balance_before, 0);
     assert_eq!(treasury_underlying_balance_before, 0);
+    assert_eq!(
+        collat_token_0_total_supply_before,
+        pool_collat_token_0_total_supply_before
+    );
+    assert_eq!(
+        debt_token_0_total_supply_before,
+        pool_debt_token_0_total_supply_before
+    );
+    assert_eq!(
+        collat_token_2_total_supply_before,
+        pool_collat_token_2_total_supply_before
+    );
+    assert_eq!(
+        debt_token_2_total_supply_before,
+        pool_debt_token_2_total_supply_before
+    );
 
     assert_eq!(underlying_1_supply_after, 179_994_206);
     assert_eq!(underlying_2_supply_after, 190_000_000);
@@ -404,6 +452,22 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     assert_eq!(liquidator_stoken_1_balance_after, 79_994_208);
     assert_eq!(liquidator_stoken_2_balance_after, 32_099_202);
     assert_eq!(treasury_underlying_balance_after, 5_794);
+    assert_eq!(
+        collat_token_0_total_supply_after,
+        pool_collat_token_0_total_supply_after
+    );
+    assert_eq!(
+        debt_token_0_total_supply_after,
+        pool_debt_token_0_total_supply_after
+    );
+    assert_eq!(
+        collat_token_2_total_supply_after,
+        pool_collat_token_2_total_supply_after
+    );
+    assert_eq!(
+        debt_token_2_total_supply_after,
+        pool_debt_token_2_total_supply_after
+    );
 }
 
 #[test]
