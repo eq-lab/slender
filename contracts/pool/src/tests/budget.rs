@@ -31,7 +31,7 @@ macro_rules! function_name {
         }
         let name = type_name_of(f);
         &name[..name.len() - 3]
-    }}
+    }};
 }
 
 #[test]
@@ -248,7 +248,7 @@ fn liquidate_receive_stoken() {
 
     env.ledger().with_mut(|l| l.timestamp = 3 * DAY);
 
-    measure_budget(&env, nameof(liquidate_receive_stoken), || {
+    measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &true);
     });
 }
@@ -306,7 +306,7 @@ fn liquidate_receive_underlying() {
 
     env.ledger().with_mut(|l| l.timestamp = 3 * DAY);
 
-    measure_budget(&env, nameof(liquidate_receive_underlying), || {
+    measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &false);
     });
 }
@@ -645,12 +645,17 @@ fn s_token_transfer() {
 
     let sut = init_pool(&env, true);
     let (_, from_borrower, _) = fill_pool(&env, &sut, true);
-    sut.pool
-        .deposit(&from_borrower, &sut.reserves[2].token.address, &1_000_000_000);
+    sut.pool.deposit(
+        &from_borrower,
+        &sut.reserves[2].token.address,
+        &1_000_000_000,
+    );
     let to = Address::random(&env);
 
     measure_budget(&env, function_name!(), || {
-        sut.reserves[0].s_token.transfer(&from_borrower, &to, &10_000_000);
+        sut.reserves[0]
+            .s_token
+            .transfer(&from_borrower, &to, &10_000_000);
     });
 }
 
