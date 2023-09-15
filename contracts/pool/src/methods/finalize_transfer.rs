@@ -3,6 +3,7 @@ use pool_interface::types::error::Error;
 use soroban_sdk::{Address, Env};
 
 use crate::storage::{read_reserve, read_token_total_supply};
+use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::user_configurator::UserConfigurator;
 
 use super::account_position::calc_account_data;
@@ -25,12 +26,12 @@ pub fn finalize_transfer(
 
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
+    reserve.s_token_address.require_auth();
 
     let mut to_configurator = UserConfigurator::new(env, to, true);
     let to_config = to_configurator.user_config()?;
 
     require_zero_debt(env, to_config, reserve.get_id());
-    reserve.s_token_address.require_auth();
 
     let balance_from_after = balance_from_before
         .checked_sub(amount)
@@ -43,19 +44,21 @@ pub fn finalize_transfer(
         let from_account_data = calc_account_data(
             env,
             from,
-            Some(&AssetBalance::new(
-                reserve.s_token_address.clone(),
-                balance_from_after,
-            )),
-            None,
-            Some(&AssetBalance::new(
-                reserve.s_token_address.clone(),
-                s_token_supply,
-            )),
-            Some(&AssetBalance::new(
-                reserve.debt_token_address.clone(),
-                read_token_total_supply(env, &reserve.debt_token_address),
-            )),
+            &CalcAccountDataCache {
+                mb_who_collat: Some(&AssetBalance::new(
+                    reserve.s_token_address.clone(),
+                    balance_from_after,
+                )),
+                mb_who_debt: None,
+                mb_s_token_supply: Some(&AssetBalance::new(
+                    reserve.s_token_address.clone(),
+                    s_token_supply,
+                )),
+                mb_debt_token_supply: Some(&AssetBalance::new(
+                    reserve.debt_token_address.clone(),
+                    read_token_total_supply(env, &reserve.debt_token_address),
+                )),
+            },
             from_config,
             false,
         )?;

@@ -194,6 +194,7 @@ impl STokenTrait for SToken {
     ///
     fn transfer_from(e: Env, spender: Address, from: Address, to: Address, amount: i128) {
         spender.require_auth();
+        require_nonnegative_amount(amount);
         spend_allowance(&e, from.clone(), spender, amount);
 
         do_transfer(&e, from, to, amount, true);
@@ -344,6 +345,7 @@ impl STokenTrait for SToken {
     ///
     fn transfer_on_liquidation(e: Env, from: Address, to: Address, amount: i128) {
         verify_caller_is_pool(&e);
+        require_nonnegative_amount(amount);
 
         do_transfer(&e, from, to, amount, false);
     }
@@ -403,7 +405,7 @@ fn do_transfer(e: &Env, from: Address, to: Address, amount: i128, validate: bool
     spend_balance(e, from.clone(), amount);
     receive_balance(e, to.clone(), amount);
 
-    if validate && cfg!(not(feature = "testutils")) {
+    if validate && cfg!(not(feature = "testutils")) && cfg!(not(feature = "exceeded-limit-fix")) {
         let underlying_asset = read_underlying_asset(e);
         let total_supply = read_total_supply(e);
         let pool_client = LendingPoolClient::new(e, &read_pool(e));

@@ -8,7 +8,7 @@ use soroban_sdk::{
 };
 
 #[test]
-fn shoould_require_admin() {
+fn should_require_admin() {
     let env = Env::default();
     env.mock_all_auths();
 

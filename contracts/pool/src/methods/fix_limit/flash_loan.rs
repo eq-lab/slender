@@ -19,6 +19,7 @@ use crate::storage::{
     read_reserve, read_token_balance, read_token_total_supply, read_treasury,
     write_token_total_supply,
 };
+use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::user_configurator::UserConfigurator;
 
 pub fn flash_loan(
@@ -94,13 +95,15 @@ pub fn flash_loan(
             let account_data = calc_account_data(
                 env,
                 who,
-                None,
-                Some(&AssetBalance::new(
-                    reserve.debt_token_address.clone(),
-                    debt_balance,
-                )),
-                None,
-                None,
+                &CalcAccountDataCache {
+                    mb_who_collat: None,
+                    mb_who_debt: Some(&AssetBalance::new(
+                        reserve.debt_token_address.clone(),
+                        debt_balance,
+                    )),
+                    mb_s_token_supply: None,
+                    mb_debt_token_supply: None,
+                },
                 user_config,
                 false,
             )?;

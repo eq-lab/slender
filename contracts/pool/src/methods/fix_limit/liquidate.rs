@@ -14,6 +14,7 @@ use crate::storage::{
     add_stoken_underlying_balance, add_token_balance, read_token_balance, read_token_total_supply,
     write_token_total_supply,
 };
+use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_collateral::LiquidationCollateral;
 use crate::types::liquidation_data::LiquidationData;
 use crate::types::user_configurator::UserConfigurator;
@@ -30,7 +31,8 @@ pub fn liquidate(
 
     let mut user_configurator = UserConfigurator::new(env, who, false);
     let user_config = user_configurator.user_config()?;
-    let account_data = calc_account_data(env, who, None, None, None, None, user_config, true)?;
+    let account_data =
+        calc_account_data(env, who, &CalcAccountDataCache::none(), user_config, true)?;
 
     assert_with_error!(env, !account_data.is_good_position(), Error::GoodPosition);
 
