@@ -200,13 +200,56 @@ fn liquidate() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, true);
-    let (_, borrower, liquidator, _) = fill_pool_three(&env, &sut);
+    let sut = init_pool(&env, false);
+    let lender = Address::random(&env);
+    let borrower = Address::random(&env);
+    let liquidator = Address::random(&env);
 
-    sut.pool.liquidate(&liquidator, &borrower, &true);
+    sut.reserves[0].token_admin.mint(&lender, &100_000_000_000);
+    sut.reserves[1].token_admin.mint(&lender, &100_000_000_000);
+    sut.reserves[2].token_admin.mint(&lender, &100_000_000_000);
 
-    measure_budget(&env, function_name!(), || {
-        sut.pool.ir_params();
+    sut.reserves[0]
+        .token_admin
+        .mint(&borrower, &100_000_000_000);
+    sut.reserves[1]
+        .token_admin
+        .mint(&borrower, &100_000_000_000);
+    sut.reserves[2]
+        .token_admin
+        .mint(&liquidator, &100_000_000_000);
+
+    sut.pool
+        .deposit(&lender, &sut.reserves[0].token.address, &30_000_000_000);
+    sut.pool
+        .deposit(&lender, &sut.reserves[1].token.address, &30_000_000_000);
+    sut.pool
+        .deposit(&lender, &sut.reserves[2].token.address, &30_000_000_000);
+
+    env.ledger().with_mut(|l| l.timestamp = 1 * DAY);
+
+    sut.pool
+        .deposit(&borrower, &sut.reserves[0].token.address, &10_000_000_000);
+    sut.pool
+        .deposit(&borrower, &sut.reserves[1].token.address, &10_000_000_000);
+    sut.pool
+        .borrow(&borrower, &sut.reserves[2].token.address, &12_000_000_000);
+
+    env.ledger().with_mut(|l| l.timestamp = 2 * DAY);
+
+    let _position = sut.pool.account_position(&borrower);
+
+    sut.pool
+        .deposit(&liquidator, &sut.reserves[2].token.address, &10_000_000_000);
+    sut.pool
+        .borrow(&liquidator, &sut.reserves[0].token.address, &1_000_000_000);
+    sut.pool
+        .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
+
+    env.ledger().with_mut(|l| l.timestamp = 3 * DAY);
+
+    measure_budget(&env, nameof(liquidate), || {
+        sut.pool.liquidate(&liquidator, &borrower, &true);
     });
 }
 
