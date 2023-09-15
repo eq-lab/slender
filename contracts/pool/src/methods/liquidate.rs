@@ -5,7 +5,9 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, token, Address, Env};
 
 use crate::event;
-use crate::storage::add_stoken_underlying_balance;
+use crate::storage::{
+    add_stoken_underlying_balance, read_token_total_supply, write_token_total_supply,
+};
 use crate::types::liquidation_collateral::LiquidationCollateral;
 use crate::types::liquidation_data::LiquidationData;
 use crate::types::user_configurator::UserConfigurator;
@@ -105,8 +107,8 @@ fn do_liquidate(
         let s_token = STokenClient::new(env, &reserve.s_token_address);
         let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
 
-        let mut s_token_supply = s_token.total_supply();
-        let mut debt_token_supply = debt_token.total_supply();
+        let mut s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
+        let mut debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
 
         if receive_stoken {
             let liquidator_debt = debt_token.balance(liquidator);
@@ -184,28 +186,33 @@ fn do_liquidate(
         let is_withdraw = s_token_balance == s_token_amount;
         user_configurator.withdraw(reserve.get_id(), &asset, is_withdraw)?;
 
+        write_token_total_supply(env, &reserve.s_token_address, s_token_supply)?;
         recalculate_reserve_data(env, &asset, &reserve, s_token_supply, debt_token_supply)?;
     }
 
     assert_with_error!(env, debt_with_penalty == 0, Error::NotEnoughCollateral);
 
     for (asset, reserve, compounded_debt, debt_amount) in liquidation_data.debt_to_cover.iter() {
-        let s_token = STokenClient::new(env, &reserve.s_token_address);
-        let s_token_supply = s_token.total_supply();
         let underlying_asset = token::Client::new(env, &asset);
-        let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
+        let mut debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
 
         underlying_asset.transfer(liquidator, &reserve.s_token_address, &compounded_debt);
-        add_stoken_underlying_balance(env, &s_token.address, compounded_debt)?;
-        debt_token.burn(who, &debt_amount);
+        DebtTokenClient::new(env, &reserve.debt_token_address).burn(who, &debt_amount);
         user_configurator.repay(reserve.get_id(), true)?;
+
+        debt_token_supply = debt_token_supply
+            .checked_sub(debt_amount)
+            .ok_or(Error::MathOverflowError)?;
+
+        add_stoken_underlying_balance(env, &reserve.s_token_address, compounded_debt)?;
+        write_token_total_supply(env, &reserve.debt_token_address, debt_token_supply)?;
 
         recalculate_reserve_data(
             env,
-            &underlying_asset.address,
+            &asset,
             &reserve,
-            s_token_supply,
-            debt_token.total_supply(),
+            read_token_total_supply(env, &reserve.s_token_address),
+            debt_token_supply,
         )?;
     }
 

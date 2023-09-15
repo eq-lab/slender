@@ -7,7 +7,7 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, token, vec, Address, Bytes, Env, Vec};
 
 use crate::event;
-use crate::storage::{read_flash_loan_fee, read_reserve, read_treasury};
+use crate::storage::{read_flash_loan_fee, read_reserve, read_token_total_supply, read_treasury};
 
 use super::borrow::do_borrow;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
@@ -86,7 +86,7 @@ pub fn flash_loan(
         } else {
             let s_token = STokenClient::new(env, &reserve.s_token_address);
             let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-            let s_token_supply = s_token.total_supply();
+            let s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
 
             let debt_token_supply_after = do_borrow(
                 env,
@@ -96,7 +96,7 @@ pub fn flash_loan(
                 s_token.balance(who),
                 debt_token.balance(who),
                 s_token_supply,
-                debt_token.total_supply(),
+                read_token_total_supply(env, &reserve.debt_token_address),
                 received_asset.amount,
             )?;
 
