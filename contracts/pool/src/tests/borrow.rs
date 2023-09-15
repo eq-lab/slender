@@ -314,6 +314,10 @@ fn should_affect_account_data() {
 
     let account_position = sut.pool.account_position(&borrower);
 
+    let debt_token_total_supply = debt_config.debt_token.total_supply();
+    let pool_debt_token_total_supply = sut.pool.token_total_supply(&debt_config.debt_token.address);
+
+    assert_eq!(debt_token_total_supply, pool_debt_token_total_supply);
     assert!(account_position_prev.discounted_collateral == account_position.discounted_collateral);
     assert!(account_position_prev.debt < account_position.debt);
     assert!(account_position_prev.npv > account_position.npv);

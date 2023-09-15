@@ -105,12 +105,11 @@ fn do_liquidate(
             };
 
         let s_token = STokenClient::new(env, &reserve.s_token_address);
-        let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-
         let mut s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
         let mut debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
 
         if receive_stoken {
+            let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
             let liquidator_debt = debt_token.balance(liquidator);
             let liquidator_collat_before = s_token.balance(liquidator);
 
@@ -142,10 +141,10 @@ fn do_liquidate(
                     liquidator,
                     &asset,
                     &reserve,
+                    &debt_token,
                     coll_coeff,
                     debt_coeff,
                     debt_token_supply,
-                    liquidator_debt,
                     repayment_amount,
                 )?;
                 is_debt_repayed = is_repayed;

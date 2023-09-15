@@ -117,6 +117,8 @@ pub trait LendingPoolTrait {
 
     fn stoken_underlying_balance(env: Env, stoken_address: Address) -> i128;
 
+    fn token_total_supply(env: Env, token: Address) -> i128;
+
     #[cfg(feature = "exceeded-limit-fix")]
     fn borrow(env: Env, who: Address, asset: Address, amount: i128)
         -> Result<Vec<MintBurn>, Error>;
