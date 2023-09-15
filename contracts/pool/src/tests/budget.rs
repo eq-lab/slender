@@ -19,6 +19,9 @@ use super::sut::{
     create_pool_contract, create_price_feed_contract, create_s_token_contract,
     create_token_contract, fill_pool, fill_pool_three, init_pool, DAY,
 };
+use super::upgrade::{debt_token_v2, pool_v2, s_token_v2};
+
+const CPU_LIMIT: u64 = 100_000_000;
 
 #[test]
 fn account_position() {
@@ -407,40 +410,6 @@ fn withdraw() {
     });
 }
 
-pub fn measure_budget(env: &Env, function: &str, callback: impl FnOnce()) {
-    let cpu_before = env.budget().cpu_instruction_cost();
-    // TODO: bug in v0.9.2 (returns CPU cost)
-    let memory_before = env.budget().memory_bytes_cost();
-
-    callback();
-
-    let cpu_after = env.budget().cpu_instruction_cost();
-    let memory_after = env.budget().memory_bytes_cost();
-
-    let cpu = cpu_after - cpu_before;
-    let memory = memory_after - memory_before;
-
-    let budget = &[
-        std::format!("['{}'] = {{\n", function),
-        std::format!("    \"cpu_cost\": {},\n", cpu),
-        std::format!("    \"memory_cost\": {},\n", memory),
-        std::format!("}}"),
-    ]
-    .concat();
-
-    let mut file = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .append(true)
-        .open("src/tests/snapshots/budget_utilization.snap")
-        .unwrap();
-    let result = writeln!(file, "{}", budget);
-
-    if let Err(e) = result {
-        panic!("Failed to write budget consumption: {}", e);
-    }
-}
-
 #[test]
 fn flash_loan_fee() {
     let env = Env::default();
@@ -513,6 +482,83 @@ fn flash_loan() {
             &Bytes::new(&env),
         );
     });
+}
+
+#[test]
+fn upgrade() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, true);
+    let pool_v2_wasm = env.deployer().upload_contract_wasm(pool_v2::WASM);
+
+    measure_budget(&env, nameof(upgrade), || {
+        sut.pool.upgrade(&pool_v2_wasm);
+    });
+}
+
+#[test]
+fn upgrade_s_token() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, true);
+    let asset = sut.reserves[0].token.address.clone();
+
+    let s_token_v2_wasm = env.deployer().upload_contract_wasm(s_token_v2::WASM);
+
+    measure_budget(&env, nameof(upgrade_s_token), || {
+        sut.pool.upgrade_s_token(&asset, &s_token_v2_wasm);
+    });
+}
+
+#[test]
+fn upgrade_debt_token() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, true);
+    let debt_token_v2_wasm = env.deployer().upload_contract_wasm(debt_token_v2::WASM);
+    let asset = sut.reserves[0].token.address.clone();
+
+    measure_budget(&env, nameof(upgrade_debt_token), || {
+        sut.pool.upgrade_debt_token(&asset, &debt_token_v2_wasm);
+    });
+}
+
+fn measure_budget(env: &Env, function: &str, callback: impl FnOnce()) {
+    let cpu_before = env.budget().cpu_instruction_cost();
+    // TODO: bug in v0.9.2 (returns CPU cost)
+    let memory_before = env.budget().memory_bytes_cost();
+
+    callback();
+
+    let cpu_after = env.budget().cpu_instruction_cost();
+    let memory_after = env.budget().memory_bytes_cost();
+
+    let cpu = cpu_after - cpu_before;
+    let memory = memory_after - memory_before;
+
+    let budget = &[
+        std::format!("['{}'] = {{\n", function),
+        std::format!("    \"cpu_cost\": {},\n", cpu),
+        std::format!("    \"memory_cost\": {},\n", memory),
+        std::format!("    \"cpu_limit_exceeded\": {},\n", cpu > CPU_LIMIT),
+        std::format!("}}"),
+    ]
+    .concat();
+
+    let mut file = OpenOptions::new()
+        .create(true)
+        .write(true)
+        .append(true)
+        .open("src/tests/snapshots/budget_utilization.snap")
+        .unwrap();
+    let result = writeln!(file, "{}", budget);
+
+    if let Err(e) = result {
+        panic!("Failed to write budget consumption: {}", e);
+    }
 }
 
 fn nameof<F>(_: F) -> &'static str

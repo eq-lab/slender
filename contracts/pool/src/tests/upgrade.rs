@@ -7,15 +7,15 @@ use soroban_sdk::{symbol_short, vec, IntoVal};
 use crate::tests::sut::init_pool;
 use crate::*;
 
-mod pool_v2 {
+pub mod pool_v2 {
     soroban_sdk::contractimport!(file = "../../mocks/pool_v2_mock.wasm");
 }
 
-mod s_token_v2 {
+pub mod s_token_v2 {
     soroban_sdk::contractimport!(file = "../../mocks/s_token_v2_mock.wasm");
 }
 
-mod debt_token_v2 {
+pub mod debt_token_v2 {
     soroban_sdk::contractimport!(file = "../../mocks/debt_token_v2_mock.wasm");
 }
 
