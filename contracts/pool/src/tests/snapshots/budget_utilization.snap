@@ -74,8 +74,8 @@
     "cpu_limit_exceeded": false,
 }
 ['pool::tests::budget::price_feed'] = {
-    "cpu_cost": 32455612,
-    "memory_cost": 32455612,
+    "cpu_cost": 32361502,
+    "memory_cost": 32361502,
     "cpu_limit_exceeded": false,
 }
 ['pool::tests::budget::repay'] = {
