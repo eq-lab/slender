@@ -6,7 +6,9 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, Address, Env};
 
 use crate::event;
-use crate::storage::{add_stoken_underlying_balance, read_reserve};
+use crate::storage::{
+    add_stoken_underlying_balance, read_reserve, read_token_total_supply, write_token_total_supply,
+};
 use crate::types::user_configurator::UserConfigurator;
 
 use super::account_position::calc_account_data;
@@ -30,7 +32,7 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
 
     let s_token = STokenClient::new(env, &reserve.s_token_address);
     let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-    let s_token_supply = s_token.total_supply();
+    let s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
 
     let debt_token_supply_after = do_borrow(
         env,
@@ -40,7 +42,7 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
         s_token.balance(who),
         debt_token.balance(who),
         s_token_supply,
-        debt_token.total_supply(),
+        read_token_total_supply(env, &reserve.debt_token_address),
         amount,
     )?;
 
@@ -118,7 +120,9 @@ pub fn do_borrow(
 
     DebtTokenClient::new(env, &reserve.debt_token_address).mint(who, &amount_of_debt_token);
     STokenClient::new(env, &reserve.s_token_address).transfer_underlying_to(who, &amount);
+
     add_stoken_underlying_balance(env, &reserve.s_token_address, amount_to_sub)?;
+    write_token_total_supply(env, &reserve.debt_token_address, debt_token_supply_after)?;
 
     user_configurator
         .borrow(reserve.get_id(), who_debt == 0)?

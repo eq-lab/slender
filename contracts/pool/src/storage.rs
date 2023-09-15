@@ -19,8 +19,8 @@ pub enum DataKey {
     Pause,
     FlashLoanFee,
     STokenUnderlyingBalance(Address),
+    TokenSupply(Address),
     TokenBalance(Address, Address), // exceeded-limit-fix (S/Debt/Underlying Token Address, Account Address)
-    TokenSupply(Address),           // exceeded-limit-fix (S/Debt Token Address)
     Price(Address),                 // exceeded-limit-fix (Underlying Token Address)
 }
 
@@ -173,25 +173,22 @@ pub fn add_stoken_underlying_balance(
     Ok(total_supply)
 }
 
-#[cfg(feature = "exceeded-limit-fix")]
-pub fn add_token_total_supply(env: &Env, token: &Address, amount: i128) -> Result<i128, Error> {
-    let mut total_supply = read_token_total_supply(env, token);
-
-    total_supply = total_supply
-        .checked_add(amount)
-        .ok_or(Error::MathOverflowError)?;
-
-    let key = DataKey::TokenSupply(token.clone());
-    env.storage().instance().set(&key, &total_supply);
-    env.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
-
-    Ok(total_supply)
-}
-
-#[cfg(feature = "exceeded-limit-fix")]
 pub fn read_token_total_supply(env: &Env, token: &Address) -> i128 {
     let key = DataKey::TokenSupply(token.clone());
     env.storage().instance().get(&key).unwrap_or(0i128)
+}
+
+pub fn write_token_total_supply(
+    env: &Env,
+    token: &Address,
+    total_supply: i128,
+) -> Result<(), Error> {
+    assert_with_error!(env, !total_supply.is_negative(), Error::MustBePositive);
+
+    let data_key = DataKey::TokenSupply(token.clone());
+    env.storage().instance().set(&data_key, &total_supply);
+
+    Ok(())
 }
 
 #[cfg(feature = "exceeded-limit-fix")]

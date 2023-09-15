@@ -2,11 +2,13 @@ use common::FixedI128;
 use debt_token_interface::DebtTokenClient;
 use pool_interface::types::error::Error;
 use pool_interface::types::reserve_data::ReserveData;
-use s_token_interface::STokenClient;
 use soroban_sdk::{token, Address, Env};
 
 use crate::event;
-use crate::storage::{add_stoken_underlying_balance, read_reserve, read_treasury};
+use crate::storage::{
+    add_stoken_underlying_balance, read_reserve, read_token_total_supply, read_treasury,
+    write_token_total_supply,
+};
 use crate::types::user_configurator::UserConfigurator;
 
 use super::utils::get_collat_coeff::get_collat_coeff;
@@ -29,10 +31,8 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
     let user_config = user_configurator.user_config()?;
     require_debt(env, user_config, reserve.get_id());
 
-    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-    let s_token = STokenClient::new(env, &reserve.s_token_address);
-    let s_token_supply = s_token.total_supply();
-    let debt_token_supply = debt_token.total_supply();
+    let s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
+    let debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
 
     let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?;
     let collat_coeff = get_collat_coeff(env, &reserve, s_token_supply, debt_token_supply)?;
@@ -42,10 +42,10 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
         who,
         asset,
         &reserve,
+        &DebtTokenClient::new(env, &reserve.debt_token_address),
         collat_coeff,
         debt_coeff,
         debt_token_supply,
-        debt_token.balance(who),
         amount,
     )?;
 
@@ -73,12 +73,13 @@ pub fn do_repay(
     who: &Address,
     asset: &Address,
     reserve: &ReserveData,
+    debt_token: &DebtTokenClient,
     collat_coeff: FixedI128,
     debt_coeff: FixedI128,
     debt_token_supply: i128,
-    who_debt: i128,
     amount: i128,
 ) -> Result<(bool, i128), Error> {
+    let who_debt = debt_token.balance(who);
     let borrower_actual_debt = debt_coeff
         .mul_int(who_debt)
         .ok_or(Error::MathOverflowError)?;
@@ -109,9 +110,11 @@ pub fn do_repay(
     let underlying_asset = token::Client::new(env, asset);
 
     underlying_asset.transfer(who, &reserve.s_token_address, &lender_part);
-    add_stoken_underlying_balance(env, &reserve.s_token_address, lender_part)?;
     underlying_asset.transfer(who, &treasury_address, &treasury_part);
-    DebtTokenClient::new(env, &reserve.debt_token_address).burn(who, &borrower_debt_to_burn);
+    debt_token.burn(who, &borrower_debt_to_burn);
+
+    add_stoken_underlying_balance(env, &reserve.s_token_address, lender_part)?;
+    write_token_total_supply(env, &reserve.debt_token_address, debt_token_supply_after)?;
 
     event::repay(env, who, asset, borrower_payback_amount);
 

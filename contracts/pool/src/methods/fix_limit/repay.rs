@@ -13,8 +13,8 @@ use crate::methods::utils::validation::{
     require_active_reserve, require_debt, require_not_paused, require_positive_amount,
 };
 use crate::storage::{
-    add_stoken_underlying_balance, add_token_balance, add_token_total_supply, read_reserve,
-    read_token_balance, read_token_total_supply, read_treasury,
+    add_stoken_underlying_balance, add_token_balance, read_reserve, read_token_balance,
+    read_token_total_supply, read_treasury, write_token_total_supply,
 };
 use crate::types::user_configurator::UserConfigurator;
 
@@ -116,7 +116,7 @@ pub fn do_repay(
         .ok_or(Error::MathOverflowError)?;
 
     add_token_balance(env, &reserve.debt_token_address, who, debt_to_sub)?;
-    add_token_total_supply(env, &reserve.debt_token_address, debt_to_sub)?;
+    write_token_total_supply(env, &reserve.debt_token_address, debt_token_supply_after)?;
     add_stoken_underlying_balance(env, &reserve.s_token_address, lender_part)?;
 
     let mint_burn_1 = MintBurn::new(
