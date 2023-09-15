@@ -2,12 +2,13 @@
 extern crate std;
 
 use pool_interface::types::collateral_params_input::CollateralParamsInput;
+use pool_interface::types::flash_loan_asset::FlashLoanAsset;
 use pool_interface::types::init_reserve_input::InitReserveInput;
 use pool_interface::types::ir_params::IRParams;
 use pool_interface::LendingPoolClient;
 use price_feed_interface::PriceFeedClient;
 use soroban_sdk::testutils::{Address as _, Ledger};
-use soroban_sdk::{vec, Address, Env};
+use soroban_sdk::{vec, Address, Bytes, Env, IntoVal, Symbol, Val, Vec};
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 
@@ -461,6 +462,56 @@ fn set_flash_loan_fee() {
 
     measure_budget(&env, nameof(set_flash_loan_fee), || {
         sut.pool.set_flash_loan_fee(&15);
+    });
+}
+
+#[test]
+fn flash_loan() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, false);
+
+    let _: Val = env.invoke_contract(
+        &sut.flash_loan_receiver.address,
+        &Symbol::new(&env, "initialize"),
+        vec![
+            &env,
+            borrower.into_val(&env),
+            sut.pool.address.into_val(&env),
+            false.into_val(&env),
+        ],
+    );
+
+    let loan_assets = Vec::from_array(
+        &env,
+        [
+            FlashLoanAsset {
+                asset: sut.reserves[0].token.address.clone(),
+                amount: 1000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[1].token.address.clone(),
+                amount: 2000000,
+                borrow: true,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[2].token.address.clone(),
+                amount: 3000000,
+                borrow: true,
+            },
+        ],
+    );
+
+    measure_budget(&env, nameof(flash_loan), || {
+        sut.pool.flash_loan(
+            &borrower,
+            &sut.flash_loan_receiver.address,
+            &loan_assets,
+            &Bytes::new(&env),
+        );
     });
 }
 
