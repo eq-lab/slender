@@ -6,7 +6,7 @@ use common_token::{balance::*, require_nonnegative_amount, storage::*, verify_ca
 use pool_interface::LendingPoolClient;
 use s_token_interface::STokenTrait;
 use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, String};
-use soroban_token_sdk::TokenMetadata;
+use soroban_token_sdk::metadata::TokenMetadata;
 
 mod event;
 mod storage;

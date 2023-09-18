@@ -72,6 +72,7 @@ pub fn write_allowance(
     if amount > 0 {
         e.storage().temporary().bump(
             &key,
+            0, // TODO: re-consider
             expiration_ledger
                 .checked_sub(e.ledger().sequence())
                 .unwrap(),

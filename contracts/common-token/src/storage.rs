@@ -1,7 +1,9 @@
 use soroban_sdk::{contracttype, Address, Env, String};
-use soroban_token_sdk::{TokenMetadata, TokenUtils};
+use soroban_token_sdk::metadata::TokenMetadata;
+use soroban_token_sdk::TokenUtils;
 
-pub(crate) const USER_DATA_BUMP_AMOUNT: u32 = 518_400; // 30 days
+pub(crate) const LOW_USER_DATA_BUMP_AMOUNT: u32 = 518_400; // 30 days
+pub(crate) const HIGH_USER_DATA_BUMP_AMOUNT: u32 = 1_036_800; // 60 days
 
 #[derive(Clone)]
 #[contracttype]
@@ -32,7 +34,9 @@ pub fn read_balance(e: &Env, addr: Address) -> i128 {
     let balance = e.storage().persistent().get(&key);
 
     if balance.is_some() {
-        e.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
+        e.storage()
+            .persistent()
+            .bump(&key, LOW_USER_DATA_BUMP_AMOUNT, HIGH_USER_DATA_BUMP_AMOUNT);
     }
 
     balance.unwrap_or(0)
@@ -41,7 +45,9 @@ pub fn read_balance(e: &Env, addr: Address) -> i128 {
 pub fn write_balance(e: &Env, addr: Address, amount: i128) {
     let key = CommonDataKey::Balance(addr);
     e.storage().persistent().set(&key, &amount);
-    e.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
+    e.storage()
+        .persistent()
+        .bump(&key, LOW_USER_DATA_BUMP_AMOUNT, HIGH_USER_DATA_BUMP_AMOUNT);
 }
 
 pub fn is_authorized(e: &Env, addr: Address) -> bool {
@@ -49,7 +55,9 @@ pub fn is_authorized(e: &Env, addr: Address) -> bool {
     let is_authorized = e.storage().persistent().get(&key);
 
     if is_authorized.is_some() {
-        e.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
+        e.storage()
+            .persistent()
+            .bump(&key, LOW_USER_DATA_BUMP_AMOUNT, HIGH_USER_DATA_BUMP_AMOUNT);
     }
 
     is_authorized.unwrap_or(true)
@@ -58,22 +66,24 @@ pub fn is_authorized(e: &Env, addr: Address) -> bool {
 pub fn write_authorization(e: &Env, addr: Address, is_authorized: bool) {
     let key = CommonDataKey::State(addr);
     e.storage().persistent().set(&key, &is_authorized);
-    e.storage().persistent().bump(&key, USER_DATA_BUMP_AMOUNT);
+    e.storage()
+        .persistent()
+        .bump(&key, LOW_USER_DATA_BUMP_AMOUNT, HIGH_USER_DATA_BUMP_AMOUNT);
 }
 
 pub fn read_decimal(e: &Env) -> u32 {
     let util = TokenUtils::new(e);
-    util.get_metadata().decimal
+    util.metadata().get_metadata().decimal
 }
 
 pub fn read_name(e: &Env) -> String {
     let util = TokenUtils::new(e);
-    util.get_metadata().name
+    util.metadata().get_metadata().name
 }
 
 pub fn read_symbol(e: &Env) -> String {
     let util = TokenUtils::new(e);
-    util.get_metadata().symbol
+    util.metadata().get_metadata().symbol
 }
 
 pub fn read_total_supply(e: &Env) -> i128 {
@@ -91,5 +101,5 @@ pub fn write_total_supply(e: &Env, val: i128) {
 
 pub fn write_metadata(e: &Env, metadata: TokenMetadata) {
     let util = TokenUtils::new(e);
-    util.set_metadata(&metadata);
+    util.metadata().set_metadata(&metadata);
 }
