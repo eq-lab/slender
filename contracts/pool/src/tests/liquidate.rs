@@ -34,18 +34,10 @@ fn should_fail_when_pool_paused() {
 
     sut.pool.set_pause(&true);
     sut.pool.liquidate(&liquidator, &borrower, &false);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_liquidate(&liquidator, &borrower, &false)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::Paused
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #101)")]
 fn should_fail_when_reserve_deactivated() {
     let env = Env::default();
     env.mock_all_auths();
@@ -56,18 +48,10 @@ fn should_fail_when_reserve_deactivated() {
 
     sut.pool.set_reserve_status(&collat_reserve, &false);
     sut.pool.liquidate(&liquidator, &borrower, &false);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_liquidate(&liquidator, &borrower, &false)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::NoActiveReserve
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #303)")]
 fn should_fail_when_good_position() {
     let env = Env::default();
     env.mock_all_auths();
@@ -80,18 +64,10 @@ fn should_fail_when_good_position() {
     assert!(position.npv > 0, "test configuration");
 
     sut.pool.liquidate(&liquidator, &borrower, &false);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_liquidate(&liquidator, &borrower, &false)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::GoodPosition
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #106)")]
 fn should_fail_when_oracle_price_is_negative() {
     let env = Env::default();
     env.mock_all_auths();
@@ -102,18 +78,10 @@ fn should_fail_when_oracle_price_is_negative() {
 
     sut.price_feed.set_price(&token_address, &-1_000);
     sut.pool.liquidate(&liquidator, &borrower, &false);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_liquidate(&liquidator, &borrower, &false)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::InvalidAssetPrice
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #308)")]
 fn sould_fail_when_not_enough_collateral() {
     let env = Env::default();
     env.mock_all_auths();
@@ -125,19 +93,11 @@ fn sould_fail_when_not_enough_collateral() {
     sut.price_feed
         .set_price(&token_address, &(10i128.pow(sut.price_feed.decimals()) * 2));
     sut.pool.liquidate(&liquidator, &borrower, &false);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_liquidate(&liquidator, &borrower, &false)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::NotEnoughCollateral
-    // );
 }
 
 #[test]
 #[should_panic(expected = "")]
-fn sould_fail_when_liquidator_has_not_enough_underlying_asset() {
+fn should_fail_when_liquidator_has_not_enough_underlying_asset() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -147,14 +107,6 @@ fn sould_fail_when_liquidator_has_not_enough_underlying_asset() {
 
     sut.pool.deposit(&liquidator, &token_address, &990_000_000);
     sut.pool.liquidate(&liquidator, &borrower, &false);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_liquidate(&liquidator, &borrower, &false)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::NotEnoughCollateral
-    // );
 }
 
 #[test]

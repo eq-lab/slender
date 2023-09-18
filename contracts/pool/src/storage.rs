@@ -4,8 +4,9 @@ use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::user_config::UserConfiguration;
 use soroban_sdk::{assert_with_error, contracttype, vec, Address, Env, Vec};
 
-pub(crate) const LOW_USER_DATA_BUMP_AMOUNT: u32 = 518_400; // 30 days
-pub(crate) const HIGH_USER_DATA_BUMP_AMOUNT: u32 = 1_036_800; // 60 days
+pub(crate) const DAY_IN_LEDGERS: u32 = 17280;
+pub(crate) const LOW_USER_DATA_BUMP_LEDGERS: u32 = 10 * DAY_IN_LEDGERS; // 20 days
+pub(crate) const HIGH_USER_DATA_BUMP_LEDGERS: u32 = 20 * DAY_IN_LEDGERS; // 30 days
 
 #[derive(Clone)]
 #[contracttype]
@@ -87,8 +88,8 @@ pub fn read_user_config(env: &Env, user: &Address) -> Result<UserConfiguration, 
     if user_config.is_some() {
         env.storage().persistent().bump(
             &key,
-            LOW_USER_DATA_BUMP_AMOUNT,
-            HIGH_USER_DATA_BUMP_AMOUNT,
+            LOW_USER_DATA_BUMP_LEDGERS,
+            HIGH_USER_DATA_BUMP_LEDGERS,
         );
     }
 
@@ -98,9 +99,11 @@ pub fn read_user_config(env: &Env, user: &Address) -> Result<UserConfiguration, 
 pub fn write_user_config(env: &Env, user: &Address, config: &UserConfiguration) {
     let key = DataKey::UserConfig(user.clone());
     env.storage().persistent().set(&key, config);
-    env.storage()
-        .persistent()
-        .bump(&key, LOW_USER_DATA_BUMP_AMOUNT, HIGH_USER_DATA_BUMP_AMOUNT);
+    env.storage().persistent().bump(
+        &key,
+        LOW_USER_DATA_BUMP_LEDGERS,
+        HIGH_USER_DATA_BUMP_LEDGERS,
+    );
 }
 
 pub fn read_price_feed(env: &Env, asset: &Address) -> Result<Address, Error> {

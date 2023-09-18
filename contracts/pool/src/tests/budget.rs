@@ -557,12 +557,7 @@ fn flash_loan() {
     let _: Val = env.invoke_contract(
         &sut.flash_loan_receiver.address,
         &Symbol::new(&env, "initialize"),
-        vec![
-            &env,
-            borrower.into_val(&env),
-            sut.pool.address.into_val(&env),
-            false.into_val(&env),
-        ],
+        vec![&env, sut.pool.address.into_val(&env), false.into_val(&env)],
     );
 
     let loan_assets = Vec::from_array(

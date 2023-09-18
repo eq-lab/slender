@@ -7,7 +7,7 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{
     symbol_short,
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
-    token::AdminClient as TokenAdminClient,
+    token::StellarAssetClient as TokenAdminClient,
     token::Client as TokenClient,
     vec, Address, Env, IntoVal, Symbol,
 };

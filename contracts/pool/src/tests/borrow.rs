@@ -36,18 +36,10 @@ fn should_fail_when_pool_paused() {
 
     sut.pool.set_pause(&true);
     sut.pool.borrow(&borrower, &token_address, &10_000_000);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_borrow(&borrower, &token_address, &10_000_000)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::Paused
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #304)")]
 fn should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -57,18 +49,10 @@ fn should_fail_when_invalid_amount() {
     let token_address = debt_config.token.address.clone();
 
     sut.pool.borrow(&borrower, &token_address, &-1);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_borrow(&borrower, &token_address, &-1)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::InvalidAmount
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #101)")]
 fn should_fail_when_reserve_deactivated() {
     let env = Env::default();
     env.mock_all_auths();
@@ -79,18 +63,10 @@ fn should_fail_when_reserve_deactivated() {
 
     sut.pool.set_reserve_status(&token_address, &false);
     sut.pool.borrow(&borrower, &token_address, &10_000_000);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_borrow(&borrower, &token_address, &10_000_000)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::NoActiveReserve
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #300)")]
 fn should_fail_when_borrowing_disabled() {
     let env = Env::default();
     env.mock_all_auths();
@@ -101,18 +77,10 @@ fn should_fail_when_borrowing_disabled() {
 
     sut.pool.enable_borrowing_on_reserve(&token_address, &false);
     sut.pool.borrow(&borrower, &token_address, &10_000_000);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_borrow(&borrower, &token_address, &10_000_000)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::BorrowingNotEnabled
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #310)")]
 fn should_fail_when_borrowing_collat_asset() {
     let env = Env::default();
     env.mock_all_auths();
@@ -123,18 +91,10 @@ fn should_fail_when_borrowing_collat_asset() {
 
     sut.pool.deposit(&borrower, &token_address, &10_000);
     sut.pool.borrow(&borrower, &token_address, &10_000_000);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_borrow(&borrower, &token_address, &10_000_000)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::MustNotBeInCollateralAsset
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #311)")]
 fn should_fail_when_util_cap_exceeded() {
     let env = Env::default();
     env.mock_all_auths();
@@ -143,19 +103,14 @@ fn should_fail_when_util_cap_exceeded() {
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
-    sut.pool.borrow(&borrower, &token_address, &100_000_000);
+    sut.pool
+        .deposit(&borrower, &sut.reserves[0].token.address, &100_000_000);
 
-    // assert_eq!(
-    //     sut.pool
-    //         .try_borrow(&borrower, &token_address, &100_000_000)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::UtilizationCapExceeded
-    // )
+    sut.pool.borrow(&borrower, &token_address, &100_000_000);
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #106)")]
 fn should_fail_when_oracle_price_is_negative() {
     let env = Env::default();
     env.mock_all_auths();
@@ -166,18 +121,10 @@ fn should_fail_when_oracle_price_is_negative() {
 
     sut.price_feed.set_price(&token_address, &-1_000);
     sut.pool.borrow(&borrower, &token_address, &10_000_000);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_borrow(&borrower, &token_address, &10_000_000)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::InvalidAssetPrice
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #301)")]
 fn should_fail_when_collat_not_covers_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -187,18 +134,10 @@ fn should_fail_when_collat_not_covers_amount() {
     let token_address = debt_config.token.address.clone();
 
     sut.pool.borrow(&borrower, &token_address, &61_000_000);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_borrow(&borrower, &token_address, &100_000_000)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::CollateralNotCoverNewBorrow
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #202)")]
 fn should_fail_when_user_config_not_exist() {
     let env = Env::default();
     env.mock_all_auths();
@@ -207,14 +146,6 @@ fn should_fail_when_user_config_not_exist() {
     let borrower = Address::random(&env);
 
     sut.pool.borrow(&borrower, &sut.token().address, &1);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_borrow(&borrower, &sut.token().address, &1)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::UserConfigNotExists
-    // )
 }
 
 #[test]

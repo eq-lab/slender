@@ -57,7 +57,7 @@ pub fn flash_loan(
     }
 
     let loan_receiver = FlashLoanReceiverClient::new(env, receiver);
-    let loan_received = loan_receiver.receive(&receiver_assets, params);
+    let loan_received = loan_receiver.receive(&who, &receiver_assets, params);
     assert_with_error!(env, loan_received, Error::FlashLoanReceiverError);
 
     let treasury = read_treasury(env);

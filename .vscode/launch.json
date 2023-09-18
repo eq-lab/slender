@@ -22,9 +22,9 @@
                 // }
             },
             // "args": [
-            //     "tests::test_file::test_name",
-            //     "--exact",
-            //     "--nocapture"
+                //     "tests::test_file::test_name",
+                //     "--exact",
+                //     "--nocapture"
             // ],
             "cwd": "${workspaceFolder}"
         },

@@ -39,7 +39,7 @@ fn shoould_require_admin() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #401)")]
 fn should_fail_when_invalid_initial_rate() {
     let env = Env::default();
     env.mock_all_auths();
@@ -54,18 +54,10 @@ fn should_fail_when_invalid_initial_rate() {
     };
 
     sut.pool.set_ir_params(&ir_params_input.clone());
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_set_ir_params(&ir_params_input)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::MustBeLtePercentageFactor
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #403)")]
 fn should_fail_when_invalid_max_rate() {
     let env = Env::default();
     env.mock_all_auths();
@@ -80,18 +72,10 @@ fn should_fail_when_invalid_max_rate() {
     };
 
     sut.pool.set_ir_params(&ir_params_input.clone());
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_set_ir_params(&ir_params_input)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::MustBeGtPercentageFactor
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #402)")]
 fn should_fail_when_invalid_scaling_coeff() {
     let env = Env::default();
     env.mock_all_auths();
@@ -106,14 +90,6 @@ fn should_fail_when_invalid_scaling_coeff() {
     };
 
     sut.pool.set_ir_params(&ir_params_input.clone());
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_set_ir_params(&ir_params_input)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::MustBeLtPercentageFactor
-    // )
 }
 
 #[test]

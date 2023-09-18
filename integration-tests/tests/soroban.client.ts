@@ -24,7 +24,7 @@ export class SorobanClient {
         method: string,
         signer: Keypair,
         ...args: xdr.ScVal[]
-    ): Promise<SorobanRpc.GetTransactionResponse> {
+    ): Promise<SorobanRpc.GetSuccessfulTransactionResponse> {
         const source = await this.client.getAccount(signer.publicKey());
         const contract = new Contract(contractId);
 
@@ -50,11 +50,19 @@ export class SorobanClient {
             await delay(1000);
             result = await this.client.getTransaction(response.hash);
             attempts--;
-        } while (result.status === "NOT_FOUND" && attempts > 0);
+        } while (result.status === SorobanRpc.GetTransactionStatus.NOT_FOUND && attempts > 0);
 
-        console.log(`    ${signer.publicKey()} => ${method} => ${result.status}`);
+        if ("resultXdr" in result) {
+            const getResult = result as SorobanRpc.GetTransactionResponse;
+            if (getResult.status !== SorobanRpc.GetTransactionStatus.SUCCESS) {
+                console.error('Transaction submission failed! Returning full RPC response.');
+                return result;
+            }
 
-        return result;
+            return result;
+        }
+
+        throw `Transaction failed (method: ${method})`;
     }
 
     async simulateTransaction(
@@ -72,12 +80,15 @@ export class SorobanClient {
             .setTimeout(TimeoutInfinite)
             .build();
 
-        const { results } = await this.client.simulateTransaction(operation);
-        if (!results || results.length !== 1) {
-            throw new Error("Invalid response from simulateTransaction");
+        const simulated = await this.client.simulateTransaction(operation);
+
+        if (SorobanRpc.isSimulationError(simulated)) {
+            throw new Error(simulated.error);
+        } else if (!simulated.result) {
+            throw new Error(`invalid simulation: no result in ${simulated}`);
         }
 
-        return xdr.ScVal.fromXDR(results[0].xdr, "base64");
+        return simulated.result.retval;
     }
 }
 

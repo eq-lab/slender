@@ -42,7 +42,7 @@ fn shoould_require_admin() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #401)")]
 fn shoould_fail_when_invalid_discount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -59,18 +59,10 @@ fn shoould_fail_when_invalid_discount() {
 
     sut.pool
         .configure_as_collateral(&asset_address.clone(), &params.clone());
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_configure_as_collateral(&asset_address.clone(), &params.clone())
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::MustBeLtePercentageFactor
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #401)")]
 fn shoould_fail_when_invalid_util_cap() {
     let env = Env::default();
     env.mock_all_auths();
@@ -87,18 +79,10 @@ fn shoould_fail_when_invalid_util_cap() {
 
     sut.pool
         .configure_as_collateral(&asset_address.clone(), &params.clone());
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_configure_as_collateral(&asset_address.clone(), &params.clone())
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::MustBeLtePercentageFactor
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #403)")]
 fn shoould_fail_when_invalid_liq_bonus() {
     let env = Env::default();
     env.mock_all_auths();
@@ -109,24 +93,16 @@ fn shoould_fail_when_invalid_liq_bonus() {
     let params = CollateralParamsInput {
         liq_bonus: 9_000,
         liq_cap: 100_000_000 * 10_i128.pow(decimals),
-        util_cap: 10_001,
+        util_cap: 10_000,
         discount: 6_000,
     };
 
     sut.pool
         .configure_as_collateral(&asset_address.clone(), &params.clone());
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_configure_as_collateral(&asset_address.clone(), &params.clone())
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::MustBeGtPercentageFactor
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #404)")]
 fn shoould_fail_when_invalid_liq_cap() {
     let env = Env::default();
     env.mock_all_auths();
@@ -134,22 +110,14 @@ fn shoould_fail_when_invalid_liq_cap() {
     let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
     let params = CollateralParamsInput {
-        liq_bonus: 9_000,
+        liq_bonus: 11_000,
         liq_cap: -1,
-        util_cap: 10_001,
+        util_cap: 10_000,
         discount: 6_000,
     };
 
     sut.pool
         .configure_as_collateral(&asset_address.clone(), &params.clone());
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_configure_as_collateral(&asset_address.clone(), &params.clone())
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::MustBePositive
-    // )
 }
 
 #[test]

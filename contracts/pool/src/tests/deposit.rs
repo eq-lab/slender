@@ -37,18 +37,10 @@ fn should_fail_when_pool_paused() {
 
     sut.pool.set_pause(&true);
     sut.pool.deposit(&user, &token_address, &1);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_deposit(&user, &token_address, &1)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::Paused
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #304)")]
 fn should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -58,18 +50,10 @@ fn should_fail_when_invalid_amount() {
     let token_address = sut.token().address.clone();
 
     sut.pool.deposit(&user, &token_address, &-1);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_deposit(&user, &token_address, &-1)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::InvalidAmount
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #101)")]
 fn should_fail_when_reserve_deactivated() {
     let env = Env::default();
     env.mock_all_auths();
@@ -80,18 +64,10 @@ fn should_fail_when_reserve_deactivated() {
 
     sut.pool.set_reserve_status(&token_address, &false);
     sut.pool.deposit(&user, &token_address, &1);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_deposit(&user, &token_address, &1)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::NoActiveReserve
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #312)")]
 fn should_fail_when_liq_cap_exceeded() {
     let env = Env::default();
     env.mock_all_auths();
@@ -111,14 +87,6 @@ fn should_fail_when_liq_cap_exceeded() {
 
     let deposit_amount = initial_balance;
     sut.pool.deposit(&user, &token.address, &deposit_amount);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_deposit(&user, &token.address, &deposit_amount)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::LiqCapExceeded
-    // )
 }
 
 #[test]
@@ -152,6 +120,8 @@ fn should_change_balances() {
     let token_address = sut.token().address.clone();
 
     sut.token_admin().mint(&user, &10_000_000_000);
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
     sut.pool.deposit(&user, &token_address, &3_000_000_000);
 
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&sut.s_token().address);

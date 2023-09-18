@@ -1,10 +1,8 @@
 use super::sut::{init_pool, Sut};
 use crate::*;
-use soroban_sdk::{
-    testutils::{Address as _, Events},
-    token::AdminClient as TokenAdminClient,
-    vec, IntoVal, Symbol,
-};
+use soroban_sdk::testutils::{Address as _, Events};
+use soroban_sdk::token::StellarAssetClient as TokenAdminClient;
+use soroban_sdk::{vec, IntoVal, Symbol};
 
 #[test]
 fn should_enable_collateral_when_no_debt() {
@@ -67,7 +65,7 @@ fn should_disable_collateral_when_deposited() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #204)")]
 fn should_fail_when_has_debt() {
     let env = Env::default();
     env.mock_all_auths();
@@ -76,12 +74,10 @@ fn should_fail_when_has_debt() {
     deposit(&sut.pool, &sut.reserves[2].token_admin, &user);
 
     sut.pool.set_as_collateral(&user, &debt_token, &true);
-
-    // assert_eq!(sut.pool.try_set_as_collateral(&user, &_u_debt_token, &true).unwrap_err().unwrap(), Error::MustNotHaveDebt);
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #302)")]
 fn should_fail_when_bad_position() {
     let env = Env::default();
     env.mock_all_auths();
@@ -95,14 +91,6 @@ fn should_fail_when_bad_position() {
         .pool
         .user_configuration(&user)
         .is_using_as_collateral(&env, collat_reserve_index));
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_set_as_collateral(&user, &collat_token.clone(), &false)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::BadPosition
-    // );
 }
 
 #[test]

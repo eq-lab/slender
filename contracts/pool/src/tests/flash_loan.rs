@@ -4,7 +4,7 @@ use soroban_sdk::testutils::Events;
 use soroban_sdk::{vec, Bytes, Env, IntoVal, Symbol, Val, Vec};
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #313)")]
 fn should_fail_when_receiver_receive_returns_false() {
     let env = Env::default();
     env.mock_all_auths();
@@ -15,12 +15,7 @@ fn should_fail_when_receiver_receive_returns_false() {
     let _: Val = env.invoke_contract(
         &sut.flash_loan_receiver.address,
         &Symbol::new(&env, "initialize"),
-        vec![
-            &env,
-            borrower.into_val(&env),
-            sut.pool.address.into_val(&env),
-            true.into_val(&env),
-        ],
+        vec![&env, sut.pool.address.into_val(&env), true.into_val(&env)],
     );
 
     let loan_assets = Vec::from_array(
@@ -38,19 +33,6 @@ fn should_fail_when_receiver_receive_returns_false() {
         &loan_assets,
         &Bytes::new(&env),
     );
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_flash_loan(
-    //             &borrower,
-    //             &sut.flash_loan_receiver.address,
-    //             &loan_assets,
-    //             &Bytes::new(&env)
-    //         )
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::FlashLoanReceiverError
-    // )
 }
 
 #[test]
@@ -64,12 +46,7 @@ fn should_require_borrower_to_pay_fee() {
     let _: Val = env.invoke_contract(
         &sut.flash_loan_receiver.address,
         &Symbol::new(&env, "initialize"),
-        vec![
-            &env,
-            borrower.into_val(&env),
-            sut.pool.address.into_val(&env),
-            false.into_val(&env),
-        ],
+        vec![&env, sut.pool.address.into_val(&env), false.into_val(&env)],
     );
 
     let loan_assets = Vec::from_array(
@@ -154,12 +131,7 @@ fn should_borrow_if_borrowing_specified_on_asset() {
     let _: Val = env.invoke_contract(
         &sut.flash_loan_receiver.address,
         &Symbol::new(&env, "initialize"),
-        vec![
-            &env,
-            borrower.into_val(&env),
-            sut.pool.address.into_val(&env),
-            false.into_val(&env),
-        ],
+        vec![&env, sut.pool.address.into_val(&env), false.into_val(&env)],
     );
 
     let loan_assets = Vec::from_array(
@@ -209,12 +181,7 @@ fn should_emit_events() {
     let _: Val = env.invoke_contract(
         &sut.flash_loan_receiver.address,
         &Symbol::new(&env, "initialize"),
-        vec![
-            &env,
-            borrower.into_val(&env),
-            sut.pool.address.into_val(&env),
-            false.into_val(&env),
-        ],
+        vec![&env, sut.pool.address.into_val(&env), false.into_val(&env)],
     );
 
     let loan_assets = Vec::from_array(
