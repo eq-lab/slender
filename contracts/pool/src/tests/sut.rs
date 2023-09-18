@@ -8,8 +8,8 @@ use flash_loan_receiver_interface::FlashLoanReceiverClient;
 use price_feed_interface::PriceFeedClient;
 use s_token_interface::STokenClient;
 use soroban_sdk::testutils::{Address as _, Ledger};
-use soroban_sdk::token::StellarAssetClient as TokenAdminClient;
 use soroban_sdk::token::Client as TokenClient;
+use soroban_sdk::token::StellarAssetClient as TokenAdminClient;
 use soroban_sdk::Env;
 use soroban_sdk::IntoVal;
 
