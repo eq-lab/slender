@@ -311,6 +311,40 @@ pub(crate) fn fill_pool_three<'a, 'b>(
     (lender, borrower, liquidator, debt_config)
 }
 
+pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Address) {
+    let lender = Address::random(&env);
+    let borrower1 = Address::random(&env);
+    let borrower2 = Address::random(&env);
+
+    for reserve in sut.reserves.iter() {
+        reserve.token_admin.mint(&lender, &100_000_000_000);
+        reserve.token_admin.mint(&borrower1, &100_000_000_000);
+        reserve.token_admin.mint(&borrower2, &100_000_000_000);
+        sut.pool
+            .deposit(&lender, &reserve.token.address, &10_000_000_000);
+    }
+
+    env.ledger().with_mut(|li| li.timestamp = 1 * DAY);
+
+    sut.pool
+        .deposit(&borrower1, &sut.reserves[0].token.address, &10_000_000_000);
+    sut.pool
+        .deposit(&borrower1, &sut.reserves[1].token.address, &10_000_000_000);
+    sut.pool
+        .borrow(&borrower1, &sut.reserves[2].token.address, &6_000_000_000);
+
+    sut.pool
+        .deposit(&borrower2, &sut.reserves[2].token.address, &20_000_000_000);
+    sut.pool
+        .borrow(&borrower2, &sut.reserves[0].token.address, &6_000_000_000);
+    sut.pool
+        .borrow(&borrower2, &sut.reserves[1].token.address, &5_999_000_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
+    (lender, borrower1)
+}
+
 #[allow(dead_code)]
 pub struct ReserveConfig<'a> {
     pub token: TokenClient<'a>,

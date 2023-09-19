@@ -14,10 +14,9 @@ use std::io::prelude::*;
 
 use crate::LendingPool;
 
-use super::set_as_collateral::init_with_debt;
 use super::sut::{
     create_pool_contract, create_price_feed_contract, create_s_token_contract,
-    create_token_contract, fill_pool, fill_pool_three, init_pool, DAY,
+    create_token_contract, fill_pool, fill_pool_four, init_pool, DAY,
 };
 use super::upgrade::{debt_token_v2, pool_v2, s_token_v2};
 
@@ -40,10 +39,10 @@ fn account_position() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower, _, _) = fill_pool_three(&env, &sut);
+    let (lender, _) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.account_position(&borrower);
+        sut.pool.account_position(&lender);
     });
 }
 
@@ -53,11 +52,11 @@ fn borrow() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
-    let token_address = debt_config.token.address.clone();
+    let (_, borrower) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.borrow(&borrower, &token_address, &20_000_000);
+        sut.pool
+            .borrow(&borrower, &sut.reserves[2].token.address, &20_000_000);
     });
 }
 
@@ -67,11 +66,10 @@ fn collat_coeff() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, _, _, debt_config) = fill_pool_three(&env, &sut);
-    let debt_token = debt_config.token.address.clone();
+    let (_, _) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.collat_coeff(&debt_token);
+        sut.pool.collat_coeff(&sut.reserves[2].token.address);
     });
 }
 
@@ -102,11 +100,10 @@ fn debt_coeff() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, _, _, debt_config) = fill_pool_three(&env, &sut);
-    let debt_token = debt_config.token.address.clone();
+    let (_, _) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.debt_coeff(&debt_token);
+        sut.pool.debt_coeff(&sut.reserves[2].token.address);
     });
 }
 
@@ -116,14 +113,11 @@ fn deposit() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-
-    let user = Address::random(&env);
-    let token_address = sut.token().address.clone();
-
-    sut.token_admin().mint(&user, &10_000_000_000);
+    let (_, borrower) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.deposit(&user, &token_address, &5_000_000_000)
+        sut.pool
+            .deposit(&borrower, &&sut.reserves[0].token.address, &1_000_000_000)
     });
 }
 
@@ -189,6 +183,7 @@ fn ir_params() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
+    let (_, _) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.ir_params();
@@ -201,43 +196,18 @@ fn liquidate_receive_stoken() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
-    let lender = Address::random(&env);
-    let borrower = Address::random(&env);
+    let (_, borrower) = fill_pool_four(&env, &sut);
+
+    sut.pool
+        .borrow(&borrower, &sut.reserves[2].token.address, &5_990_400_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
+
     let liquidator = Address::random(&env);
 
-    sut.reserves[0].token_admin.mint(&lender, &100_000_000_000);
-    sut.reserves[1].token_admin.mint(&lender, &100_000_000_000);
-    sut.reserves[2].token_admin.mint(&lender, &100_000_000_000);
-
-    sut.reserves[0]
-        .token_admin
-        .mint(&borrower, &100_000_000_000);
-    sut.reserves[1]
-        .token_admin
-        .mint(&borrower, &100_000_000_000);
     sut.reserves[2]
         .token_admin
         .mint(&liquidator, &100_000_000_000);
-
-    sut.pool
-        .deposit(&lender, &sut.reserves[0].token.address, &30_000_000_000);
-    sut.pool
-        .deposit(&lender, &sut.reserves[1].token.address, &30_000_000_000);
-    sut.pool
-        .deposit(&lender, &sut.reserves[2].token.address, &30_000_000_000);
-
-    env.ledger().with_mut(|l| l.timestamp = 1 * DAY);
-
-    sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &10_000_000_000);
-    sut.pool
-        .deposit(&borrower, &sut.reserves[1].token.address, &10_000_000_000);
-    sut.pool
-        .borrow(&borrower, &sut.reserves[2].token.address, &12_000_000_000);
-
-    env.ledger().with_mut(|l| l.timestamp = 2 * DAY);
-
-    let _position = sut.pool.account_position(&borrower);
 
     sut.pool
         .deposit(&liquidator, &sut.reserves[2].token.address, &10_000_000_000);
@@ -246,7 +216,10 @@ fn liquidate_receive_stoken() {
     sut.pool
         .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
 
-    env.ledger().with_mut(|l| l.timestamp = 3 * DAY);
+    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
+
+    sut.price_feed
+        .set_price(&sut.reserves[2].token.address, &1_001_000_000);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &true);
@@ -259,43 +232,18 @@ fn liquidate_receive_underlying() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
-    let lender = Address::random(&env);
-    let borrower = Address::random(&env);
+    let (_, borrower) = fill_pool_four(&env, &sut);
+
+    sut.pool
+        .borrow(&borrower, &sut.reserves[2].token.address, &5_990_400_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
+
     let liquidator = Address::random(&env);
 
-    sut.reserves[0].token_admin.mint(&lender, &100_000_000_000);
-    sut.reserves[1].token_admin.mint(&lender, &100_000_000_000);
-    sut.reserves[2].token_admin.mint(&lender, &100_000_000_000);
-
-    sut.reserves[0]
-        .token_admin
-        .mint(&borrower, &100_000_000_000);
-    sut.reserves[1]
-        .token_admin
-        .mint(&borrower, &100_000_000_000);
     sut.reserves[2]
         .token_admin
         .mint(&liquidator, &100_000_000_000);
-
-    sut.pool
-        .deposit(&lender, &sut.reserves[0].token.address, &30_000_000_000);
-    sut.pool
-        .deposit(&lender, &sut.reserves[1].token.address, &30_000_000_000);
-    sut.pool
-        .deposit(&lender, &sut.reserves[2].token.address, &30_000_000_000);
-
-    env.ledger().with_mut(|l| l.timestamp = 1 * DAY);
-
-    sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &10_000_000_000);
-    sut.pool
-        .deposit(&borrower, &sut.reserves[1].token.address, &10_000_000_000);
-    sut.pool
-        .borrow(&borrower, &sut.reserves[2].token.address, &12_000_000_000);
-
-    env.ledger().with_mut(|l| l.timestamp = 2 * DAY);
-
-    let _position = sut.pool.account_position(&borrower);
 
     sut.pool
         .deposit(&liquidator, &sut.reserves[2].token.address, &10_000_000_000);
@@ -304,7 +252,10 @@ fn liquidate_receive_underlying() {
     sut.pool
         .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
 
-    env.ledger().with_mut(|l| l.timestamp = 3 * DAY);
+    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
+
+    sut.price_feed
+        .set_price(&sut.reserves[2].token.address, &1_001_000_000);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &false);
@@ -336,18 +287,30 @@ fn price_feed() {
 }
 
 #[test]
-fn repay() {
+fn repay_full() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
-    let debt_token = &debt_config.token.address;
-
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    let (_, borrower) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.repay(&borrower, &debt_token.clone(), &i128::MAX);
+        sut.pool
+            .repay(&borrower, &sut.reserves[2].token.address, &i128::MAX);
+    });
+}
+
+#[test]
+fn repay_partial() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, true);
+    let (_, borrower) = fill_pool_four(&env, &sut);
+
+    measure_budget(&env, function_name!(), || {
+        sut.pool
+            .repay(&borrower, &sut.reserves[2].token.address, &1_000_000);
     });
 }
 
@@ -355,14 +318,16 @@ fn repay() {
 fn set_as_collateral() {
     let env = Env::default();
     env.mock_all_auths();
-    let (sut, user, (_, _), (collat_token, _)) = init_with_debt(&env);
 
-    sut.reserves[2].token_admin.mint(&user, &2_000_000_000);
+    let sut = init_pool(&env, true);
+    let (_, borrower) = fill_pool_four(&env, &sut);
+
     sut.pool
-        .deposit(&user, &sut.reserves[2].token_admin.address, &2_000_000_000);
+        .deposit(&borrower, &sut.reserves[1].token.address, &20_000_000_000);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.set_as_collateral(&user, &collat_token, &false);
+        sut.pool
+            .set_as_collateral(&borrower, &sut.reserves[0].token.address, &false);
     });
 }
 
@@ -509,12 +474,31 @@ fn user_configuration() {
 }
 
 #[test]
-fn withdraw() {
+fn withdraw_full() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower, _) = fill_pool(&env, &sut, false);
+    let (_, borrower) = fill_pool_four(&env, &sut);
+    sut.pool
+        .deposit(&borrower, &sut.reserves[1].token.address, &20_000_000_000);
+
+    measure_budget(&env, function_name!(), || {
+        sut.pool
+            .withdraw(&borrower, &sut.token().address, &i128::MAX, &borrower);
+    });
+}
+
+#[test]
+fn withdraw_partial() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, true);
+    let (_, borrower) = fill_pool_four(&env, &sut);
+
+    sut.pool
+        .deposit(&borrower, &sut.reserves[1].token.address, &20_000_000_000);
 
     measure_budget(&env, function_name!(), || {
         sut.pool
@@ -547,7 +531,7 @@ fn set_flash_loan_fee() {
 }
 
 #[test]
-fn flash_loan() {
+fn flash_loan_with_borrow() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -577,6 +561,51 @@ fn flash_loan() {
                 asset: sut.reserves[2].token.address.clone(),
                 amount: 3000000,
                 borrow: true,
+            },
+        ],
+    );
+
+    measure_budget(&env, function_name!(), || {
+        sut.pool.flash_loan(
+            &borrower,
+            &sut.flash_loan_receiver.address,
+            &loan_assets,
+            &Bytes::new(&env),
+        );
+    });
+}
+
+#[test]
+fn flash_loan_without_borrow() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, false);
+
+    let _: Val = env.invoke_contract(
+        &sut.flash_loan_receiver.address,
+        &Symbol::new(&env, "initialize"),
+        vec![&env, sut.pool.address.into_val(&env), false.into_val(&env)],
+    );
+
+    let loan_assets = Vec::from_array(
+        &env,
+        [
+            FlashLoanAsset {
+                asset: sut.reserves[0].token.address.clone(),
+                amount: 1000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[1].token.address.clone(),
+                amount: 2000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[2].token.address.clone(),
+                amount: 3000000,
+                borrow: false,
             },
         ],
     );
@@ -656,7 +685,6 @@ fn s_token_transfer() {
 
 fn measure_budget(env: &Env, function: &str, callback: impl FnOnce()) {
     let cpu_before = env.budget().cpu_instruction_cost();
-    // TODO: bug in v0.9.2 (returns CPU cost)
     let memory_before = env.budget().memory_bytes_cost();
 
     callback();

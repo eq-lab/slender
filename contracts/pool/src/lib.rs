@@ -74,7 +74,6 @@ impl LendingPoolTrait for LendingPool {
         upgrade_debt_token(&env, &asset, &new_wasm_hash)
     }
 
-    /// Returns the current version of the contract.
     fn version() -> u32 {
         1
     }
@@ -295,9 +294,6 @@ impl LendingPoolTrait for LendingPool {
         read_flash_loan_fee(&env)
     }
 
-    ///
-    /// # Panics
-    ///
     #[cfg(not(feature = "exceeded-limit-fix"))]
     fn flash_loan(
         env: Env,
@@ -309,18 +305,6 @@ impl LendingPoolTrait for LendingPool {
         flash_loan(&env, &who, &receiver, &loan_assets, &params)
     }
 
-    /// Allows the end-users to borrow the assets within one transaction
-    /// ensuring the the amount taken + fee is returned.
-    ///
-    /// # Arguments
-    /// - receiver - The contract address that implements the FlashLoanReceiverTrait
-    /// and receives the requested assets.
-    /// - assets - The assets being flash borrowed. If the `borrow` flag is set to true,
-    /// opens debt for the flash-borrowed amount to the `who` address.
-    /// - params - An extra information for the receiver.
-    ///
-    /// # Panics
-    ///
     #[cfg(feature = "exceeded-limit-fix")]
     fn flash_loan(
         env: Env,

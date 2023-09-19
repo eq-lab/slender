@@ -35,7 +35,7 @@ export async function init(client: SorobanClient): Promise<void> {
     let salt = 0;
     const generateSalt = (value: number): string => String(value).padStart(64, '0');
 
-    // await initToken(client, "XLM", "Lumens");
+    await initToken(client, "XLM", "Lumens");
     await initToken(client, "XRP", "Ripple");
     await initToken(client, "USDC", "USD Coin");
 
@@ -88,6 +88,8 @@ export async function mintBurn(
     client: SorobanClient,
     mintsBurns: Array<MintBurn>
 ): Promise<void> {
+    return;
+
     for (let i = 0; i < mintsBurns.length; i++) {
         const response = await client.sendTransaction(
             mintsBurns[i].asset_balance.get("asset"),
@@ -141,7 +143,6 @@ export async function tokenBalanceOf(
         "balance",
         convertToScvAddress(address)
     );
-
 
     return parseScvToJs(xdrResponse);
 }

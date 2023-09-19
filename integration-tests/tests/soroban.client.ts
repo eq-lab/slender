@@ -1,4 +1,4 @@
-import { Server, Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc, Account } from "soroban-client";
+import { Server, Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc } from "soroban-client";
 import { promisify } from "util";
 import "./soroban.config";
 import { adminKeys } from "./soroban.config";
@@ -29,7 +29,7 @@ export class SorobanClient {
         const contract = new Contract(contractId);
 
         const operation = new TransactionBuilder(source, {
-            fee: "100",
+            fee: "100000000",
             networkPassphrase: process.env.PASSPHRASE,
         }).addOperation(contract.call(method, ...args || []))
             .setTimeout(TimeoutInfinite)
@@ -44,13 +44,21 @@ export class SorobanClient {
         const response = await this.client.sendTransaction(transaction);
 
         let result: SorobanRpc.GetTransactionResponse;
-        let attempts = 10;
+        let attempts = 15;
+
+        if (response.status == "ERROR") {
+            throw Error(`ERROR [sendTransaction]: ${response.errorResultXdr}`);
+        }
 
         do {
             await delay(1000);
             result = await this.client.getTransaction(response.hash);
             attempts--;
         } while (result.status === SorobanRpc.GetTransactionStatus.NOT_FOUND && attempts > 0);
+
+        if (result.status == SorobanRpc.GetTransactionStatus.NOT_FOUND) {
+            console.error(`NOT_FOUND [getTransaction]: ${JSON.stringify(response, null, 2)}`);
+        }
 
         if ("resultXdr" in result) {
             const getResult = result as SorobanRpc.GetTransactionResponse;
@@ -62,7 +70,7 @@ export class SorobanClient {
             return result;
         }
 
-        throw `Transaction failed (method: ${method})`;
+        throw Error(`Transaction failed (method: ${method})`);
     }
 
     async simulateTransaction(
