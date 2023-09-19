@@ -29,7 +29,7 @@ export class SorobanClient {
         const contract = new Contract(contractId);
 
         const operation = new TransactionBuilder(source, {
-            fee: "100000000",
+            fee: "100",
             networkPassphrase: process.env.PASSPHRASE,
         }).addOperation(contract.call(method, ...args || []))
             .setTimeout(TimeoutInfinite)
