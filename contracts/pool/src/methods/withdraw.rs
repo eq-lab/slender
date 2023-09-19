@@ -32,12 +32,12 @@ pub fn withdraw(
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
 
-    let s_token = STokenClient::new(env, &reserve.s_token_address);
-    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
     let s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
     let debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
-
     let collat_coeff = get_collat_coeff(env, &reserve, s_token_supply, debt_token_supply)?;
+
+    let s_token = STokenClient::new(env, &reserve.s_token_address);
+    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
 
     let collat_balance = s_token.balance(who);
     let underlying_balance = collat_coeff
@@ -90,6 +90,7 @@ pub fn withdraw(
             user_config,
             false,
         )?;
+
         require_good_position(env, &account_data);
     }
     let amount_to_sub = underlying_to_withdraw

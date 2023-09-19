@@ -21,6 +21,7 @@ use super::sut::{
 use super::upgrade::{debt_token_v2, pool_v2, s_token_v2};
 
 const CPU_LIMIT: u64 = 100_000_000;
+const MEM_LIMIT: u64 = 40 * 1024 * 1024;
 
 macro_rules! function_name {
     () => {{
@@ -700,6 +701,7 @@ fn measure_budget(env: &Env, function: &str, callback: impl FnOnce()) {
         std::format!("    \"cpu_cost\": {},\n", cpu),
         std::format!("    \"memory_cost\": {},\n", memory),
         std::format!("    \"cpu_limit_exceeded\": {},\n", cpu > CPU_LIMIT),
+        std::format!("    \"memory_limit_exceeded\": {},\n", memory > MEM_LIMIT),
         std::format!("}}"),
     ]
     .concat();
