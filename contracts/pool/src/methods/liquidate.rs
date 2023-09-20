@@ -6,7 +6,8 @@ use soroban_sdk::{assert_with_error, token, Address, Env};
 
 use crate::event;
 use crate::storage::{
-    add_stoken_underlying_balance, read_token_total_supply, write_token_total_supply,
+    add_stoken_underlying_balance, read_token_balance, read_token_total_supply,
+    write_token_total_supply,
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_collateral::LiquidationCollateral;
@@ -112,8 +113,9 @@ fn do_liquidate(
 
         if receive_stoken {
             let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-            let liquidator_debt = debt_token.balance(liquidator);
-            let liquidator_collat_before = s_token.balance(liquidator);
+            let liquidator_debt = read_token_balance(env, &reserve.debt_token_address, liquidator);
+            let liquidator_collat_before =
+                read_token_balance(env, &reserve.s_token_address, liquidator);
 
             let mut liquidator_collat_amount = s_token_amount;
             let mut is_debt_repayed = false;

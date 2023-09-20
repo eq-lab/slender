@@ -272,6 +272,10 @@ impl LendingPoolTrait for LendingPool {
         read_stoken_underlying_balance(&env, &stoken_address)
     }
 
+    fn token_balance(env: Env, token: Address, account: Address) -> i128 {
+        read_token_balance(&env, &token, &account)
+    }
+
     fn token_total_supply(env: Env, token: Address) -> i128 {
         token_total_supply(&env, &token)
     }

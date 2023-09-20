@@ -1,12 +1,12 @@
 use common::FixedI128;
-use debt_token_interface::DebtTokenClient;
 use pool_interface::types::account_position::AccountPosition;
 use pool_interface::types::error::Error;
 use pool_interface::types::user_config::UserConfiguration;
-use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, vec, Address, Env, Map, Vec};
 
-use crate::storage::{read_reserve, read_reserves, read_token_total_supply, read_user_config};
+use crate::storage::{
+    read_reserve, read_reserves, read_token_balance, read_token_total_supply, read_user_config,
+};
 use crate::types::account_data::AccountData;
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_collateral::LiquidationCollateral;
@@ -88,9 +88,7 @@ pub fn calc_account_data(
             let who_collat = mb_who_collat
                 .filter(|x| x.asset == curr_reserve.s_token_address)
                 .map(|x| x.balance)
-                .unwrap_or_else(|| {
-                    STokenClient::new(env, &curr_reserve.s_token_address).balance(who)
-                });
+                .unwrap_or_else(|| read_token_balance(env, &curr_reserve.s_token_address, who));
 
             let discount = FixedI128::from_percentage(curr_reserve.configuration.discount)
                 .ok_or(Error::CalcAccountDataMathError)?;
@@ -131,9 +129,7 @@ pub fn calc_account_data(
             let who_debt = mb_who_debt
                 .filter(|x| x.asset == curr_reserve.debt_token_address)
                 .map(|x| x.balance)
-                .unwrap_or_else(|| {
-                    DebtTokenClient::new(env, &curr_reserve.debt_token_address).balance(who)
-                });
+                .unwrap_or_else(|| read_token_balance(env, &curr_reserve.debt_token_address, who));
 
             let compounded_balance = debt_coeff
                 .mul_int(who_debt)

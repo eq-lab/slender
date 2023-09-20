@@ -22,8 +22,8 @@ pub enum DataKey {
     FlashLoanFee,
     STokenUnderlyingBalance(Address),
     TokenSupply(Address),
-    TokenBalance(Address, Address), // exceeded-limit-fix (S/Debt/Underlying Token Address, Account Address)
-    Price(Address),                 // exceeded-limit-fix (Underlying Token Address)
+    TokenBalance(Address, Address),
+    Price(Address), // exceeded-limit-fix (Underlying Token Address)
 }
 
 pub fn has_admin(env: &Env) -> bool {
@@ -201,29 +201,36 @@ pub fn write_token_total_supply(
     Ok(())
 }
 
-#[cfg(feature = "exceeded-limit-fix")]
-pub fn add_token_balance(
+pub fn read_token_balance(env: &Env, token: &Address, account: &Address) -> i128 {
+    let key = DataKey::TokenBalance(token.clone(), account.clone());
+    let balance = env.storage().instance().get(&key).unwrap_or(0i128);
+
+    env.storage().persistent().bump(
+        &key,
+        LOW_USER_DATA_BUMP_LEDGERS,
+        HIGH_USER_DATA_BUMP_LEDGERS,
+    );
+
+    balance
+}
+
+pub fn write_token_balance(
     env: &Env,
     token: &Address,
     account: &Address,
-    amount: i128,
-) -> Result<i128, Error> {
-    let mut total_supply = read_token_balance(env, token, account);
-
-    total_supply = total_supply
-        .checked_add(amount)
-        .ok_or(Error::MathOverflowError)?;
+    balance: i128,
+) -> Result<(), Error> {
+    assert_with_error!(env, !balance.is_negative(), Error::MustBePositive);
 
     let key = DataKey::TokenBalance(token.clone(), account.clone());
-    env.storage().instance().set(&key, &total_supply);
+    env.storage().instance().set(&key, &balance);
+    env.storage().persistent().bump(
+        &key,
+        LOW_USER_DATA_BUMP_LEDGERS,
+        HIGH_USER_DATA_BUMP_LEDGERS,
+    );
 
-    Ok(total_supply)
-}
-
-#[cfg(feature = "exceeded-limit-fix")]
-pub fn read_token_balance(env: &Env, token: &Address, account: &Address) -> i128 {
-    let key = DataKey::TokenBalance(token.clone(), account.clone());
-    env.storage().instance().get(&key).unwrap_or(0i128)
+    Ok(())
 }
 
 #[cfg(feature = "exceeded-limit-fix")]
