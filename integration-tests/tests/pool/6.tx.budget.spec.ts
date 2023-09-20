@@ -6,6 +6,7 @@ import {
     deposit,
     init,
     mintUnderlyingTo,
+    withdraw,
 } from "../pool.sut";
 import {
     borrower1Keys,
@@ -51,7 +52,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
 
         // Borrower1 deposits 10_000_000_000 XLM, XRP, borrows 6_000_000_000 USDC
         await deposit(client, borrower1Keys, "XLM", 10_000_000_000n);
-        await deposit(client, borrower1Keys, "XRP", 10_000_000_000n);
+        await deposit(client, borrower1Keys, "XRP", 30_000_000_000n);
         await borrow(client, borrower1Keys, "USDC", 6_000_000_000n);
 
         // Borrower2 deposits 20_000_000_000 USDC, borrows 6_000_000_000 XLM, 5_999_000_000 XRP
@@ -63,5 +64,10 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
     it("Case 1: borrow()", async function () {
         // Borrower1 borrows 20_000_000 USDC
         await expect(borrow(client, borrower1Keys, "USDC", 20_000_000n)).to.not.eventually.rejected;
+    });
+
+    it("Case 2: withdraw full", async function () {
+        // Borrower1 witdraws all XLM
+        await expect(withdraw(client, borrower1Keys, "XLM", 170_141_183_460_469_231_731_687_303_715_884_105_727n)).to.not.eventually.rejected; // i128::MAX
     });
 });

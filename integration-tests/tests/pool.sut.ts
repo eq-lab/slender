@@ -353,7 +353,7 @@ export async function transferStoken(
 export async function deploy(): Promise<void> {
     console.log("    Contracts deployment has been started");
 
-    await new Promise((resolve, reject) => {
+    const stdout = await new Promise((resolve, reject) => {
         exec(`../deploy/scripts/deploy.sh ${process.env.NODE_ENV}`, (error, stdout, _) => {
             if (error) {
                 reject(error);
@@ -362,7 +362,7 @@ export async function deploy(): Promise<void> {
             resolve(stdout)
         });
     });
-
+    console.log(stdout);
     console.log("    Contracts deployment has been finished");
 }
 
