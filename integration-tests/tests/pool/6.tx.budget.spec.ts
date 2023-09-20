@@ -43,9 +43,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await mintUnderlyingTo(client, "XLM", borrower1Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "XRP", borrower1Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "USDC", borrower2Address, 100_000_000_000n);
-    });
 
-    it("Case 1: borrow()", async function () {
         // Lender1 deposits 10_000_000_000 XLM, XRP, USDC
         await deposit(client, lender1Keys, "XLM", 10_000_000_000n);
         await deposit(client, lender1Keys, "XRP", 10_000_000_000n);
@@ -57,10 +55,12 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await borrow(client, borrower1Keys, "USDC", 6_000_000_000n);
 
         // Borrower2 deposits 20_000_000_000 USDC, borrows 6_000_000_000 XLM, 5_999_000_000 XRP
-        await deposit(client, borrower2Keys, "USDC", 10_000_000_000n);
-        await borrow(client, borrower1Keys, "XLM", 6_000_000_000n);
-        await borrow(client, borrower1Keys, "XRP", 5_999_000_000n);
+        await deposit(client, borrower2Keys, "USDC", 20_000_000_000n);
+        await borrow(client, borrower2Keys, "XLM", 6_000_000_000n);
+        await borrow(client, borrower2Keys, "XRP", 5_900_000_000n);
+    });
 
+    it("Case 1: borrow()", async function () {
         // Borrower1 borrows 20_000_000 USDC
         await expect(borrow(client, borrower1Keys, "USDC", 20_000_000n)).to.not.eventually.rejected;
     });
