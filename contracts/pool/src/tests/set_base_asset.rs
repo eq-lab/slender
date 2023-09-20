@@ -35,7 +35,7 @@ fn should_require_admin() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #100)")]
 fn should_fail_when_reserve_not_exists() {
     let env = Env::default();
     env.mock_all_auths();
@@ -46,14 +46,6 @@ fn should_fail_when_reserve_not_exists() {
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
 
     pool.set_base_asset(&underlying_token.address, &true);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_set_base_asset(&underlying_token.address, &true)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::NoReserveExistForAsset
-    // )
 }
 
 #[test]

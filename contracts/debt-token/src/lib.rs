@@ -6,7 +6,7 @@ use common_token::storage::*;
 use common_token::verify_caller_is_pool;
 use debt_token_interface::DebtTokenTrait;
 use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, String};
-use soroban_token_sdk::TokenMetadata;
+use soroban_token_sdk::metadata::TokenMetadata;
 
 mod event;
 mod test;

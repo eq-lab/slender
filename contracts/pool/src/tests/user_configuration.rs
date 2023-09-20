@@ -3,7 +3,7 @@ use crate::tests::sut::init_pool;
 use crate::*;
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #202)")]
 fn should_fail_when_user_config_not_exist() {
     let env = Env::default();
     env.mock_all_auths();
@@ -12,14 +12,6 @@ fn should_fail_when_user_config_not_exist() {
     let (_, _, liquidator, _) = fill_pool_three(&env, &sut);
 
     sut.pool.user_configuration(&liquidator);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_account_position(&liquidator)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::UserConfigNotExists
-    // )
 }
 
 #[test]

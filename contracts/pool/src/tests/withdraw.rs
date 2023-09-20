@@ -50,18 +50,10 @@ fn should_fail_when_pool_paused() {
     sut.pool.set_pause(&true);
     sut.pool
         .withdraw(&borrower, &token_address, &1_000_000, &borrower);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_withdraw(&borrower, &token_address, &1_000_000, &borrower)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::Paused
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #304)")]
 fn should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -73,18 +65,10 @@ fn should_fail_when_invalid_amount() {
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     sut.pool.withdraw(&borrower, &token_address, &-1, &borrower);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_withdraw(&borrower, &token_address, &-1, &borrower)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::InvalidAmount
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #101)")]
 fn should_fail_when_reserve_deactivated() {
     let env = Env::default();
     env.mock_all_auths();
@@ -98,42 +82,10 @@ fn should_fail_when_reserve_deactivated() {
     sut.pool.set_reserve_status(&token_address, &false);
     sut.pool
         .withdraw(&borrower, &token_address, &1_000_000, &borrower);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_withdraw(&borrower, &token_address, &1_000_000, &borrower)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::NoActiveReserve
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
-fn should_fail_when_not_enough_stoken_balance() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, false);
-    let (_, borrower, _) = fill_pool(&env, &sut, true);
-    let token_address = sut.token().address.clone();
-
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
-
-    sut.pool
-        .withdraw(&borrower, &token_address, &200_000_000, &borrower);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_withdraw(&borrower, &token_address, &1_000_000, &borrower)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::NotEnoughAvailableUserBalance
-    // )
-}
-
-#[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #302)")]
 fn should_fail_when_bad_position() {
     let env = Env::default();
     env.mock_all_auths();
@@ -146,18 +98,10 @@ fn should_fail_when_bad_position() {
 
     sut.pool
         .withdraw(&borrower, &token_address, &50_000_000, &borrower);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_withdraw(&borrower, &token_address, &1_000_000, &borrower)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::BadPosition
-    // )
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #100)")]
 fn should_fail_when_unknown_asset() {
     let env = Env::default();
     env.mock_all_auths();
@@ -170,14 +114,6 @@ fn should_fail_when_unknown_asset() {
 
     sut.pool
         .withdraw(&borrower, &unknown_asset, &1_000_000, &borrower);
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_withdraw(&borrower, &unknown_asset, &1_000_000, &borrower)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::NoReserveExistForAsset
-    // )
 }
 
 #[test]

@@ -57,14 +57,12 @@ export function convertToScvBytes(value: string, encoding: BufferEncoding): xdr.
     return xdr.ScVal.scvBytes(bytes);
 }
 
-export function parseMetaXdrToJs<T>(value: string): T {
-    const val = xdr.TransactionMeta
-        .fromXDR(value, "base64")
-        .v3()
+export function parseMetaXdrToJs<T>(meta: xdr.TransactionMeta): T {
+    const value = meta.v3()
         .sorobanMeta()
         .returnValue();
 
-    return parseScvToJs(val);
+    return parseScvToJs(value);
 }
 
 export function parseScvToJs<T>(val: xdr.ScVal): T {

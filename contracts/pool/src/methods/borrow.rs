@@ -108,6 +108,7 @@ pub fn do_borrow(
     let amount_of_debt_token = debt_coeff
         .recip_mul_int(amount)
         .ok_or(Error::MathOverflowError)?;
+
     require_util_cap_not_exceeded(
         env,
         s_token_supply,
@@ -115,6 +116,7 @@ pub fn do_borrow(
         util_cap,
         amount_of_debt_token,
     )?;
+
     let debt_token_supply_after = debt_token_supply
         .checked_add(amount_of_debt_token)
         .ok_or(Error::MathOverflowError)?;

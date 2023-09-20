@@ -57,7 +57,7 @@ fn should_require_admin() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Value, InvalidInput)")]
+#[should_panic(expected = "HostError: Error(Contract, #105)")]
 fn should_fail_when_calling_second_time() {
     let env = Env::default();
     env.mock_all_auths();
@@ -75,14 +75,6 @@ fn should_fail_when_calling_second_time() {
         // &false,
         &init_reserve_input,
     );
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_init_reserve(&sut.token().address, &init_reserve_input)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::ReserveAlreadyInitialized
-    // )
 }
 
 #[test]
@@ -112,14 +104,6 @@ fn should_fail_when_pool_not_initialized() {
         //  &false,
         &init_reserve_input,
     );
-
-    // assert_eq!(
-    //     sut.pool
-    //         .try_init_reserve(&underlying_token.address, &init_reserve_input)
-    //         .unwrap_err()
-    //         .unwrap(),
-    //     Error::Uninitialized
-    // )
 }
 
 #[test]

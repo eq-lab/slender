@@ -14,5 +14,5 @@ pub struct Asset {
 #[contractspecfn(name = "Spec", export = false)]
 #[contractclient(name = "FlashLoanReceiverClient")]
 pub trait FlashLoanReceiverTrait {
-    fn receive(env: Env, assets: Vec<Asset>, params: Bytes) -> bool;
+    fn receive(env: Env, initiator: Address, assets: Vec<Asset>, params: Bytes) -> bool;
 }

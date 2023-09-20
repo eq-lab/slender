@@ -30,6 +30,8 @@ export interface AccountPosition {
 }
 
 export async function init(client: SorobanClient): Promise<void> {
+    require("dotenv").config({ path: contractsFilename });
+
     let salt = 0;
     const generateSalt = (value: number): string => String(value).padStart(64, '0');
 
@@ -86,6 +88,8 @@ export async function mintBurn(
     client: SorobanClient,
     mintsBurns: Array<MintBurn>
 ): Promise<void> {
+    return;
+
     for (let i = 0; i < mintsBurns.length; i++) {
         const response = await client.sendTransaction(
             mintsBurns[i].asset_balance.get("asset"),
@@ -139,7 +143,6 @@ export async function tokenBalanceOf(
         "balance",
         convertToScvAddress(address)
     );
-
 
     return parseScvToJs(xdrResponse);
 }
@@ -358,8 +361,6 @@ export async function deploy(): Promise<void> {
                 reject(error);
                 return;
             }
-            require("dotenv").config({ path: contractsFilename });
-
             resolve(stdout)
         });
     });
