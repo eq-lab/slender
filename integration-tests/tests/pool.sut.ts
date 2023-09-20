@@ -88,8 +88,6 @@ export async function mintBurn(
     client: SorobanClient,
     mintsBurns: Array<MintBurn>
 ): Promise<void> {
-    return;
-
     for (let i = 0; i < mintsBurns.length; i++) {
         const response = await client.sendTransaction(
             mintsBurns[i].asset_balance.get("asset"),

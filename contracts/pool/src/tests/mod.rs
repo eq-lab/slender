@@ -1,6 +1,6 @@
 pub mod account_position;
 pub mod borrow;
-// #[cfg(feature = "budget")]
+#[cfg(feature = "budget")]
 pub mod budget;
 pub mod collat_coeff;
 pub mod configure_as_collateral;
