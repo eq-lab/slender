@@ -9,7 +9,8 @@ import {
     withdraw,
 } from "../pool.sut";
 import { borrower1Keys, borrower2Keys, lender1Keys } from "../soroban.config";
-import { use } from "chai";
+import { expect, use } from "chai";
+
 import chaiAsPromised from 'chai-as-promised';
 use(chaiAsPromised);
 
@@ -58,6 +59,6 @@ describe("Withdraw worst case", function () {
     });
 
     it("Case 1: withdraw full", async function () {
-        await withdraw(client, borrower1Keys, "XLM", 170_141_183_460_469_231_731_687_303_715_884_105_727n); // i128::MAX
+        await expect(withdraw(client, borrower1Keys, "XLM", 170_141_183_460_469_231_731_687_303_715_884_105_727n)).to.not.eventually.rejected; // i128::MAX
     });
 })
