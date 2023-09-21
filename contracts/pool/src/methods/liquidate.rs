@@ -107,17 +107,17 @@ fn do_liquidate(
                 (s_token_balance, compounded_balance)
             };
 
+        let mut who_collat_after = s_token_balance;
         let s_token = STokenClient::new(env, &reserve.s_token_address);
         let mut s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
         let mut debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
 
         if receive_stoken {
             let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-            let liquidator_debt = read_token_balance(env, &reserve.debt_token_address, liquidator);
-            let liquidator_collat_before =
-                read_token_balance(env, &reserve.s_token_address, liquidator);
+            let liquidator_debt = read_token_balance(env, &debt_token.address, liquidator);
+            let liquidator_collat_before = read_token_balance(env, &s_token.address, liquidator);
 
-            let mut liquidator_collat_amount = s_token_amount;
+            let mut liquidator_collat_part = s_token_amount;
             let mut is_debt_repayed = false;
 
             if liquidator_debt > 0 {
@@ -132,7 +132,6 @@ fn do_liquidate(
                 let s_token_to_burn = coll_coeff
                     .recip_mul_int(repayment_amount)
                     .ok_or(Error::LiquidateMathError)?;
-
                 let amount_to_sub = repayment_amount
                     .checked_neg()
                     .ok_or(Error::MathOverflowError)?;
@@ -154,20 +153,32 @@ fn do_liquidate(
                 is_debt_repayed = is_repayed;
                 debt_token_supply = debt_token_supply_after;
 
-                liquidator_collat_amount = s_token_amount
+                liquidator_collat_part = liquidator_collat_part
                     .checked_sub(s_token_to_burn)
                     .ok_or(Error::LiquidateMathError)?;
 
                 s_token_supply = s_token_supply
                     .checked_sub(s_token_to_burn)
                     .ok_or(Error::MathOverflowError)?;
+
+                who_collat_after = who_collat_after
+                    .checked_sub(s_token_to_burn)
+                    .ok_or(Error::MathOverflowError)?;
             }
 
-            if liquidator_collat_amount > 0 {
-                s_token.transfer_on_liquidation(who, liquidator, &liquidator_collat_amount);
+            if liquidator_collat_part > 0 {
+                let liquidator_collat_after = liquidator_collat_before
+                    .checked_add(liquidator_collat_part)
+                    .ok_or(Error::MathOverflowError)?;
+                who_collat_after = who_collat_after
+                    .checked_sub(liquidator_collat_part)
+                    .ok_or(Error::MathOverflowError)?;
+
+                s_token.transfer_on_liquidation(who, liquidator, &liquidator_collat_part);
+                write_token_balance(env, &s_token.address, liquidator, liquidator_collat_after)?;
             }
 
-            let use_as_collat = liquidator_collat_before == 0 && liquidator_collat_amount > 0;
+            let use_as_collat = liquidator_collat_before == 0 && liquidator_collat_part > 0;
             let reserve_id = reserve.get_id();
 
             UserConfigurator::new(env, liquidator, true)
@@ -178,7 +189,7 @@ fn do_liquidate(
             let amount_to_sub = underlying_amount
                 .checked_neg()
                 .ok_or(Error::MathOverflowError)?;
-            let who_collat_after = s_token_balance
+            who_collat_after = who_collat_after
                 .checked_sub(s_token_amount)
                 .ok_or(Error::MathOverflowError)?;
             s_token_supply = s_token_supply
@@ -186,15 +197,15 @@ fn do_liquidate(
                 .ok_or(Error::MathOverflowError)?;
 
             s_token.burn(who, &s_token_amount, &underlying_amount, liquidator);
-
             add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
-            write_token_balance(env, &reserve.s_token_address, who, who_collat_after)?;
         }
 
         let is_withdraw = s_token_balance == s_token_amount;
         user_configurator.withdraw(reserve.get_id(), &asset, is_withdraw)?;
 
         write_token_total_supply(env, &reserve.s_token_address, s_token_supply)?;
+        write_token_balance(env, &s_token.address, who, who_collat_after)?;
+
         recalculate_reserve_data(env, &asset, &reserve, s_token_supply, debt_token_supply)?;
     }
 
@@ -202,11 +213,14 @@ fn do_liquidate(
 
     for (asset, reserve, compounded_debt, debt_amount) in liquidation_data.debt_to_cover.iter() {
         let underlying_asset = token::Client::new(env, &asset);
-        let mut debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
+        let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
 
         underlying_asset.transfer(liquidator, &reserve.s_token_address, &compounded_debt);
-        DebtTokenClient::new(env, &reserve.debt_token_address).burn(who, &debt_amount);
+        debt_token.burn(who, &debt_amount);
         user_configurator.repay(reserve.get_id(), true)?;
+
+        let mut debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
+        let s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
 
         debt_token_supply = debt_token_supply
             .checked_sub(debt_amount)
@@ -214,14 +228,9 @@ fn do_liquidate(
 
         add_stoken_underlying_balance(env, &reserve.s_token_address, compounded_debt)?;
         write_token_total_supply(env, &reserve.debt_token_address, debt_token_supply)?;
+        write_token_balance(env, &debt_token.address, who, 0)?;
 
-        recalculate_reserve_data(
-            env,
-            &asset,
-            &reserve,
-            read_token_total_supply(env, &reserve.s_token_address),
-            debt_token_supply,
-        )?;
+        recalculate_reserve_data(env, &asset, &reserve, s_token_supply, debt_token_supply)?;
     }
 
     user_configurator.write();

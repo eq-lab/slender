@@ -68,7 +68,7 @@ pub fn finalize_transfer(
 
     if from != to {
         let balance_to_after = balance_to_before
-            .checked_sub(amount)
+            .checked_add(amount)
             .ok_or(Error::InvalidAmount)?;
 
         write_token_balance(env, &reserve.s_token_address, from, balance_from_after)?;

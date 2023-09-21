@@ -203,15 +203,17 @@ pub fn write_token_total_supply(
 
 pub fn read_token_balance(env: &Env, token: &Address, account: &Address) -> i128 {
     let key = DataKey::TokenBalance(token.clone(), account.clone());
-    let balance = env.storage().instance().get(&key).unwrap_or(0i128);
+    let balance = env.storage().persistent().get(&key);
 
-    env.storage().persistent().bump(
-        &key,
-        LOW_USER_DATA_BUMP_LEDGERS,
-        HIGH_USER_DATA_BUMP_LEDGERS,
-    );
+    if balance.is_some() {
+        env.storage().persistent().bump(
+            &key,
+            LOW_USER_DATA_BUMP_LEDGERS,
+            HIGH_USER_DATA_BUMP_LEDGERS,
+        );
+    }
 
-    balance
+    balance.unwrap_or(0i128)
 }
 
 pub fn write_token_balance(
@@ -223,7 +225,7 @@ pub fn write_token_balance(
     assert_with_error!(env, !balance.is_negative(), Error::MustBePositive);
 
     let key = DataKey::TokenBalance(token.clone(), account.clone());
-    env.storage().instance().set(&key, &balance);
+    env.storage().persistent().set(&key, &balance);
     env.storage().persistent().bump(
         &key,
         LOW_USER_DATA_BUMP_LEDGERS,

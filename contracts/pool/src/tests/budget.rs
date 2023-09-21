@@ -196,7 +196,7 @@ fn liquidate_receive_stoken() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let (_, borrower) = fill_pool_four(&env, &sut);
 
     sut.pool
@@ -232,7 +232,7 @@ fn liquidate_receive_underlying() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let (_, borrower) = fill_pool_four(&env, &sut);
 
     sut.pool
@@ -536,7 +536,7 @@ fn flash_loan_with_borrow() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let (_, borrower, _) = fill_pool(&env, &sut, false);
 
     let _: Val = env.invoke_contract(
@@ -581,7 +581,7 @@ fn flash_loan_without_borrow() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let sut = init_pool(&env, false);
+    let sut = init_pool(&env, true);
     let (_, borrower, _) = fill_pool(&env, &sut, false);
 
     let _: Val = env.invoke_contract(
