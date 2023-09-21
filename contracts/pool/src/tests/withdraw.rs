@@ -277,7 +277,11 @@ fn should_affect_account_data() {
     let collat_token_total_supply = sut.s_token().total_supply();
     let pool_collat_token_total_supply = sut.pool.token_total_supply(&sut.s_token().address);
 
+    let collat_token_balance = sut.s_token().balance(&borrower);
+    let pool_collat_token_balance = sut.pool.token_balance(&sut.s_token().address, &borrower);
+
     assert_eq!(collat_token_total_supply, pool_collat_token_total_supply);
+    assert_eq!(collat_token_balance, pool_collat_token_balance);
 
     assert!(account_position_prev.discounted_collateral > account_position.discounted_collateral);
     assert!(account_position_prev.debt < account_position.debt);

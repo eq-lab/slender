@@ -307,6 +307,26 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     let liquidator_stoken_1_balance_before = sut.reserves[0].s_token.balance(&liquidator);
     let liquidator_stoken_2_balance_before = sut.reserves[2].s_token.balance(&liquidator);
     let treasury_underlying_balance_before = sut.reserves[0].token.balance(&treasury);
+
+    let pool_borrower_stoken_1_balance_before = sut
+        .pool
+        .token_balance(&sut.reserves[0].s_token.address, &borrower);
+    let pool_borrower_stoken_2_balance_before = sut
+        .pool
+        .token_balance(&sut.reserves[2].s_token.address, &borrower);
+    let pool_borrower_debt_balance_before = sut
+        .pool
+        .token_balance(&sut.reserves[1].debt_token.address, &borrower);
+    let pool_liquidator_debt_balance_before = sut
+        .pool
+        .token_balance(&sut.reserves[0].debt_token.address, &liquidator);
+    let pool_liquidator_stoken_1_balance_before = sut
+        .pool
+        .token_balance(&sut.reserves[0].s_token.address, &liquidator);
+    let pool_liquidator_stoken_2_balance_before = sut
+        .pool
+        .token_balance(&sut.reserves[2].s_token.address, &liquidator);
+
     let collat_token_0_total_supply_before = sut.reserves[0].s_token.total_supply();
     let pool_collat_token_0_total_supply_before = sut
         .pool
@@ -347,6 +367,26 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     let liquidator_stoken_2_balance_after = sut.reserves[2].s_token.balance(&liquidator);
     let treasury_underlying_balance_after = sut.reserves[0].token.balance(&treasury);
     let collat_token_0_total_supply_after = sut.reserves[0].s_token.total_supply();
+
+    let pool_borrower_stoken_1_balance_after = sut
+        .pool
+        .token_balance(&sut.reserves[0].s_token.address, &borrower);
+    let pool_borrower_stoken_2_balance_after = sut
+        .pool
+        .token_balance(&sut.reserves[2].s_token.address, &borrower);
+    let pool_borrower_debt_balance_after = sut
+        .pool
+        .token_balance(&sut.reserves[1].debt_token.address, &borrower);
+    let pool_liquidator_debt_balance_after = sut
+        .pool
+        .token_balance(&sut.reserves[0].debt_token.address, &liquidator);
+    let pool_liquidator_stoken_1_balance_after = sut
+        .pool
+        .token_balance(&sut.reserves[0].s_token.address, &liquidator);
+    let pool_liquidator_stoken_2_balance_after = sut
+        .pool
+        .token_balance(&sut.reserves[2].s_token.address, &liquidator);
+
     let pool_collat_token_0_total_supply_after = sut
         .pool
         .token_total_supply(&sut.reserves[0].s_token.address);
@@ -375,6 +415,32 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     assert_eq!(liquidator_stoken_1_balance_before, 0);
     assert_eq!(liquidator_stoken_2_balance_before, 0);
     assert_eq!(treasury_underlying_balance_before, 0);
+
+    assert_eq!(
+        borrower_stoken_1_balance_before,
+        pool_borrower_stoken_1_balance_before
+    );
+    assert_eq!(
+        borrower_stoken_2_balance_before,
+        pool_borrower_stoken_2_balance_before
+    );
+    assert_eq!(
+        borrower_debt_balance_before,
+        pool_borrower_debt_balance_before
+    );
+    assert_eq!(
+        liquidator_debt_balance_before,
+        pool_liquidator_debt_balance_before
+    );
+    assert_eq!(
+        liquidator_stoken_1_balance_before,
+        pool_liquidator_stoken_1_balance_before
+    );
+    assert_eq!(
+        liquidator_stoken_2_balance_before,
+        pool_liquidator_stoken_2_balance_before
+    );
+
     assert_eq!(
         collat_token_0_total_supply_before,
         pool_collat_token_0_total_supply_before
@@ -404,6 +470,32 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     assert_eq!(liquidator_stoken_1_balance_after, 79_994_208);
     assert_eq!(liquidator_stoken_2_balance_after, 32_099_202);
     assert_eq!(treasury_underlying_balance_after, 5_794);
+
+    assert_eq!(
+        borrower_stoken_1_balance_after,
+        pool_borrower_stoken_1_balance_after
+    );
+    assert_eq!(
+        borrower_stoken_2_balance_after,
+        pool_borrower_stoken_2_balance_after
+    );
+    assert_eq!(
+        borrower_debt_balance_after,
+        pool_borrower_debt_balance_after
+    );
+    assert_eq!(
+        liquidator_debt_balance_after,
+        pool_liquidator_debt_balance_after
+    );
+    assert_eq!(
+        liquidator_stoken_1_balance_after,
+        pool_liquidator_stoken_1_balance_after
+    );
+    assert_eq!(
+        liquidator_stoken_2_balance_after,
+        pool_liquidator_stoken_2_balance_after
+    );
+
     assert_eq!(
         collat_token_0_total_supply_after,
         pool_collat_token_0_total_supply_after

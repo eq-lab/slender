@@ -19,9 +19,6 @@ build:
 	cargo build --target wasm32-unknown-unknown --release 
 	@ls -l target/wasm32-unknown-unknown/release/*.wasm
 
-build-exceeded-limit-fix:
-	cargo build --target wasm32-unknown-unknown --release --features exceeded-limit-fix
-
 deploy-contracts:
 	(cd deploy/artifacts && shopt -s dotglob; rm -rf *)
 	./deploy/scripts/deploy.sh $(env)

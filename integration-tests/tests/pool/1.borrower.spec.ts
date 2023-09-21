@@ -66,10 +66,10 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         // Lender2 deposits 10_000_000_000 XRP
         await deposit(client, lender2Keys, "XRP", 10_000_000_000n);
 
-        // Borrower1 deposits 10_000_000_000 USDC
+        // Borrower1 deposits 20_000_000_000 USDC
         await deposit(client, borrower1Keys, "USDC", 20_000_000_000n);
 
-        // Borrower2 deposits 10_000_000_000 USDC
+        // Borrower2 deposits 20_000_000_000 USDC
         await deposit(client, borrower2Keys, "USDC", 20_000_000_000n);
 
         const lender1XlmBalance = await tokenBalanceOf(client, "XLM", lender1Address);
@@ -110,10 +110,10 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
     });
 
     it("Case 2: Borrowers borrow assets from pool with max utilization", async function () {
-        // Borrower1 borrows 10_000_000_000 XLM
+        // Borrower1 borrows 9_000_000_000 XLM
         await borrow(client, borrower1Keys, "XLM", 9_000_000_000n);
 
-        // Borrower2 borrows 10_000_000_000 XRP
+        // Borrower2 borrows 9_000_000_000 XRP
         await borrow(client, borrower2Keys, "XRP", 9_000_000_000n);
 
         const borrower1XlmBalance = await tokenBalanceOf(client, "XLM", borrower1Address);

@@ -8,8 +8,6 @@ use types::error::Error;
 use types::flash_loan_asset::FlashLoanAsset;
 use types::init_reserve_input::InitReserveInput;
 use types::ir_params::IRParams;
-#[cfg(feature = "exceeded-limit-fix")]
-use types::mint_burn::MintBurn;
 use types::reserve_data::ReserveData;
 use types::user_config::UserConfiguration;
 
@@ -68,21 +66,8 @@ pub trait LendingPoolTrait {
 
     fn ir_params(env: Env) -> Option<IRParams>;
 
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn deposit(
-        env: Env,
-        who: Address,
-        asset: Address,
-        amount: i128,
-    ) -> Result<Vec<MintBurn>, Error>;
-
-    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<Vec<MintBurn>, Error>;
-
-    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     #[allow(clippy::too_many_arguments)]
@@ -97,16 +82,6 @@ pub trait LendingPoolTrait {
         total_supply: i128,
     ) -> Result<(), Error>;
 
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn withdraw(
-        env: Env,
-        who: Address,
-        asset: Address,
-        amount: i128,
-        to: Address,
-    ) -> Result<Vec<MintBurn>, Error>;
-
-    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn withdraw(
         env: Env,
         who: Address,
@@ -121,11 +96,6 @@ pub trait LendingPoolTrait {
 
     fn token_total_supply(env: Env, token: Address) -> i128;
 
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn borrow(env: Env, who: Address, asset: Address, amount: i128)
-        -> Result<Vec<MintBurn>, Error>;
-
-    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn set_pause(env: Env, value: bool) -> Result<(), Error>;
@@ -136,21 +106,12 @@ pub trait LendingPoolTrait {
 
     fn account_position(env: Env, who: Address) -> Result<AccountPosition, Error>;
 
-    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn liquidate(
         env: Env,
         liquidator: Address,
         who: Address,
         receive_stoken: bool,
     ) -> Result<(), Error>;
-
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn liquidate(
-        env: Env,
-        liquidator: Address,
-        who: Address,
-        receive_stoken: bool,
-    ) -> Result<Vec<MintBurn>, Error>;
 
     fn set_as_collateral(
         env: Env,
@@ -161,17 +122,10 @@ pub trait LendingPoolTrait {
 
     fn user_configuration(env: Env, who: Address) -> Result<UserConfiguration, Error>;
 
-    #[cfg(not(feature = "exceeded-limit-fix"))]
-    fn set_price(env: Env, asset: Address, price: i128);
-
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn set_price(env: Env, asset: Address, price: i128);
-
     fn set_flash_loan_fee(env: Env, fee: u32) -> Result<(), Error>;
 
     fn flash_loan_fee(env: Env) -> u32;
 
-    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn flash_loan(
         env: Env,
         who: Address,
@@ -179,19 +133,4 @@ pub trait LendingPoolTrait {
         assets: Vec<FlashLoanAsset>,
         params: Bytes,
     ) -> Result<(), Error>;
-
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn flash_loan(
-        env: Env,
-        who: Address,
-        receiver: Address,
-        assets: Vec<FlashLoanAsset>,
-        params: Bytes,
-    ) -> Result<Vec<MintBurn>, Error>;
-
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn get_price(env: Env, asset: Address) -> i128;
-
-    #[cfg(not(feature = "exceeded-limit-fix"))]
-    fn get_price(_env: Env, _asset: Address) -> i128;
 }

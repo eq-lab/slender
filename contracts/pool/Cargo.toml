@@ -35,4 +35,3 @@ testutils = [
     "flash-loan-receiver-interface/testutils",
 ]
 budget = []
-exceeded-limit-fix = ["pool-interface/exceeded-limit-fix"]
