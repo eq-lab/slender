@@ -239,7 +239,6 @@ export async function deposit(
     signer: Keypair,
     asset: SlenderAsset,
     amount: bigint,
-    withBudget = false,
 ): Promise<SendTransactionResult> {
     const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
@@ -262,7 +261,6 @@ export async function repay(
     signer: Keypair,
     asset: SlenderAsset,
     amount: bigint,
-    withBudget = false,
 ): Promise<SendTransactionResult> {
     const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
@@ -287,7 +285,6 @@ export async function withdraw(
     signer: Keypair,
     asset: SlenderAsset,
     amount: bigint,
-    withBudget = false,
 ): Promise<SendTransactionResult> {
     const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
@@ -313,7 +310,6 @@ export async function liquidate(
     signer: Keypair,
     who: string,
     receiveStoken: boolean,
-    withBudget = false,
 ): Promise<SendTransactionResult> {
     const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
@@ -352,7 +348,6 @@ export async function transferStoken(
     signer: Keypair,
     to: string,
     amount: bigint,
-    withBudget = false,
 ): Promise<SendTransactionResult> {
     return client.sendTransaction(
         process.env[`SLENDER_S_TOKEN_${asset}`],
@@ -412,9 +407,9 @@ export async function finalizeTransfer(
     );
 }
 
-export function writeBudgetSnapshot(name: string, transactionResult: SendTransactionResult) {
+export function writeBudgetSnapshot(label: string, transactionResult: SendTransactionResult) {
     if (transactionResult.cost !== null && transactionResult.cost !== undefined) {
-        fs.writeFileSync(BUDGET_SNAPSHOT_FILE, `${JSON.stringify({ [name]: transactionResult.cost }, null, 2)}\n`, { flag: 'a' });
+        fs.writeFileSync(BUDGET_SNAPSHOT_FILE, `${JSON.stringify({ [label]: transactionResult.cost }, null, 2)}\n`, { flag: 'a' });
     }
 }
 

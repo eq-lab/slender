@@ -7,6 +7,8 @@ import {
     deposit,
     init,
     mintUnderlyingTo,
+    repay,
+    setPrice,
     withdraw,
     writeBudgetSnapshot,
 } from "../pool.sut";
@@ -14,6 +16,7 @@ import {
     borrower1Keys,
     borrower2Keys,
     lender1Keys,
+    liquidator1Keys,
 } from "../soroban.config";
 import { expect, use } from "chai";
 import chaiAsPromised from 'chai-as-promised';
@@ -38,9 +41,11 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         borrower1Address = borrower1Keys.publicKey();
         borrower2Address = borrower2Keys.publicKey();
 
-        await client.registerAccount(lender1Address);
-        await client.registerAccount(borrower1Address);
-        await client.registerAccount(borrower2Address);
+        await Promise.all([
+            client.registerAccount(lender1Address),
+            client.registerAccount(borrower1Address),
+            client.registerAccount(borrower2Address),
+        ]);
 
         await mintUnderlyingTo(client, "XLM", lender1Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "XRP", lender1Address, 100_000_000_000n);
@@ -64,22 +69,44 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await borrow(client, borrower2Keys, "XLM", 6_000_000_000n);
         await borrow(client, borrower2Keys, "XRP", 5_900_000_000n);
 
-        fs.unlinkSync(BUDGET_SNAPSHOT_FILE);
+        try {
+            fs.unlinkSync(BUDGET_SNAPSHOT_FILE);
+        } catch (e) {
+            if (e.code !== "ENOENT") {
+                throw e;
+            }
+        }
     });
 
-    it("Case 1: borrow()", async function () {
+    it("Case 1: deposit()", async function () {
+        // Borrower1 deposits 1_000_000_000 XLM
+        await expect(
+            deposit(client, borrower1Keys, "XLM", 1_000_000_000n)
+                .then((result) => writeBudgetSnapshot("deposit", result))
+        ).to.not.eventually.rejected;
+    })
+    
+    it("Case 2: borrow()", async function () {
         // Borrower1 borrows 20_000_000 USDC
         await expect(
             borrow(client, borrower1Keys, "USDC", 20_000_000n)
-                .then((result) => writeBudgetSnapshot("borrow", result)) // TODO: method name
+                .then((result) => writeBudgetSnapshot("borrow", result))
         ).to.not.eventually.rejected;
     });
 
-    it("Case 2: withdraw full", async function () {
+    it("Case 3: withdraw full", async function () {
         // Borrower1 witdraws all XLM
         await expect(
             withdraw(client, borrower1Keys, "XLM", 170_141_183_460_469_231_731_687_303_715_884_105_727n) // i128::MAX
                 .then((result) => writeBudgetSnapshot("withdraw", result))
+        ).to.not.eventually.rejected;
+    });
+
+    it("Case 4: repay", async function () {
+        // Borrower1 partialy repays USDC
+        await expect(
+            repay(client, borrower1Keys, "USDC", 20_000_000n)
+                .then((result) => writeBudgetSnapshot("repay", result))
         ).to.not.eventually.rejected;
     });
 });
