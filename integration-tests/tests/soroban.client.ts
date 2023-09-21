@@ -3,9 +3,15 @@ import { promisify } from "util";
 import "./soroban.config";
 import { adminKeys } from "./soroban.config";
 
-export type SendTransactionResult =
-    SorobanRpc.GetSuccessfulTransactionResponse |
-    [SorobanRpc.GetSuccessfulTransactionResponse, SorobanRpc.Cost];
+export class SendTransactionResult {
+    response: SorobanRpc.GetSuccessfulTransactionResponse;
+    cost?: SorobanRpc.Cost
+
+    constructor(response: SorobanRpc.GetSuccessfulTransactionResponse, cost?: SorobanRpc.Cost) {
+        this.response = response;
+        this.cost = cost;
+    }
+}
 
 export class SorobanClient {
     client: Server;
@@ -27,7 +33,6 @@ export class SorobanClient {
         contractId: string,
         method: string,
         signer: Keypair,
-        withBudget: boolean,
         ...args: xdr.ScVal[]
     ): Promise<SendTransactionResult> {
         const source = await this.client.getAccount(signer.publicKey());
@@ -75,10 +80,10 @@ export class SorobanClient {
             const getResult = result as SorobanRpc.GetTransactionResponse;
             if (getResult.status !== SorobanRpc.GetTransactionStatus.SUCCESS) {
                 console.error('Transaction submission failed! Returning full RPC response.');
-                return withBudget ? [result, simulated.cost] : result;
+                return new SendTransactionResult(result, simulated.cost);
             }
 
-            return withBudget ? [result, simulated.cost] : result;
+            return new SendTransactionResult(result, simulated.cost);
         }
 
         throw Error(`Transaction failed (method: ${method})`);

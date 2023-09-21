@@ -70,7 +70,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
     it("Case 1: borrow()", async function () {
         // Borrower1 borrows 20_000_000 USDC
         await expect(
-            borrow(client, borrower1Keys, "USDC", 20_000_000n, true)
+            borrow(client, borrower1Keys, "USDC", 20_000_000n)
                 .then((result) => writeBudgetSnapshot("borrow", result)) // TODO: method name
         ).to.not.eventually.rejected;
     });
@@ -78,7 +78,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
     it("Case 2: withdraw full", async function () {
         // Borrower1 witdraws all XLM
         await expect(
-            withdraw(client, borrower1Keys, "XLM", 170_141_183_460_469_231_731_687_303_715_884_105_727n, true) // i128::MAX
+            withdraw(client, borrower1Keys, "XLM", 170_141_183_460_469_231_731_687_303_715_884_105_727n) // i128::MAX
                 .then((result) => writeBudgetSnapshot("withdraw", result))
         ).to.not.eventually.rejected;
     });
