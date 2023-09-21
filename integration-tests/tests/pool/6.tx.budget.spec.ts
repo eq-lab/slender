@@ -1,11 +1,13 @@
 import { SorobanClient } from "../soroban.client";
 import {
     BUDGET_SNAPSHOT_FILE,
+    accountPosition,
     borrow,
     cleanSlenderEnvKeys,
     deploy,
     deposit,
     init,
+    liquidate,
     mintUnderlyingTo,
     repay,
     setPrice,
@@ -13,6 +15,7 @@ import {
     writeBudgetSnapshot,
 } from "../pool.sut";
 import {
+    adminKeys,
     borrower1Keys,
     borrower2Keys,
     lender1Keys,
@@ -21,6 +24,8 @@ import {
 import { expect, use } from "chai";
 import chaiAsPromised from 'chai-as-promised';
 import * as fs from 'fs';
+import { exec } from "child_process";
+import { convertToScvAddress, convertToScvBool, convertToScvI128, convertToScvMap, convertToScvVec } from "../soroban.converter";
 
 use(chaiAsPromised);
 
@@ -107,6 +112,25 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await expect(
             repay(client, borrower1Keys, "USDC", 20_000_000n)
                 .then((result) => writeBudgetSnapshot("repay", result))
+        ).to.not.eventually.rejected;
+    });
+
+    it("Case 5: liquidate", async function () {
+        await borrow(client, borrower1Keys, "USDC", 6_000_000_000n);
+        let liquidatotAddress = liquidator1Keys.publicKey();
+        await client.registerAccount(liquidatotAddress);
+        await mintUnderlyingTo(client, "USDC", liquidatotAddress, 100_000_000_000n);
+
+        await deposit(client, liquidator1Keys, "USDC", 10_000_000_000n);
+        await borrow(client, liquidator1Keys, "XLM", 1_000_000_000n);
+        await borrow(client, liquidator1Keys, "XRP", 1_000_000_000n);
+
+        await setPrice(client, "USDC", 1_500_000_000n);
+
+        console.log(await accountPosition(client, borrower1Keys));
+        await expect(
+            liquidate(client, liquidator1Keys, borrower1Address, false)
+                .then((result) => writeBudgetSnapshot("liquidate", result))
         ).to.not.eventually.rejected;
     });
 });

@@ -1,24 +1,30 @@
 {
   "deposit": {
-    "cpuInsns": "36795100",
+    "cpuInsns": "36776550",
     "memBytes": "4023565"
   }
 }
 {
   "borrow": {
-    "cpuInsns": "37584587",
+    "cpuInsns": "37572651",
     "memBytes": "4027722"
   }
 }
 {
   "withdraw": {
-    "cpuInsns": "37621802",
+    "cpuInsns": "37606898",
     "memBytes": "4031271"
   }
 }
 {
   "repay": {
-    "cpuInsns": "36861782",
+    "cpuInsns": "36844379",
     "memBytes": "4026218"
+  }
+}
+{
+  "liquidate": {
+    "cpuInsns": "38507705",
+    "memBytes": "4057773"
   }
 }
