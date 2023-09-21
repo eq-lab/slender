@@ -12,8 +12,7 @@ use methods::{
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, init_reserve::init_reserve,
     initialize::initialize, set_base_asset::set_base_asset, set_decimals::set_decimals,
     set_flash_loan_fee::set_flash_loan_fee, set_ir_params::set_ir_params, set_pause::set_pause,
-    set_price_feed::set_price_feed, set_reserve_status::set_reserve_status,
-    token_total_supply::token_total_supply, upgrade::upgrade,
+    set_price_feed::set_price_feed, set_reserve_status::set_reserve_status, upgrade::upgrade,
     upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token,
 };
 #[cfg(feature = "exceeded-limit-fix")]
@@ -277,7 +276,7 @@ impl LendingPoolTrait for LendingPool {
     }
 
     fn token_total_supply(env: Env, token: Address) -> i128 {
-        token_total_supply(&env, &token)
+        read_token_total_supply(&env, &token)
     }
 
     #[cfg(feature = "exceeded-limit-fix")]

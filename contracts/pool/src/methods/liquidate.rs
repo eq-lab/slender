@@ -7,7 +7,7 @@ use soroban_sdk::{assert_with_error, token, Address, Env};
 use crate::event;
 use crate::storage::{
     add_stoken_underlying_balance, read_token_balance, read_token_total_supply,
-    write_token_total_supply,
+    write_token_balance, write_token_total_supply,
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_collateral::LiquidationCollateral;
@@ -178,12 +178,17 @@ fn do_liquidate(
             let amount_to_sub = underlying_amount
                 .checked_neg()
                 .ok_or(Error::MathOverflowError)?;
+            let who_collat_after = s_token_balance
+                .checked_sub(s_token_amount)
+                .ok_or(Error::MathOverflowError)?;
             s_token_supply = s_token_supply
                 .checked_sub(s_token_amount)
                 .ok_or(Error::MathOverflowError)?;
 
             s_token.burn(who, &s_token_amount, &underlying_amount, liquidator);
+
             add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
+            write_token_balance(env, &reserve.s_token_address, who, who_collat_after)?;
         }
 
         let is_withdraw = s_token_balance == s_token_amount;
