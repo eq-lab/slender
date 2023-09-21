@@ -1,7 +1,11 @@
-import { Server, Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc } from "soroban-client";
+import { Server, Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc, BASE_FEE, assembleTransaction } from "soroban-client";
 import { promisify } from "util";
 import "./soroban.config";
 import { adminKeys } from "./soroban.config";
+
+export type SendTransactionResult =
+    SorobanRpc.GetSuccessfulTransactionResponse |
+    [SorobanRpc.GetSuccessfulTransactionResponse, SorobanRpc.Cost];
 
 export class SorobanClient {
     client: Server;
@@ -23,22 +27,29 @@ export class SorobanClient {
         contractId: string,
         method: string,
         signer: Keypair,
+        withBudget: boolean,
         ...args: xdr.ScVal[]
-    ): Promise<SorobanRpc.GetSuccessfulTransactionResponse> {
+    ): Promise<SendTransactionResult> {
         const source = await this.client.getAccount(signer.publicKey());
         const contract = new Contract(contractId);
 
         const operation = new TransactionBuilder(source, {
-            fee: "100",
+            fee: BASE_FEE,
             networkPassphrase: process.env.PASSPHRASE,
         }).addOperation(contract.call(method, ...args || []))
             .setTimeout(TimeoutInfinite)
             .build();
+        
+        const simulated = await this.client.simulateTransaction(operation);
 
-        const transaction = await this.client.prepareTransaction(
-            operation,
-            process.env.PASSPHRASE);
+        if (SorobanRpc.isSimulationError(simulated)) {
+            throw new Error(simulated.error);
+        } else if (!simulated.result) {
+            throw new Error(`invalid simulation: no result in ${simulated}`);
+        }
 
+        const transaction = assembleTransaction(operation, process.env.PASSPHRASE, simulated).build()
+        
         transaction.sign(signer);
 
         const response = await this.client.sendTransaction(transaction);
@@ -64,10 +75,10 @@ export class SorobanClient {
             const getResult = result as SorobanRpc.GetTransactionResponse;
             if (getResult.status !== SorobanRpc.GetTransactionStatus.SUCCESS) {
                 console.error('Transaction submission failed! Returning full RPC response.');
-                return result;
+                return withBudget ? [result, simulated.cost] : result;
             }
 
-            return result;
+            return withBudget ? [result, simulated.cost] : result;
         }
 
         throw Error(`Transaction failed (method: ${method})`);

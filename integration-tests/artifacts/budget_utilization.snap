@@ -1,0 +1,12 @@
+{
+  "borrow": {
+    "cpuInsns": "37577012",
+    "memBytes": "4027722"
+  }
+}
+{
+  "withdraw": {
+    "cpuInsns": "37631489",
+    "memBytes": "4031271"
+  }
+}

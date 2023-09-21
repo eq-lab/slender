@@ -1,5 +1,6 @@
 import { SorobanClient } from "../soroban.client";
 import {
+    BUDGET_SNAPSHOT_FILE,
     borrow,
     cleanSlenderEnvKeys,
     deploy,
@@ -7,6 +8,7 @@ import {
     init,
     mintUnderlyingTo,
     withdraw,
+    writeBudgetSnapshot,
 } from "../pool.sut";
 import {
     borrower1Keys,
@@ -15,6 +17,8 @@ import {
 } from "../soroban.config";
 import { expect, use } from "chai";
 import chaiAsPromised from 'chai-as-promised';
+import * as fs from 'fs';
+
 use(chaiAsPromised);
 
 describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
@@ -59,15 +63,23 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await deposit(client, borrower2Keys, "USDC", 20_000_000_000n);
         await borrow(client, borrower2Keys, "XLM", 6_000_000_000n);
         await borrow(client, borrower2Keys, "XRP", 5_900_000_000n);
+
+        fs.unlinkSync(BUDGET_SNAPSHOT_FILE);
     });
 
     it("Case 1: borrow()", async function () {
         // Borrower1 borrows 20_000_000 USDC
-        await expect(borrow(client, borrower1Keys, "USDC", 20_000_000n)).to.not.eventually.rejected;
+        await expect(
+            borrow(client, borrower1Keys, "USDC", 20_000_000n, true)
+                .then((result) => writeBudgetSnapshot("borrow", result)) // TODO: method name
+        ).to.not.eventually.rejected;
     });
 
     it("Case 2: withdraw full", async function () {
         // Borrower1 witdraws all XLM
-        await expect(withdraw(client, borrower1Keys, "XLM", 170_141_183_460_469_231_731_687_303_715_884_105_727n)).to.not.eventually.rejected; // i128::MAX
+        await expect(
+            withdraw(client, borrower1Keys, "XLM", 170_141_183_460_469_231_731_687_303_715_884_105_727n, true) // i128::MAX
+                .then((result) => writeBudgetSnapshot("withdraw", result))
+        ).to.not.eventually.rejected;
     });
 });
