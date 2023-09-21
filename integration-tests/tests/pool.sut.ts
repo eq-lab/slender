@@ -1,5 +1,5 @@
-import { Keypair, SorobanRpc } from "soroban-client";
-import { SorobanClient } from "./soroban.client";
+import { Keypair } from "soroban-client";
+import { SendTransactionResult, SorobanClient } from "./soroban.client";
 import { adminKeys, contractsFilename, setEnv, treasuryKeys } from "./soroban.config";
 import {
     convertToScvAddress,
@@ -14,6 +14,9 @@ import {
     parseScvToJs
 } from "./soroban.converter";
 import { exec } from "child_process";
+import * as fs from 'fs';
+
+export const BUDGET_SNAPSHOT_FILE = 'snapshots/budget_utilization.snap';
 
 export type SlenderAsset = "XLM" | "XRP" | "USDC";
 
@@ -140,9 +143,9 @@ export async function accountPosition(
 export async function setPrice(
     client: SorobanClient,
     asset: SlenderAsset,
-    amount: bigint
-): Promise<void> {
-    await client.sendTransaction(
+    amount: bigint,
+): Promise<SendTransactionResult> {
+    return client.sendTransaction(
         process.env.SLENDER_POOL,
         "set_price",
         adminKeys,
@@ -192,9 +195,9 @@ export async function borrow(
     client: SorobanClient,
     signer: Keypair,
     asset: SlenderAsset,
-    amount: bigint
-): Promise<void> {
-    await client.sendTransaction(
+    amount: bigint,
+): Promise<SendTransactionResult> {
+    const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
         "borrow",
         signer,
@@ -202,15 +205,18 @@ export async function borrow(
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvI128(amount)
     );
+
+    return txResult;
 }
 
 export async function deposit(
     client: SorobanClient,
     signer: Keypair,
     asset: SlenderAsset,
-    amount: bigint
-): Promise<void> {
-    await client.sendTransaction(
+    amount: bigint,
+    withBudget = false,
+): Promise<SendTransactionResult> {
+    const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
         "deposit",
         signer,
@@ -218,15 +224,18 @@ export async function deposit(
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvI128(amount)
     );
+
+    return txResult;
 }
 
 export async function repay(
     client: SorobanClient,
     signer: Keypair,
     asset: SlenderAsset,
-    amount: bigint
-): Promise<void> {
-    await client.sendTransaction(
+    amount: bigint,
+    withBudget = false,
+): Promise<SendTransactionResult> {
+    const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
         "repay",
         signer,
@@ -234,15 +243,18 @@ export async function repay(
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvI128(amount)
     );
+
+    return txResult;
 }
 
 export async function withdraw(
     client: SorobanClient,
     signer: Keypair,
     asset: SlenderAsset,
-    amount: bigint
-): Promise<void> {
-    await client.sendTransaction(
+    amount: bigint,
+    withBudget = false,
+): Promise<SendTransactionResult> {
+    const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
         "withdraw",
         signer,
@@ -251,15 +263,18 @@ export async function withdraw(
         convertToScvI128(amount),
         convertToScvAddress(signer.publicKey())
     );
+
+    return txResult;
 }
 
 export async function liquidate(
     client: SorobanClient,
     signer: Keypair,
     who: string,
-    receiveStoken: boolean
-): Promise<void> {
-    await client.sendTransaction(
+    receiveStoken: boolean,
+    withBudget = false,
+): Promise<SendTransactionResult> {
+    const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
         "liquidate",
         signer,
@@ -267,6 +282,8 @@ export async function liquidate(
         convertToScvAddress(who),
         convertToScvBool(receiveStoken)
     );
+
+    return txResult;
 }
 
 export async function collatCoeff(
@@ -287,9 +304,10 @@ export async function transferStoken(
     asset: SlenderAsset,
     signer: Keypair,
     to: string,
-    amount: bigint
-): Promise<void> {
-    await client.sendTransaction(
+    amount: bigint,
+    withBudget = false,
+): Promise<SendTransactionResult> {
+    return client.sendTransaction(
         process.env[`SLENDER_S_TOKEN_${asset}`],
         "transfer",
         signer,
@@ -302,7 +320,7 @@ export async function transferStoken(
 export async function deploy(): Promise<void> {
     console.log("    Contracts deployment has been started");
 
-    await new Promise((resolve, reject) => {
+    const stdout = await new Promise((resolve, reject) => {
         exec(`../deploy/scripts/deploy.sh ${process.env.NODE_ENV}`, (error, stdout, _) => {
             if (error) {
                 reject(error);
@@ -311,7 +329,7 @@ export async function deploy(): Promise<void> {
             resolve(stdout)
         });
     });
-
+    console.log(stdout);
     console.log("    Contracts deployment has been finished");
 }
 
@@ -347,9 +365,15 @@ export async function finalizeTransfer(
     );
 }
 
+export function writeBudgetSnapshot(name: string, transactionResult: SendTransactionResult) {
+    if (transactionResult.cost !== null && transactionResult.cost !== undefined) {
+        fs.writeFileSync(BUDGET_SNAPSHOT_FILE, `${JSON.stringify({ [name]: transactionResult.cost }, null, 2)}\n`, { flag: 'a' });
+    }
+}
+
 async function initContract<T>(
     name: string,
-    callback: () => Promise<SorobanRpc.GetTransactionResponse>,
+    callback: () => Promise<SendTransactionResult>,
     success: (result: T) => string = undefined
 ): Promise<void> {
     name = `SLENDER_${name}`;
@@ -359,8 +383,8 @@ async function initContract<T>(
 
     const result = await callback();
 
-    if (result.status == "SUCCESS") {
-        setEnv(name, success && success(parseMetaXdrToJs(result.resultMetaXdr)) || "TRUE");
+    if (result.response.status == "SUCCESS") {
+        setEnv(name, success && success(parseMetaXdrToJs(result.response.resultMetaXdr)) || "TRUE");
     } else {
         throw Error(`Transaction failed: ${name} ${JSON.stringify(result)}`);
     }
