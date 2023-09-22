@@ -1,12 +1,16 @@
 import { SorobanClient } from "../soroban.client";
 import {
     BUDGET_SNAPSHOT_FILE,
+    FlashLoanAsset,
     accountPosition,
     borrow,
     cleanSlenderEnvKeys,
     deploy,
+    deployReceiverMock as deployFlashLoanReceiverMock,
     deposit,
+    flashLoan,
     init,
+    initializeFlashLoanReceiver,
     liquidate,
     mintUnderlyingTo,
     repay,
@@ -24,8 +28,6 @@ import {
 import { expect, use } from "chai";
 import chaiAsPromised from 'chai-as-promised';
 import * as fs from 'fs';
-import { exec } from "child_process";
-import { convertToScvAddress, convertToScvBool, convertToScvI128, convertToScvMap, convertToScvVec } from "../soroban.converter";
 
 use(chaiAsPromised);
 
@@ -89,7 +91,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
             deposit(client, borrower1Keys, "XLM", 1_000_000_000n)
                 .then((result) => writeBudgetSnapshot("deposit", result))
         ).to.not.eventually.rejected;
-    })
+    });
     
     it("Case 2: borrow()", async function () {
         // Borrower1 borrows 20_000_000 USDC
@@ -127,10 +129,33 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
 
         await setPrice(client, "USDC", 1_500_000_000n);
 
-        console.log(await accountPosition(client, borrower1Keys));
         await expect(
             liquidate(client, liquidator1Keys, borrower1Address, false)
                 .then((result) => writeBudgetSnapshot("liquidate", result))
         ).to.not.eventually.rejected;
+    });
+
+    it("Case 6: flash_loan", async function () {
+        const flashLoanReceiverMock = await deployFlashLoanReceiverMock();
+        await initializeFlashLoanReceiver(client, adminKeys, flashLoanReceiverMock);
+        const loanAssets: FlashLoanAsset[] = [
+            {
+                asset: "XLM",
+                amount: 1_000_000n,
+                borrow: false
+            },
+            {
+                asset: "XRP",
+                amount: 2_000_000n,
+                borrow: false
+            },
+            {
+                asset: "USDC",
+                amount: 3_000_000n,
+                borrow: false
+            }
+        ];
+        await flashLoan(client, borrower2Keys, flashLoanReceiverMock, loanAssets, "00")
+            .then((result) => writeBudgetSnapshot("flash_loan", result));
     });
 });
