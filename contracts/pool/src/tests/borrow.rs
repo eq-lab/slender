@@ -255,7 +255,7 @@ fn should_affect_account_data() {
 
     assert_eq!(debt_token_total_supply, pool_debt_token_total_supply);
     assert_eq!(debt_token_balance, pool_debt_token_balance);
-    
+
     assert!(account_position_prev.discounted_collateral == account_position.discounted_collateral);
     assert!(account_position_prev.debt < account_position.debt);
     assert!(account_position_prev.npv > account_position.npv);
@@ -315,11 +315,11 @@ fn should_change_balances_when_borrow_and_repay() {
     assert_eq!(borrower_balance_after_borrow, 1_020_000_000);
     assert_eq!(underlying_supply_after_borrow, 80_000_000);
 
-    assert_eq!(treasury_after_repay, 37_073);
+    assert_eq!(treasury_after_repay, 37_156);
     assert_eq!(debt_balance_after_repay, 0);
     assert_eq!(debt_total_after_repay, 0);
     assert_eq!(borrower_balance_after_repay, 999_954_790);
-    assert_eq!(underlying_supply_after_repay, 100_008_137);
+    assert_eq!(underlying_supply_after_repay, 100_008_054);
 }
 
 #[test]

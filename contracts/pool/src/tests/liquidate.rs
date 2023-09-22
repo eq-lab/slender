@@ -458,7 +458,7 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
         pool_debt_token_2_total_supply_before
     );
 
-    assert_eq!(underlying_1_supply_after, 179_994_206);
+    assert_eq!(underlying_1_supply_after, 179_994_205);
     assert_eq!(underlying_2_supply_after, 190_000_000);
     assert_eq!(borrower_stoken_1_balance_after, 0);
     assert_eq!(borrower_stoken_2_balance_after, 57_900_798);
@@ -469,7 +469,7 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
     assert_eq!(liquidator_underlying_2_balance_after, 0);
     assert_eq!(liquidator_stoken_1_balance_after, 79_994_208);
     assert_eq!(liquidator_stoken_2_balance_after, 32_099_202);
-    assert_eq!(treasury_underlying_balance_after, 5_794);
+    assert_eq!(treasury_underlying_balance_after, 5_795);
 
     assert_eq!(
         borrower_stoken_1_balance_after,

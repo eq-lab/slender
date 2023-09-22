@@ -69,9 +69,9 @@ fn should_fully_repay() {
     let treasury_balance = debt_config.token.balance(&treasury_address);
     let user_debt_balance = debt_config.debt_token.balance(&borrower);
 
-    assert_eq!(stoken_underlying_balance, 100_003_275);
+    assert_eq!(stoken_underlying_balance, 100_003_274);
     assert_eq!(user_balance, 999_990_903);
-    assert_eq!(treasury_balance, 5_822);
+    assert_eq!(treasury_balance, 5_823);
     assert_eq!(user_debt_balance, 0);
 }
 
