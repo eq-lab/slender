@@ -155,7 +155,9 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
                 borrow: false
             }
         ];
-        await flashLoan(client, borrower2Keys, flashLoanReceiverMock, loanAssets, "00")
-            .then((result) => writeBudgetSnapshot("flash_loan", result));
+        await expect(
+            flashLoan(client, borrower2Keys, flashLoanReceiverMock, loanAssets, "00")
+                .then((result) => writeBudgetSnapshot("flash_loan", result))
+        ).to.not.eventually.rejected;
     });
 });
