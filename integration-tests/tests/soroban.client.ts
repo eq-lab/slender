@@ -44,7 +44,7 @@ export class SorobanClient {
         }).addOperation(contract.call(method, ...args || []))
             .setTimeout(TimeoutInfinite)
             .build();
-        
+
         const simulated = await this.client.simulateTransaction(operation);
 
         if (SorobanRpc.isSimulationError(simulated)) {
@@ -54,7 +54,7 @@ export class SorobanClient {
         }
 
         const transaction = assembleTransaction(operation, process.env.PASSPHRASE, simulated).build()
-        
+
         transaction.sign(signer);
 
         const response = await this.client.sendTransaction(transaction);
@@ -98,7 +98,7 @@ export class SorobanClient {
         const contract = new Contract(contractId);
 
         const operation = new TransactionBuilder(source, {
-            fee: "100",
+            fee: BASE_FEE,
             networkPassphrase: process.env.PASSPHRASE,
         }).addOperation(contract.call(method, ...args || []))
             .setTimeout(TimeoutInfinite)

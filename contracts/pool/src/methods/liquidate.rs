@@ -144,7 +144,6 @@ fn do_liquidate(
                     liquidator,
                     &asset,
                     &reserve,
-                    &debt_token,
                     coll_coeff,
                     debt_coeff,
                     debt_token_supply,

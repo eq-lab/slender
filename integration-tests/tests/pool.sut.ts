@@ -146,7 +146,7 @@ export async function setPrice(
     amount: bigint,
 ): Promise<SendTransactionResult> {
     return client.sendTransaction(
-        process.env.SLENDER_POOL,
+        process.env.SLENDER_PRICE_FEED,
         "set_price",
         adminKeys,
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
