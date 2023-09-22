@@ -1,4 +1,4 @@
-import { Address, Keypair, SorobanRpc } from "soroban-client";
+import { Address, Keypair } from "soroban-client";
 import { SendTransactionResult, SorobanClient } from "./soroban.client";
 import { adminKeys, contractsFilename, setEnv, treasuryKeys } from "./soroban.config";
 import {
@@ -30,6 +30,12 @@ export interface AccountPosition {
     debt: bigint;
     discounted_collateral: bigint;
     npv: bigint;
+}
+
+export interface FlashLoanAsset {
+    asset: SlenderAsset,
+    amount: bigint,
+    borrow: boolean
 }
 
 export async function init(client: SorobanClient): Promise<void> {
@@ -239,7 +245,6 @@ export async function deposit(
     signer: Keypair,
     asset: SlenderAsset,
     amount: bigint,
-    withBudget = false,
 ): Promise<SendTransactionResult> {
     const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
@@ -262,7 +267,6 @@ export async function repay(
     signer: Keypair,
     asset: SlenderAsset,
     amount: bigint,
-    withBudget = false,
 ): Promise<SendTransactionResult> {
     const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
@@ -287,7 +291,6 @@ export async function withdraw(
     signer: Keypair,
     asset: SlenderAsset,
     amount: bigint,
-    withBudget = false,
 ): Promise<SendTransactionResult> {
     const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
@@ -313,7 +316,6 @@ export async function liquidate(
     signer: Keypair,
     who: string,
     receiveStoken: boolean,
-    withBudget = false,
 ): Promise<SendTransactionResult> {
     const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
@@ -352,7 +354,6 @@ export async function transferStoken(
     signer: Keypair,
     to: string,
     amount: bigint,
-    withBudget = false,
 ): Promise<SendTransactionResult> {
     return client.sendTransaction(
         process.env[`SLENDER_S_TOKEN_${asset}`],
@@ -378,6 +379,26 @@ export async function deploy(): Promise<void> {
     });
     console.log(stdout);
     console.log("    Contracts deployment has been finished");
+}
+
+export async function deployReceiverMock(): Promise<string> {
+    console.log("    Flashloan receiver deployment has been started");
+    const flashLoadReceiverMockAddress = (await new Promise((resolve, reject) => {
+        exec(`soroban contract deploy \
+        --wasm ../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm \
+        --source ${adminKeys.secret()} \
+        --rpc-url "${process.env.SOROBAN_RPC_URL}" \
+        --network-passphrase "${process.env.PASSPHRASE}"`, (error, stdout, _) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+            resolve(stdout)
+        });
+    }) as string).trim();
+    setEnv("SLENDER_FLASHLOAN_RECEIVER_MOCK", flashLoadReceiverMockAddress);
+    console.log("    Flashloan receiver deployment has been finished");
+    return (flashLoadReceiverMockAddress as string).trim();
 }
 
 export async function cleanSlenderEnvKeys() {
@@ -412,9 +433,58 @@ export async function finalizeTransfer(
     );
 }
 
-export function writeBudgetSnapshot(name: string, transactionResult: SendTransactionResult) {
-    if (transactionResult.cost !== null && transactionResult.cost !== undefined) {
-        fs.writeFileSync(BUDGET_SNAPSHOT_FILE, `${JSON.stringify({ [name]: transactionResult.cost }, null, 2)}\n`, { flag: 'a' });
+export async function flashLoan(
+    client: SorobanClient,
+    signer: Keypair,
+    receiver: string,
+    loanAssets: FlashLoanAsset[],
+    params: string
+): Promise<SendTransactionResult> {
+    const toConvert = loanAssets.map((flashLoan) => {
+        const scvMap = {
+            "amount": convertToScvI128(flashLoan.amount),
+            "asset": convertToScvAddress(process.env[`SLENDER_TOKEN_${flashLoan.asset}`]),
+            "borrow": convertToScvBool(flashLoan.borrow)
+        };
+        return convertToScvMap(scvMap);
+    });
+
+    return client.sendTransaction(
+        process.env.SLENDER_POOL,
+        "flash_loan",
+        signer,
+        convertToScvAddress(signer.publicKey()),
+        convertToScvAddress(receiver),
+        convertToScvVec(toConvert),
+        convertToScvBytes("00", "hex"),
+    );
+}
+
+export async function initializeFlashLoanReceiver(client: SorobanClient, signer: Keypair, receiverAddress: string): Promise<SendTransactionResult> {
+    return client.sendTransaction(
+        receiverAddress,
+        "initialize",
+        signer,
+        convertToScvAddress(process.env.SLENDER_POOL),
+        convertToScvBool(false),
+    );
+}
+
+export function writeBudgetSnapshot(label: string, transactionResult: SendTransactionResult) {
+    if (transactionResult.simulation !== null && transactionResult.simulation !== undefined) {
+        const resources = transactionResult.simulation.transactionData.build().resources();
+        fs.writeFileSync(BUDGET_SNAPSHOT_FILE,
+            `${JSON.stringify({
+                [label]: {
+                    cost: transactionResult.simulation.cost,
+                    events: transactionResult.simulation.events.reduce((acc, e) => acc + e.toXDR("base64").length, 0),
+                    readBytes: resources.readBytes(),
+                    writeBytes: resources.writeBytes(),
+                    ledgerReads: resources.footprint().readOnly().length,
+                    ledgerWrites: resources.footprint().readWrite().length,
+                    envelopeXdr: transactionResult.response.envelopeXdr.toXDR("base64")
+                }
+            }, null, 2)}\n`, { flag: 'a' });
     }
 }
 
