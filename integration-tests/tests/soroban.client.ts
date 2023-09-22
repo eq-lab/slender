@@ -5,11 +5,11 @@ import { adminKeys } from "./soroban.config";
 
 export class SendTransactionResult {
     response: SorobanRpc.GetSuccessfulTransactionResponse;
-    cost?: SorobanRpc.Cost
+    simulation?: SorobanRpc.SimulateTransactionSuccessResponse
 
-    constructor(response: SorobanRpc.GetSuccessfulTransactionResponse, cost?: SorobanRpc.Cost) {
+    constructor(response: SorobanRpc.GetSuccessfulTransactionResponse, simulation?: SorobanRpc.SimulateTransactionSuccessResponse) {
         this.response = response;
-        this.cost = cost;
+        this.simulation = simulation;
     }
 }
 
@@ -45,7 +45,7 @@ export class SorobanClient {
             .setTimeout(TimeoutInfinite)
             .build();
 
-        const simulated = await this.client.simulateTransaction(operation);
+        const simulated = await this.client.simulateTransaction(operation) as SorobanRpc.SimulateTransactionSuccessResponse;
 
         if (SorobanRpc.isSimulationError(simulated)) {
             throw new Error(simulated.error);
@@ -80,10 +80,10 @@ export class SorobanClient {
             const getResult = result as SorobanRpc.GetTransactionResponse;
             if (getResult.status !== SorobanRpc.GetTransactionStatus.SUCCESS) {
                 console.error('Transaction submission failed! Returning full RPC response.');
-                return new SendTransactionResult(result, simulated.cost);
+                return new SendTransactionResult(result, simulated);
             }
 
-            return new SendTransactionResult(result, simulated.cost);
+            return new SendTransactionResult(result, simulated);
         }
 
         throw Error(`Transaction failed (method: ${method})`);

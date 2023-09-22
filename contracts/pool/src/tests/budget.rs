@@ -595,17 +595,17 @@ fn flash_loan_without_borrow() {
         [
             FlashLoanAsset {
                 asset: sut.reserves[0].token.address.clone(),
-                amount: 1000000,
+                amount: 1_000_000,
                 borrow: false,
             },
             FlashLoanAsset {
                 asset: sut.reserves[1].token.address.clone(),
-                amount: 2000000,
+                amount: 2_000_000,
                 borrow: false,
             },
             FlashLoanAsset {
                 asset: sut.reserves[2].token.address.clone(),
-                amount: 3000000,
+                amount: 3_000_000,
                 borrow: false,
             },
         ],
