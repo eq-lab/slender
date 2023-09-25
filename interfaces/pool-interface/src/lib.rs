@@ -64,6 +64,10 @@ pub trait LendingPoolTrait {
 
     fn set_ir_params(env: Env, input: IRParams) -> Result<(), Error>;
 
+    fn reserve_timestamp_window(env: Env) -> u64;
+
+    fn set_reserve_timestamp_window(env: Env, window: u64) -> Result<(), Error>;
+
     fn ir_params(env: Env) -> Option<IRParams>;
 
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;

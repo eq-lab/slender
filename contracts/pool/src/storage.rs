@@ -12,8 +12,9 @@ pub(crate) const HIGH_USER_DATA_BUMP_LEDGERS: u32 = 20 * DAY_IN_LEDGERS; // 30 d
 #[contracttype]
 pub enum DataKey {
     Admin,
-    ReserveAssetKey(Address),
     Reserves,
+    ReserveAssetKey(Address),
+    ReserveTimestampWindow,
     Treasury,
     IRParams,
     UserConfig(Address),
@@ -74,6 +75,19 @@ pub fn read_reserves(env: &Env) -> Vec<Address> {
         .instance()
         .get(&DataKey::Reserves)
         .unwrap_or(vec![env])
+}
+
+pub fn read_reserve_timestamp_window(env: &Env) -> u64 {
+    env.storage()
+        .instance()
+        .get(&DataKey::ReserveTimestampWindow)
+        .unwrap_or(20)
+}
+
+pub fn write_reserve_timestamp_window(env: &Env, window: u64) {
+    env.storage()
+        .instance()
+        .set(&DataKey::ReserveTimestampWindow, &window);
 }
 
 pub fn write_reserves(env: &Env, reserves: &Vec<Address>) {

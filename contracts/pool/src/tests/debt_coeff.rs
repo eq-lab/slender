@@ -135,3 +135,43 @@ fn should_be_correctly_calculated() {
     let collat_coeff = sut.pool.collat_coeff(&debt_config.token.address);
     assert_eq!(collat_coeff, expected_collat_coeff);
 }
+
+#[test]
+fn should_change_when_elapsed_time_gte_window() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    sut.pool.set_reserve_timestamp_window(&20);
+
+    let (_, _, _, debt_config) = fill_pool_three(&env, &sut);
+    let debt_token = debt_config.token.address.clone();
+
+    let debt_coeff_1 = sut.pool.debt_coeff(&debt_token);
+
+    env.ledger().with_mut(|li| li.timestamp = 3 * DAY + 19);
+
+    let debt_coeff_2 = sut.pool.debt_coeff(&debt_token);
+
+    env.ledger().with_mut(|li| li.timestamp = 3 * DAY + 26);
+
+    let debt_coeff_3 = sut.pool.debt_coeff(&debt_token);
+
+    env.ledger().with_mut(|li| li.timestamp = 3 * DAY + 51);
+
+    let debt_coeff_4 = sut.pool.debt_coeff(&debt_token);
+
+    env.ledger().with_mut(|li| li.timestamp = 3 * DAY + 55);
+
+    let debt_coeff_5 = sut.pool.debt_coeff(&debt_token);
+
+    env.ledger().with_mut(|li| li.timestamp = 3 * DAY + 61);
+
+    let debt_coeff_6 = sut.pool.debt_coeff(&debt_token);
+
+    assert_eq!(debt_coeff_1, debt_coeff_2);
+    assert!(debt_coeff_3 > debt_coeff_2);
+    assert!(debt_coeff_4 > debt_coeff_3);
+    assert_eq!(debt_coeff_4, debt_coeff_5);
+    assert!(debt_coeff_6 > debt_coeff_5);
+}
