@@ -3,6 +3,8 @@ import {
     BUDGET_SNAPSHOT_FILE,
     FlashLoanAsset,
     borrow,
+    cleanSlenderEnvKeys,
+    deploy,
     deployReceiverMock as deployFlashLoanReceiverMock,
     deposit,
     flashLoan,
@@ -37,8 +39,8 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
     before(async function () {
         client = new SorobanClient();
 
-        // await cleanSlenderEnvKeys();
-        // await deploy();
+        await cleanSlenderEnvKeys();
+        await deploy();
         await init(client);
 
         lender1Address = lender1Keys.publicKey();
