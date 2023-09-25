@@ -44,7 +44,7 @@
                 "<node_internals>/**"
             ],
             "env": {
-                "NODE_ENV": "develop"
+                "NODE_ENV": "futurenet"
             },
             "cwd": "${workspaceFolder}/integration-tests",
             "type": "node"

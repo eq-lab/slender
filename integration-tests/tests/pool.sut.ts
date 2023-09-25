@@ -85,6 +85,7 @@ export async function mintUnderlyingTo(
             process.env[`SLENDER_TOKEN_${asset}`],
             "mint",
             adminKeys,
+            3,
             convertToScvAddress(to),
             convertToScvI128(amount)
         )
@@ -155,6 +156,7 @@ export async function setPrice(
         process.env.SLENDER_PRICE_FEED,
         "set_price",
         adminKeys,
+        3,
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvI128(amount)
     );
@@ -207,6 +209,7 @@ export async function borrow(
         process.env.SLENDER_POOL,
         "borrow",
         signer,
+        3,
         convertToScvAddress(signer.publicKey()),
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvI128(amount)
@@ -225,6 +228,7 @@ export async function deposit(
         process.env.SLENDER_POOL,
         "deposit",
         signer,
+        3,
         convertToScvAddress(signer.publicKey()),
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvI128(amount)
@@ -243,6 +247,7 @@ export async function repay(
         process.env.SLENDER_POOL,
         "repay",
         signer,
+        3,
         convertToScvAddress(signer.publicKey()),
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvI128(amount)
@@ -261,6 +266,7 @@ export async function withdraw(
         process.env.SLENDER_POOL,
         "withdraw",
         signer,
+        3,
         convertToScvAddress(signer.publicKey()),
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvI128(amount),
@@ -280,6 +286,7 @@ export async function liquidate(
         process.env.SLENDER_POOL,
         "liquidate",
         signer,
+        3,
         convertToScvAddress(signer.publicKey()),
         convertToScvAddress(who),
         convertToScvBool(receiveStoken)
@@ -312,6 +319,7 @@ export async function transferStoken(
         process.env[`SLENDER_S_TOKEN_${asset}`],
         "transfer",
         signer,
+        3,
         convertToScvAddress(signer.publicKey()),
         convertToScvAddress(to),
         convertToScvI128(amount)
@@ -336,6 +344,7 @@ export async function deploy(): Promise<void> {
 
 export async function deployReceiverMock(): Promise<string> {
     console.log("    Flashloan receiver deployment has been started");
+
     const flashLoadReceiverMockAddress = (await new Promise((resolve, reject) => {
         exec(`soroban contract deploy \
         --wasm ../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm \
@@ -349,8 +358,11 @@ export async function deployReceiverMock(): Promise<string> {
             resolve(stdout)
         });
     }) as string).trim();
+
     setEnv("SLENDER_FLASHLOAN_RECEIVER_MOCK", flashLoadReceiverMockAddress);
+
     console.log("    Flashloan receiver deployment has been finished");
+
     return (flashLoadReceiverMockAddress as string).trim();
 }
 
@@ -376,6 +388,7 @@ export async function finalizeTransfer(
         process.env["SLENDER_POOL"],
         "finalize_transfer",
         signer,
+        3,
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvAddress(signer.publicKey()),
         convertToScvAddress(to),
@@ -393,19 +406,19 @@ export async function flashLoan(
     loanAssets: FlashLoanAsset[],
     params: string
 ): Promise<SendTransactionResult> {
-    const toConvert = loanAssets.map((flashLoan) => {
-        const scvMap = {
+    const toConvert = loanAssets.map((flashLoan) =>
+        convertToScvMap({
             "amount": convertToScvI128(flashLoan.amount),
             "asset": convertToScvAddress(process.env[`SLENDER_TOKEN_${flashLoan.asset}`]),
             "borrow": convertToScvBool(flashLoan.borrow)
-        };
-        return convertToScvMap(scvMap);
-    });
+        })
+    );
 
     return client.sendTransaction(
         process.env.SLENDER_POOL,
         "flash_loan",
         signer,
+        3,
         convertToScvAddress(signer.publicKey()),
         convertToScvAddress(receiver),
         convertToScvVec(toConvert),
@@ -418,6 +431,7 @@ export async function initializeFlashLoanReceiver(client: SorobanClient, signer:
         receiverAddress,
         "initialize",
         signer,
+        3,
         convertToScvAddress(process.env.SLENDER_POOL),
         convertToScvBool(false),
     );
@@ -467,6 +481,7 @@ async function initToken(client: SorobanClient, asset: SlenderAsset, name: strin
             process.env[`SLENDER_TOKEN_${asset}`],
             "initialize",
             adminKeys,
+            3,
             convertToScvAddress(adminKeys.publicKey()),
             convertToScvU32(9),
             convertToScvString(name),
@@ -482,6 +497,7 @@ async function initSToken(client: SorobanClient, asset: SlenderAsset, salt: stri
             process.env.SLENDER_DEPLOYER,
             "deploy_s_token",
             adminKeys,
+            3,
             convertToScvBytes(salt, "hex"),
             convertToScvBytes(process.env.SLENDER_S_TOKEN_HASH, "hex"),
             convertToScvString(`SToken ${asset}`),
@@ -500,6 +516,7 @@ async function initDToken(client: SorobanClient, asset: SlenderAsset, salt: stri
             process.env.SLENDER_DEPLOYER,
             "deploy_debt_token",
             adminKeys,
+            3,
             convertToScvBytes(salt, "hex"),
             convertToScvBytes(process.env.SLENDER_DEBT_TOKEN_HASH, "hex"),
             convertToScvString(`DToken ${asset}`),
@@ -517,6 +534,7 @@ async function initPool(client: SorobanClient, salt: string): Promise<void> {
             process.env.SLENDER_DEPLOYER,
             "deploy_pool",
             adminKeys,
+            3,
             convertToScvBytes(salt, "hex"),
             convertToScvBytes(process.env.SLENDER_POOL_HASH, "hex"),
             convertToScvAddress(adminKeys.publicKey()),
@@ -540,6 +558,7 @@ async function initPoolReserve(client: SorobanClient, asset: SlenderAsset, decim
             process.env.SLENDER_POOL,
             "init_reserve",
             adminKeys,
+            3,
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvMap({
                 "debt_token_address": convertToScvAddress(process.env[`SLENDER_DEBT_TOKEN_${asset}`]),
@@ -557,6 +576,7 @@ async function initPoolCollateral(client: SorobanClient, asset: SlenderAsset): P
             process.env.SLENDER_POOL,
             "configure_as_collateral",
             adminKeys,
+            3,
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvMap({
                 "discount": convertToScvU32(6000),
@@ -575,6 +595,7 @@ async function initPoolPriceFeed(client: SorobanClient, feed: string, assets: st
             process.env.SLENDER_POOL,
             "set_price_feed",
             adminKeys,
+            3,
             convertToScvAddress(feed),
             convertToScvVec(assets.map(asset => convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])))
         )
@@ -588,6 +609,7 @@ async function initPoolBorrowing(client: SorobanClient, asset: SlenderAsset): Pr
             process.env.SLENDER_POOL,
             "enable_borrowing_on_reserve",
             adminKeys,
+            3,
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvBool(true)
         )
@@ -601,6 +623,7 @@ async function initBaseAsset(client: SorobanClient, asset: SlenderAsset): Promis
             process.env.SLENDER_POOL,
             "set_base_asset",
             adminKeys,
+            3,
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvBool(true)
         )

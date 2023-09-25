@@ -3,7 +3,7 @@ use soroban_sdk::{Address, Env};
 
 use crate::storage::{read_ir_params, write_reserve};
 
-use super::rate::calc_accrued_rates;
+use super::{get_elapsed_time::get_elapsed_time, rate::calc_accrued_rates};
 
 pub fn recalculate_reserve_data(
     env: &Env,
@@ -12,10 +12,7 @@ pub fn recalculate_reserve_data(
     s_token_supply: i128,
     debt_token_supply: i128,
 ) -> Result<ReserveData, Error> {
-    let current_time = env.ledger().timestamp();
-    let elapsed_time = current_time
-        .checked_sub(reserve.last_update_timestamp)
-        .ok_or(Error::AccruedRateMathError)?;
+    let (current_time, elapsed_time) = get_elapsed_time(env, reserve.last_update_timestamp);
 
     if elapsed_time == 0 || s_token_supply == 0 {
         return Ok(reserve.clone());

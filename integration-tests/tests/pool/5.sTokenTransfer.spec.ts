@@ -1,11 +1,10 @@
-import { SorobanClient } from "../soroban.client";
+import { SorobanClient, delay } from "../soroban.client";
 import {
     accountPosition,
     borrow,
     cleanSlenderEnvKeys,
     deploy,
     deposit,
-    finalizeTransfer,
     init,
     mintUnderlyingTo,
     sTokenBalanceOf,
@@ -59,6 +58,9 @@ describe("sToken transfer", function () {
         await deposit(client, lender3Keys, "XRP", 100_000_000_000n);
         await deposit(client, borrower1Keys, "USDC", 100_000_000_000n);
         await deposit(client, borrower2Keys, "USDC", 100_000_000_000n);
+
+        await delay(20_000);
+
         await borrow(client, borrower1Keys, "XLM", 10_000_000_000n);
         await borrow(client, borrower2Keys, "XRP", 10_000_000_000n);
 
@@ -150,7 +152,7 @@ describe("sToken transfer", function () {
         const sXlmSupplyBefore = await sTokenTotalSupply(client, "XLM");
         const sXlmBalanceBefore = await sTokenUnderlyingBalanceOf(client, "XLM");
 
-        await transferStoken(client, "XLM", lender1Keys, borrower1Address, 10_000_000_000n);
+        await expect(transferStoken(client, "XLM", lender1Keys, borrower1Address, 10_000_000_000n)).to.eventually.rejected;
 
         const sXlmSupplyAfter = await sTokenTotalSupply(client, "XLM");
         const sXlmBalanceAfter = await sTokenUnderlyingBalanceOf(client, "XLM");
@@ -196,8 +198,8 @@ describe("sToken transfer", function () {
         const borrower1sUsdcBalance = await sTokenBalanceOf(client, "USDC", borrower1Address);
         const borrower1PositionAfter = await accountPosition(client, borrower1Keys);
 
-        assert.equal(lender1sUsdcBalance, 10_000_000_000n);
-        assert.equal(borrower1sUsdcBalance, 90_000_000_000n);
+        assert.equal(lender1sUsdcBalance, 20_000_000_000n);
+        assert.equal(borrower1sUsdcBalance, 80_000_000_000n);
         assert.equal(sUsdcSupplyBefore, sUsdcSupplyAfter);
         assert.equal(sUsdcBalanceBefore, sUsdcBalanceAfter);
         assert(borrower1PositionAfter.npv > 0);

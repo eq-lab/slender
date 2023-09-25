@@ -1,4 +1,4 @@
-import { SorobanClient } from "../soroban.client";
+import { SorobanClient, delay } from "../soroban.client";
 import {
     accountPosition,
     borrow,
@@ -114,6 +114,8 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
     });
 
     it("Case 2: Borrower borrows XLM with npv ~= 0", async function () {
+        await delay(20_000);
+
         // Borrower1 borrows 11_999_000_000n XLM
         await borrow(client, borrower1Keys, "XLM", 11_999_000_000n);
 
@@ -193,6 +195,7 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
             && borrower1Position.npv > -5_000_000n);
     });
 
+    // TODO: requires optimization
     it("Case 5: Liquidator liquidates Borrower's positions", async function () {
         // Liquidator1 liquidates Borrower1's positions
         await liquidate(client, liquidator1Keys, borrower1Address, true);

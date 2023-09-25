@@ -4,6 +4,8 @@ use pool_interface::types::ir_params::IRParams;
 use pool_interface::types::reserve_data::ReserveData;
 use soroban_sdk::Env;
 
+use super::get_elapsed_time::get_elapsed_time;
+
 /// Calculate interest rate IR = MIN [ max_rate, base_rate / (1 - U)^alpha]
 /// where
 /// U - utilization, U = total_debt / total_collateral
@@ -131,10 +133,7 @@ pub fn get_actual_lender_accrued_rate(
     env: &Env,
     reserve: &ReserveData,
 ) -> Result<FixedI128, Error> {
-    let current_time = env.ledger().timestamp();
-    let elapsed_time = current_time
-        .checked_sub(reserve.last_update_timestamp)
-        .ok_or(Error::CollateralCoeffMathError)?;
+    let (_, elapsed_time) = get_elapsed_time(env, reserve.last_update_timestamp);
     let prev_ar = FixedI128::from_inner(reserve.lender_ar);
 
     if elapsed_time == 0 {
@@ -151,10 +150,7 @@ pub fn get_actual_borrower_accrued_rate(
     env: &Env,
     reserve: &ReserveData,
 ) -> Result<FixedI128, Error> {
-    let current_time = env.ledger().timestamp();
-    let elapsed_time = current_time
-        .checked_sub(reserve.last_update_timestamp)
-        .ok_or(Error::DebtCoeffMathError)?;
+    let (_, elapsed_time) = get_elapsed_time(env, reserve.last_update_timestamp);
     let prev_ar = FixedI128::from_inner(reserve.borrower_ar);
 
     if elapsed_time == 0 {

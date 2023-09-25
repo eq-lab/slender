@@ -1,4 +1,4 @@
-import { SorobanClient } from "../soroban.client";
+import { SorobanClient, delay } from "../soroban.client";
 import {
     accountPosition,
     borrow,
@@ -76,6 +76,8 @@ describe("LendingPool: Borrower position", function () {
     });
 
     it("Case 2: Borrower borrows with NPV > 0", async function () {
+        await delay(20_000);
+
         // Borrower1 borrows 5_000_000_000n XLM
         await borrow(client, borrower1Keys, "XLM", 5_000_000_000n);
 

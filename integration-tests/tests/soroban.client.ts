@@ -33,6 +33,7 @@ export class SorobanClient {
         contractId: string,
         method: string,
         signer: Keypair,
+        retryAttempts: number,
         ...args: xdr.ScVal[]
     ): Promise<SendTransactionResult> {
         const source = await this.client.getAccount(signer.publicKey());
@@ -50,7 +51,7 @@ export class SorobanClient {
         if (SorobanRpc.isSimulationError(simulated)) {
             throw new Error(simulated.error);
         } else if (!simulated.result) {
-            throw new Error(`invalid simulation: no result in ${simulated}`);
+            throw new Error(`Invalid simulation: no result in ${simulated}`);
         }
 
         const transaction = assembleTransaction(operation, process.env.PASSPHRASE, simulated).build()
@@ -63,7 +64,7 @@ export class SorobanClient {
         let attempts = 15;
 
         if (response.status == "ERROR") {
-            throw Error(`ERROR [sendTransaction]: ${response.errorResultXdr}`);
+            throw Error(`Failed to send transaction: ${response.errorResultXdr}`);
         }
 
         do {
@@ -73,20 +74,31 @@ export class SorobanClient {
         } while (result.status === SorobanRpc.GetTransactionStatus.NOT_FOUND && attempts > 0);
 
         if (result.status == SorobanRpc.GetTransactionStatus.NOT_FOUND) {
-            console.error(`NOT_FOUND [getTransaction]: ${JSON.stringify(response, null, 2)}`);
+            throw Error("Submitted transaction was not found");
         }
 
         if ("resultXdr" in result) {
             const getResult = result as SorobanRpc.GetTransactionResponse;
             if (getResult.status !== SorobanRpc.GetTransactionStatus.SUCCESS) {
-                console.error('Transaction submission failed! Returning full RPC response.');
-                return new SendTransactionResult(result, simulated);
+                throw new Error('Transaction result is insuccessfull');
             }
+
+            console.log(`    SUCCESS: '${method}' => ${signer.publicKey()}`);
 
             return new SendTransactionResult(result, simulated);
         }
 
-        throw Error(`Transaction failed (method: ${method})`);
+        if (retryAttempts == 0) {
+            throw Error(`Transaction failed (method: ${method})`);
+        } else {
+            return await this.sendTransaction(
+                contractId,
+                method,
+                signer,
+                --retryAttempts,
+                ...args || []
+            );
+        }
     }
 
     async simulateTransaction(
@@ -116,4 +128,4 @@ export class SorobanClient {
     }
 }
 
-let delay = promisify((ms, res) => setTimeout(res, ms))
+export let delay = promisify((ms, res) => setTimeout(res, ms))
