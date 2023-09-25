@@ -2,7 +2,6 @@ use common::FixedI128;
 use debt_token_interface::DebtTokenClient;
 use pool_interface::types::error::Error;
 use pool_interface::types::reserve_data::ReserveData;
-use s_token_interface::STokenClient;
 use soroban_sdk::{token, Address, Env};
 
 use crate::event;
@@ -114,10 +113,9 @@ pub fn do_repay(
 
     let underlying_asset = token::Client::new(env, asset);
     let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
-    let s_token = STokenClient::new(env, &reserve.s_token_address);
 
-    underlying_asset.transfer(who, &reserve.s_token_address, &borrower_payback_amount);
-    s_token.transfer_underlying_to(&treasury_address, &treasury_part);
+    underlying_asset.transfer(who, &reserve.s_token_address, &lender_part);
+    underlying_asset.transfer(who, &treasury_address, &treasury_part);
     debt_token.burn(who, &borrower_debt_to_burn);
 
     add_stoken_underlying_balance(env, &reserve.s_token_address, lender_part)?;

@@ -5,7 +5,6 @@ use crate::storage::{
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::user_configurator::UserConfigurator;
-use debt_token_interface::DebtTokenClient;
 use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use s_token_interface::STokenClient;
@@ -38,7 +37,6 @@ pub fn withdraw(
     let collat_coeff = get_collat_coeff(env, &reserve, s_token_supply, debt_token_supply)?;
 
     let s_token = STokenClient::new(env, &reserve.s_token_address);
-    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
 
     let collat_balance = read_token_balance(env, &reserve.s_token_address, who);
     let underlying_balance = collat_coeff
@@ -84,7 +82,7 @@ pub fn withdraw(
                     s_token_supply_after,
                 )),
                 mb_debt_token_supply: Some(&AssetBalance::new(
-                    debt_token.address,
+                    reserve.debt_token_address.clone(),
                     debt_token_supply,
                 )),
             },
