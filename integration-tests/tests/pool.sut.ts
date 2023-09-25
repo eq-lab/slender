@@ -344,6 +344,7 @@ export async function deploy(): Promise<void> {
 
 export async function deployReceiverMock(): Promise<string> {
     console.log("    Flashloan receiver deployment has been started");
+
     const flashLoadReceiverMockAddress = (await new Promise((resolve, reject) => {
         exec(`soroban contract deploy \
         --wasm ../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm \
@@ -357,8 +358,11 @@ export async function deployReceiverMock(): Promise<string> {
             resolve(stdout)
         });
     }) as string).trim();
+
     setEnv("SLENDER_FLASHLOAN_RECEIVER_MOCK", flashLoadReceiverMockAddress);
+
     console.log("    Flashloan receiver deployment has been finished");
+
     return (flashLoadReceiverMockAddress as string).trim();
 }
 
@@ -402,14 +406,13 @@ export async function flashLoan(
     loanAssets: FlashLoanAsset[],
     params: string
 ): Promise<SendTransactionResult> {
-    const toConvert = loanAssets.map((flashLoan) => {
-        const scvMap = {
+    const toConvert = loanAssets.map((flashLoan) =>
+        convertToScvMap({
             "amount": convertToScvI128(flashLoan.amount),
             "asset": convertToScvAddress(process.env[`SLENDER_TOKEN_${flashLoan.asset}`]),
             "borrow": convertToScvBool(flashLoan.borrow)
-        };
-        return convertToScvMap(scvMap);
-    });
+        })
+    );
 
     return client.sendTransaction(
         process.env.SLENDER_POOL,

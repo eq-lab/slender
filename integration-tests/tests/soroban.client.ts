@@ -83,7 +83,7 @@ export class SorobanClient {
                 throw new Error('Transaction result is insuccessfull');
             }
 
-            console.log(`SUCCESS: '${method}' => ${signer.publicKey()}`);
+            console.log(`    SUCCESS: '${method}' => ${signer.publicKey()}`);
 
             return new SendTransactionResult(result, simulated);
         }

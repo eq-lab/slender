@@ -1,11 +1,8 @@
-import { SorobanClient } from "../soroban.client";
+import { SorobanClient, delay } from "../soroban.client";
 import {
     BUDGET_SNAPSHOT_FILE,
     FlashLoanAsset,
-    accountPosition,
     borrow,
-    cleanSlenderEnvKeys,
-    deploy,
     deployReceiverMock as deployFlashLoanReceiverMock,
     deposit,
     flashLoan,
@@ -40,8 +37,8 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
     before(async function () {
         client = new SorobanClient();
 
-        await cleanSlenderEnvKeys();
-        await deploy();
+        // await cleanSlenderEnvKeys();
+        // await deploy();
         await init(client);
 
         lender1Address = lender1Keys.publicKey();
@@ -65,6 +62,8 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await deposit(client, lender1Keys, "XLM", 10_000_000_000n);
         await deposit(client, lender1Keys, "XRP", 10_000_000_000n);
         await deposit(client, lender1Keys, "USDC", 10_000_000_000n);
+
+        await delay(20_000);
 
         // Borrower1 deposits 10_000_000_000 XLM, XRP, borrows 6_000_000_000 USDC
         await deposit(client, borrower1Keys, "XLM", 10_000_000_000n);
@@ -92,7 +91,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
                 .then((result) => writeBudgetSnapshot("deposit", result))
         ).to.not.eventually.rejected;
     });
-    
+
     it("Case 2: borrow()", async function () {
         // Borrower1 borrows 20_000_000 USDC
         await expect(
@@ -124,6 +123,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await mintUnderlyingTo(client, "USDC", liquidatotAddress, 100_000_000_000n);
 
         await deposit(client, liquidator1Keys, "USDC", 10_000_000_000n);
+
         await borrow(client, liquidator1Keys, "XLM", 1_000_000_000n);
         await borrow(client, liquidator1Keys, "XRP", 1_000_000_000n);
 
@@ -135,9 +135,11 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         ).to.not.eventually.rejected;
     });
 
+    // TODO: requires optimization
     it("Case 6: flash_loan", async function () {
         const flashLoanReceiverMock = await deployFlashLoanReceiverMock();
         await initializeFlashLoanReceiver(client, adminKeys, flashLoanReceiverMock);
+
         const loanAssets: FlashLoanAsset[] = [
             {
                 asset: "XLM",
@@ -155,6 +157,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
                 borrow: false
             }
         ];
+
         await expect(
             flashLoan(client, borrower2Keys, flashLoanReceiverMock, loanAssets, "00")
                 .then((result) => writeBudgetSnapshot("flash_loan", result))

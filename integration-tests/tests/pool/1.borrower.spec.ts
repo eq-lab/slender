@@ -110,7 +110,7 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
     });
 
     it("Case 2: Borrowers borrow assets from pool with max utilization", async function () {
-        await delay(10000);
+        await delay(20000);
 
         // Borrower1 borrows 9_000_000_000 XLM
         await borrow(client, borrower1Keys, "XLM", 9_000_000_000n);
