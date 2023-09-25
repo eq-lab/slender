@@ -5,7 +5,7 @@ use soroban_sdk::{token, Address, Env};
 use crate::event;
 use crate::storage::{
     add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
-    read_token_total_supply, write_token_total_supply,
+    read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
 };
 use crate::types::user_configurator::UserConfigurator;
 
@@ -29,7 +29,6 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
     let user_config = user_configurator.user_config()?;
     require_zero_debt(env, user_config, reserve.get_id());
 
-    let s_token = STokenClient::new(env, &reserve.s_token_address);
     let debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
 
     let (is_first_deposit, s_token_supply_after) = do_deposit(
@@ -39,7 +38,7 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
         &reserve,
         read_token_total_supply(env, &reserve.s_token_address),
         debt_token_supply,
-        s_token.balance(who),
+        read_token_balance(env, &reserve.s_token_address, who),
         amount,
     )?;
 
@@ -73,20 +72,23 @@ fn do_deposit(
     require_liq_cap_not_exceeded(env, reserve, debt_token_supply, balance, amount)?;
 
     let collat_coeff = get_collat_coeff(env, reserve, s_token_supply, debt_token_supply)?;
+    let is_first_deposit = who_collat == 0;
     let amount_to_mint = collat_coeff
         .recip_mul_int(amount)
         .ok_or(Error::MathOverflowError)?;
     let s_token_supply_after = s_token_supply
         .checked_add(amount_to_mint)
         .ok_or(Error::MathOverflowError)?;
-
-    let is_first_deposit = who_collat == 0;
+    let who_collat_after = who_collat
+        .checked_add(amount_to_mint)
+        .ok_or(Error::MathOverflowError)?;
 
     token::Client::new(env, asset).transfer(who, &reserve.s_token_address, &amount);
     STokenClient::new(env, &reserve.s_token_address).mint(who, &amount_to_mint);
 
     add_stoken_underlying_balance(env, &reserve.s_token_address, amount)?;
     write_token_total_supply(env, &reserve.s_token_address, s_token_supply_after)?;
+    write_token_balance(env, &reserve.s_token_address, who, who_collat_after)?;
 
     event::deposit(env, who, asset, amount);
 

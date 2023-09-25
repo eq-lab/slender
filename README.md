@@ -29,7 +29,7 @@ make test
 To run the tests you need to install **soroban-cli** version 0.9.1
 
 ```shell
-cargo install --locked --version 0.9.1 soroban-cli
+cargo install --locked --version 20.0.0-rc2 soroban-cli
 ```
 
 Run a local standalone (or Futurenet) network with the following command:
@@ -39,7 +39,7 @@ Run a local standalone (or Futurenet) network with the following command:
 docker run --rm -it \
   -p 8000:8000 \
   --name stellar \
-  stellar/quickstart:soroban-dev@sha256:8a99332f834ca82e3ac1418143736af59b5288e792d1c4278d6c547c6ed8da3b \
+  stellar/quickstart:testing@sha256:1c98f895f8b69cc843eeaa5230d67044dbeb390a5529d51dd7762d8ff685c3f8 \
   --standalone \
   --enable-soroban-rpc
 
@@ -47,7 +47,7 @@ docker run --rm -it \
 docker run --rm -it \
    -p 8000:8000 \
    --name stellar \
-   stellar/quickstart:soroban-dev@sha256:ed57f7a7683e3568ae401f5c6e93341a9f77d8ad41191bf752944d7898981e0c \
+   stellar/quickstart:testing@sha256:1c98f895f8b69cc843eeaa5230d67044dbeb390a5529d51dd7762d8ff685c3f8 \
    --futurenet \
    --enable-soroban-rpc
 ```

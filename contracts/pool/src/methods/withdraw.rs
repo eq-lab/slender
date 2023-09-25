@@ -1,10 +1,10 @@
 use crate::event;
 use crate::storage::{
-    add_stoken_underlying_balance, read_reserve, read_token_total_supply, write_token_total_supply,
+    add_stoken_underlying_balance, read_reserve, read_token_balance, read_token_total_supply,
+    write_token_balance, write_token_total_supply,
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::user_configurator::UserConfigurator;
-use debt_token_interface::DebtTokenClient;
 use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use s_token_interface::STokenClient;
@@ -37,9 +37,8 @@ pub fn withdraw(
     let collat_coeff = get_collat_coeff(env, &reserve, s_token_supply, debt_token_supply)?;
 
     let s_token = STokenClient::new(env, &reserve.s_token_address);
-    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
 
-    let collat_balance = s_token.balance(who);
+    let collat_balance = read_token_balance(env, &reserve.s_token_address, who);
     let underlying_balance = collat_coeff
         .mul_int(collat_balance)
         .ok_or(Error::MathOverflowError)?;
@@ -83,7 +82,7 @@ pub fn withdraw(
                     s_token_supply_after,
                 )),
                 mb_debt_token_supply: Some(&AssetBalance::new(
-                    debt_token.address,
+                    reserve.debt_token_address.clone(),
                     debt_token_supply,
                 )),
             },
@@ -99,8 +98,9 @@ pub fn withdraw(
 
     s_token.burn(who, &s_token_to_burn, &underlying_to_withdraw, to);
 
-    write_token_total_supply(env, &s_token.address, s_token_supply_after)?;
     add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
+    write_token_total_supply(env, &s_token.address, s_token_supply_after)?;
+    write_token_balance(env, &s_token.address, who, collat_balance_after)?;
 
     let is_full_withdraw = underlying_to_withdraw == underlying_balance;
     user_configurator

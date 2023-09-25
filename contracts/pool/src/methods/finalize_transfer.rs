@@ -2,7 +2,7 @@ use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use soroban_sdk::{Address, Env};
 
-use crate::storage::{read_reserve, read_token_total_supply};
+use crate::storage::{read_reserve, read_token_total_supply, write_token_balance};
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::user_configurator::UserConfigurator;
 
@@ -67,6 +67,13 @@ pub fn finalize_transfer(
     }
 
     if from != to {
+        let balance_to_after = balance_to_before
+            .checked_add(amount)
+            .ok_or(Error::InvalidAmount)?;
+
+        write_token_balance(env, &reserve.s_token_address, from, balance_from_after)?;
+        write_token_balance(env, &reserve.s_token_address, to, balance_to_after)?;
+
         let reserve_id = reserve.get_id();
         let is_to_deposit = balance_to_before == 0 && amount != 0;
 

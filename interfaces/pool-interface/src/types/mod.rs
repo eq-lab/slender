@@ -5,8 +5,6 @@ pub mod error;
 pub mod flash_loan_asset;
 pub mod init_reserve_input;
 pub mod ir_params;
-#[cfg(feature = "exceeded-limit-fix")]
-pub mod mint_burn;
 pub mod reserve_configuration;
 pub mod reserve_data;
 pub mod user_config;

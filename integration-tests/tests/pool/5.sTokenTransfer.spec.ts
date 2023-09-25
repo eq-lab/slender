@@ -113,24 +113,13 @@ describe("sToken transfer", function () {
         const sXlmSupplyBefore = await sTokenTotalSupply(client, "XLM");
         const sXlmBalanceBefore = await sTokenUnderlyingBalanceOf(client, "XLM");
 
-        // exceeded-limit-fix
-        await finalizeTransfer(
-            client,
-            "XLM",
-            lender1Keys,
-            lender3Address,
-            10_000_000_000n,
-            100_000_000_000n,
-            0n,
-            200_000_000_000n
-        );
         await transferStoken(client, "XLM", lender1Keys, lender3Address, 10_000_000_000n);
 
         const sXlmSupplyAfter = await sTokenTotalSupply(client, "XLM");
         const sXlmBalanceAfter = await sTokenUnderlyingBalanceOf(client, "XLM");
         const lender1SXlmBalance = await sTokenBalanceOf(client, "XLM", lender1Address);
         const lender3SXlmBalance = await sTokenBalanceOf(client, "XLM", lender3Address);
-        
+
         assert.equal(lender1SXlmBalance, 90_000_000_000n);
         assert.equal(lender3SXlmBalance, 10_000_000_000n);
         assert.equal(sXlmSupplyBefore, sXlmSupplyAfter);
@@ -142,18 +131,6 @@ describe("sToken transfer", function () {
         const sXlmBalanceBefore = await sTokenUnderlyingBalanceOf(client, "XLM");
         const borrower2PositionBefore = await accountPosition(client, borrower2Keys);
 
-        // exceeded-limit-fix
-        await finalizeTransfer(
-            client,
-            "XLM",
-            lender1Keys,
-            borrower2Address,
-            10_000_000_000n,
-            90_000_000_000n,
-            0n,
-            200_000_000_000n
-        );
-
         await transferStoken(client, "XLM", lender1Keys, borrower2Address, 10_000_000_000n);
 
         const sXlmSupplyAfter = await sTokenTotalSupply(client, "XLM");
@@ -161,7 +138,7 @@ describe("sToken transfer", function () {
         const lender1SXlmBalance = await sTokenBalanceOf(client, "XLM", lender1Address);
         const borrower2SXlmBalance = await sTokenBalanceOf(client, "XLM", borrower2Address);
         const borrower2PositionAfter = await accountPosition(client, borrower2Keys);
-        
+
         assert.equal(lender1SXlmBalance, 80_000_000_000n);
         assert.equal(borrower2SXlmBalance, 10_000_000_000n);
         assert.equal(sXlmSupplyBefore, sXlmSupplyAfter);
@@ -173,26 +150,14 @@ describe("sToken transfer", function () {
         const sXlmSupplyBefore = await sTokenTotalSupply(client, "XLM");
         const sXlmBalanceBefore = await sTokenUnderlyingBalanceOf(client, "XLM");
 
-        // exceeded-limit-fix
-        await expect(finalizeTransfer(
-            client,
-            "XLM",
-            lender1Keys,
-            borrower1Address,
-            10_000_000_000n,
-            80_000_000_000n,
-            0n,
-            200_000_000_000n
-        )).to.eventually.rejected;
-
-        // await transferStoken(client, "XLM", lender1Keys, borrower1Address, 10_000_000_000n);
+        await transferStoken(client, "XLM", lender1Keys, borrower1Address, 10_000_000_000n);
 
         const sXlmSupplyAfter = await sTokenTotalSupply(client, "XLM");
         const sXlmBalanceAfter = await sTokenUnderlyingBalanceOf(client, "XLM");
         const lender1SXlmBalance = await sTokenBalanceOf(client, "XLM", lender1Address);
         const borrower1SXlmBalance = await sTokenBalanceOf(client, "XLM", borrower1Address);
         const borrower1PositionAfter = await accountPosition(client, borrower1Keys);
-        
+
         assert.equal(lender1SXlmBalance, 80_000_000_000n);
         assert.equal(borrower1SXlmBalance, 0n);
         assert.equal(sXlmSupplyBefore, sXlmSupplyAfter);
@@ -204,18 +169,6 @@ describe("sToken transfer", function () {
         const sUsdcSupplyBefore = await sTokenTotalSupply(client, "USDC");
         const sUsdcBalanceBefore = await sTokenUnderlyingBalanceOf(client, "USDC");
 
-        // exceeded-limit-fix
-        await finalizeTransfer(
-            client,
-            "USDC",
-            borrower1Keys,
-            lender1Address,
-            10_000_000_000n,
-            100_000_000_000n,
-            0n,
-            200_000_000_000n
-        );
-
         await transferStoken(client, "USDC", borrower1Keys, lender1Address, 10_000_000_000n);
 
         const sUsdcSupplyAfter = await sTokenTotalSupply(client, "USDC");
@@ -223,7 +176,7 @@ describe("sToken transfer", function () {
         const lender1sUsdcBalance = await sTokenBalanceOf(client, "USDC", lender1Address);
         const borrower1sUsdcBalance = await sTokenBalanceOf(client, "USDC", borrower1Address);
         const borrower1PositionAfter = await accountPosition(client, borrower1Keys);
-        
+
         assert.equal(lender1sUsdcBalance, 10_000_000_000n);
         assert.equal(borrower1sUsdcBalance, 90_000_000_000n);
         assert.equal(sUsdcSupplyBefore, sUsdcSupplyAfter);
@@ -235,26 +188,14 @@ describe("sToken transfer", function () {
         const sUsdcSupplyBefore = await sTokenTotalSupply(client, "USDC");
         const sUsdcBalanceBefore = await sTokenUnderlyingBalanceOf(client, "USDC");
 
-        // exceeded-limit-fix
-        await expect(finalizeTransfer(
-            client,
-            "USDC",
-            borrower1Keys,
-            lender1Address,
-            90_000_000_000n,
-            90_000_000_000n,
-            0n,
-            200_000_000_000n
-        )).to.eventually.rejected;
-
-        // await transferStoken(client, "USDC", borrower1Keys, lender1Address, 10_000_000_000n);
+        await transferStoken(client, "USDC", borrower1Keys, lender1Address, 10_000_000_000n);
 
         const sUsdcSupplyAfter = await sTokenTotalSupply(client, "USDC");
         const sUsdcBalanceAfter = await sTokenUnderlyingBalanceOf(client, "USDC");
         const lender1sUsdcBalance = await sTokenBalanceOf(client, "USDC", lender1Address);
         const borrower1sUsdcBalance = await sTokenBalanceOf(client, "USDC", borrower1Address);
         const borrower1PositionAfter = await accountPosition(client, borrower1Keys);
-        
+
         assert.equal(lender1sUsdcBalance, 10_000_000_000n);
         assert.equal(borrower1sUsdcBalance, 90_000_000_000n);
         assert.equal(sUsdcSupplyBefore, sUsdcSupplyAfter);

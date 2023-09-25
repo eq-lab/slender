@@ -1,4 +1,4 @@
-import { Address, Keypair } from "soroban-client";
+import { Keypair } from "soroban-client";
 import { SendTransactionResult, SorobanClient } from "./soroban.client";
 import { adminKeys, contractsFilename, setEnv, treasuryKeys } from "./soroban.config";
 import {
@@ -20,12 +20,6 @@ export const BUDGET_SNAPSHOT_FILE = 'snapshots/budget_utilization.snap';
 
 export type SlenderAsset = "XLM" | "XRP" | "USDC";
 
-export interface MintBurn {
-    asset_balance: Map<string, any>;
-    mint: boolean;
-    who: Address;
-}
-
 export interface AccountPosition {
     debt: bigint;
     discounted_collateral: bigint;
@@ -39,6 +33,8 @@ export interface FlashLoanAsset {
 }
 
 export async function init(client: SorobanClient): Promise<void> {
+    console.log("    Contracts initialization has been started");
+
     require("dotenv").config({ path: contractsFilename });
 
     let salt = 0;
@@ -73,6 +69,8 @@ export async function init(client: SorobanClient): Promise<void> {
     await initBaseAsset(client, "XLM");
 
     await initPoolPriceFeed(client, process.env.SLENDER_PRICE_FEED, ["XRP", "USDC"]);
+
+    console.log("    Contracts initialization has been finished");
 }
 
 export async function mintUnderlyingTo(
@@ -91,25 +89,6 @@ export async function mintUnderlyingTo(
             convertToScvI128(amount)
         )
     );
-}
-
-export async function mintBurn(
-    client: SorobanClient,
-    mintsBurns: Array<MintBurn>
-): Promise<void> {
-    for (let i = 0; i < mintsBurns.length; i++) {
-        const txResult = await client.sendTransaction(
-            mintsBurns[i].asset_balance.get("asset"),
-            mintsBurns[i].mint ? "mint" : "clawback",
-            adminKeys,
-            convertToScvAddress(mintsBurns[i].who.toString()),
-            convertToScvI128(mintsBurns[i].asset_balance.get("balance"))
-        )
-
-        if (txResult.response.status != "SUCCESS") {
-            throw Error("Failed to transfer tokens!");
-        }
-    }
 }
 
 export async function sTokenBalanceOf(
@@ -173,7 +152,7 @@ export async function setPrice(
     amount: bigint,
 ): Promise<SendTransactionResult> {
     return client.sendTransaction(
-        process.env.SLENDER_POOL,
+        process.env.SLENDER_PRICE_FEED,
         "set_price",
         adminKeys,
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
@@ -232,10 +211,6 @@ export async function borrow(
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvI128(amount)
     );
-    
-    const result = parseMetaXdrToJs<Array<MintBurn>>(txResult.response.resultMetaXdr);
-
-    await mintBurn(client, result);
 
     return txResult;
 }
@@ -255,10 +230,6 @@ export async function deposit(
         convertToScvI128(amount)
     );
 
-    const result = parseMetaXdrToJs<Array<MintBurn>>(txResult.response.resultMetaXdr);
-
-    await mintBurn(client, result);
-
     return txResult;
 }
 
@@ -276,12 +247,6 @@ export async function repay(
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvI128(amount)
     );
-
-    const result = parseMetaXdrToJs<Array<MintBurn>>(
-        txResult.response.resultMetaXdr
-    );
-
-    await mintBurn(client, result);
 
     return txResult;
 }
@@ -302,12 +267,6 @@ export async function withdraw(
         convertToScvAddress(signer.publicKey())
     );
 
-    const result = parseMetaXdrToJs<Array<MintBurn>>(
-        txResult.response.resultMetaXdr
-    );
-
-    await mintBurn(client, result);
-
     return txResult;
 }
 
@@ -325,12 +284,6 @@ export async function liquidate(
         convertToScvAddress(who),
         convertToScvBool(receiveStoken)
     );
-
-    const result = parseMetaXdrToJs<Array<MintBurn>>(
-        txResult.response.resultMetaXdr
-    );
-
-    await mintBurn(client, result);
 
     return txResult;
 }

@@ -1,31 +1,17 @@
 #![deny(warnings)]
 #![no_std]
 
-#[cfg(not(feature = "exceeded-limit-fix"))]
 use methods::{
     account_position::account_position, borrow::borrow, collat_coeff::collat_coeff,
-    deposit::deposit, finalize_transfer::finalize_transfer, flash_loan::flash_loan,
-    liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral, withdraw::withdraw,
-};
-use methods::{
-    configure_as_collateral::configure_as_collateral, debt_coeff::debt_coeff,
-    enable_borrowing_on_reserve::enable_borrowing_on_reserve, init_reserve::init_reserve,
-    initialize::initialize, set_base_asset::set_base_asset, set_decimals::set_decimals,
+    configure_as_collateral::configure_as_collateral, debt_coeff::debt_coeff, deposit::deposit,
+    enable_borrowing_on_reserve::enable_borrowing_on_reserve, finalize_transfer::finalize_transfer,
+    flash_loan::flash_loan, init_reserve::init_reserve, initialize::initialize,
+    liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral,
+    set_base_asset::set_base_asset, set_decimals::set_decimals,
     set_flash_loan_fee::set_flash_loan_fee, set_ir_params::set_ir_params, set_pause::set_pause,
-    set_price_feed::set_price_feed, set_reserve_status::set_reserve_status,
-    token_total_supply::token_total_supply, upgrade::upgrade,
-    upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token,
+    set_price_feed::set_price_feed, set_reserve_status::set_reserve_status, upgrade::upgrade,
+    upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token, withdraw::withdraw,
 };
-#[cfg(feature = "exceeded-limit-fix")]
-use methods::{
-    fix_limit::account_position::account_position, fix_limit::borrow::borrow,
-    fix_limit::collat_coeff::collat_coeff, fix_limit::deposit::deposit,
-    fix_limit::finalize_transfer::finalize_transfer, fix_limit::flash_loan::flash_loan,
-    fix_limit::liquidate::liquidate, fix_limit::repay::repay,
-    fix_limit::set_as_collateral::set_as_collateral, fix_limit::withdraw::withdraw,
-};
-#[cfg(feature = "exceeded-limit-fix")]
-use pool_interface::types::mint_burn::MintBurn;
 use pool_interface::types::{
     account_position::AccountPosition, collateral_params_input::CollateralParamsInput,
     error::Error, flash_loan_asset::FlashLoanAsset, init_reserve_input::InitReserveInput,
@@ -134,28 +120,11 @@ impl LendingPoolTrait for LendingPool {
         read_price_feed(&env, &asset).ok()
     }
 
-    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         deposit(&env, &who, &asset, amount)
     }
 
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn deposit(
-        env: Env,
-        who: Address,
-        asset: Address,
-        amount: i128,
-    ) -> Result<Vec<MintBurn>, Error> {
-        deposit(&env, &who, &asset, amount)
-    }
-
-    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
-        repay(&env, &who, &asset, amount)
-    }
-
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn repay(env: Env, who: Address, asset: Address, amount: i128) -> Result<Vec<MintBurn>, Error> {
         repay(&env, &who, &asset, amount)
     }
 
@@ -182,7 +151,6 @@ impl LendingPoolTrait for LendingPool {
         )
     }
 
-    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn withdraw(
         env: Env,
         who: Address,
@@ -193,29 +161,7 @@ impl LendingPoolTrait for LendingPool {
         withdraw(&env, &who, &asset, amount, &to)
     }
 
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn withdraw(
-        env: Env,
-        who: Address,
-        asset: Address,
-        amount: i128,
-        to: Address,
-    ) -> Result<Vec<MintBurn>, Error> {
-        withdraw(&env, &who, &asset, amount, &to)
-    }
-
-    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
-        borrow(&env, &who, &asset, amount)
-    }
-
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn borrow(
-        env: Env,
-        who: Address,
-        asset: Address,
-        amount: i128,
-    ) -> Result<Vec<MintBurn>, Error> {
         borrow(&env, &who, &asset, amount)
     }
 
@@ -235,23 +181,12 @@ impl LendingPoolTrait for LendingPool {
         account_position(&env, &who)
     }
 
-    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn liquidate(
         env: Env,
         liquidator: Address,
         who: Address,
         receive_stoken: bool,
     ) -> Result<(), Error> {
-        liquidate(&env, &liquidator, &who, receive_stoken)
-    }
-
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn liquidate(
-        env: Env,
-        liquidator: Address,
-        who: Address,
-        receive_stoken: bool,
-    ) -> Result<Vec<MintBurn>, Error> {
         liquidate(&env, &liquidator, &who, receive_stoken)
     }
 
@@ -272,18 +207,12 @@ impl LendingPoolTrait for LendingPool {
         read_stoken_underlying_balance(&env, &stoken_address)
     }
 
+    fn token_balance(env: Env, token: Address, account: Address) -> i128 {
+        read_token_balance(&env, &token, &account)
+    }
+
     fn token_total_supply(env: Env, token: Address) -> i128 {
-        token_total_supply(&env, &token)
-    }
-
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn set_price(env: Env, asset: Address, price: i128) {
-        write_price(&env, &asset, price);
-    }
-
-    #[cfg(not(feature = "exceeded-limit-fix"))]
-    fn set_price(_env: Env, _asset: Address, _price: i128) {
-        unimplemented!()
+        read_token_total_supply(&env, &token)
     }
 
     fn set_flash_loan_fee(env: Env, fee: u32) -> Result<(), Error> {
@@ -294,7 +223,6 @@ impl LendingPoolTrait for LendingPool {
         read_flash_loan_fee(&env)
     }
 
-    #[cfg(not(feature = "exceeded-limit-fix"))]
     fn flash_loan(
         env: Env,
         who: Address,
@@ -303,26 +231,5 @@ impl LendingPoolTrait for LendingPool {
         params: Bytes,
     ) -> Result<(), Error> {
         flash_loan(&env, &who, &receiver, &loan_assets, &params)
-    }
-
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn flash_loan(
-        env: Env,
-        who: Address,
-        receiver: Address,
-        loan_assets: Vec<FlashLoanAsset>,
-        params: Bytes,
-    ) -> Result<Vec<MintBurn>, Error> {
-        flash_loan(&env, &who, &receiver, &loan_assets, &params)
-    }
-
-    #[cfg(feature = "exceeded-limit-fix")]
-    fn get_price(env: Env, asset: Address) -> i128 {
-        read_price(&env, &asset)
-    }
-
-    #[cfg(not(feature = "exceeded-limit-fix"))]
-    fn get_price(_env: Env, _asset: Address) -> i128 {
-        unimplemented!()
     }
 }

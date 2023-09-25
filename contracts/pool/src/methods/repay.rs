@@ -6,8 +6,8 @@ use soroban_sdk::{token, Address, Env};
 
 use crate::event;
 use crate::storage::{
-    add_stoken_underlying_balance, read_reserve, read_token_total_supply, read_treasury,
-    write_token_total_supply,
+    add_stoken_underlying_balance, read_reserve, read_token_balance, read_token_total_supply,
+    read_treasury, write_token_balance, write_token_total_supply,
 };
 use crate::types::user_configurator::UserConfigurator;
 
@@ -42,7 +42,6 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
         who,
         asset,
         &reserve,
-        &DebtTokenClient::new(env, &reserve.debt_token_address),
         collat_coeff,
         debt_coeff,
         debt_token_supply,
@@ -73,20 +72,18 @@ pub fn do_repay(
     who: &Address,
     asset: &Address,
     reserve: &ReserveData,
-    debt_token: &DebtTokenClient,
     collat_coeff: FixedI128,
     debt_coeff: FixedI128,
     debt_token_supply: i128,
     amount: i128,
 ) -> Result<(bool, i128), Error> {
-    let who_debt = debt_token.balance(who);
+    let who_debt = read_token_balance(env, &reserve.debt_token_address, who);
     let borrower_actual_debt = debt_coeff
         .mul_int(who_debt)
         .ok_or(Error::MathOverflowError)?;
 
     let (borrower_payback_amount, borrower_debt_to_burn, is_repayed) =
         if amount >= borrower_actual_debt {
-            // To avoid dust in debt_token borrower balance in case of full repayment
             (borrower_actual_debt, who_debt, true)
         } else {
             let borrower_debt_to_burn = debt_coeff
@@ -95,19 +92,27 @@ pub fn do_repay(
             (amount, borrower_debt_to_burn, false)
         };
 
-    let lender_part = collat_coeff
-        .mul_int(borrower_debt_to_burn)
+    let treasury_coeff = debt_coeff
+        .checked_sub(collat_coeff)
         .ok_or(Error::MathOverflowError)?;
-    let treasury_part = borrower_payback_amount
-        .checked_sub(lender_part)
+    let treasury_part = treasury_coeff
+        .mul_int(borrower_payback_amount)
         .ok_or(Error::MathOverflowError)?;
+    let lender_part = borrower_payback_amount
+        .checked_sub(treasury_part)
+        .ok_or(Error::MathOverflowError)?;
+
     let debt_token_supply_after = debt_token_supply
+        .checked_sub(borrower_debt_to_burn)
+        .ok_or(Error::MathOverflowError)?;
+    let who_debt_after = who_debt
         .checked_sub(borrower_debt_to_burn)
         .ok_or(Error::MathOverflowError)?;
 
     let treasury_address = read_treasury(env);
 
     let underlying_asset = token::Client::new(env, asset);
+    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
 
     underlying_asset.transfer(who, &reserve.s_token_address, &lender_part);
     underlying_asset.transfer(who, &treasury_address, &treasury_part);
@@ -115,6 +120,7 @@ pub fn do_repay(
 
     add_stoken_underlying_balance(env, &reserve.s_token_address, lender_part)?;
     write_token_total_supply(env, &reserve.debt_token_address, debt_token_supply_after)?;
+    write_token_balance(env, &reserve.debt_token_address, who, who_debt_after)?;
 
     event::repay(env, who, asset, borrower_payback_amount);
 

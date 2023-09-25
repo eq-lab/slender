@@ -7,7 +7,8 @@ use soroban_sdk::{assert_with_error, Address, Env};
 
 use crate::event;
 use crate::storage::{
-    add_stoken_underlying_balance, read_reserve, read_token_total_supply, write_token_total_supply,
+    add_stoken_underlying_balance, read_reserve, read_token_balance, read_token_total_supply,
+    write_token_balance, write_token_total_supply,
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::user_configurator::UserConfigurator;
@@ -31,8 +32,6 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
     require_active_reserve(env, &reserve);
     require_borrowing_enabled(env, &reserve);
 
-    let s_token = STokenClient::new(env, &reserve.s_token_address);
-    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
     let s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
 
     let debt_token_supply_after = do_borrow(
@@ -40,8 +39,8 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
         who,
         asset,
         &reserve,
-        s_token.balance(who),
-        debt_token.balance(who),
+        read_token_balance(env, &reserve.s_token_address, who),
+        read_token_balance(env, &reserve.debt_token_address, who),
         s_token_supply,
         read_token_total_supply(env, &reserve.debt_token_address),
         amount,
@@ -117,17 +116,20 @@ pub fn do_borrow(
         amount_of_debt_token,
     )?;
 
+    let amount_to_sub = amount.checked_neg().ok_or(Error::MathOverflowError)?;
     let debt_token_supply_after = debt_token_supply
         .checked_add(amount_of_debt_token)
         .ok_or(Error::MathOverflowError)?;
-
-    let amount_to_sub = amount.checked_neg().ok_or(Error::MathOverflowError)?;
+    let who_debt_after = who_debt
+        .checked_add(amount_of_debt_token)
+        .ok_or(Error::MathOverflowError)?;
 
     DebtTokenClient::new(env, &reserve.debt_token_address).mint(who, &amount_of_debt_token);
     STokenClient::new(env, &reserve.s_token_address).transfer_underlying_to(who, &amount);
 
     add_stoken_underlying_balance(env, &reserve.s_token_address, amount_to_sub)?;
     write_token_total_supply(env, &reserve.debt_token_address, debt_token_supply_after)?;
+    write_token_balance(env, &reserve.debt_token_address, who, who_debt_after)?;
 
     user_configurator
         .borrow(reserve.get_id(), who_debt == 0)?
