@@ -9,7 +9,8 @@ use methods::{
     liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral,
     set_base_asset::set_base_asset, set_decimals::set_decimals,
     set_flash_loan_fee::set_flash_loan_fee, set_ir_params::set_ir_params, set_pause::set_pause,
-    set_price_feed::set_price_feed, set_reserve_status::set_reserve_status, upgrade::upgrade,
+    set_price_feed::set_price_feed, set_reserve_status::set_reserve_status,
+    set_reserve_timestamp_window::set_reserve_timestamp_window, upgrade::upgrade,
     upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token, withdraw::withdraw,
 };
 use pool_interface::types::{
@@ -82,6 +83,14 @@ impl LendingPoolTrait for LendingPool {
 
     fn set_ir_params(env: Env, input: IRParams) -> Result<(), Error> {
         set_ir_params(&env, &input)
+    }
+
+    fn reserve_timestamp_window(env: Env) -> u64 {
+        read_reserve_timestamp_window(&env)
+    }
+
+    fn set_reserve_timestamp_window(env: Env, window: u64) -> Result<(), Error> {
+        set_reserve_timestamp_window(&env, window)
     }
 
     fn ir_params(env: Env) -> Option<IRParams> {

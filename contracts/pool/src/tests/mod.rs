@@ -25,6 +25,7 @@ pub mod set_ir_params;
 pub mod set_pause;
 pub mod set_price_feed;
 pub mod set_reserve_status;
+pub mod set_reserve_timestamp_window;
 pub mod soroban_map;
 pub mod stoken_underlying_balance;
 mod sut;

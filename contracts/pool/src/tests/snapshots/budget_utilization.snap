@@ -44,11 +44,6 @@
     "cpu_cost": 33271920,
     "memory_cost": 3647918,
     "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::flash_loan_with_borrow'] = {
-    "cpu_cost": 141729035,
-    "memory_cost": 32997745,
     "cpu_limit_exceeded": true,
     "memory_limit_exceeded": false,
 }
