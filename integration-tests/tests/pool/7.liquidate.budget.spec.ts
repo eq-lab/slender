@@ -1,10 +1,30 @@
-import { Address, Keypair, xdr } from "soroban-client";
-import { I128_MAX, SlenderAsset, accountPosition, borrow, cleanSlenderEnvKeys, deploy, deposit, init, liquidate, liquidateCli, mintUnderlyingTo, repay, setPrice, withdraw, writeBudgetSnapshot } from "../pool.sut";
+import { Keypair, xdr } from "soroban-client";
+import { I128_MAX, accountPosition, borrow, cleanSlenderEnvKeys, deploy, deposit, init, liquidate, liquidateCli, mintUnderlyingTo, repay, setPrice, withdraw, writeBudgetSnapshot } from "../pool.sut";
 import { SorobanClient, delay } from "../soroban.client";
 import { adminKeys, lender1Keys } from "../soroban.config";
-import { assert, expect } from "chai";
+import { assert } from "chai";
 import { parseScvToJs } from "../soroban.converter";
 import * as fs from 'fs';
+
+const CASE_1_LOG = "snapshots/liquidateUnderlying1.log";
+const CASE_2_LOG = "snapshots/liquidateUnderlying2.log";
+const CASE_3_LOG = "snapshots/liquidateUnderlying3.log";
+const CASE_4_LOG = "snapshots/liquidateStoken4.log";
+const CASE_5_LOG = "snapshots/liquidateStoken5.log";
+const CASE_6_LOG = "snapshots/liquidateStoken6.log";
+const CASE_7_LOG = "snapshots/liquidateStoken7.log";
+const CASE_8_LOG = "snapshots/liquidateStoken8.log";
+const CASE_9_LOG = "snapshots/liquidateStoken9.log";
+
+function tryRemoveLogFile(name: string) {
+    try {
+        fs.unlinkSync(name);
+    } catch (e) {
+        if (e.code !== "ENOENT") {
+            throw e;
+        }
+    }
+}
 
 describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", function () {
     let client: SorobanClient;
@@ -51,6 +71,10 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         await deposit(client, lender1Keys, "USDC", 160_000_000_000n);
 
         await delay(100_000);
+
+        for (const name of [CASE_1_LOG, CASE_2_LOG, CASE_3_LOG, CASE_4_LOG, CASE_5_LOG, CASE_6_LOG, CASE_7_LOG, CASE_7_LOG, CASE_8_LOG, CASE_9_LOG]) {
+            tryRemoveLogFile(name);
+        }
     })
 
     beforeEach(async function () {
@@ -105,12 +129,8 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, false);
-            fs.writeFileSync("snapshots/liquidateUnderlying1.log", liquidateRes);
+            fs.writeFileSync(CASE_1_LOG, liquidateRes);
         }
-
-        // await expect(
-            
-        // ).to.not.eventually.rejected;
     })
 
     it("Case 2: liquidate with receiving underlying when borrower has one debt and one deposit", async function () {
@@ -130,12 +150,8 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, false);
-            fs.writeFileSync("snapshots/liquidateUnderlying2.log", liquidateRes);
+            fs.writeFileSync(CASE_2_LOG, liquidateRes);
         }
-
-        // await expect(
-            
-        // ).to.not.eventually.rejected;
     })
 
     it("Case 3: liquidate with receiving underlying when borrower has two debts and one deposit", async function () {
@@ -152,12 +168,8 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower2Address, false);
-            fs.writeFileSync("snapshots/liquidateUnderlying3.log", liquidateRes);
+            fs.writeFileSync(CASE_3_LOG, liquidateRes);
         }
-
-        // await expect(
-            
-        // ).to.not.eventually.rejected;
     })
 
     it("Case 4: liquidate with receiving sToken & repay when borrower has one debt and two deposits", async function () {
@@ -174,11 +186,8 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, true);
-            fs.writeFileSync("snapshots/liquidateStoken4.log", liquidateRes);
+            fs.writeFileSync(CASE_4_LOG, liquidateRes);
         }
-        
-        // await expect(
-        // ).to.not.eventually.rejected;
     })
 
     it("Case 5: liquidate with receiving sToken & repay when borrower has one debt and one deposit", async function () {
@@ -199,11 +208,8 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, true);
-            fs.writeFileSync("snapshots/liquidateStoken5.log", liquidateRes);
+            fs.writeFileSync(CASE_5_LOG, liquidateRes);
         }
-        
-        // await expect(
-        // ).to.not.eventually.rejected;
     })
 
     it("Case 6: liquidate with receiving sToken & without repay when borrower has one debt and two deposits", async function () {
@@ -223,11 +229,8 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, true);
-            fs.writeFileSync("snapshots/liquidateStoken6.log", liquidateRes);
+            fs.writeFileSync(CASE_6_LOG, liquidateRes);
         }
-        
-        // await expect(
-        // ).to.not.eventually.rejected;
     })
 
     it("Case 7: liquidate with receiving sToken & without repay when borrower has one debt and one deposit", async function () {
@@ -249,11 +252,8 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, true);
-            fs.writeFileSync("snapshots/liquidateStoken7.log", liquidateRes);
+            fs.writeFileSync(CASE_7_LOG, liquidateRes);
         }
-        
-        // await expect(
-        // ).to.not.eventually.rejected;
     })
 
     it("Case 8: liquidate with receiving sToken & repay when borrower has two debts and one deposit", async function () {
@@ -270,10 +270,8 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower2Address, true);
-            fs.writeFileSync("snapshots/liquidateStoken8.log", liquidateRes);
+            fs.writeFileSync(CASE_8_LOG, liquidateRes);
         }
-        // await expect(
-        // ).to.not.eventually.rejected;
     })
 
     it("Case 9: liquidate with receiving sToken & without repay when borrower has two debts and one deposit", async function () {
@@ -292,9 +290,7 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower2Address, true);
-            fs.writeFileSync("snapshots/liquidateStoken9.log", liquidateRes);
+            fs.writeFileSync(CASE_9_LOG, liquidateRes);
         }
-        // await expect(
-        // ).to.not.eventually.rejected;
     })
 })
