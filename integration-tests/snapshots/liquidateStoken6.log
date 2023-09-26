@@ -1,0 +1,2032 @@
+[2m2023-09-26T15:22:00.016217Z[0m [35mTRACE[0m [2msoroban_cli::commands::contract::invoke[0m[2m:[0m [3mnetwork[0m[2m=[0mNetwork { rpc_url: "https://rpc-futurenet.stellar.org", network_passphrase: "Test SDF Future Network ; October 2022" }
+[2m2023-09-26T15:22:00.017220Z[0m [35mTRACE[0m [2msoroban_cli::rpc[0m[2m:[0m [3muri[0m[2m=[0mhttps://rpc-futurenet.stellar.org:443/
+[2m2023-09-26T15:22:00.017251Z[0m [35mTRACE[0m [2msoroban_cli::rpc[0m[2m:[0m Getting network
+[2m2023-09-26T15:22:00.397003Z[0m [35mTRACE[0m [2msoroban_cli::rpc[0m[2m:[0m Getting address GCMCXQIPUOA6CIVWAVE3JOAD2QCKX4D6NFFVDQYQVPXIHYWWTH5XIZSO
+[2m2023-09-26T15:22:00.800338Z[0m [35mTRACE[0m [2msoroban_cli::rpc[0m[2m:[0m [3maccount[0m[2m=[0mAccountEntry { account_id: AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74))), balance: 99995559204, seq_num: SequenceNumber(767489180958725), num_sub_entries: 0, inflation_dest: None, flags: 0, home_domain: String32(StringM()), thresholds: Thresholds(01000000), signers: VecM([]), ext: V1(AccountEntryExtensionV1 { liabilities: Liabilities { buying: 0, selling: 0 }, ext: V2(AccountEntryExtensionV2 { num_sponsored: 0, num_sponsoring: 0, signer_sponsoring_i_ds: VecM([]), ext: V3(AccountEntryExtensionV3 { ext: V0, seq_ledger: 178720, seq_time: TimePoint(1695741713) }) }) }) }
+[2m2023-09-26T15:22:01.942710Z[0m [35mTRACE[0m [2msoroban_cli::rpc[0m[2m:[0m Getting latest ledger
+[2m2023-09-26T15:22:02.301316Z[0m [35mTRACE[0m [2msoroban_cli::rpc[0m[2m:[0m [3mtx[0m[2m=[0mTransaction { source_account: Ed25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)), fee: 100, seq_num: SequenceNumber(767489180958726), cond: None, memo: None, operations: VecM([Operation { source_account: None, body: InvokeHostFunction(InvokeHostFunctionOp { host_function: InvokeContract(InvokeContractArgs { contract_address: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), function_name: ScSymbol(StringM(liquidate)), args: VecM([Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74))))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18))))), Bool(true)]) }), auth: VecM([]) }) }]), ext: V0 }
+[2m2023-09-26T15:22:02.301427Z[0m [35mTRACE[0m [2msoroban_cli::rpc[0m[2m:[0m [3mtx[0m[2m=[0mTx(TransactionV1Envelope { tx: Transaction { source_account: Ed25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)), fee: 100, seq_num: SequenceNumber(767489180958726), cond: None, memo: None, operations: VecM([Operation { source_account: None, body: InvokeHostFunction(InvokeHostFunctionOp { host_function: InvokeContract(InvokeContractArgs { contract_address: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), function_name: ScSymbol(StringM(liquidate)), args: VecM([Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74))))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18))))), Bool(true)]) }), auth: VecM([]) }) }]), ext: V0 }, signatures: VecM([]) })
+[2m2023-09-26T15:22:02.686242Z[0m [35mTRACE[0m [2msoroban_cli::rpc[0m[2m:[0m [3mresponse[0m[2m=[0mSimulateTransactionResponse { min_resource_fee: 1291565, cost: Cost { cpu_insns: 85324819, mem_bytes: 16997569 }, results: [SimulateHostFunctionResult { auth: ["AAAAAAAAAAAAAAAB647k0+eOBEY13oup6n95TOFpm9w9FJbcT30v31xga3sAAAAJbGlxdWlkYXRlAAAAAAAAAwAAABIAAAAAAAAAAJgrwQ+jgeEitgVJtLgD1ASr8H5pS1HDEKvug+LWmft0AAAAEgAAAAAAAAAAuXIGs9HtlVZ2Tpqx7v5ThqdIYwu/evFfUPSBi0eSfBgAAAAAAAAAAQAAAAEAAAAAAAAAAd1Dr/aHIJNK1dnJ0lb/GzyjN6rG29jpWHtp3hiFjMV8AAAACHRyYW5zZmVyAAAAAwAAABIAAAAAAAAAAJgrwQ+jgeEitgVJtLgD1ASr8H5pS1HDEKvug+LWmft0AAAAEgAAAAGujly9rZ+oOY7EvUMTRQdQyUmQyKMNT1LFtaqxgZF+HwAAAAoAAAAAAAAAAAAAAADfs43SAAAAAA=="], xdr: "AAAAAQ==" }], transaction_data: "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", events: ["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", "AAAAAQAAAAAAAAABFf9QRssuzLTbEzA5aN1vnE+cE3PlOz9V7EDCf8UqNdgAAAABAAAAAAAAAAIAAAAPAAAABGJ1cm4AAAASAAAAAAAAAAC5cgaz0e2VVnZOmrHu/lOGp0hjC7968V9Q9IGLR5J8GAAAAAoAAAAAAAAAAAAAAADfs4g5", "AAAAAQAAAAAAAAABFf9QRssuzLTbEzA5aN1vnE+cE3PlOz9V7EDCf8UqNdgAAAACAAAAAAAAAAIAAAAPAAAACWZuX3JldHVybgAAAAAAAA8AAAAEYnVybgAAAAE=", "AAAAAQAAAAAAAAAB647k0+eOBEY13oup6n95TOFpm9w9FJbcT30v31xga3sAAAABAAAAAAAAAAIAAAAPAAAAC2xpcXVpZGF0aW9uAAAAABIAAAAAAAAAALlyBrPR7ZVWdk6ase7+U4anSGMLv3rxX1D0gYtHknwYAAAAEAAAAAEAAAACAAAACgAAAAAAAAAAAAAABqK7fPIAAAAKAAAAAAAAAAAAAAAHTJsJcA==", "AAAAAQAAAAAAAAAB647k0+eOBEY13oup6n95TOFpm9w9FJbcT30v31xga3sAAAACAAAAAAAAAAIAAAAPAAAACWZuX3JldHVybgAAAAAAAA8AAAAJbGlxdWlkYXRlAAAAAAAAAQ=="], restore_preamble: None, latest_ledger: 178721, error: None }
+[2m2023-09-26T15:22:02.687430Z[0m [35mTRACE[0m [2msoroban_cli::rpc[0m[2m:[0m [3mtx[0m[2m=[0mTransaction { source_account: Ed25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)), fee: 1485414, seq_num: SequenceNumber(767489180958726), cond: None, memo: None, operations: VecM([Operation { source_account: None, body: InvokeHostFunction(InvokeHostFunctionOp { host_function: InvokeContract(InvokeContractArgs { contract_address: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), function_name: ScSymbol(StringM(liquidate)), args: VecM([Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74))))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18))))), Bool(true)]) }), auth: VecM([SorobanAuthorizationEntry { credentials: SourceAccount, root_invocation: SorobanAuthorizedInvocation { function: ContractFn(InvokeContractArgs { contract_address: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), function_name: ScSymbol(StringM(liquidate)), args: VecM([Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74))))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18))))), Bool(true)]) }), sub_invocations: VecM([SorobanAuthorizedInvocation { function: ContractFn(InvokeContractArgs { contract_address: Contract(Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c)), function_name: ScSymbol(StringM(transfer)), args: VecM([Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74))))), Address(Contract(Hash(ae8e5cbdad9fa8398ec4bd4313450750c94990c8a30d4f52c5b5aab181917e1f))), I128(Int128Parts { hi: 0, lo: 3753086418 })]) }), sub_invocations: VecM([]) }]) } }]) }) }]), ext: V1(SorobanTransactionData { ext: V0, resources: SorobanResources { footprint: LedgerFootprint { read_only: VecM([ContractData(LedgerKeyContractData { contract: Contract(Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(52d39461028cf7ef0e4f44509550cad3b47b179680856693a23e3c11dd1dfb6a)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(6fb69d4e9ae1eee9907b9736fc35f9db8aff46e7fc8b5258ca43f6a131063bd5))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(79ae9830a9e5ac3f77e351a52b674145d7e3402e5065b13bfaba239d4e09cc68))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractCode(LedgerKeyContractCode { hash: Hash(06202425f08402567a3b086e6c8ba4ede231c7c65574c476056c5f04406f5f5e) }), ContractCode(LedgerKeyContractCode { hash: Hash(1a7afd6b0f93fcbb8a1277db6b91d01125ed8bb455b27c8988540c5be8a0716d) }), ContractCode(LedgerKeyContractCode { hash: Hash(3adf510ec9439b8bda4f29bbb3861e0fb9182d803e1e20be8bd4eeab4a82dadf) }), ContractCode(LedgerKeyContractCode { hash: Hash(487523138936d60880c204bb3ff7815c5dd946f24614593399b6a415cc1acba5) }), ContractCode(LedgerKeyContractCode { hash: Hash(75c08d5e79bb6cfa2eeecfb3982e312c237227b8deb52fe8014d36839770edca) })]), read_write: VecM([ContractData(LedgerKeyContractData { contract: Contract(Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Contract(Hash(ae8e5cbdad9fa8398ec4bd4313450750c94990c8a30d4f52c5b5aab181917e1f)))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(UserConfig))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(UserConfig))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: LedgerKeyContractInstance, durability: Persistent })]) }, instructions: 102389782, read_bytes: 107148, write_bytes: 6552 }, refundable_fee: 16279 }) }
+[2m2023-09-26T15:22:02.687634Z[0m [35mTRACE[0m [2msoroban_cli::rpc[0m[2m:[0m [3mtx[0m[2m=[0mTx(TransactionV1Envelope { tx: Transaction { source_account: Ed25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)), fee: 1485414, seq_num: SequenceNumber(767489180958726), cond: None, memo: None, operations: VecM([Operation { source_account: None, body: InvokeHostFunction(InvokeHostFunctionOp { host_function: InvokeContract(InvokeContractArgs { contract_address: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), function_name: ScSymbol(StringM(liquidate)), args: VecM([Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74))))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18))))), Bool(true)]) }), auth: VecM([SorobanAuthorizationEntry { credentials: SourceAccount, root_invocation: SorobanAuthorizedInvocation { function: ContractFn(InvokeContractArgs { contract_address: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), function_name: ScSymbol(StringM(liquidate)), args: VecM([Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74))))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18))))), Bool(true)]) }), sub_invocations: VecM([SorobanAuthorizedInvocation { function: ContractFn(InvokeContractArgs { contract_address: Contract(Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c)), function_name: ScSymbol(StringM(transfer)), args: VecM([Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74))))), Address(Contract(Hash(ae8e5cbdad9fa8398ec4bd4313450750c94990c8a30d4f52c5b5aab181917e1f))), I128(Int128Parts { hi: 0, lo: 3753086418 })]) }), sub_invocations: VecM([]) }]) } }]) }) }]), ext: V1(SorobanTransactionData { ext: V0, resources: SorobanResources { footprint: LedgerFootprint { read_only: VecM([ContractData(LedgerKeyContractData { contract: Contract(Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(52d39461028cf7ef0e4f44509550cad3b47b179680856693a23e3c11dd1dfb6a)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(6fb69d4e9ae1eee9907b9736fc35f9db8aff46e7fc8b5258ca43f6a131063bd5))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(79ae9830a9e5ac3f77e351a52b674145d7e3402e5065b13bfaba239d4e09cc68))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractCode(LedgerKeyContractCode { hash: Hash(06202425f08402567a3b086e6c8ba4ede231c7c65574c476056c5f04406f5f5e) }), ContractCode(LedgerKeyContractCode { hash: Hash(1a7afd6b0f93fcbb8a1277db6b91d01125ed8bb455b27c8988540c5be8a0716d) }), ContractCode(LedgerKeyContractCode { hash: Hash(3adf510ec9439b8bda4f29bbb3861e0fb9182d803e1e20be8bd4eeab4a82dadf) }), ContractCode(LedgerKeyContractCode { hash: Hash(487523138936d60880c204bb3ff7815c5dd946f24614593399b6a415cc1acba5) }), ContractCode(LedgerKeyContractCode { hash: Hash(75c08d5e79bb6cfa2eeecfb3982e312c237227b8deb52fe8014d36839770edca) })]), read_write: VecM([ContractData(LedgerKeyContractData { contract: Contract(Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Contract(Hash(ae8e5cbdad9fa8398ec4bd4313450750c94990c8a30d4f52c5b5aab181917e1f)))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(UserConfig))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(UserConfig))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: LedgerKeyContractInstance, durability: Persistent })]) }, instructions: 102389782, read_bytes: 107148, write_bytes: 6552 }, refundable_fee: 16279 }) }, signatures: VecM([]) })
+[2m2023-09-26T15:22:03.065506Z[0m [35mTRACE[0m [2msoroban_cli::rpc[0m[2m:[0m [3mresponse[0m[2m=[0mSimulateTransactionResponse { min_resource_fee: 1292223, cost: Cost { cpu_insns: 85379609, mem_bytes: 17000025 }, results: [SimulateHostFunctionResult { auth: ["AAAAAAAAAAAAAAAB647k0+eOBEY13oup6n95TOFpm9w9FJbcT30v31xga3sAAAAJbGlxdWlkYXRlAAAAAAAAAwAAABIAAAAAAAAAAJgrwQ+jgeEitgVJtLgD1ASr8H5pS1HDEKvug+LWmft0AAAAEgAAAAAAAAAAuXIGs9HtlVZ2Tpqx7v5ThqdIYwu/evFfUPSBi0eSfBgAAAAAAAAAAQAAAAEAAAAAAAAAAd1Dr/aHIJNK1dnJ0lb/GzyjN6rG29jpWHtp3hiFjMV8AAAACHRyYW5zZmVyAAAAAwAAABIAAAAAAAAAAJgrwQ+jgeEitgVJtLgD1ASr8H5pS1HDEKvug+LWmft0AAAAEgAAAAGujly9rZ+oOY7EvUMTRQdQyUmQyKMNT1LFtaqxgZF+HwAAAAoAAAAAAAAAAAAAAADfs43SAAAAAA=="], xdr: "AAAAAQ==" }], transaction_data: "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", events: ["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", "AAAAAQAAAAAAAAABFf9QRssuzLTbEzA5aN1vnE+cE3PlOz9V7EDCf8UqNdgAAAABAAAAAAAAAAIAAAAPAAAABGJ1cm4AAAASAAAAAAAAAAC5cgaz0e2VVnZOmrHu/lOGp0hjC7968V9Q9IGLR5J8GAAAAAoAAAAAAAAAAAAAAADfs4g5", "AAAAAQAAAAAAAAABFf9QRssuzLTbEzA5aN1vnE+cE3PlOz9V7EDCf8UqNdgAAAACAAAAAAAAAAIAAAAPAAAACWZuX3JldHVybgAAAAAAAA8AAAAEYnVybgAAAAE=", "AAAAAQAAAAAAAAAB647k0+eOBEY13oup6n95TOFpm9w9FJbcT30v31xga3sAAAABAAAAAAAAAAIAAAAPAAAAC2xpcXVpZGF0aW9uAAAAABIAAAAAAAAAALlyBrPR7ZVWdk6ase7+U4anSGMLv3rxX1D0gYtHknwYAAAAEAAAAAEAAAACAAAACgAAAAAAAAAAAAAABqK7fPIAAAAKAAAAAAAAAAAAAAAHTJsJcA==", "AAAAAQAAAAAAAAAB647k0+eOBEY13oup6n95TOFpm9w9FJbcT30v31xga3sAAAACAAAAAAAAAAIAAAAPAAAACWZuX3JldHVybgAAAAAAAA8AAAAJbGlxdWlkYXRlAAAAAAAAAQ=="], restore_preamble: None, latest_ledger: 178721, error: None }
+[2m2023-09-26T15:22:03.066151Z[0m [34mDEBUG[0m [2msoroban_cli::log::auth[0m[2m:[0m [
+    VecM(
+        [
+            SorobanAuthorizationEntry {
+                credentials: SourceAccount,
+                root_invocation: SorobanAuthorizedInvocation {
+                    function: ContractFn(
+                        InvokeContractArgs {
+                            contract_address: Contract(
+                                Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+                            ),
+                            function_name: ScSymbol(
+                                StringM(liquidate),
+                            ),
+                            args: VecM(
+                                [
+                                    Address(
+                                        Account(
+                                            AccountId(
+                                                PublicKeyTypeEd25519(
+                                                    Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                    Address(
+                                        Account(
+                                            AccountId(
+                                                PublicKeyTypeEd25519(
+                                                    Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                    Bool(
+                                        true,
+                                    ),
+                                ],
+                            ),
+                        },
+                    ),
+                    sub_invocations: VecM(
+                        [
+                            SorobanAuthorizedInvocation {
+                                function: ContractFn(
+                                    InvokeContractArgs {
+                                        contract_address: Contract(
+                                            Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c),
+                                        ),
+                                        function_name: ScSymbol(
+                                            StringM(transfer),
+                                        ),
+                                        args: VecM(
+                                            [
+                                                Address(
+                                                    Account(
+                                                        AccountId(
+                                                            PublicKeyTypeEd25519(
+                                                                Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ),
+                                                Address(
+                                                    Contract(
+                                                        Hash(ae8e5cbdad9fa8398ec4bd4313450750c94990c8a30d4f52c5b5aab181917e1f),
+                                                    ),
+                                                ),
+                                                I128(
+                                                    Int128Parts {
+                                                        hi: 0,
+                                                        lo: 3753086418,
+                                                    },
+                                                ),
+                                            ],
+                                        ),
+                                    },
+                                ),
+                                sub_invocations: VecM(
+                                    [],
+                                ),
+                            },
+                        ],
+                    ),
+                },
+            },
+        ],
+    ),
+]
+[2m2023-09-26T15:22:03.066644Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 0: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: None,
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_call),
+                            ),
+                        ),
+                        Bytes(
+                            ScBytes(
+                                BytesM(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(liquidate),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Vec(
+                    Some(
+                        ScVec(
+                            VecM(
+                                [
+                                    Address(
+                                        Account(
+                                            AccountId(
+                                                PublicKeyTypeEd25519(
+                                                    Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                    Address(
+                                        Account(
+                                            AccountId(
+                                                PublicKeyTypeEd25519(
+                                                    Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                    Bool(
+                                        true,
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.066714Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 1: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_call),
+                            ),
+                        ),
+                        Bytes(
+                            ScBytes(
+                                BytesM(52d39461028cf7ef0e4f44509550cad3b47b179680856693a23e3c11dd1dfb6a),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(lastprice),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Address(
+                    Contract(
+                        Hash(57a3b89ffd6690bc54bf538f7846c31f577d77c984540f0502b113256bd0d325),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.066745Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 2: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(52d39461028cf7ef0e4f44509550cad3b47b179680856693a23e3c11dd1dfb6a),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_return),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(lastprice),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Map(
+                    Some(
+                        ScMap(
+                            VecM(
+                                [
+                                    ScMapEntry {
+                                        key: Symbol(
+                                            ScSymbol(
+                                                StringM(price),
+                                            ),
+                                        ),
+                                        val: I128(
+                                            Int128Parts {
+                                                hi: 0,
+                                                lo: 1500000000,
+                                            },
+                                        ),
+                                    },
+                                    ScMapEntry {
+                                        key: Symbol(
+                                            ScSymbol(
+                                                StringM(timestamp),
+                                            ),
+                                        ),
+                                        val: U64(
+                                            1695741723,
+                                        ),
+                                    },
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.066793Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 3: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_call),
+                            ),
+                        ),
+                        Bytes(
+                            ScBytes(
+                                BytesM(52d39461028cf7ef0e4f44509550cad3b47b179680856693a23e3c11dd1dfb6a),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(decimals),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Void,
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.066819Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 4: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(52d39461028cf7ef0e4f44509550cad3b47b179680856693a23e3c11dd1dfb6a),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_return),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(decimals),
+                            ),
+                        ),
+                    ],
+                ),
+                data: U32(
+                    9,
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.066834Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 5: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_call),
+                            ),
+                        ),
+                        Bytes(
+                            ScBytes(
+                                BytesM(52d39461028cf7ef0e4f44509550cad3b47b179680856693a23e3c11dd1dfb6a),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(lastprice),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Address(
+                    Contract(
+                        Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.066864Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 6: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(52d39461028cf7ef0e4f44509550cad3b47b179680856693a23e3c11dd1dfb6a),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_return),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(lastprice),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Map(
+                    Some(
+                        ScMap(
+                            VecM(
+                                [
+                                    ScMapEntry {
+                                        key: Symbol(
+                                            ScSymbol(
+                                                StringM(price),
+                                            ),
+                                        ),
+                                        val: I128(
+                                            Int128Parts {
+                                                hi: 0,
+                                                lo: 7593750000,
+                                            },
+                                        ),
+                                    },
+                                    ScMapEntry {
+                                        key: Symbol(
+                                            ScSymbol(
+                                                StringM(timestamp),
+                                            ),
+                                        ),
+                                        val: U64(
+                                            1695741723,
+                                        ),
+                                    },
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.066907Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 7: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_call),
+                            ),
+                        ),
+                        Bytes(
+                            ScBytes(
+                                BytesM(52d39461028cf7ef0e4f44509550cad3b47b179680856693a23e3c11dd1dfb6a),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(decimals),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Void,
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.066928Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 8: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(52d39461028cf7ef0e4f44509550cad3b47b179680856693a23e3c11dd1dfb6a),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_return),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(decimals),
+                            ),
+                        ),
+                    ],
+                ),
+                data: U32(
+                    9,
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.066943Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 9: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_call),
+                            ),
+                        ),
+                        Bytes(
+                            ScBytes(
+                                BytesM(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(transfer_on_liquidation),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Vec(
+                    Some(
+                        ScVec(
+                            VecM(
+                                [
+                                    Address(
+                                        Account(
+                                            AccountId(
+                                                PublicKeyTypeEd25519(
+                                                    Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                    Address(
+                                        Account(
+                                            AccountId(
+                                                PublicKeyTypeEd25519(
+                                                    Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                    I128(
+                                        Int128Parts {
+                                            hi: 0,
+                                            lo: 9999999640,
+                                        },
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067002Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 10: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09),
+        ),
+        type_: Contract,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(transfer),
+                            ),
+                        ),
+                        Address(
+                            Account(
+                                AccountId(
+                                    PublicKeyTypeEd25519(
+                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        Address(
+                            Account(
+                                AccountId(
+                                    PublicKeyTypeEd25519(
+                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+                data: I128(
+                    Int128Parts {
+                        hi: 0,
+                        lo: 9999999640,
+                    },
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067048Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 11: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_return),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(transfer_on_liquidation),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Void,
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067062Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 12: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Contract,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(reserve_used_as_coll_enabled),
+                            ),
+                        ),
+                        Address(
+                            Account(
+                                AccountId(
+                                    PublicKeyTypeEd25519(
+                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Address(
+                    Contract(
+                        Hash(336ee37ccc188f934ab3c15010b10f5286340274c2e329cef02d4535766546bb),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067088Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 13: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Contract,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(reserve_used_as_coll_disabled),
+                            ),
+                        ),
+                        Address(
+                            Account(
+                                AccountId(
+                                    PublicKeyTypeEd25519(
+                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Address(
+                    Contract(
+                        Hash(336ee37ccc188f934ab3c15010b10f5286340274c2e329cef02d4535766546bb),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067114Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 14: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_call),
+                            ),
+                        ),
+                        Bytes(
+                            ScBytes(
+                                BytesM(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(transfer_on_liquidation),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Vec(
+                    Some(
+                        ScVec(
+                            VecM(
+                                [
+                                    Address(
+                                        Account(
+                                            AccountId(
+                                                PublicKeyTypeEd25519(
+                                                    Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                    Address(
+                                        Account(
+                                            AccountId(
+                                                PublicKeyTypeEd25519(
+                                                    Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                    I128(
+                                        Int128Parts {
+                                            hi: 0,
+                                            lo: 14233333036,
+                                        },
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067181Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 15: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2),
+        ),
+        type_: Contract,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(transfer),
+                            ),
+                        ),
+                        Address(
+                            Account(
+                                AccountId(
+                                    PublicKeyTypeEd25519(
+                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        Address(
+                            Account(
+                                AccountId(
+                                    PublicKeyTypeEd25519(
+                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+                data: I128(
+                    Int128Parts {
+                        hi: 0,
+                        lo: 14233333036,
+                    },
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067214Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 16: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_return),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(transfer_on_liquidation),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Void,
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067228Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 17: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Contract,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(reserve_used_as_coll_enabled),
+                            ),
+                        ),
+                        Address(
+                            Account(
+                                AccountId(
+                                    PublicKeyTypeEd25519(
+                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Address(
+                    Contract(
+                        Hash(57a3b89ffd6690bc54bf538f7846c31f577d77c984540f0502b113256bd0d325),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067253Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 18: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_call),
+                            ),
+                        ),
+                        Bytes(
+                            ScBytes(
+                                BytesM(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(transfer),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Vec(
+                    Some(
+                        ScVec(
+                            VecM(
+                                [
+                                    Address(
+                                        Account(
+                                            AccountId(
+                                                PublicKeyTypeEd25519(
+                                                    Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                    Address(
+                                        Contract(
+                                            Hash(ae8e5cbdad9fa8398ec4bd4313450750c94990c8a30d4f52c5b5aab181917e1f),
+                                        ),
+                                    ),
+                                    I128(
+                                        Int128Parts {
+                                            hi: 0,
+                                            lo: 3753086418,
+                                        },
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067335Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 19: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c),
+        ),
+        type_: Contract,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(transfer),
+                            ),
+                        ),
+                        Address(
+                            Account(
+                                AccountId(
+                                    PublicKeyTypeEd25519(
+                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        Address(
+                            Contract(
+                                Hash(ae8e5cbdad9fa8398ec4bd4313450750c94990c8a30d4f52c5b5aab181917e1f),
+                            ),
+                        ),
+                    ],
+                ),
+                data: I128(
+                    Int128Parts {
+                        hi: 0,
+                        lo: 3753086418,
+                    },
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067376Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 20: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_return),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(transfer),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Void,
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067390Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 21: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_call),
+                            ),
+                        ),
+                        Bytes(
+                            ScBytes(
+                                BytesM(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(burn),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Vec(
+                    Some(
+                        ScVec(
+                            VecM(
+                                [
+                                    Address(
+                                        Account(
+                                            AccountId(
+                                                PublicKeyTypeEd25519(
+                                                    Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                    I128(
+                                        Int128Parts {
+                                            hi: 0,
+                                            lo: 3753084985,
+                                        },
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067435Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 22: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8),
+        ),
+        type_: Contract,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(burn),
+                            ),
+                        ),
+                        Address(
+                            Account(
+                                AccountId(
+                                    PublicKeyTypeEd25519(
+                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+                data: I128(
+                    Int128Parts {
+                        hi: 0,
+                        lo: 3753084985,
+                    },
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067460Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 23: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_return),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(burn),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Void,
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067472Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 24: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Contract,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(liquidation),
+                            ),
+                        ),
+                        Address(
+                            Account(
+                                AccountId(
+                                    PublicKeyTypeEd25519(
+                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Vec(
+                    Some(
+                        ScVec(
+                            VecM(
+                                [
+                                    I128(
+                                        Int128Parts {
+                                            hi: 0,
+                                            lo: 28499999986,
+                                        },
+                                    ),
+                                    I128(
+                                        Int128Parts {
+                                            hi: 0,
+                                            lo: 31349999984,
+                                        },
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067520Z[0m [35mTRACE[0m [2msoroban_cli::log::diagnostic_event[0m[2m:[0m 25: DiagnosticEvent {
+    in_successful_contract_call: true,
+    event: ContractEvent {
+        ext: V0,
+        contract_id: Some(
+            Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+        ),
+        type_: Diagnostic,
+        body: V0(
+            ContractEventV0 {
+                topics: VecM(
+                    [
+                        Symbol(
+                            ScSymbol(
+                                StringM(fn_return),
+                            ),
+                        ),
+                        Symbol(
+                            ScSymbol(
+                                StringM(liquidate),
+                            ),
+                        ),
+                    ],
+                ),
+                data: Void,
+            },
+        ),
+    },
+}
+[2m2023-09-26T15:22:03.067540Z[0m [34mDEBUG[0m [2msoroban_cli::log::footprint[0m[2m:[0m LedgerFootprint {
+    read_only: VecM(
+        [
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(State),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(52d39461028cf7ef0e4f44509550cad3b47b179680856693a23e3c11dd1dfb6a),
+                    ),
+                    key: LedgerKeyContractInstance,
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(State),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(State),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2),
+                    ),
+                    key: LedgerKeyContractInstance,
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(State),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(State),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09),
+                    ),
+                    key: LedgerKeyContractInstance,
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c),
+                    ),
+                    key: LedgerKeyContractInstance,
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(TokenBalance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Contract(
+                                                Hash(6fb69d4e9ae1eee9907b9736fc35f9db8aff46e7fc8b5258ca43f6a131063bd5),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(TokenBalance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Contract(
+                                                Hash(79ae9830a9e5ac3f77e351a52b674145d7e3402e5065b13bfaba239d4e09cc68),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractCode(
+                LedgerKeyContractCode {
+                    hash: Hash(06202425f08402567a3b086e6c8ba4ede231c7c65574c476056c5f04406f5f5e),
+                },
+            ),
+            ContractCode(
+                LedgerKeyContractCode {
+                    hash: Hash(1a7afd6b0f93fcbb8a1277db6b91d01125ed8bb455b27c8988540c5be8a0716d),
+                },
+            ),
+            ContractCode(
+                LedgerKeyContractCode {
+                    hash: Hash(3adf510ec9439b8bda4f29bbb3861e0fb9182d803e1e20be8bd4eeab4a82dadf),
+                },
+            ),
+            ContractCode(
+                LedgerKeyContractCode {
+                    hash: Hash(487523138936d60880c204bb3ff7815c5dd946f24614593399b6a415cc1acba5),
+                },
+            ),
+            ContractCode(
+                LedgerKeyContractCode {
+                    hash: Hash(75c08d5e79bb6cfa2eeecfb3982e312c237227b8deb52fe8014d36839770edca),
+                },
+            ),
+        ],
+    ),
+    read_write: VecM(
+        [
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(Balance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8),
+                    ),
+                    key: LedgerKeyContractInstance,
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(Balance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(Balance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(Balance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(Balance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(Balance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(Balance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Contract(
+                                                Hash(ae8e5cbdad9fa8398ec4bd4313450750c94990c8a30d4f52c5b5aab181917e1f),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(TokenBalance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Contract(
+                                                Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(TokenBalance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Contract(
+                                                Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(TokenBalance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Contract(
+                                                Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(TokenBalance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Contract(
+                                                Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(TokenBalance),
+                                            ),
+                                        ),
+                                        Address(
+                                            Contract(
+                                                Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(UserConfig),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+                    ),
+                    key: Vec(
+                        Some(
+                            ScVec(
+                                VecM(
+                                    [
+                                        Symbol(
+                                            ScSymbol(
+                                                StringM(UserConfig),
+                                            ),
+                                        ),
+                                        Address(
+                                            Account(
+                                                AccountId(
+                                                    PublicKeyTypeEd25519(
+                                                        Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                    durability: Persistent,
+                },
+            ),
+            ContractData(
+                LedgerKeyContractData {
+                    contract: Contract(
+                        Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b),
+                    ),
+                    key: LedgerKeyContractInstance,
+                    durability: Persistent,
+                },
+            ),
+        ],
+    ),
+}
+[2m2023-09-26T15:22:03.068517Z[0m [34mDEBUG[0m [2msoroban_cli::log::cost[0m[2m:[0m [3mcost[0m[2m=[0m==================== Cost ====================
+CPU used: 102455530
+Bytes read: 107148
+Bytes written: 6552
+==============================================
+
+[2m2023-09-26T15:22:03.221189Z[0m [35mTRACE[0m [2msoroban_cli::rpc[0m[2m:[0m [3mtx[0m[2m=[0mTx(TransactionV1Envelope { tx: Transaction { source_account: Ed25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)), fee: 1708226, seq_num: SequenceNumber(767489180958726), cond: None, memo: None, operations: VecM([Operation { source_account: None, body: InvokeHostFunction(InvokeHostFunctionOp { host_function: InvokeContract(InvokeContractArgs { contract_address: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), function_name: ScSymbol(StringM(liquidate)), args: VecM([Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74))))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18))))), Bool(true)]) }), auth: VecM([SorobanAuthorizationEntry { credentials: SourceAccount, root_invocation: SorobanAuthorizedInvocation { function: ContractFn(InvokeContractArgs { contract_address: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), function_name: ScSymbol(StringM(liquidate)), args: VecM([Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74))))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18))))), Bool(true)]) }), sub_invocations: VecM([SorobanAuthorizedInvocation { function: ContractFn(InvokeContractArgs { contract_address: Contract(Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c)), function_name: ScSymbol(StringM(transfer)), args: VecM([Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74))))), Address(Contract(Hash(ae8e5cbdad9fa8398ec4bd4313450750c94990c8a30d4f52c5b5aab181917e1f))), I128(Int128Parts { hi: 0, lo: 3753086418 })]) }), sub_invocations: VecM([]) }]) } }]) }) }]), ext: V1(SorobanTransactionData { ext: V0, resources: SorobanResources { footprint: LedgerFootprint { read_only: VecM([ContractData(LedgerKeyContractData { contract: Contract(Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(52d39461028cf7ef0e4f44509550cad3b47b179680856693a23e3c11dd1dfb6a)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(State))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(6fb69d4e9ae1eee9907b9736fc35f9db8aff46e7fc8b5258ca43f6a131063bd5))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(79ae9830a9e5ac3f77e351a52b674145d7e3402e5065b13bfaba239d4e09cc68))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractCode(LedgerKeyContractCode { hash: Hash(06202425f08402567a3b086e6c8ba4ede231c7c65574c476056c5f04406f5f5e) }), ContractCode(LedgerKeyContractCode { hash: Hash(1a7afd6b0f93fcbb8a1277db6b91d01125ed8bb455b27c8988540c5be8a0716d) }), ContractCode(LedgerKeyContractCode { hash: Hash(3adf510ec9439b8bda4f29bbb3861e0fb9182d803e1e20be8bd4eeab4a82dadf) }), ContractCode(LedgerKeyContractCode { hash: Hash(487523138936d60880c204bb3ff7815c5dd946f24614593399b6a415cc1acba5) }), ContractCode(LedgerKeyContractCode { hash: Hash(75c08d5e79bb6cfa2eeecfb3982e312c237227b8deb52fe8014d36839770edca) })]), read_write: VecM([ContractData(LedgerKeyContractData { contract: Contract(Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8)), key: LedgerKeyContractInstance, durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(dd43aff68720934ad5d9c9d256ff1b3ca337aac6dbd8e9587b69de18858cc57c)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(Balance))), Address(Contract(Hash(ae8e5cbdad9fa8398ec4bd4313450750c94990c8a30d4f52c5b5aab181917e1f)))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(15ff5046cb2eccb4db13303968dd6f9c4f9c1373e53b3f55ec40c27fc52a35d8))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(92492488d101bf29540e97b290b996fc249ca066270cf256083153386daf1fc2))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(TokenBalance))), Address(Contract(Hash(cbcbdaacc7e554108988d35a7610c134ecec7f6cf6ff84f2bbb1cfc2208acc09))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(UserConfig))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(982bc10fa381e122b60549b4b803d404abf07e694b51c310abee83e2d699fb74)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: Vec(Some(ScVec(VecM([Symbol(ScSymbol(StringM(UserConfig))), Address(Account(AccountId(PublicKeyTypeEd25519(Uint256(b97206b3d1ed9556764e9ab1eefe5386a748630bbf7af15f50f4818b47927c18)))))])))), durability: Persistent }), ContractData(LedgerKeyContractData { contract: Contract(Hash(eb8ee4d3e78e044635de8ba9ea7f794ce1699bdc3d1496dc4f7d2fdf5c606b7b)), key: LedgerKeyContractInstance, durability: Persistent })]) }, instructions: 102455530, read_bytes: 107148, write_bytes: 6552 }, refundable_fee: 16279 }) }, signatures: VecM([DecoratedSignature { hint: SignatureHint(d699fb74), signature: Signature(BytesM(05267e799dfc4fe3514055bc1f8ae21e38467543540e5c3810c31f63939c87cc4b9d0bc41c1bcc178d6db9f1f056b6e1aa3d6c20100c7c03f796585fa04d4303)) }]) })
+[2m2023-09-26T15:22:03.416731Z[0m [31mERROR[0m [2msoroban_cli::rpc[0m[2m:[0m [3merror[0m[2m=[0mOk(TxSorobanInvalid)
+error: transaction submission failed: TxSorobanInvalid

@@ -2,6 +2,7 @@ import { SorobanClient, delay } from "../soroban.client";
 import {
     BUDGET_SNAPSHOT_FILE,
     FlashLoanAsset,
+    I128_MAX,
     borrow,
     cleanSlenderEnvKeys,
     deploy,
@@ -105,7 +106,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
     it("Case 3: withdraw full", async function () {
         // Borrower1 witdraws all XLM
         await expect(
-            withdraw(client, borrower1Keys, "XLM", 170_141_183_460_469_231_731_687_303_715_884_105_727n) // i128::MAX
+            withdraw(client, borrower1Keys, "XLM", I128_MAX)
                 .then((result) => writeBudgetSnapshot("withdraw", result))
         ).to.not.eventually.rejected;
     });
