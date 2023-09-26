@@ -1,10 +1,11 @@
 #!/bin/bash
 
 BASEDIR=$(dirname $0)
-source $BASEDIR/.$1.env
+ARTIFACTS=$BASEDIR/../artifacts
+MOCKS=$BASEDIR/../../mocks
+BUILD=$BASEDIR/../../target/wasm32-unknown-unknown/release
 
-curl -s "$FRIENDBOT_URL?addr=$ADMIN_PUBLIC" 1>/dev/null
-sleep 10
+source $BASEDIR/.$1.env
 
 deploy() {
     local address=$(soroban contract deploy \
@@ -32,32 +33,46 @@ addressFromResult() {
     echo $value1
 }
 
-TOKEN_XLM=$(deploy "$BASEDIR/../../mocks/soroban_token_contract.wasm" $ADMIN_SECRET)
-echo "XLM contract address: $TOKEN_XLM"
+cp $BUILD/*.wasm $ARTIFACTS
+cp $MOCKS/soroban_token_contract.wasm $ARTIFACTS/token.wasm
 
-TOKEN_XRP=$(deploy "$BASEDIR/../../mocks/soroban_token_contract.wasm" $ADMIN_SECRET)
-echo "XRP contract address: $TOKEN_XRP"
+echo "WASM files have been copied"
 
-TOKEN_USDC=$(deploy "$BASEDIR/../../mocks/soroban_token_contract.wasm" $ADMIN_SECRET)
-echo "USDC contract address: $TOKEN_USDC"
+find $ARTIFACTS -name \*.wasm -exec soroban contract optimize --wasm {} --wasm-out {} \; 1>/dev/null
 
-DEPLOYER=$(deploy "$BASEDIR/../../target/wasm32-unknown-unknown/release/deployer.wasm" $ADMIN_SECRET)
-echo "Deployer contract address: $DEPLOYER"
+echo "WASM files has been optimized"
 
-S_TOKEN_HASH=$(install "$BASEDIR/../../target/wasm32-unknown-unknown/release/s_token.wasm" $ADMIN_SECRET)
-echo "SToken wasm hash: $S_TOKEN_HASH"
+curl -s "$FRIENDBOT_URL?addr=$ADMIN_PUBLIC" 1>/dev/null
+sleep 10
 
-DEBT_TOKEN_HASH=$(install "$BASEDIR/../../target/wasm32-unknown-unknown/release/debt_token.wasm" $ADMIN_SECRET)
-echo "DebtToken wasm hash: $DEBT_TOKEN_HASH"
+echo "Admin's account has been funded"
 
-POOL_HASH=$(install "$BASEDIR/../../target/wasm32-unknown-unknown/release/pool.wasm" $ADMIN_SECRET)
-echo "Pool wasm hash: $POOL_HASH"
+TOKEN_XLM=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+echo "  XLM contract address: $TOKEN_XLM"
 
-PRICE_FEED=$(deploy "$BASEDIR/../../target/wasm32-unknown-unknown/release/price_feed_mock.wasm" $ADMIN_SECRET)
+TOKEN_XRP=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+echo "  XRP contract address: $TOKEN_XRP"
+
+TOKEN_USDC=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+echo "  USDC contract address: $TOKEN_USDC"
+
+DEPLOYER=$(deploy "$ARTIFACTS/deployer.wasm" $ADMIN_SECRET)
+echo "  Deployer contract address: $DEPLOYER"
+
+S_TOKEN_HASH=$(install "$ARTIFACTS/s_token.wasm" $ADMIN_SECRET)
+echo "  SToken wasm hash: $S_TOKEN_HASH"
+
+DEBT_TOKEN_HASH=$(install "$ARTIFACTS/debt_token.wasm" $ADMIN_SECRET)
+echo "  DebtToken wasm hash: $DEBT_TOKEN_HASH"
+
+POOL_HASH=$(install "$ARTIFACTS/pool.wasm" $ADMIN_SECRET)
+echo "  Pool wasm hash: $POOL_HASH"
+
+PRICE_FEED=$(deploy "$ARTIFACTS/price_feed_mock.wasm" $ADMIN_SECRET)
 PRICE_FEED=$(addressFromResult $PRICE_FEED)
-echo "Price Feed contract address: $PRICE_FEED"
+echo "  Price Feed contract address: $PRICE_FEED"
 
-contracts="$BASEDIR/../artifacts/.contracts"
+contracts="$ARTIFACTS/.contracts"
 {
     echo "SLENDER_TOKEN_XLM=$TOKEN_XLM"
     echo "SLENDER_TOKEN_XRP=$TOKEN_XRP"
@@ -70,8 +85,3 @@ contracts="$BASEDIR/../artifacts/.contracts"
 } >$contracts
 
 echo "Contracts have been deployed"
-
-cp $BASEDIR/../../target/wasm32-unknown-unknown/release/*.wasm $BASEDIR/../artifacts
-cp $BASEDIR/../../mocks/soroban_token_contract.wasm $BASEDIR/../artifacts/token.wasm
-
-echo "WASM files have been copied"
