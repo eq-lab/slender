@@ -1,3 +1,4 @@
+use common_token::storage::{HIGH_INSTANCE_BUMP_LEDGERS, LOW_INSTANCE_BUMP_LEDGERS};
 use soroban_sdk::{contracttype, Address, Env};
 
 #[contracttype]
@@ -20,12 +21,22 @@ pub enum DataKey {
     UnderlyingAsset,
 }
 
-pub fn write_underlying_asset(e: &Env, asset: &Address) {
-    e.storage().instance().set(&DataKey::UnderlyingAsset, asset);
+pub fn write_underlying_asset(env: &Env, asset: &Address) {
+    env.storage()
+        .instance()
+        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    env.storage()
+        .instance()
+        .set(&DataKey::UnderlyingAsset, asset);
 }
 
-pub fn read_underlying_asset(e: &Env) -> Address {
-    e.storage()
+pub fn read_underlying_asset(env: &Env) -> Address {
+    env.storage()
+        .instance()
+        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    env.storage()
         .instance()
         .get(&DataKey::UnderlyingAsset)
         .unwrap()

@@ -25,6 +25,8 @@ deploy-contracts:
 
 init-contracts:
 	yarn --cwd integration-tests init-$(env)
+
+create-bindings:
 	./deploy/scripts/create-bindings.sh
 
 integration-test:

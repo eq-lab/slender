@@ -180,8 +180,8 @@
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::treasury'] = {
-    "cpu_cost": 57930,
-    "memory_cost": 3780,
+    "cpu_cost": 79428,
+    "memory_cost": 5627,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
