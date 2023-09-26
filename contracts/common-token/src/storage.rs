@@ -7,7 +7,7 @@ pub(crate) const DAY_IN_LEDGERS: u32 = 17_280;
 pub(crate) const LOW_USER_DATA_BUMP_LEDGERS: u32 = 10 * DAY_IN_LEDGERS; // 20 days
 pub(crate) const HIGH_USER_DATA_BUMP_LEDGERS: u32 = 20 * DAY_IN_LEDGERS; // 30 days
 
-pub const LOW_INSTANCE_BUMP_LEDGERS: u32 = 1 * DAY_IN_LEDGERS; // 1 day
+pub const LOW_INSTANCE_BUMP_LEDGERS: u32 = DAY_IN_LEDGERS; // 1 day
 pub const HIGH_INSTANCE_BUMP_LEDGERS: u32 = 7 * DAY_IN_LEDGERS; // 7 days
 
 #[derive(Clone)]
