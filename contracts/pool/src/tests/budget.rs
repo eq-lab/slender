@@ -240,9 +240,7 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
     let liquidator = Address::random(&env);
 
     for reserve in &sut.reserves {
-        reserve
-            .token_admin
-            .mint(&liquidator, &100_000_000_000);
+        reserve.token_admin.mint(&liquidator, &100_000_000_000);
     }
 
     sut.pool
