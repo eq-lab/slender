@@ -12,6 +12,7 @@ use crate::storage::{
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_collateral::LiquidationCollateral;
 use crate::types::liquidation_data::LiquidationData;
+use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 
 use super::account_position::calc_account_data;
@@ -32,8 +33,15 @@ pub fn liquidate(
 
     let mut user_configurator = UserConfigurator::new(env, who, false);
     let user_config = user_configurator.user_config()?;
-    let account_data =
-        calc_account_data(env, who, &CalcAccountDataCache::none(), user_config, true)?;
+
+    let account_data = calc_account_data(
+        env,
+        who,
+        &CalcAccountDataCache::none(),
+        user_config,
+        &mut PriceProvider::new(env),
+        true,
+    )?;
 
     assert_with_error!(env, !account_data.is_good_position(), Error::GoodPosition);
 

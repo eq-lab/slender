@@ -166,13 +166,11 @@ fn init_reserve() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
-        // decimals: 9,
     };
 
     measure_budget(&env, function_name!(), || {
         pool.init_reserve(
             &underlying_token.address.clone(),
-            // &false,
             &init_reserve_input.clone(),
         );
     });
@@ -333,26 +331,14 @@ fn set_as_collateral() {
 }
 
 #[test]
-fn set_decimals() {
+fn set_asset_config() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.set_decimals(&sut.token().address, &9);
-    });
-}
-
-#[test]
-fn set_base_asset() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, true);
-
-    measure_budget(&env, function_name!(), || {
-        sut.pool.set_base_asset(&sut.token().address, &true);
+        sut.pool.set_asset_config(&sut.token().address, &true, &9);
     });
 }
 

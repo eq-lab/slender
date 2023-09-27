@@ -25,7 +25,6 @@ impl ReserveData {
         let InitReserveInput {
             s_token_address,
             debt_token_address,
-            // decimals,
         } = input;
         Self {
             lender_ar: FixedI128::ONE.into_inner(),
@@ -34,7 +33,6 @@ impl ReserveData {
             borrower_ir: Default::default(),
             s_token_address: s_token_address.clone(),
             debt_token_address: debt_token_address.clone(),
-            // configuration: ReserveConfiguration::default(*decimals),
             configuration: ReserveConfiguration::default(),
             last_update_timestamp: env.ledger().timestamp(),
             id: zero_bytes(env), // position in reserve list

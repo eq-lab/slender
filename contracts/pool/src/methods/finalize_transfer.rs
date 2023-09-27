@@ -4,6 +4,7 @@ use soroban_sdk::{Address, Env};
 
 use crate::storage::{read_reserve, read_token_total_supply, write_token_balance};
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
+use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 
 use super::account_position::calc_account_data;
@@ -60,6 +61,7 @@ pub fn finalize_transfer(
                 )),
             },
             from_config,
+            &mut PriceProvider::new(env),
             false,
         )?;
 

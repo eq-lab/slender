@@ -11,15 +11,21 @@ use crate::types::account_data::AccountData;
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_collateral::LiquidationCollateral;
 use crate::types::liquidation_data::LiquidationData;
+use crate::types::price_provider::PriceProvider;
 
-use super::utils::get_asset_price::get_asset_price;
 use super::utils::get_collat_coeff::get_collat_coeff;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 
 pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Error> {
     let user_config = read_user_config(env, who)?;
-    let account_data =
-        calc_account_data(env, who, &CalcAccountDataCache::none(), &user_config, false)?;
+    let account_data = calc_account_data(
+        env,
+        who,
+        &CalcAccountDataCache::none(),
+        &user_config,
+        &mut PriceProvider::new(env),
+        false,
+    )?;
 
     Ok(account_data.get_position())
 }
@@ -29,6 +35,7 @@ pub fn calc_account_data(
     who: &Address,
     cache: &CalcAccountDataCache,
     user_config: &UserConfiguration,
+    price_provider: &mut PriceProvider,
     liquidation: bool,
 ) -> Result<AccountData, Error> {
     if user_config.is_empty() {
@@ -57,45 +64,40 @@ pub fn calc_account_data(
             continue;
         }
 
-        let curr_reserve_asset = reserves.get_unchecked(i.into());
-        let curr_reserve = read_reserve(env, &curr_reserve_asset)?;
+        let asset = reserves.get_unchecked(i.into());
+        let reserve = read_reserve(env, &asset)?;
 
         assert_with_error!(
             env,
-            curr_reserve.configuration.is_active || !liquidation,
+            reserve.configuration.is_active || !liquidation,
             Error::NoActiveReserve
         );
 
-        let asset_price = get_asset_price(
-            env,
-            &curr_reserve_asset,
-            curr_reserve.configuration.is_base_asset,
-        )?;
-
         if user_config.is_using_as_collateral(env, i) {
             let s_token_supply = mb_s_token_supply
-                .filter(|x| x.asset == curr_reserve.s_token_address)
+                .filter(|x| x.asset == reserve.s_token_address)
                 .map(|x| x.balance)
-                .unwrap_or_else(|| read_token_total_supply(env, &curr_reserve.s_token_address));
+                .unwrap_or_else(|| read_token_total_supply(env, &reserve.s_token_address));
             let debt_token_supply = mb_debt_token_supply
-                .filter(|x| x.asset == curr_reserve.debt_token_address)
+                .filter(|x| x.asset == reserve.debt_token_address)
                 .map(|x| x.balance)
-                .unwrap_or_else(|| read_token_total_supply(env, &curr_reserve.debt_token_address));
+                .unwrap_or_else(|| read_token_total_supply(env, &reserve.debt_token_address));
 
-            let collat_coeff =
-                get_collat_coeff(env, &curr_reserve, s_token_supply, debt_token_supply)?;
+            let collat_coeff = get_collat_coeff(env, &reserve, s_token_supply, debt_token_supply)?;
 
             let who_collat = mb_who_collat
-                .filter(|x| x.asset == curr_reserve.s_token_address)
+                .filter(|x| x.asset == reserve.s_token_address)
                 .map(|x| x.balance)
-                .unwrap_or_else(|| read_token_balance(env, &curr_reserve.s_token_address, who));
+                .unwrap_or_else(|| read_token_balance(env, &reserve.s_token_address, who));
 
-            let discount = FixedI128::from_percentage(curr_reserve.configuration.discount)
+            let discount = FixedI128::from_percentage(reserve.configuration.discount)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
             let compounded_balance = collat_coeff
                 .mul_int(who_collat)
                 .ok_or(Error::CalcAccountDataMathError)?;
+
+            let asset_price = price_provider.price(&asset, &reserve.configuration)?;
 
             let compounded_balance_in_xlm = asset_price
                 .mul_int(compounded_balance)
@@ -110,13 +112,13 @@ pub fn calc_account_data(
                 .ok_or(Error::CalcAccountDataMathError)?;
 
             if liquidation {
-                let curr_discount = curr_reserve.configuration.discount;
+                let curr_discount = reserve.configuration.discount;
                 let mut collateral_to_receive = sorted_collateral_to_receive
                     .get(curr_discount)
                     .unwrap_or(Vec::new(env));
                 collateral_to_receive.push_back(LiquidationCollateral {
-                    reserve_data: curr_reserve,
-                    asset: curr_reserve_asset,
+                    reserve_data: reserve,
+                    asset,
                     s_token_balance: who_collat,
                     asset_price: asset_price.into_inner(),
                     collat_coeff: collat_coeff.into_inner(),
@@ -124,16 +126,18 @@ pub fn calc_account_data(
                 sorted_collateral_to_receive.set(curr_discount, collateral_to_receive);
             }
         } else if user_config.is_borrowing(env, i) {
-            let debt_coeff = get_actual_borrower_accrued_rate(env, &curr_reserve)?;
+            let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?;
 
             let who_debt = mb_who_debt
-                .filter(|x| x.asset == curr_reserve.debt_token_address)
+                .filter(|x| x.asset == reserve.debt_token_address)
                 .map(|x| x.balance)
-                .unwrap_or_else(|| read_token_balance(env, &curr_reserve.debt_token_address, who));
+                .unwrap_or_else(|| read_token_balance(env, &reserve.debt_token_address, who));
 
             let compounded_balance = debt_coeff
                 .mul_int(who_debt)
                 .ok_or(Error::CalcAccountDataMathError)?;
+
+            let asset_price = price_provider.price(&asset, &reserve.configuration)?;
 
             let debt_balance_in_xlm = asset_price
                 .mul_int(compounded_balance)
@@ -144,7 +148,7 @@ pub fn calc_account_data(
                 .ok_or(Error::CalcAccountDataMathError)?;
 
             if liquidation {
-                let liq_bonus = FixedI128::from_percentage(curr_reserve.configuration.liq_bonus)
+                let liq_bonus = FixedI128::from_percentage(reserve.configuration.liq_bonus)
                     .ok_or(Error::CalcAccountDataMathError)?;
                 let liquidation_debt = liq_bonus
                     .mul_int(debt_balance_in_xlm)
@@ -153,12 +157,7 @@ pub fn calc_account_data(
                     .checked_add(liquidation_debt)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
-                debt_to_cover.push_back((
-                    curr_reserve_asset,
-                    curr_reserve,
-                    compounded_balance,
-                    who_debt,
-                ));
+                debt_to_cover.push_back((asset, reserve, compounded_balance, who_debt));
             }
         }
     }

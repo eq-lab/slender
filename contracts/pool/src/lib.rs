@@ -7,9 +7,9 @@ use methods::{
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, finalize_transfer::finalize_transfer,
     flash_loan::flash_loan, init_reserve::init_reserve, initialize::initialize,
     liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral,
-    set_base_asset::set_base_asset, set_decimals::set_decimals,
-    set_flash_loan_fee::set_flash_loan_fee, set_ir_params::set_ir_params, set_pause::set_pause,
-    set_price_feed::set_price_feed, set_reserve_status::set_reserve_status,
+    set_asset_config::set_asset_config, set_flash_loan_fee::set_flash_loan_fee,
+    set_ir_params::set_ir_params, set_pause::set_pause, set_price_feed::set_price_feed,
+    set_reserve_status::set_reserve_status,
     set_reserve_timestamp_window::set_reserve_timestamp_window, upgrade::upgrade,
     upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token, withdraw::withdraw,
 };
@@ -69,12 +69,13 @@ impl LendingPoolTrait for LendingPool {
         init_reserve(&env, &asset, &input)
     }
 
-    fn set_decimals(env: Env, asset: Address, decimals: u32) -> Result<(), Error> {
-        set_decimals(&env, &asset, decimals)
-    }
-
-    fn set_base_asset(env: Env, asset: Address, is_base: bool) -> Result<(), Error> {
-        set_base_asset(&env, &asset, is_base)
+    fn set_asset_config(
+        env: Env,
+        asset: Address,
+        is_base: bool,
+        decimals: u32,
+    ) -> Result<(), Error> {
+        set_asset_config(&env, &asset, is_base, decimals)
     }
 
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error> {

@@ -46,6 +46,7 @@ pub(crate) fn create_token_contract<'a>(
     admin: &Address,
 ) -> (TokenClient<'a>, TokenAdminClient<'a>) {
     let stellar_asset_contract = e.register_stellar_asset_contract(admin.clone());
+
     (
         TokenClient::new(e, &stellar_asset_contract),
         TokenAdminClient::new(e, &stellar_asset_contract),
@@ -142,18 +143,19 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             let (token, token_admin_client) = create_token_contract(&env, &token_admin);
             let s_token = create_s_token_contract(&env, &pool.address, &token.address);
             let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
-            let decimals = s_token.decimals();
+            let decimals = token.decimals();
+
             assert!(pool.get_reserve(&s_token.address).is_none());
 
             pool.init_reserve(
                 &token.address,
-                // &(i == 2),
                 &InitReserveInput {
                     s_token_address: s_token.address.clone(),
                     debt_token_address: debt_token.address.clone(),
-                    // decimals: 9,
                 },
             );
+
+            pool.set_asset_config(&token.address, &false, &decimals);
 
             let liq_bonus = 11000; //110%
             let liq_cap = 100_000_000 * 10_i128.pow(decimals); // 100M

@@ -11,10 +11,10 @@ use crate::storage::{
     write_token_balance, write_token_total_supply,
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
+use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 
 use super::account_position::calc_account_data;
-use super::utils::get_asset_price::get_asset_price;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
@@ -71,9 +71,10 @@ pub fn do_borrow(
 ) -> Result<i128, Error> {
     require_not_in_collateral_asset(env, who_collat);
 
-    let util_cap = reserve.configuration.util_cap;
-    let asset_price = get_asset_price(env, asset, reserve.configuration.is_base_asset)?;
-    let amount_in_xlm = asset_price
+    let mut price_provider = PriceProvider::new(env);
+
+    let amount_in_xlm = price_provider
+        .price(asset, &reserve.configuration)?
         .mul_int(amount)
         .ok_or(Error::ValidateBorrowMathError)?;
     require_positive_amount(env, amount_in_xlm);
@@ -94,6 +95,7 @@ pub fn do_borrow(
             mb_debt_token_supply: None,
         },
         user_config,
+        &mut price_provider,
         false,
     )?;
 
@@ -112,7 +114,7 @@ pub fn do_borrow(
         env,
         s_token_supply,
         debt_token_supply,
-        util_cap,
+        reserve.configuration.util_cap,
         amount_of_debt_token,
     )?;
 

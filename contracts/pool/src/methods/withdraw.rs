@@ -4,6 +4,7 @@ use crate::storage::{
     write_token_balance, write_token_total_supply,
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
+use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
@@ -87,6 +88,7 @@ pub fn withdraw(
                 )),
             },
             user_config,
+            &mut PriceProvider::new(env),
             false,
         )?;
 
