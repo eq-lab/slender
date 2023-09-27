@@ -16,6 +16,8 @@ import {
 import { exec } from "child_process";
 import * as fs from 'fs';
 
+export const I128_MAX = 170_141_183_460_469_231_731_687_303_715_884_105_727n;
+
 export const BUDGET_SNAPSHOT_FILE = 'snapshots/budget_utilization.snap';
 
 export type SlenderAsset = "XLM" | "XRP" | "USDC";
@@ -366,6 +368,29 @@ export async function deployReceiverMock(): Promise<string> {
     console.log("    Flashloan receiver deployment has been finished");
 
     return (flashLoadReceiverMockAddress as string).trim();
+}
+
+export async function liquidateCli(liquidatorKeys: Keypair, borrower: string, receiveStoken: boolean): Promise<string> {
+    const liquidateResult = (await new Promise((resolve) => {
+        exec(`soroban --very-verbose contract invoke \
+        --id ${process.env.SLENDER_POOL} \
+        --source ${liquidatorKeys.secret()} \
+        --rpc-url "${process.env.SOROBAN_RPC_URL}" \
+        --network-passphrase "${process.env.PASSPHRASE}" \
+        -- \
+        liquidate \
+        --liquidator ${liquidatorKeys.publicKey()} \
+        --who ${borrower} \
+        --receive_stoken ${receiveStoken}`, (error, stdout, stderr) => {
+            if (error) {
+                resolve(stderr);
+                return;
+            }
+            resolve(stdout)
+        });
+    }) as string).trim();
+
+    return liquidateResult;
 }
 
 export async function cleanSlenderEnvKeys() {

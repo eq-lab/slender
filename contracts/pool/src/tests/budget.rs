@@ -40,7 +40,7 @@ fn account_position() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (lender, _) = fill_pool_four(&env, &sut);
+    let (lender, _, _) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.account_position(&lender);
@@ -53,7 +53,7 @@ fn borrow() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower) = fill_pool_four(&env, &sut);
+    let (_, borrower, _) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
         sut.pool
@@ -67,7 +67,7 @@ fn collat_coeff() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, _) = fill_pool_four(&env, &sut);
+    let (_, _, _) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.collat_coeff(&sut.reserves[2].token.address);
@@ -101,7 +101,7 @@ fn debt_coeff() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, _) = fill_pool_four(&env, &sut);
+    let (_, _, _) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.debt_coeff(&sut.reserves[2].token.address);
@@ -114,7 +114,7 @@ fn deposit() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower) = fill_pool_four(&env, &sut);
+    let (_, borrower, _) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
         sut.pool
@@ -182,7 +182,7 @@ fn ir_params() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, _) = fill_pool_four(&env, &sut);
+    let (_, _, _) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.ir_params();
@@ -190,12 +190,12 @@ fn ir_params() {
 }
 
 #[test]
-fn liquidate_receive_stoken() {
+fn liquidate_receive_stoken_when_borrower_has_one_debt() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower) = fill_pool_four(&env, &sut);
+    let (_, borrower, _) = fill_pool_four(&env, &sut);
 
     sut.pool
         .borrow(&borrower, &sut.reserves[2].token.address, &5_990_400_000);
@@ -226,12 +226,45 @@ fn liquidate_receive_stoken() {
 }
 
 #[test]
-fn liquidate_receive_underlying() {
+fn liquidate_receive_stoken_when_borrower_has_two_debts() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower) = fill_pool_four(&env, &sut);
+    let (_, _, borrower) = fill_pool_four(&env, &sut);
+
+    env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
+
+    let liquidator = Address::random(&env);
+
+    for reserve in &sut.reserves {
+        reserve.token_admin.mint(&liquidator, &100_000_000_000);
+    }
+
+    sut.pool
+        .deposit(&liquidator, &sut.reserves[0].token.address, &10_000_000_000);
+    sut.pool
+        .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
+    sut.pool
+        .borrow(&liquidator, &sut.reserves[2].token.address, &1_000_000_000);
+
+    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
+
+    sut.price_feed
+        .set_price(&sut.reserves[0].token.address, &1_100_000_000);
+
+    measure_budget(&env, function_name!(), || {
+        sut.pool.liquidate(&liquidator, &borrower, &true);
+    });
+}
+
+#[test]
+fn liquidate_receive_underlying_when_borrower_has_one_debt() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, true);
+    let (_, borrower, _) = fill_pool_four(&env, &sut);
 
     sut.pool
         .borrow(&borrower, &sut.reserves[2].token.address, &5_990_400_000);
@@ -255,6 +288,43 @@ fn liquidate_receive_underlying() {
 
     sut.price_feed
         .set_price(&sut.reserves[2].token.address, &1_001_000_000);
+
+    measure_budget(&env, function_name!(), || {
+        sut.pool.liquidate(&liquidator, &borrower, &false);
+    });
+}
+
+#[test]
+fn liquidate_receive_underlying_when_borrower_has_two_debts() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, true);
+    let (_, _, borrower) = fill_pool_four(&env, &sut);
+
+    env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
+
+    let liquidator = Address::random(&env);
+
+    sut.reserves[0]
+        .token_admin
+        .mint(&liquidator, &100_000_000_000);
+
+    sut.reserves[1]
+        .token_admin
+        .mint(&liquidator, &100_000_000_000);
+
+    sut.pool
+        .deposit(&liquidator, &sut.reserves[0].token.address, &10_000_000_000);
+    sut.pool
+        .borrow(&liquidator, &sut.reserves[2].token.address, &1_000_000_000);
+    sut.pool
+        .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
+
+    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
+
+    sut.price_feed
+        .set_price(&sut.reserves[0].token.address, &1_001_000_000);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &false);
@@ -291,7 +361,7 @@ fn repay_full() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower) = fill_pool_four(&env, &sut);
+    let (_, borrower, _) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
         sut.pool
@@ -305,7 +375,7 @@ fn repay_partial() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower) = fill_pool_four(&env, &sut);
+    let (_, borrower, _) = fill_pool_four(&env, &sut);
 
     measure_budget(&env, function_name!(), || {
         sut.pool
@@ -319,7 +389,7 @@ fn set_as_collateral() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower) = fill_pool_four(&env, &sut);
+    let (_, borrower, _) = fill_pool_four(&env, &sut);
 
     sut.pool
         .deposit(&borrower, &sut.reserves[1].token.address, &20_000_000_000);
@@ -466,7 +536,7 @@ fn withdraw_full() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower) = fill_pool_four(&env, &sut);
+    let (_, borrower, _) = fill_pool_four(&env, &sut);
     sut.pool
         .deposit(&borrower, &sut.reserves[1].token.address, &20_000_000_000);
 
@@ -482,7 +552,7 @@ fn withdraw_partial() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let (_, borrower) = fill_pool_four(&env, &sut);
+    let (_, borrower, _) = fill_pool_four(&env, &sut);
 
     sut.pool
         .deposit(&borrower, &sut.reserves[1].token.address, &20_000_000_000);

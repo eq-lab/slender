@@ -314,7 +314,7 @@ pub(crate) fn fill_pool_three<'a, 'b>(
 }
 
 #[cfg(feature = "budget")]
-pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Address) {
+pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Address, Address) {
     let lender = Address::random(&env);
     let borrower1 = Address::random(&env);
     let borrower2 = Address::random(&env);
@@ -345,7 +345,7 @@ pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Ad
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
-    (lender, borrower1)
+    (lender, borrower1, borrower2)
 }
 
 #[allow(dead_code)]
