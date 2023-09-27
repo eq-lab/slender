@@ -218,7 +218,7 @@ fn liquidate_receive_stoken_when_borrower_has_one_debt() {
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
     sut.price_feed
-        .set_price(&sut.reserves[2].token.address, &1_001_000_000);
+        .set_price(&sut.reserves[2].token.address, &10_010_000);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &true);
@@ -251,7 +251,7 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
     sut.price_feed
-        .set_price(&sut.reserves[0].token.address, &1_100_000_000);
+        .set_price(&sut.reserves[0].token.address, &11_000_000);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &true);
@@ -287,7 +287,7 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
     sut.price_feed
-        .set_price(&sut.reserves[2].token.address, &1_001_000_000);
+        .set_price(&sut.reserves[2].token.address, &10_010_000);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &false);
@@ -324,7 +324,7 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
     sut.price_feed
-        .set_price(&sut.reserves[0].token.address, &1_001_000_000);
+        .set_price(&sut.reserves[0].token.address, &10_010_000);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &false);

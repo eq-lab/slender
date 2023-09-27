@@ -510,7 +510,7 @@ async function initToken(client: SorobanClient, asset: SlenderAsset, name: strin
             adminKeys,
             3,
             convertToScvAddress(adminKeys.publicKey()),
-            convertToScvU32(9),
+            convertToScvU32(7),
             convertToScvString(name),
             convertToScvString(asset)
         )

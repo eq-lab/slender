@@ -82,7 +82,7 @@ fn should_fail_when_oracle_price_is_negative() {
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #308)")]
-fn sould_fail_when_not_enough_collateral() {
+fn should_fail_when_not_enough_collateral() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -125,8 +125,10 @@ fn should_liquidate_and_receive_collateral_partially() {
     sut.reserves[2].token_admin.mint(&borrower, &100_000_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &90_000_000);
-    sut.price_feed
-        .set_price(&token_address, &(10i128.pow(debt_config.token.decimals()) * 2));
+    sut.price_feed.set_price(
+        &token_address,
+        &(10i128.pow(debt_config.token.decimals()) * 2),
+    );
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
@@ -203,8 +205,10 @@ fn should_receive_stokens_when_requested() {
     sut.reserves[2].token_admin.mint(&borrower, &100_000_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &90_000_000);
-    sut.price_feed
-        .set_price(&token_address, &(10i128.pow(debt_config.token.decimals()) * 2));
+    sut.price_feed.set_price(
+        &token_address,
+        &(10i128.pow(debt_config.token.decimals()) * 2),
+    );
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
@@ -288,8 +292,10 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
         .borrow(&liquidator, &sut.reserves[0].token.address, &20_000_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &90_000_000);
-    sut.price_feed
-        .set_price(&token_address, &(10i128.pow(debt_config.token.decimals()) * 2));
+    sut.price_feed.set_price(
+        &token_address,
+        &(10i128.pow(debt_config.token.decimals()) * 2),
+    );
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
@@ -549,8 +555,10 @@ fn should_change_user_config() {
         .borrow(&liquidator, &sut.reserves[0].token.address, &20_000_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &90_000_000);
-    sut.price_feed
-        .set_price(&token_address, &(10i128.pow(debt_config.token.decimals()) * 2));
+    sut.price_feed.set_price(
+        &token_address,
+        &(10i128.pow(debt_config.token.decimals()) * 2),
+    );
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
