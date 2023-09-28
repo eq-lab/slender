@@ -688,7 +688,7 @@ async function initBaseAsset(
     );
 }
 
-async function initPrice(
+export async function initPrice(
     client: SorobanClient,
     asset: SlenderAsset,
     price: bigint,

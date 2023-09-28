@@ -7,6 +7,7 @@ import {
     deploy,
     deposit,
     init,
+    initPrice,
     liquidate,
     liquidateCli,
     mintUnderlyingTo,
@@ -133,7 +134,7 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower1Keys));
 
         usdcPrice = usdcPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
-        await initPrice(client, "USDC", usdcPrice, 16);
+        await initPrice(client, "USDC", usdcPrice);
 
         console.log(await accountPosition(client, borrower1Keys));
 
@@ -154,7 +155,7 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower1Keys));
 
         usdcPrice = usdcPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
-        await initPrice(client, "USDC", usdcPrice, 16);
+        await initPrice(client, "USDC", usdcPrice);
 
         console.log(await accountPosition(client, borrower1Keys));
 
@@ -172,7 +173,7 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower2Keys));
 
         xrpPrice = xrpPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
-        await initPrice(client, "XRP", usdcPrice, 16);
+        await initPrice(client, "XRP", usdcPrice);
 
         console.log(await accountPosition(client, borrower2Keys));
 
@@ -190,7 +191,7 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower1Keys));
 
         usdcPrice = usdcPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
-        await initPrice(client, "XRP", usdcPrice, 16);
+        await initPrice(client, "XRP", usdcPrice);
 
         console.log(await accountPosition(client, borrower1Keys));
 
@@ -212,7 +213,7 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower1Keys));
 
         usdcPrice = usdcPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
-        await initPrice(client, "XRP", usdcPrice, 16);
+        await initPrice(client, "XRP", usdcPrice);
 
         console.log(await accountPosition(client, borrower1Keys));
 
@@ -233,7 +234,7 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower1Keys));
 
         usdcPrice = usdcPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
-        await initPrice(client, "XRP", usdcPrice, 16);
+        await initPrice(client, "XRP", usdcPrice);
 
         console.log(await accountPosition(client, borrower1Keys));
 
@@ -256,7 +257,7 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower1Keys));
 
         usdcPrice = usdcPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
-        await initPrice(client, "XRP", usdcPrice, 16);
+        await initPrice(client, "XRP", usdcPrice);
 
         console.log(await accountPosition(client, borrower1Keys));
 
@@ -274,7 +275,7 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower2Keys));
 
         xrpPrice = xrpPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
-        await initPrice(client, "XRP", usdcPrice, 16);
+        await initPrice(client, "XRP", usdcPrice);
 
         console.log(await accountPosition(client, borrower2Keys));
 
@@ -294,7 +295,7 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower2Keys));
 
         xrpPrice = xrpPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
-        await initPrice(client, "XRP", usdcPrice, 16);
+        await initPrice(client, "XRP", usdcPrice);
 
         console.log(await accountPosition(client, borrower2Keys));
 
@@ -308,7 +309,3 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         }
     })
 })
-
-function initPrice(client: SorobanClient, arg1: string, arg2: bigint, arg3: number) {
-    throw new Error("Function not implemented.");
-}

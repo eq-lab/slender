@@ -8,6 +8,7 @@ import {
     deploy,
     deposit,
     init,
+    initPrice,
     liquidate,
     mintUnderlyingTo,
     sTokenBalanceOf,
@@ -48,7 +49,7 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         await mintUnderlyingTo(client, "USDC", lender1Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "XRP", borrower1Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "USDC", borrower1Address, 100_000_000_000n);
-        await mintUnderlyingTo(client, "XLM", liquidator1Address, 100_000_000_000n);
+        await mintUnderlyingTo(client, "XLM", liquidator1Address, 1_000_000_000n);
     });
 
     it("Case 1: Liquidator, Lender & Borrower deposit assets", async function () {
@@ -79,8 +80,8 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         const borrower1UsdcBalance = await tokenBalanceOf(client, "USDC", borrower1Address);
         const borrower1SUsdcBalance = await sTokenBalanceOf(client, "USDC", borrower1Address);
 
-        const liquidator1UsdcBalance = await tokenBalanceOf(client, "XLM", liquidator1Address);
-        const liquidator1SUsdcBalance = await sTokenBalanceOf(client, "XLM", liquidator1Address);
+        const liquidator1XlmBalance = await tokenBalanceOf(client, "XLM", liquidator1Address);
+        const liquidator1SXlmBalance = await sTokenBalanceOf(client, "XLM", liquidator1Address);
 
         const sXlmBalance = await sTokenUnderlyingBalanceOf(client, "XLM");
         const sXrpBalance = await sTokenUnderlyingBalanceOf(client, "XRP");
@@ -102,8 +103,8 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         assert.equal(borrower1UsdcBalance, 90_000_000_000n);
         assert.equal(borrower1SUsdcBalance, 10_000_000_000n);
 
-        assert.equal(liquidator1UsdcBalance, 60_000_000_000n);
-        assert.equal(liquidator1SUsdcBalance, 40_000_000_000n);
+        assert.equal(liquidator1XlmBalance, 600_000_000n);
+        assert.equal(liquidator1SXlmBalance, 400_000_000n);
 
         assert.equal(sXlmBalance, 700_000_000n);
         assert.equal(sXrpBalance, 40_000_000_000n);
@@ -188,7 +189,7 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
 
     it("Case 4: Drop the USDC price so Borrower's NPV <= 0", async function () {
         // USDC price is set to 999_100_000
-        await initPrice(client, "USDC", 9_991_000_000_000_000n, 16);
+        await initPrice(client, "USDC", 9_991_000_000_000_000n);
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
@@ -242,7 +243,3 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         assert(borrower1Position.npv > 0n);
     });
 });
-function initPrice(client: SorobanClient, arg1: string, arg2: bigint, arg3: number) {
-    throw new Error("Function not implemented.");
-}
-

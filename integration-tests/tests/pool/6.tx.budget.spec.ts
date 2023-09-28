@@ -10,6 +10,7 @@ import {
     deposit,
     flashLoan,
     init,
+    initPrice,
     initializeFlashLoanReceiver,
     liquidate,
     mintUnderlyingTo,
@@ -129,7 +130,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await borrow(client, liquidator1Keys, "XLM", 10_000_000n);
         await borrow(client, liquidator1Keys, "XRP", 1_000_000_000n);
 
-        await initPrice(client, "USDC", 15_000_000_000_000_000n, 16);
+        await initPrice(client, "USDC", 15_000_000_000_000_000n);
 
         await expect(
             liquidate(client, liquidator1Keys, borrower1Address, false)
@@ -166,7 +167,3 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         ).to.not.eventually.rejected;
     });
 });
-function initPrice(client: SorobanClient, arg1: string, arg2: bigint, arg3: number) {
-    throw new Error("Function not implemented.");
-}
-

@@ -64,7 +64,7 @@ describe("sToken transfer", function () {
         await delay(20_000);
 
         await borrow(client, borrower1Keys, "XLM", 100_000_000n);
-        await borrow(client, borrower2Keys, "XRP", 100_000_000n);
+        await borrow(client, borrower2Keys, "XRP", 10_000_000_000n);
 
         const lender1XlmBalance = await tokenBalanceOf(client, "XLM", lender1Address);
         const lender1SXlmBalance = await sTokenBalanceOf(client, "XLM", lender1Address);

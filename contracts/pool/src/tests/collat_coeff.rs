@@ -50,7 +50,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     let collat_coeff_after_borrow = sut.pool.collat_coeff(&debt_token);
 
     sut.price_feed
-        .init(&debt_token, &12_000_000_000_000_000, &16);
+        .init(&debt_token, &12_000_000_000_000_000);
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
     let collat_coeff_after_price_change = sut.pool.collat_coeff(&debt_token);

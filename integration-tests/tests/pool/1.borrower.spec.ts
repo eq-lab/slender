@@ -48,12 +48,12 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         borrower2Address = borrower2Keys.publicKey();
         treasuryAddress = treasuryKeys.publicKey();
 
-        // await Promise.all([
-        //     client.registerAccount(lender1Address),
-        //     client.registerAccount(lender2Address),
-        //     client.registerAccount(borrower1Address),
-        //     client.registerAccount(borrower2Address),
-        // ]);
+        await Promise.all([
+            client.registerAccount(lender1Address),
+            client.registerAccount(lender2Address),
+            client.registerAccount(borrower1Address),
+            client.registerAccount(borrower2Address),
+        ]);
 
         await mintUnderlyingTo(client, "XLM", lender1Address, 1_000_000_000n);
         await mintUnderlyingTo(client, "XRP", lender2Address, 100_000_000_000n);
