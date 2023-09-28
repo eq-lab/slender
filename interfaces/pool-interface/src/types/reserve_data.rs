@@ -1,9 +1,10 @@
+use common::FixedI128;
+use soroban_sdk::{contracttype, Address, BytesN, Env};
+
 use super::{
     collateral_params_input::CollateralParamsInput, init_reserve_input::InitReserveInput,
     reserve_configuration::ReserveConfiguration,
 };
-use common::FixedI128;
-use soroban_sdk::{contracttype, Address, BytesN, Env};
 
 #[derive(Debug, Clone)]
 #[contracttype]

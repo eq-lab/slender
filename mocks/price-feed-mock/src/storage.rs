@@ -6,10 +6,8 @@ pub enum DataKey {
     Price(Address),
 }
 
-pub fn write_asset_price(env: &Env, asset: Address, price: i128) {
-    let data_key = DataKey::Price(asset);
-
-    env.storage().instance().set(&data_key, &price);
+pub fn write_init_data(env: &Env, asset: Address, price: i128) {
+    env.storage().instance().set(&DataKey::Price(asset), &price);
 }
 
 pub fn read_asset_price(env: &Env, asset: Address) -> Option<i128> {

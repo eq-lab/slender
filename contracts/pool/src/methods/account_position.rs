@@ -23,7 +23,7 @@ pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Err
         who,
         &CalcAccountDataCache::none(),
         &user_config,
-        &mut PriceProvider::new(env),
+        &mut PriceProvider::new(env)?,
         false,
     )?;
 
@@ -49,9 +49,9 @@ pub fn calc_account_data(
         mb_debt_token_supply,
     } = cache;
 
-    let mut total_discounted_collateral_in_xlm: i128 = 0;
-    let mut total_debt_in_xlm: i128 = 0;
-    let mut total_debt_with_penalty_in_xlm: i128 = 0;
+    let mut total_discounted_collateral_in_base: i128 = 0;
+    let mut total_debt_in_base: i128 = 0;
+    let mut total_debt_with_penalty_in_base: i128 = 0;
     let mut debt_to_cover = Vec::new(env);
     let mut sorted_collateral_to_receive = Map::new(env);
     let reserves = read_reserves(env);
@@ -97,18 +97,15 @@ pub fn calc_account_data(
                 .mul_int(who_collat)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
-            let asset_price = price_provider.price(&asset, &reserve.configuration)?;
+            let compounded_balance_in_base =
+                price_provider.calc_price_in_base(&asset, compounded_balance)?;
 
-            let compounded_balance_in_xlm = asset_price
-                .mul_int(compounded_balance)
+            let discounted_balance_in_base = discount
+                .mul_int(compounded_balance_in_base)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
-            let discounted_balance_in_xlm = discount
-                .mul_int(compounded_balance_in_xlm)
-                .ok_or(Error::CalcAccountDataMathError)?;
-
-            total_discounted_collateral_in_xlm = total_discounted_collateral_in_xlm
-                .checked_add(discounted_balance_in_xlm)
+            total_discounted_collateral_in_base = total_discounted_collateral_in_base
+                .checked_add(discounted_balance_in_base)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
             if liquidation {
@@ -120,7 +117,6 @@ pub fn calc_account_data(
                     reserve_data: reserve,
                     asset,
                     s_token_balance: who_collat,
-                    asset_price: asset_price.into_inner(),
                     collat_coeff: collat_coeff.into_inner(),
                 });
                 sorted_collateral_to_receive.set(curr_discount, collateral_to_receive);
@@ -137,23 +133,20 @@ pub fn calc_account_data(
                 .mul_int(who_debt)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
-            let asset_price = price_provider.price(&asset, &reserve.configuration)?;
+            let debt_balance_in_base =
+                price_provider.calc_price_in_base(&asset, compounded_balance)?;
 
-            let debt_balance_in_xlm = asset_price
-                .mul_int(compounded_balance)
-                .ok_or(Error::CalcAccountDataMathError)?;
-
-            total_debt_in_xlm = total_debt_in_xlm
-                .checked_add(debt_balance_in_xlm)
+            total_debt_in_base = total_debt_in_base
+                .checked_add(debt_balance_in_base)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
             if liquidation {
                 let liq_bonus = FixedI128::from_percentage(reserve.configuration.liq_bonus)
                     .ok_or(Error::CalcAccountDataMathError)?;
                 let liquidation_debt = liq_bonus
-                    .mul_int(debt_balance_in_xlm)
+                    .mul_int(debt_balance_in_base)
                     .ok_or(Error::CalcAccountDataMathError)?;
-                total_debt_with_penalty_in_xlm = total_debt_with_penalty_in_xlm
+                total_debt_with_penalty_in_base = total_debt_with_penalty_in_base
                     .checked_add(liquidation_debt)
                     .ok_or(Error::CalcAccountDataMathError)?;
 
@@ -162,8 +155,8 @@ pub fn calc_account_data(
         }
     }
 
-    let npv = total_discounted_collateral_in_xlm
-        .checked_sub(total_debt_in_xlm)
+    let npv = total_discounted_collateral_in_base
+        .checked_sub(total_debt_in_base)
         .ok_or(Error::CalcAccountDataMathError)?;
 
     let liquidation_data = || -> LiquidationData {
@@ -176,15 +169,15 @@ pub fn calc_account_data(
         }
 
         LiquidationData {
-            total_debt_with_penalty_in_xlm,
+            total_debt_with_penalty_in_base,
             debt_to_cover,
             collateral_to_receive,
         }
     };
 
     Ok(AccountData {
-        discounted_collateral: total_discounted_collateral_in_xlm,
-        debt: total_debt_in_xlm,
+        discounted_collateral: total_discounted_collateral_in_base,
+        debt: total_debt_in_base,
         liquidation: liquidation.then_some(liquidation_data()),
         npv,
     })

@@ -170,7 +170,7 @@ fn should_affect_account_data() {
     let collat_token = &sut.reserves[0];
 
     sut.pool
-        .deposit(&borrower, &collat_token.token.address, &200_000_000);
+        .deposit(&borrower, &collat_token.token.address, &2_000_000);
 
     let account_position = sut.pool.account_position(&borrower);
 

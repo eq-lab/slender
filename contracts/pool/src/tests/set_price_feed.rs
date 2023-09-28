@@ -18,12 +18,29 @@ fn should_require_admin() {
 
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
-    let assets = vec![&env, asset_1.clone(), asset_2.clone()];
 
     assert!(pool.price_feed(&asset_1.clone()).is_none());
     assert!(pool.price_feed(&asset_2.clone()).is_none());
 
-    pool.set_price_feed(&price_feed.address.clone(), &assets.clone());
+    let feed_inputs = Vec::from_array(
+        &env,
+        [
+            PriceFeedInput {
+                asset: asset_1.clone(),
+                feed: price_feed.address.clone(),
+                asset_decimals: 7,
+                feed_decimals: 14,
+            },
+            PriceFeedInput {
+                asset: asset_2.clone(),
+                feed: price_feed.address.clone(),
+                asset_decimals: 9,
+                feed_decimals: 16,
+            },
+        ],
+    );
+
+    pool.set_price_feed(&feed_inputs);
 
     assert_eq!(
         env.auths(),
@@ -33,15 +50,12 @@ fn should_require_admin() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     Symbol::new(&env, "set_price_feed"),
-                    (&price_feed.address, assets.clone()).into_val(&env)
+                    vec![&env, feed_inputs.into_val(&env)]
                 )),
                 sub_invocations: std::vec![]
             }
         )]
     );
-
-    assert_eq!(pool.price_feed(&asset_1).unwrap(), price_feed.address);
-    assert_eq!(pool.price_feed(&asset_2).unwrap(), price_feed.address);
 }
 
 #[test]
@@ -55,13 +69,38 @@ fn should_set_price_feed() {
 
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
-    let assets = vec![&env, asset_1.clone(), asset_2.clone()];
 
     assert!(pool.price_feed(&asset_1.clone()).is_none());
     assert!(pool.price_feed(&asset_2.clone()).is_none());
 
-    pool.set_price_feed(&price_feed.address.clone(), &assets.clone());
+    let feed_inputs = Vec::from_array(
+        &env,
+        [
+            PriceFeedInput {
+                asset: asset_1.clone(),
+                feed: price_feed.address.clone(),
+                asset_decimals: 7,
+                feed_decimals: 14,
+            },
+            PriceFeedInput {
+                asset: asset_2.clone(),
+                feed: price_feed.address.clone(),
+                asset_decimals: 9,
+                feed_decimals: 16,
+            },
+        ],
+    );
 
-    assert_eq!(pool.price_feed(&asset_1).unwrap(), price_feed.address);
-    assert_eq!(pool.price_feed(&asset_2).unwrap(), price_feed.address);
+    pool.set_price_feed(&feed_inputs);
+
+    let feed_1 = pool.price_feed(&asset_1).unwrap();
+    let feed_2 = pool.price_feed(&asset_2).unwrap();
+
+    assert_eq!(feed_1.feed, price_feed.address);
+    assert_eq!(feed_1.feed_decimals, 14);
+    assert_eq!(feed_1.asset_decimals, 7);
+
+    assert_eq!(feed_2.feed, price_feed.address);
+    assert_eq!(feed_2.feed_decimals, 16);
+    assert_eq!(feed_2.asset_decimals, 9);
 }

@@ -104,7 +104,7 @@ fn should_fail_when_util_cap_exceeded() {
     let token_address = debt_config.token.address.clone();
 
     sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &100_000_000);
+        .deposit(&borrower, &sut.reserves[0].token.address, &1_000_000);
 
     sut.pool.borrow(&borrower, &token_address, &100_000_000);
 }
@@ -119,7 +119,7 @@ fn should_fail_when_oracle_price_is_negative() {
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
-    sut.price_feed.set_price(&token_address, &-1_000);
+    sut.price_feed.init(&token_address, &-10_000_000_000, &16);
     sut.pool.borrow(&borrower, &token_address, &10_000_000);
 }
 

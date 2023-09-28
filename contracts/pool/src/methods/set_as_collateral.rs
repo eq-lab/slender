@@ -39,7 +39,7 @@ pub fn set_as_collateral(
             who,
             &CalcAccountDataCache::none(),
             user_config,
-            &mut PriceProvider::new(env),
+            &mut PriceProvider::new(env)?,
             false,
         )?;
 

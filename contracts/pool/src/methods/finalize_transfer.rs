@@ -61,7 +61,7 @@ pub fn finalize_transfer(
                 )),
             },
             from_config,
-            &mut PriceProvider::new(env),
+            &mut PriceProvider::new(env)?,
             false,
         )?;
 

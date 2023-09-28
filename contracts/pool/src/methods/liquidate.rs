@@ -39,7 +39,7 @@ pub fn liquidate(
         who,
         &CalcAccountDataCache::none(),
         user_config,
-        &mut PriceProvider::new(env),
+        &mut PriceProvider::new(env)?,
         true,
     )?;
 
@@ -60,7 +60,7 @@ pub fn liquidate(
         env,
         who,
         account_data.debt,
-        liquidation.total_debt_with_penalty_in_xlm,
+        liquidation.total_debt_with_penalty_in_base,
     );
 
     Ok(())
@@ -74,13 +74,13 @@ fn do_liquidate(
     liquidation_data: &LiquidationData,
     receive_stoken: bool,
 ) -> Result<(), Error> {
-    let mut debt_with_penalty = liquidation_data.total_debt_with_penalty_in_xlm;
+    let mut debt_with_penalty = liquidation_data.total_debt_with_penalty_in_base;
+    let mut price_provider = PriceProvider::new(env)?;
 
     for LiquidationCollateral {
         asset,
         reserve_data: reserve,
         s_token_balance,
-        asset_price: price_fixed,
         collat_coeff: coll_coeff_fixed,
     } in liquidation_data.collateral_to_receive.iter()
     {
@@ -88,25 +88,21 @@ fn do_liquidate(
             break;
         }
 
-        let price = FixedI128::from_inner(price_fixed);
-
         let coll_coeff = FixedI128::from_inner(coll_coeff_fixed);
         let compounded_balance = coll_coeff
             .mul_int(s_token_balance)
             .ok_or(Error::LiquidateMathError)?;
-        let compounded_balance_in_xlm = price
-            .mul_int(compounded_balance)
-            .ok_or(Error::CalcAccountDataMathError)?;
+        let compounded_balance_in_base =
+            price_provider.calc_price_in_base(&asset, compounded_balance)?;
 
-        let withdraw_amount_in_xlm = compounded_balance_in_xlm.min(debt_with_penalty);
+        let withdraw_amount_in_base = compounded_balance_in_base.min(debt_with_penalty);
         // no overflow as withdraw_amount_in_xlm guaranteed less or equal to debt_to_cover
-        debt_with_penalty -= withdraw_amount_in_xlm;
+        debt_with_penalty -= withdraw_amount_in_base;
 
         let (s_token_amount, underlying_amount) =
-            if withdraw_amount_in_xlm != compounded_balance_in_xlm {
-                let underlying_amount = price
-                    .recip_mul_int(withdraw_amount_in_xlm)
-                    .ok_or(Error::LiquidateMathError)?;
+            if withdraw_amount_in_base != compounded_balance_in_base {
+                let underlying_amount =
+                    price_provider.calc_price_in_asset(&asset, withdraw_amount_in_base)?;
                 let s_token_amount = coll_coeff
                     .recip_mul_int(underlying_amount)
                     .ok_or(Error::LiquidateMathError)?;

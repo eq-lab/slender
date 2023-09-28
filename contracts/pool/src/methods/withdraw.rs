@@ -88,7 +88,7 @@ pub fn withdraw(
                 )),
             },
             user_config,
-            &mut PriceProvider::new(env),
+            &mut PriceProvider::new(env)?,
             false,
         )?;
 

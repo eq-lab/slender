@@ -3,11 +3,14 @@
 
 use soroban_sdk::{contractclient, contractspecfn, Address, Bytes, BytesN, Env, Vec};
 use types::account_position::AccountPosition;
+use types::base_asset_config::BaseAssetConfig;
 use types::collateral_params_input::CollateralParamsInput;
 use types::error::Error;
 use types::flash_loan_asset::FlashLoanAsset;
 use types::init_reserve_input::InitReserveInput;
 use types::ir_params::IRParams;
+use types::price_feed_config::PriceFeedConfig;
+use types::price_feed_input::PriceFeedInput;
 use types::reserve_data::ReserveData;
 use types::user_config::UserConfiguration;
 
@@ -38,13 +41,6 @@ pub trait LendingPoolTrait {
 
     fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
 
-    fn set_asset_config(
-        env: Env,
-        asset: Address,
-        is_base: bool,
-        decimals: u32,
-    ) -> Result<(), Error>;
-
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error>;
 
     fn configure_as_collateral(
@@ -61,9 +57,13 @@ pub trait LendingPoolTrait {
 
     fn debt_coeff(env: Env, asset: Address) -> Result<i128, Error>;
 
-    fn set_price_feed(env: Env, feed: Address, assets: Vec<Address>) -> Result<(), Error>;
+    fn base_asset(env: Env) -> Result<BaseAssetConfig, Error>;
 
-    fn price_feed(env: Env, asset: Address) -> Option<Address>;
+    fn set_base_asset(env: Env, asset: Address, decimals: u32) -> Result<(), Error>;
+
+    fn set_price_feed(env: Env, inputs: Vec<PriceFeedInput>) -> Result<(), Error>;
+
+    fn price_feed(env: Env, asset: Address) -> Option<PriceFeedConfig>;
 
     fn set_ir_params(env: Env, input: IRParams) -> Result<(), Error>;
 

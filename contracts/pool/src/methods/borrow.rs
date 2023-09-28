@@ -70,14 +70,10 @@ pub fn do_borrow(
     amount: i128,
 ) -> Result<i128, Error> {
     require_not_in_collateral_asset(env, who_collat);
+    require_positive_amount(env, amount);
 
-    let mut price_provider = PriceProvider::new(env);
-
-    let amount_in_xlm = price_provider
-        .price(asset, &reserve.configuration)?
-        .mul_int(amount)
-        .ok_or(Error::ValidateBorrowMathError)?;
-    require_positive_amount(env, amount_in_xlm);
+    let mut price_provider = PriceProvider::new(env)?;
+    let amount_in_base = price_provider.calc_price_in_base(asset, amount)?;
 
     let mut user_configurator = UserConfigurator::new(env, who, false);
     let user_config = user_configurator.user_config()?;
@@ -101,7 +97,7 @@ pub fn do_borrow(
 
     assert_with_error!(
         env,
-        account_data.npv >= amount_in_xlm,
+        account_data.npv >= amount_in_base,
         Error::CollateralNotCoverNewBorrow
     );
 

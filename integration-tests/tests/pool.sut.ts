@@ -42,9 +42,9 @@ export async function init(client: SorobanClient): Promise<void> {
     let salt = 0;
     const generateSalt = (value: number): string => String(value).padStart(64, '0');
 
-    await initToken(client, "XLM", "Lumens");
-    await initToken(client, "XRP", "Ripple");
-    await initToken(client, "USDC", "USD Coin");
+    await initToken(client, "XLM", "Lumens", 7);
+    await initToken(client, "XRP", "Ripple", 9);
+    await initToken(client, "USDC", "USD Coin", 9);
 
     await initPool(client, `${generateSalt(++salt)}`);
 
@@ -68,11 +68,25 @@ export async function init(client: SorobanClient): Promise<void> {
     await initPoolBorrowing(client, "XRP");
     await initPoolBorrowing(client, "USDC");
 
-    await initAssetConfig(client, "XLM", true, 7);
-    await initAssetConfig(client, "XRP", false, 7);
-    await initAssetConfig(client, "USDC", false, 7);
+    await initBaseAsset(client, "XLM", 7);
 
-    await initPoolPriceFeed(client, process.env.SLENDER_PRICE_FEED, ["XRP", "USDC"]);
+    await initPrice(client, "XLM", 100_000_000_000_000n);
+    await initPrice(client, "XRP", 10_000_000_000_000_000n);
+    await initPrice(client, "USDC", 10_000_000_000_000_000n);
+
+    await initPoolPriceFeed(client, [{
+        asset: "XLM",
+        assetDecimals: 7,
+        feedDecimals: 14
+    }, {
+        asset: "XRP",
+        assetDecimals: 9,
+        feedDecimals: 16
+    }, {
+        asset: "USDC",
+        assetDecimals: 9,
+        feedDecimals: 16
+    }]);
 
     console.log("    Contracts initialization has been finished");
 }
@@ -151,18 +165,20 @@ export async function accountPosition(
     return parseScvToJs<AccountPosition>(xdrResponse);
 }
 
-export async function setPrice(
+export async function initPriceFeed(
     client: SorobanClient,
     asset: SlenderAsset,
     amount: bigint,
+    decimals: number
 ): Promise<SendTransactionResult> {
     return client.sendTransaction(
         process.env.SLENDER_PRICE_FEED,
-        "set_price",
+        "init",
         adminKeys,
         3,
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
-        convertToScvI128(amount)
+        convertToScvI128(amount),
+        convertToScvU32(decimals)
     );
 }
 
@@ -501,7 +517,12 @@ async function initContract<T>(
     }
 }
 
-async function initToken(client: SorobanClient, asset: SlenderAsset, name: string): Promise<void> {
+async function initToken(
+    client: SorobanClient,
+    asset: SlenderAsset,
+    name: string,
+    decimals: number
+): Promise<void> {
     await initContract(
         `TOKEN_${asset}_INITIALIZED`,
         () => client.sendTransaction(
@@ -510,7 +531,7 @@ async function initToken(client: SorobanClient, asset: SlenderAsset, name: strin
             adminKeys,
             3,
             convertToScvAddress(adminKeys.publicKey()),
-            convertToScvU32(7),
+            convertToScvU32(decimals),
             convertToScvString(name),
             convertToScvString(asset)
         )
@@ -614,7 +635,10 @@ async function initPoolCollateral(client: SorobanClient, asset: SlenderAsset): P
     );
 }
 
-async function initPoolPriceFeed(client: SorobanClient, feed: string, assets: string[]): Promise<void> {
+async function initPoolPriceFeed(
+    client: SorobanClient,
+    inputs: { asset: SlenderAsset, assetDecimals: number, feedDecimals: number }[]
+): Promise<void> {
     await initContract(
         "POOL_PRICE_FEED_SET",
         () => client.sendTransaction(
@@ -622,8 +646,12 @@ async function initPoolPriceFeed(client: SorobanClient, feed: string, assets: st
             "set_price_feed",
             adminKeys,
             3,
-            convertToScvAddress(feed),
-            convertToScvVec(assets.map(asset => convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])))
+            convertToScvVec(inputs.map(input => convertToScvMap({
+                "asset": convertToScvAddress(process.env[`SLENDER_TOKEN_${input.asset}`]),
+                "asset_decimals": convertToScvU32(input.assetDecimals),
+                "feed": convertToScvAddress(process.env.SLENDER_PRICE_FEED),
+                "feed_decimals": convertToScvU32(input.feedDecimals)
+            })))
         )
     );
 }
@@ -642,22 +670,35 @@ async function initPoolBorrowing(client: SorobanClient, asset: SlenderAsset): Pr
     );
 }
 
-async function initAssetConfig(
+async function initBaseAsset(
     client: SorobanClient,
     asset: SlenderAsset,
-    is_base: boolean,
     decimals: number
 ): Promise<void> {
     await initContract(
-        `POOL_${asset}_ASSET_CONFIG`,
+        `POOL_${asset}_BASE_ASSET_SET`,
         () => client.sendTransaction(
             process.env.SLENDER_POOL,
-            "set_asset_config",
+            "set_base_asset",
             adminKeys,
             3,
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
-            convertToScvBool(is_base),
             convertToScvU32(decimals)
         )
+    );
+}
+
+async function initPrice(
+    client: SorobanClient,
+    asset: SlenderAsset,
+    price: bigint,
+): Promise<void> {
+    await client.sendTransaction(
+        process.env.SLENDER_PRICE_FEED,
+        "init",
+        adminKeys,
+        3,
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
+        convertToScvI128(price),
     );
 }

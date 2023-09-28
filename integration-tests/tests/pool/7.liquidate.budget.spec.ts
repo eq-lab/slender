@@ -1,5 +1,19 @@
 import { Keypair, xdr } from "soroban-client";
-import { I128_MAX, accountPosition, borrow, cleanSlenderEnvKeys, deploy, deposit, init, liquidate, liquidateCli, mintUnderlyingTo, repay, setPrice, withdraw, writeBudgetSnapshot } from "../pool.sut";
+import {
+    I128_MAX,
+    accountPosition,
+    borrow,
+    cleanSlenderEnvKeys,
+    deploy,
+    deposit,
+    init,
+    liquidate,
+    liquidateCli,
+    mintUnderlyingTo,
+    repay,
+    withdraw,
+    writeBudgetSnapshot
+} from "../pool.sut";
 import { SorobanClient, delay } from "../soroban.client";
 import { adminKeys, lender1Keys } from "../soroban.config";
 import { assert } from "chai";
@@ -60,13 +74,13 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         let res = await client.simulateTransaction(process.env.SLENDER_POOL, "reserve_timestamp_window");
         assert.equal(parseScvToJs(res) as number, 100);
         console.log("reserve_timestamp_window", parseScvToJs(res));
-        
-        await mintUnderlyingTo(client, "XLM", lender1Address, 400_000_000_000n);
+
+        await mintUnderlyingTo(client, "XLM", lender1Address, 4_000_000_000n);
         await mintUnderlyingTo(client, "XRP", lender1Address, 400_000_000_000n);
         await mintUnderlyingTo(client, "USDC", lender1Address, 400_000_000_000n);
 
         // Lender1 deposits XLM, XRP, USDC
-        await deposit(client, lender1Keys, "XLM", 160_000_000_000n);
+        await deposit(client, lender1Keys, "XLM", 1_600_000_000n);
         await deposit(client, lender1Keys, "XRP", 160_000_000_000n);
         await deposit(client, lender1Keys, "USDC", 160_000_000_000n);
 
@@ -95,31 +109,31 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         ]);
 
         for (const address of [liquidatorAddress, borrower1Address, borrower2Address]) {
-            await mintUnderlyingTo(client, "XLM", address, 100_000_000_000n);
+            await mintUnderlyingTo(client, "XLM", address, 1_000_000_000n);
             await mintUnderlyingTo(client, "XRP", address, 100_000_000_000n);
             await mintUnderlyingTo(client, "USDC", address, 100_000_000_000n);
         }
 
         await deposit(client, liquidatorKeys, "USDC", (10_000_000_000n * 1_000_000_000n / usdcPrice));
-        await borrow(client, liquidatorKeys, "XLM", 1_000_000_000n);
+        await borrow(client, liquidatorKeys, "XLM", 10_000_000n);
         await borrow(client, liquidatorKeys, "XRP", (1_000_000_000n * 1_000_000_000n / xrpPrice));
 
-        // Borrower1 deposits 10_000_000_000 XLM, XRP, borrows 19_000_000_000 USDC
-        await deposit(client, borrower1Keys, "XLM", 10_000_000_000n);
+        // Borrower1 deposits 100_000_000 XLM, XRP, borrows 19_000_000_000 USDC
+        await deposit(client, borrower1Keys, "XLM", 100_000_000n);
         await deposit(client, borrower1Keys, "XRP", (30_000_000_000n * 1_000_000_000n / xrpPrice));
         await borrow(client, borrower1Keys, "USDC", (19_000_000_000n * 1_000_000_000n / usdcPrice));
 
-        // Borrower2 deposits 20_000_000_000 USDC, borrows 6_000_000_000 XLM, 5_999_000_000 XRP
+        // Borrower2 deposits 20_000_000_000 USDC, borrows 60_000_000 XLM, 5_999_000_000 XRP
         await deposit(client, borrower2Keys, "USDC", (20_000_000_000n * 1_000_000_000n / usdcPrice));
-        await borrow(client, borrower2Keys, "XLM", 6_000_000_000n);
+        await borrow(client, borrower2Keys, "XLM", 60_000_000n);
         await borrow(client, borrower2Keys, "XRP", (5_900_000_000n * 1_000_000_000n / xrpPrice));
     })
 
     it("Case 1: liquidate with receiving underlying when borrower has one debt and two deposits", async function () {
         console.log(await accountPosition(client, borrower1Keys));
-        
-        usdcPrice = usdcPrice * 1_500_000_000n / 1_000_000_000n;
-        await setPrice(client, "USDC", usdcPrice);
+
+        usdcPrice = usdcPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
+        await initPrice(client, "USDC", usdcPrice, 16);
 
         console.log(await accountPosition(client, borrower1Keys));
 
@@ -136,11 +150,11 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
     it("Case 2: liquidate with receiving underlying when borrower has one debt and one deposit", async function () {
         await deposit(client, borrower1Keys, "XRP", 10_000_000_000n * 1_000_000_000n / xrpPrice);
         await withdraw(client, borrower1Keys, "XLM", I128_MAX);
-        
+
         console.log(await accountPosition(client, borrower1Keys));
-        
-        usdcPrice = usdcPrice * 1_500_000_000n / 1_000_000_000n;
-        await setPrice(client, "USDC", usdcPrice);
+
+        usdcPrice = usdcPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
+        await initPrice(client, "USDC", usdcPrice, 16);
 
         console.log(await accountPosition(client, borrower1Keys));
 
@@ -156,9 +170,9 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
 
     it("Case 3: liquidate with receiving underlying when borrower has two debts and one deposit", async function () {
         console.log(await accountPosition(client, borrower2Keys));
-        
-        xrpPrice = xrpPrice * 1_500_000_000n / 1_000_000_000n;
-        await setPrice(client, "XRP", xrpPrice);
+
+        xrpPrice = xrpPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
+        await initPrice(client, "XRP", usdcPrice, 16);
 
         console.log(await accountPosition(client, borrower2Keys));
 
@@ -174,9 +188,9 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
 
     it("Case 4: liquidate with receiving sToken & repay when borrower has one debt and two deposits", async function () {
         console.log(await accountPosition(client, borrower1Keys));
-        
-        usdcPrice = usdcPrice * 1_500_000_000n / 1_000_000_000n;
-        await setPrice(client, "USDC", usdcPrice);
+
+        usdcPrice = usdcPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
+        await initPrice(client, "XRP", usdcPrice, 16);
 
         console.log(await accountPosition(client, borrower1Keys));
 
@@ -194,11 +208,11 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower1Keys));
         await deposit(client, borrower1Keys, "XRP", 10_000_000_000n * 1_000_000_000n / xrpPrice);
         await withdraw(client, borrower1Keys, "XLM", I128_MAX);
-     
+
         console.log(await accountPosition(client, borrower1Keys));
-        
-        usdcPrice = usdcPrice * 1_500_000_000n / 1_000_000_000n;
-        await setPrice(client, "USDC", usdcPrice);
+
+        usdcPrice = usdcPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
+        await initPrice(client, "XRP", usdcPrice, 16);
 
         console.log(await accountPosition(client, borrower1Keys));
 
@@ -215,11 +229,11 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
     it("Case 6: liquidate with receiving sToken & without repay when borrower has one debt and two deposits", async function () {
         await repay(client, liquidatorKeys, "XLM", I128_MAX);
         await repay(client, liquidatorKeys, "XRP", I128_MAX);
-        
+
         console.log(await accountPosition(client, borrower1Keys));
-        
-        usdcPrice = usdcPrice * 1_500_000_000n / 1_000_000_000n;
-        await setPrice(client, "USDC", usdcPrice);
+
+        usdcPrice = usdcPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
+        await initPrice(client, "XRP", usdcPrice, 16);
 
         console.log(await accountPosition(client, borrower1Keys));
 
@@ -238,11 +252,11 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         await withdraw(client, borrower1Keys, "XLM", I128_MAX);
         await repay(client, liquidatorKeys, "XLM", I128_MAX);
         await repay(client, liquidatorKeys, "XRP", I128_MAX);
-        
+
         console.log(await accountPosition(client, borrower1Keys));
-        
-        usdcPrice = usdcPrice * 1_500_000_000n / 1_000_000_000n;
-        await setPrice(client, "USDC", usdcPrice);
+
+        usdcPrice = usdcPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
+        await initPrice(client, "XRP", usdcPrice, 16);
 
         console.log(await accountPosition(client, borrower1Keys));
 
@@ -258,9 +272,9 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
 
     it("Case 8: liquidate with receiving sToken & repay when borrower has two debts and one deposit", async function () {
         console.log(await accountPosition(client, borrower2Keys));
-        
-        xrpPrice = xrpPrice * 1_500_000_000n / 1_000_000_000n;
-        await setPrice(client, "XRP", xrpPrice);
+
+        xrpPrice = xrpPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
+        await initPrice(client, "XRP", usdcPrice, 16);
 
         console.log(await accountPosition(client, borrower2Keys));
 
@@ -278,9 +292,9 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         await repay(client, liquidatorKeys, "XLM", I128_MAX);
         await repay(client, liquidatorKeys, "XRP", I128_MAX);
         console.log(await accountPosition(client, borrower2Keys));
-        
-        xrpPrice = xrpPrice * 1_500_000_000n / 1_000_000_000n;
-        await setPrice(client, "XRP", xrpPrice);
+
+        xrpPrice = xrpPrice * 15_000_000_000_000_000n / 10_000_000_000_000_000n;
+        await initPrice(client, "XRP", usdcPrice, 16);
 
         console.log(await accountPosition(client, borrower2Keys));
 
@@ -294,3 +308,7 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         }
     })
 })
+
+function initPrice(client: SorobanClient, arg1: string, arg2: bigint, arg3: number) {
+    throw new Error("Function not implemented.");
+}

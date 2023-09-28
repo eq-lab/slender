@@ -17,7 +17,7 @@ fn should_require_authorized_caller() {
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     sut.pool
-        .withdraw(&borrower, &token_address, &1_000_000, &borrower);
+        .withdraw(&borrower, &token_address, &10_000, &borrower);
 
     assert_eq!(
         env.auths().pop().map(|f| f.1.function).unwrap(),
@@ -27,7 +27,7 @@ fn should_require_authorized_caller() {
             (
                 borrower.clone(),
                 token_address,
-                1_000_000i128,
+                10_000i128,
                 borrower.clone()
             )
                 .into_val(&env)
@@ -268,7 +268,7 @@ fn should_affect_account_data() {
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     sut.pool
-        .withdraw(&borrower, &token_address, &10_000_000, &borrower);
+        .withdraw(&borrower, &token_address, &100_000, &borrower);
 
     let account_position = sut.pool.account_position(&borrower);
 

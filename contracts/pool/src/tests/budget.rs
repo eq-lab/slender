@@ -5,6 +5,7 @@ use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::flash_loan_asset::FlashLoanAsset;
 use pool_interface::types::init_reserve_input::InitReserveInput;
 use pool_interface::types::ir_params::IRParams;
+use pool_interface::types::price_feed_input::PriceFeedInput;
 use pool_interface::LendingPoolClient;
 use price_feed_interface::PriceFeedClient;
 use soroban_sdk::testutils::{Address as _, Ledger};
@@ -118,7 +119,7 @@ fn deposit() {
 
     measure_budget(&env, function_name!(), || {
         sut.pool
-            .deposit(&borrower, &&sut.reserves[0].token.address, &1_000_000_000)
+            .deposit(&borrower, &&sut.reserves[0].token.address, &10_000_000)
     });
 }
 
@@ -211,14 +212,14 @@ fn liquidate_receive_stoken_when_borrower_has_one_debt() {
     sut.pool
         .deposit(&liquidator, &sut.reserves[2].token.address, &10_000_000_000);
     sut.pool
-        .borrow(&liquidator, &sut.reserves[0].token.address, &1_000_000_000);
+        .borrow(&liquidator, &sut.reserves[0].token.address, &10_000_000);
     sut.pool
         .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
     sut.price_feed
-        .set_price(&sut.reserves[2].token.address, &10_010_000);
+        .init(&sut.reserves[2].token.address, &10_010_000_000_000_000, &16);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &true);
@@ -242,7 +243,7 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
     }
 
     sut.pool
-        .deposit(&liquidator, &sut.reserves[0].token.address, &10_000_000_000);
+        .deposit(&liquidator, &sut.reserves[0].token.address, &100_000_000);
     sut.pool
         .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
     sut.pool
@@ -251,7 +252,7 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
     sut.price_feed
-        .set_price(&sut.reserves[0].token.address, &11_000_000);
+        .init(&sut.reserves[0].token.address, &110_000_000_000_000, &14);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &true);
@@ -280,14 +281,14 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
     sut.pool
         .deposit(&liquidator, &sut.reserves[2].token.address, &10_000_000_000);
     sut.pool
-        .borrow(&liquidator, &sut.reserves[0].token.address, &1_000_000_000);
+        .borrow(&liquidator, &sut.reserves[0].token.address, &10_000_000);
     sut.pool
         .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
     sut.price_feed
-        .set_price(&sut.reserves[2].token.address, &10_010_000);
+        .init(&sut.reserves[2].token.address, &10_010_000_000_000_000, &16);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &false);
@@ -308,14 +309,14 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
 
     sut.reserves[0]
         .token_admin
-        .mint(&liquidator, &100_000_000_000);
+        .mint(&liquidator, &1_000_000_000);
 
     sut.reserves[1]
         .token_admin
         .mint(&liquidator, &100_000_000_000);
 
     sut.pool
-        .deposit(&liquidator, &sut.reserves[0].token.address, &10_000_000_000);
+        .deposit(&liquidator, &sut.reserves[0].token.address, &100_000_000);
     sut.pool
         .borrow(&liquidator, &sut.reserves[2].token.address, &1_000_000_000);
     sut.pool
@@ -324,7 +325,7 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
     sut.price_feed
-        .set_price(&sut.reserves[0].token.address, &10_010_000);
+        .init(&sut.reserves[0].token.address, &100_100_000_000_000, &14);
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(&liquidator, &borrower, &false);
@@ -401,14 +402,15 @@ fn set_as_collateral() {
 }
 
 #[test]
-fn set_asset_config() {
+fn set_base_asset() {
     let env = Env::default();
     env.mock_all_auths();
 
+    let asset = Address::random(&env);
     let sut = init_pool(&env, true);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.set_asset_config(&sut.token().address, &true, &9);
+        sut.pool.set_base_asset(&asset, &7);
     });
 }
 
@@ -451,13 +453,37 @@ fn set_price_feed() {
     let admin = Address::random(&env);
     let asset_1 = Address::random(&env);
     let asset_2 = Address::random(&env);
+    let asset_3 = Address::random(&env);
 
     let pool = create_pool_contract(&env, &admin, false);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
-    let assets = vec![&env, asset_1.clone(), asset_2.clone()];
+
+    let feed_inputs = Vec::from_array(
+        &env,
+        [
+            PriceFeedInput {
+                asset: asset_1.clone(),
+                feed: price_feed.address.clone(),
+                asset_decimals: 7,
+                feed_decimals: 14,
+            },
+            PriceFeedInput {
+                asset: asset_2.clone(),
+                feed: price_feed.address.clone(),
+                asset_decimals: 9,
+                feed_decimals: 16,
+            },
+            PriceFeedInput {
+                asset: asset_3.clone(),
+                feed: price_feed.address.clone(),
+                asset_decimals: 9,
+                feed_decimals: 16,
+            },
+        ],
+    );
 
     measure_budget(&env, function_name!(), || {
-        pool.set_price_feed(&price_feed.address.clone(), &assets.clone());
+        pool.set_price_feed(&feed_inputs);
     });
 }
 
@@ -482,9 +508,9 @@ fn stoken_underlying_balance() {
     let sut = init_pool(&env, true);
     let lender = Address::random(&env);
 
-    sut.reserves[0].token_admin.mint(&lender, &2_000_000_000);
+    sut.reserves[0].token_admin.mint(&lender, &20_000_000);
     sut.pool
-        .deposit(&lender, &sut.reserves[0].token.address, &1_000_000_000);
+        .deposit(&lender, &sut.reserves[0].token.address, &10_000_000);
 
     measure_budget(&env, function_name!(), || {
         sut.pool
@@ -606,17 +632,17 @@ fn flash_loan_with_borrow() {
         [
             FlashLoanAsset {
                 asset: sut.reserves[0].token.address.clone(),
-                amount: 1000000,
+                amount: 10_000,
                 borrow: false,
             },
             FlashLoanAsset {
                 asset: sut.reserves[1].token.address.clone(),
-                amount: 2000000,
+                amount: 2_000_000,
                 borrow: true,
             },
             FlashLoanAsset {
                 asset: sut.reserves[2].token.address.clone(),
-                amount: 3000000,
+                amount: 3_000_000,
                 borrow: true,
             },
         ],
@@ -651,7 +677,7 @@ fn flash_loan_without_borrow() {
         [
             FlashLoanAsset {
                 asset: sut.reserves[0].token.address.clone(),
-                amount: 1_000_000,
+                amount: 10_000,
                 borrow: false,
             },
             FlashLoanAsset {
@@ -736,7 +762,7 @@ fn s_token_transfer() {
     measure_budget(&env, function_name!(), || {
         sut.reserves[0]
             .s_token
-            .transfer(&from_borrower, &to, &10_000_000);
+            .transfer(&from_borrower, &to, &100_000);
     });
 }
 
