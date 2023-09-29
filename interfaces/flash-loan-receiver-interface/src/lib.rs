@@ -9,6 +9,7 @@ pub struct Asset {
     pub asset: Address,
     pub amount: i128,
     pub premium: i128,
+    pub borrow: bool,
 }
 
 #[contractspecfn(name = "Spec", export = false)]

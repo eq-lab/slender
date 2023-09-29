@@ -54,6 +54,7 @@ pub fn flash_loan(
             premium: fee
                 .mul_int(loan_asset.amount)
                 .ok_or(Error::MathOverflowError)?,
+            borrow: loan_asset.borrow,
         });
     }
 
