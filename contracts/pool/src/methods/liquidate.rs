@@ -93,7 +93,7 @@ fn do_liquidate(
             .mul_int(s_token_balance)
             .ok_or(Error::LiquidateMathError)?;
         let compounded_balance_in_base =
-            price_provider.calc_price_in_base(&asset, compounded_balance)?;
+            price_provider.convert_to_base(&asset, compounded_balance)?;
 
         let withdraw_amount_in_base = compounded_balance_in_base.min(debt_with_penalty);
         // no overflow as withdraw_amount_in_xlm guaranteed less or equal to debt_to_cover
@@ -102,7 +102,7 @@ fn do_liquidate(
         let (s_token_amount, underlying_amount) =
             if withdraw_amount_in_base != compounded_balance_in_base {
                 let underlying_amount =
-                    price_provider.calc_price_in_asset(&asset, withdraw_amount_in_base)?;
+                    price_provider.convert_from_base(&asset, withdraw_amount_in_base)?;
                 let s_token_amount = coll_coeff
                     .recip_mul_int(underlying_amount)
                     .ok_or(Error::LiquidateMathError)?;

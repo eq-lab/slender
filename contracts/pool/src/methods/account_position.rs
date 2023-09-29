@@ -98,7 +98,7 @@ pub fn calc_account_data(
                 .ok_or(Error::CalcAccountDataMathError)?;
 
             let compounded_balance_in_base =
-                price_provider.calc_price_in_base(&asset, compounded_balance)?;
+                price_provider.convert_to_base(&asset, compounded_balance)?;
 
             let discounted_balance_in_base = discount
                 .mul_int(compounded_balance_in_base)
@@ -134,7 +134,7 @@ pub fn calc_account_data(
                 .ok_or(Error::CalcAccountDataMathError)?;
 
             let debt_balance_in_base =
-                price_provider.calc_price_in_base(&asset, compounded_balance)?;
+                price_provider.convert_to_base(&asset, compounded_balance)?;
 
             total_debt_in_base = total_debt_in_base
                 .checked_add(debt_balance_in_base)

@@ -25,7 +25,7 @@ impl<'a> PriceProvider<'a> {
         })
     }
 
-    pub fn calc_price_in_base(&mut self, asset: &Address, amount: i128) -> Result<i128, Error> {
+    pub fn convert_to_base(&mut self, asset: &Address, amount: i128) -> Result<i128, Error> {
         if self.base_asset.address == *asset {
             return Ok(amount);
         }
@@ -41,7 +41,7 @@ impl<'a> PriceProvider<'a> {
             .ok_or(Error::InvalidAssetPrice)
     }
 
-    pub fn calc_price_in_asset(&mut self, asset: &Address, amount: i128) -> Result<i128, Error> {
+    pub fn convert_from_base(&mut self, asset: &Address, amount: i128) -> Result<i128, Error> {
         if self.base_asset.address == *asset {
             return Ok(amount);
         }
