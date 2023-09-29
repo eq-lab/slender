@@ -114,6 +114,7 @@ pub trait LendingPoolTrait {
         env: Env,
         liquidator: Address,
         who: Address,
+        asset: Address,
         receive_stoken: bool,
     ) -> Result<(), Error>;
 

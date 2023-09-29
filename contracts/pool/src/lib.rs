@@ -194,9 +194,10 @@ impl LendingPoolTrait for LendingPool {
         env: Env,
         liquidator: Address,
         who: Address,
+        debt_asset: Address,
         receive_stoken: bool,
     ) -> Result<(), Error> {
-        liquidate(&env, &liquidator, &who, receive_stoken)
+        liquidate(&env, &liquidator, &who, debt_asset, receive_stoken)
     }
 
     fn set_as_collateral(

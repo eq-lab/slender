@@ -94,7 +94,7 @@ pub fn do_borrow(
             mb_debt_token_supply: None,
         },
         user_config,
-        false,
+        None,
     )?;
 
     assert_with_error!(

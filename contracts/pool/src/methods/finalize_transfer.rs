@@ -60,7 +60,7 @@ pub fn finalize_transfer(
                 )),
             },
             from_config,
-            false,
+            None,
         )?;
 
         require_good_position(env, &from_account_data);

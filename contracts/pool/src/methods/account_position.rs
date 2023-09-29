@@ -11,6 +11,7 @@ use crate::types::account_data::AccountData;
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_collateral::LiquidationCollateral;
 use crate::types::liquidation_data::LiquidationData;
+use crate::types::liquidation_debt::LiquidationDebt;
 
 use super::utils::get_asset_price::get_asset_price;
 use super::utils::get_collat_coeff::get_collat_coeff;
@@ -19,7 +20,7 @@ use super::utils::rate::get_actual_borrower_accrued_rate;
 pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Error> {
     let user_config = read_user_config(env, who)?;
     let account_data =
-        calc_account_data(env, who, &CalcAccountDataCache::none(), &user_config, false)?;
+        calc_account_data(env, who, &CalcAccountDataCache::none(), &user_config, None)?;
 
     Ok(account_data.get_position())
 }
@@ -29,8 +30,9 @@ pub fn calc_account_data(
     who: &Address,
     cache: &CalcAccountDataCache,
     user_config: &UserConfiguration,
-    liquidation: bool,
+    liquidate_debt: Option<Address>,
 ) -> Result<AccountData, Error> {
+    let liquidation = liquidate_debt.is_some();
     if user_config.is_empty() {
         return Ok(AccountData::default(env, liquidation));
     }
@@ -44,8 +46,8 @@ pub fn calc_account_data(
 
     let mut total_discounted_collateral_in_xlm: i128 = 0;
     let mut total_debt_in_xlm: i128 = 0;
-    let mut total_debt_with_penalty_in_xlm: i128 = 0;
-    let mut debt_to_cover = Vec::new(env);
+    let mut debt_to_cover_in_xlm: i128 = 0;
+    let mut debt_to_cover: Option<_> = None;
     let mut sorted_collateral_to_receive = Map::new(env);
     let reserves = read_reserves(env);
     let reserves_len =
@@ -143,22 +145,21 @@ pub fn calc_account_data(
                 .checked_add(debt_balance_in_xlm)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
-            if liquidation {
-                let liq_bonus = FixedI128::from_percentage(curr_reserve.configuration.liq_bonus)
-                    .ok_or(Error::CalcAccountDataMathError)?;
-                let liquidation_debt = liq_bonus
-                    .mul_int(debt_balance_in_xlm)
-                    .ok_or(Error::CalcAccountDataMathError)?;
-                total_debt_with_penalty_in_xlm = total_debt_with_penalty_in_xlm
-                    .checked_add(liquidation_debt)
-                    .ok_or(Error::CalcAccountDataMathError)?;
+            if liquidate_debt
+                .as_ref()
+                .map(|debt| debt == &curr_reserve_asset)
+                .unwrap_or(false)
+            {
+                debt_to_cover_in_xlm = debt_balance_in_xlm;
 
-                debt_to_cover.push_back((
-                    curr_reserve_asset,
-                    curr_reserve,
-                    compounded_balance,
-                    who_debt,
-                ));
+                debt_to_cover = Some(LiquidationDebt {
+                    asset: curr_reserve_asset,
+                    reserve_data: curr_reserve,
+                    compounded_debt: compounded_balance,
+                    debt_token_balance: who_debt,
+                    asset_price: asset_price.into_inner(),
+                    debt_coeff: debt_coeff.into_inner(),
+                });
             }
         }
     }
@@ -177,7 +178,7 @@ pub fn calc_account_data(
         }
 
         LiquidationData {
-            total_debt_with_penalty_in_xlm,
+            debt_to_cover_in_xlm,
             debt_to_cover,
             collateral_to_receive,
         }

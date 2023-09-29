@@ -87,7 +87,7 @@ pub fn withdraw(
                 )),
             },
             user_config,
-            false,
+            None,
         )?;
 
         require_good_position(env, &account_data);
