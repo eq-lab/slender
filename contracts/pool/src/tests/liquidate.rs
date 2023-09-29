@@ -562,3 +562,18 @@ fn should_emit_events() {
         ]
     );
 }
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #204)")]
+fn should_fail_when_have_debt_in_receiving_s_token() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
+
+    sut.pool.deposit(&liquidator, &debt_config.token.address, &500_000_000);
+    sut.pool.borrow(&liquidator, &sut.reserves[0].token.address, &1_000_000);
+
+    sut.pool.liquidate(&liquidator, &borrower, &debt_config.token.address, &true);
+}
