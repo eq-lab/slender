@@ -76,8 +76,7 @@ fn should_fail_when_liq_cap_exceeded() {
 
     let token = &sut.reserves[0].token;
     let token_admin = &sut.reserves[0].token_admin;
-    let s_token = &sut.reserves[0].s_token;
-    let decimals = s_token.decimals();
+    let decimals = token.decimals();
 
     let user = Address::random(&env);
     let initial_balance = 1_000_000_000 * 10i128.pow(decimals);
@@ -171,7 +170,7 @@ fn should_affect_account_data() {
     let collat_token = &sut.reserves[0];
 
     sut.pool
-        .deposit(&borrower, &collat_token.token.address, &200_000_000);
+        .deposit(&borrower, &collat_token.token.address, &2_000_000);
 
     let account_position = sut.pool.account_position(&borrower);
 

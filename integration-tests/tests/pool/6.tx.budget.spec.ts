@@ -10,11 +10,11 @@ import {
     deposit,
     flashLoan,
     init,
+    initPrice,
     initializeFlashLoanReceiver,
     liquidate,
     mintUnderlyingTo,
     repay,
-    setPrice,
     withdraw,
     writeBudgetSnapshot,
 } from "../pool.sut";
@@ -54,28 +54,28 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
             client.registerAccount(borrower2Address),
         ]);
 
-        await mintUnderlyingTo(client, "XLM", lender1Address, 100_000_000_000n);
+        await mintUnderlyingTo(client, "XLM", lender1Address, 1_000_000_000n);
         await mintUnderlyingTo(client, "XRP", lender1Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "USDC", lender1Address, 100_000_000_000n);
-        await mintUnderlyingTo(client, "XLM", borrower1Address, 100_000_000_000n);
+        await mintUnderlyingTo(client, "XLM", borrower1Address, 1_000_000_000n);
         await mintUnderlyingTo(client, "XRP", borrower1Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "USDC", borrower2Address, 100_000_000_000n);
 
-        // Lender1 deposits 10_000_000_000 XLM, XRP, USDC
-        await deposit(client, lender1Keys, "XLM", 10_000_000_000n);
+        // Lender1 deposits 100_000_000 XLM, XRP, USDC
+        await deposit(client, lender1Keys, "XLM", 100_000_000n);
         await deposit(client, lender1Keys, "XRP", 10_000_000_000n);
         await deposit(client, lender1Keys, "USDC", 10_000_000_000n);
 
         await delay(20_000);
 
-        // Borrower1 deposits 10_000_000_000 XLM, XRP, borrows 6_000_000_000 USDC
-        await deposit(client, borrower1Keys, "XLM", 10_000_000_000n);
+        // Borrower1 deposits 100_000_000 XLM, XRP, borrows 6_000_000_000 USDC
+        await deposit(client, borrower1Keys, "XLM", 100_000_000n);
         await deposit(client, borrower1Keys, "XRP", 30_000_000_000n);
         await borrow(client, borrower1Keys, "USDC", 6_000_000_000n);
 
-        // Borrower2 deposits 20_000_000_000 USDC, borrows 6_000_000_000 XLM, 5_999_000_000 XRP
+        // Borrower2 deposits 20_000_000_000 USDC, borrows 60_000_000 XLM, 5_999_000_000 XRP
         await deposit(client, borrower2Keys, "USDC", 20_000_000_000n);
-        await borrow(client, borrower2Keys, "XLM", 6_000_000_000n);
+        await borrow(client, borrower2Keys, "XLM", 60_000_000n);
         await borrow(client, borrower2Keys, "XRP", 5_900_000_000n);
 
         try {
@@ -88,9 +88,9 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
     });
 
     it("Case 1: deposit()", async function () {
-        // Borrower1 deposits 1_000_000_000 XLM
+        // Borrower1 deposits 10_000_000 XLM
         await expect(
-            deposit(client, borrower1Keys, "XLM", 1_000_000_000n)
+            deposit(client, borrower1Keys, "XLM", 10_000_000n)
                 .then((result) => writeBudgetSnapshot("deposit", result))
         ).to.not.eventually.rejected;
     });
@@ -127,10 +127,10 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
 
         await deposit(client, liquidator1Keys, "USDC", 10_000_000_000n);
 
-        await borrow(client, liquidator1Keys, "XLM", 1_000_000_000n);
+        await borrow(client, liquidator1Keys, "XLM", 10_000_000n);
         await borrow(client, liquidator1Keys, "XRP", 1_000_000_000n);
 
-        await setPrice(client, "USDC", 1_500_000_000n);
+        await initPrice(client, "USDC", 15_000_000_000_000_000n);
 
         await expect(
             liquidate(client, liquidator1Keys, borrower1Address, false)
@@ -146,7 +146,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         const loanAssets: FlashLoanAsset[] = [
             {
                 asset: "XLM",
-                amount: 1_000_000n,
+                amount: 10_000n,
                 borrow: false
             },
             {

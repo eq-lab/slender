@@ -14,6 +14,7 @@ use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_collateral::LiquidationCollateral;
 use crate::types::liquidation_data::LiquidationData;
 use crate::types::liquidation_debt::LiquidationDebt;
+use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 
 use super::account_position::calc_account_data;
@@ -38,6 +39,7 @@ pub fn liquidate(
         who,
         &CalcAccountDataCache::none(),
         user_config,
+        &mut PriceProvider::new(env)?,
         Some(asset),
     )?;
 
@@ -73,51 +75,46 @@ fn do_liquidate(
     liquidation_data: &LiquidationData,
     receive_stoken: bool,
 ) -> Result<(i128, i128), Error> {
-    let mut remaining_debt_in_xlm = liquidation_data.debt_to_cover_in_xlm;
+    let mut remaining_debt_in_base = liquidation_data.debt_to_cover_in_base;
+    let mut price_provider = PriceProvider::new(env)?;
 
     let LiquidationCollateral {
         asset,
         reserve_data: reserve,
         s_token_balance,
-        asset_price: price_fixed,
         collat_coeff: coll_coeff_fixed,
     } = liquidation_data.collateral_to_receive.first().unwrap();
-    let price = FixedI128::from_inner(price_fixed);
-
     let coll_coeff = FixedI128::from_inner(coll_coeff_fixed);
     let compounded_balance = coll_coeff
         .mul_int(s_token_balance)
         .ok_or(Error::LiquidateMathError)?;
-    let compounded_balance_in_xlm = price
-        .mul_int(compounded_balance)
-        .ok_or(Error::LiquidateMathError)?;
+
+    let compounded_balance_in_base = price_provider.convert_to_base(&asset, compounded_balance)?;
 
     let liq_bonus = FixedI128::from_percentage(reserve.configuration.liq_bonus)
         .ok_or(Error::LiquidateMathError)?;
 
-    let debt_to_cover_in_xlm_with_penalty = liq_bonus
-        .mul_int(remaining_debt_in_xlm)
+    let debt_to_cover_in_base_with_penalty = liq_bonus
+        .mul_int(remaining_debt_in_base)
         .ok_or(Error::LiquidateMathError)?;
 
-    let (debt_to_cover_in_xlm, withdraw_amount_in_xlm) =
-        if debt_to_cover_in_xlm_with_penalty > compounded_balance_in_xlm {
+    let (debt_to_cover_in_base, withdraw_amount_in_base) =
+        if debt_to_cover_in_base_with_penalty > compounded_balance_in_base {
             // take all available collateral and decrease covered debt by bonus
-            let debt_to_cover_in_xlm =
+            let debt_to_cover_in_base =
                 (FixedI128::from_inner(2 * FixedI128::DENOMINATOR - liq_bonus.into_inner()))
-                    .mul_int(compounded_balance_in_xlm)
+                    .mul_int(compounded_balance_in_base)
                     .ok_or(Error::LiquidateMathError)?;
-            let withdraw_amount_in_xlm = compounded_balance_in_xlm;
-            (debt_to_cover_in_xlm, withdraw_amount_in_xlm)
+            let withdraw_amount_in_base = compounded_balance_in_base;
+            (debt_to_cover_in_base, withdraw_amount_in_base)
         } else {
             // take collateral with bonus and cover all debt
-            (remaining_debt_in_xlm, debt_to_cover_in_xlm_with_penalty)
+            (remaining_debt_in_base, debt_to_cover_in_base_with_penalty)
         };
 
-    let (s_token_amount, underlying_amount) = if withdraw_amount_in_xlm != compounded_balance_in_xlm
+    let (s_token_amount, underlying_amount) = if withdraw_amount_in_base != compounded_balance_in_base
     {
-        let underlying_amount = price
-            .recip_mul_int(withdraw_amount_in_xlm)
-            .ok_or(Error::LiquidateMathError)?;
+        let underlying_amount = price_provider.convert_from_base(&asset, withdraw_amount_in_base)?;
         let s_token_amount = coll_coeff
             .recip_mul_int(underlying_amount)
             .ok_or(Error::LiquidateMathError)?;
@@ -180,8 +177,8 @@ fn do_liquidate(
         add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
     }
 
-    // no overflow as withdraw_amount_in_xlm guaranteed less or equal to to_cover_in_xlm
-    remaining_debt_in_xlm -= debt_to_cover_in_xlm;
+    // no overflow as withdraw_amount_in_base guaranteed less or equal to to_cover_in_base
+    remaining_debt_in_base -= debt_to_cover_in_base;
 
     let is_withdraw = s_token_balance == s_token_amount;
     user_configurator.withdraw(reserve.get_id(), &asset, is_withdraw)?;
@@ -194,7 +191,7 @@ fn do_liquidate(
     let is_last_collateral = liquidation_data.collateral_to_receive.len() == 1;
     assert_with_error!(
         env,
-        !is_last_collateral || remaining_debt_in_xlm == 0,
+        !is_last_collateral || remaining_debt_in_base == 0,
         Error::NotEnoughCollateral
     );
 
@@ -202,19 +199,16 @@ fn do_liquidate(
         asset,
         reserve_data,
         debt_token_balance,
-        asset_price,
         debt_coeff,
         compounded_debt,
     } in liquidation_data.debt_to_cover.iter()
     {
-        let fully_repayed = remaining_debt_in_xlm == 0;
+        let fully_repayed = remaining_debt_in_base == 0;
         let (debt_amount_to_burn, underlying_amount_to_transfer) = if fully_repayed {
             (*debt_token_balance, *compounded_debt)
         } else {
-            // no overflow as remaining_debt_with_penalty always less then total_debt_with_penalty_in_xlm
-            let compounded_debt_to_cover = FixedI128::from_inner(*asset_price)
-                .recip_mul_int(debt_to_cover_in_xlm)
-                .ok_or(Error::LiquidateMathError)?;
+            // no overflow as remaining_debt_with_penalty always less then total_debt_with_penalty_in_base
+            let compounded_debt_to_cover = price_provider.convert_from_base(asset, debt_to_cover_in_base)?;
             let debt_to_burn = FixedI128::from_inner(*debt_coeff)
                 .recip_mul_int(compounded_debt_to_cover)
                 .ok_or(Error::LiquidateMathError)?;
@@ -259,5 +253,5 @@ fn do_liquidate(
 
     user_configurator.write();
 
-    Ok((debt_to_cover_in_xlm, withdraw_amount_in_xlm))
+    Ok((debt_to_cover_in_base, withdraw_amount_in_base))
 }

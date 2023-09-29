@@ -54,17 +54,17 @@ fn should_require_borrower_to_pay_fee() {
         [
             FlashLoanAsset {
                 asset: sut.reserves[0].token.address.clone(),
-                amount: 1000000,
+                amount: 10_000,
                 borrow: false,
             },
             FlashLoanAsset {
                 asset: sut.reserves[1].token.address.clone(),
-                amount: 2000000,
+                amount: 2_000_000,
                 borrow: false,
             },
             FlashLoanAsset {
                 asset: sut.reserves[2].token.address.clone(),
-                amount: 3000000,
+                amount: 3_000_000,
                 borrow: false,
             },
         ],
@@ -108,14 +108,14 @@ fn should_require_borrower_to_pay_fee() {
     assert_eq!(treasury_asset_0_before, 0);
     assert_eq!(treasury_asset_1_before, 0);
     assert_eq!(treasury_asset_2_before, 0);
-    assert_eq!(s_token_undetlying_asset_0_before, 200_000_000);
+    assert_eq!(s_token_undetlying_asset_0_before, 2_000_000);
     assert_eq!(s_token_undetlying_asset_1_before, 0);
     assert_eq!(s_token_undetlying_asset_2_before, 0);
 
-    assert_eq!(treasury_asset_0_after, 500);
+    assert_eq!(treasury_asset_0_after, 5);
     assert_eq!(treasury_asset_1_after, 1000);
     assert_eq!(treasury_asset_2_after, 1500);
-    assert_eq!(s_token_undetlying_asset_0_after, 200_000_000);
+    assert_eq!(s_token_undetlying_asset_0_after, 2_000_000);
     assert_eq!(s_token_undetlying_asset_1_after, 0);
     assert_eq!(s_token_undetlying_asset_2_after, 0);
 }

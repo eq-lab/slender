@@ -1,7 +1,9 @@
-use pool_interface::types::error::Error;
+use pool_interface::types::base_asset_config::BaseAssetConfig;
 use pool_interface::types::ir_params::IRParams;
+use pool_interface::types::price_feed_input::PriceFeedInput;
 use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::user_config::UserConfiguration;
+use pool_interface::types::{error::Error, price_feed_config::PriceFeedConfig};
 use soroban_sdk::{assert_with_error, contracttype, vec, Address, Env, Vec};
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17_280;
@@ -16,6 +18,7 @@ pub(crate) const HIGH_INSTANCE_BUMP_LEDGERS: u32 = 7 * DAY_IN_LEDGERS; // 7 days
 #[contracttype]
 pub enum DataKey {
     Admin,
+    BaseAsset,
     Reserves,
     ReserveAssetKey(Address),
     ReserveTimestampWindow,
@@ -171,7 +174,7 @@ pub fn write_user_config(env: &Env, user: &Address, config: &UserConfiguration) 
     );
 }
 
-pub fn read_price_feed(env: &Env, asset: &Address) -> Result<Address, Error> {
+pub fn read_price_feed(env: &Env, asset: &Address) -> Result<PriceFeedConfig, Error> {
     env.storage()
         .instance()
         .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
@@ -184,15 +187,41 @@ pub fn read_price_feed(env: &Env, asset: &Address) -> Result<Address, Error> {
         .ok_or(Error::NoPriceFeed)
 }
 
-pub fn write_price_feed(env: &Env, feed: &Address, assets: &Vec<Address>) {
+pub fn write_price_feed(env: &Env, inputs: &Vec<PriceFeedInput>) {
     env.storage()
         .instance()
         .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
-    for asset in assets.iter() {
-        let data_key = DataKey::PriceFeed(asset.clone());
-        env.storage().instance().set(&data_key, feed);
+    for input in inputs.iter() {
+        let data_key = DataKey::PriceFeed(input.asset.clone());
+
+        env.storage()
+            .instance()
+            .set(&data_key, &PriceFeedConfig::new(&input));
     }
+}
+
+pub fn write_base_asset(env: &Env, config: &BaseAssetConfig) {
+    env.storage()
+        .instance()
+        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    let data_key = DataKey::BaseAsset;
+
+    env.storage().instance().set(&data_key, config);
+}
+
+pub fn read_base_asset(env: &Env) -> Result<BaseAssetConfig, Error> {
+    env.storage()
+        .instance()
+        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    let data_key = DataKey::BaseAsset;
+
+    env.storage()
+        .instance()
+        .get(&data_key)
+        .ok_or(Error::BaseAssetNotInitialized)
 }
 
 pub fn paused(env: &Env) -> bool {

@@ -1,7 +1,6 @@
 #![deny(warnings)]
 #![no_std]
 
-mod constants;
 mod storage;
 
 use crate::storage::*;
@@ -22,7 +21,7 @@ impl PriceFeedTrait for PriceFeedMock {
     }
 
     fn decimals(_env: Env) -> u32 {
-        constants::DECIMALS
+        unimplemented!()
     }
 
     fn resolution(_env: Env) -> u32 {
@@ -38,21 +37,13 @@ impl PriceFeedTrait for PriceFeedMock {
     }
 
     fn lastprice(env: Env, asset: Address) -> Option<PriceData> {
-        let price = read_asset_price(&env, asset.clone())
-            .or_else(|| {
-                let default_price = 10i128.checked_pow(constants::DECIMALS).unwrap();
-                write_asset_price(&env, asset, default_price);
-                Some(default_price)
-            })
-            .unwrap();
-
         Some(PriceData {
-            price,
+            price: read_asset_price(&env, asset.clone()).unwrap(),
             timestamp: env.ledger().timestamp(),
         })
     }
 
-    fn set_price(env: Env, asset: Address, price: i128) {
-        write_asset_price(&env, asset, price);
+    fn init(env: Env, asset: Address, price: i128) {
+        write_init_data(&env, asset, price);
     }
 }
