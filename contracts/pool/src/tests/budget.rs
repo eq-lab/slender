@@ -212,8 +212,8 @@ fn liquidate_receive_stoken_when_borrower_has_one_debt() {
 
     sut.pool
         .deposit(&liquidator, &sut.reserves[2].token.address, &10_000_000_000);
-    sut.pool
-        .borrow(&liquidator, &sut.reserves[0].token.address, &1_000_000_000);
+    // sut.pool
+    //     .borrow(&liquidator, &sut.reserves[0].token.address, &1_000_000_000);
     sut.pool
         .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
 
@@ -223,7 +223,12 @@ fn liquidate_receive_stoken_when_borrower_has_one_debt() {
         .set_price(&sut.reserves[2].token.address, &1_001_000_000);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(&liquidator, &borrower, &true);
+        sut.pool.liquidate(
+            &liquidator,
+            &borrower,
+            &sut.reserves[2].token.address,
+            &true,
+        );
     });
 }
 
@@ -247,8 +252,8 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
         .deposit(&liquidator, &sut.reserves[0].token.address, &10_000_000_000);
     sut.pool
         .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
-    sut.pool
-        .borrow(&liquidator, &sut.reserves[2].token.address, &1_000_000_000);
+    // sut.pool
+    //     .borrow(&liquidator, &sut.reserves[2].token.address, &1_000_000_000);
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
@@ -256,7 +261,12 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
         .set_price(&sut.reserves[0].token.address, &1_100_000_000);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(&liquidator, &borrower, &true);
+        sut.pool.liquidate(
+            &liquidator,
+            &borrower,
+            &sut.reserves[0].token.address,
+            &true,
+        );
     });
 }
 
@@ -275,14 +285,18 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
 
     let liquidator = Address::random(&env);
 
+    sut.reserves[0]
+        .token_admin
+        .mint(&liquidator, &100_000_000_000);
+
     sut.reserves[2]
         .token_admin
         .mint(&liquidator, &100_000_000_000);
 
     sut.pool
-        .deposit(&liquidator, &sut.reserves[2].token.address, &10_000_000_000);
+        .deposit(&liquidator, &sut.reserves[0].token.address, &10_000_000_000);
     sut.pool
-        .borrow(&liquidator, &sut.reserves[0].token.address, &1_000_000_000);
+        .borrow(&liquidator, &sut.reserves[2].token.address, &1_000_000_000);
     sut.pool
         .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
 
@@ -292,7 +306,12 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
         .set_price(&sut.reserves[2].token.address, &1_001_000_000);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(&liquidator, &borrower, &false);
+        sut.pool.liquidate(
+            &liquidator,
+            &borrower,
+            &sut.reserves[2].token.address,
+            &false,
+        );
     });
 }
 
@@ -329,7 +348,12 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
         .set_price(&sut.reserves[0].token.address, &1_001_000_000);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(&liquidator, &borrower, &false);
+        sut.pool.liquidate(
+            &liquidator,
+            &borrower,
+            &sut.reserves[1].token.address,
+            &false,
+        );
     });
 }
 
