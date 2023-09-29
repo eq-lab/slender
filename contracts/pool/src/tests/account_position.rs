@@ -52,8 +52,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
         .withdraw(&borrower, &deposit_token, &100_000, &lender);
     let position_after_withdraw = sut.pool.account_position(&borrower);
 
-    sut.price_feed
-        .init(&debt_token, &14_000_000_000_000_000);
+    sut.price_feed.init(&debt_token, &14_000_000_000_000_000);
 
     let position_after_change_price = sut.pool.account_position(&borrower);
 

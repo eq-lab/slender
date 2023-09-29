@@ -92,10 +92,7 @@ fn should_fail_when_pool_not_initialized() {
         debt_token_address: debt_token.address.clone(),
     };
 
-    pool.init_reserve(
-        &underlying_token.address,
-        &init_reserve_input,
-    );
+    pool.init_reserve(&underlying_token.address, &init_reserve_input);
 }
 
 #[test]
