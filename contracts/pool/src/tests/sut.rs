@@ -2,7 +2,6 @@
 extern crate std;
 
 use crate::*;
-use common::FixedI128;
 use debt_token_interface::DebtTokenClient;
 use flash_loan_receiver_interface::FlashLoanReceiverClient;
 use price_feed_interface::PriceFeedClient;
@@ -46,6 +45,7 @@ pub(crate) fn create_token_contract<'a>(
     admin: &Address,
 ) -> (TokenClient<'a>, TokenAdminClient<'a>) {
     let stellar_asset_contract = e.register_stellar_asset_contract(admin.clone());
+
     (
         TokenClient::new(e, &stellar_asset_contract),
         TokenAdminClient::new(e, &stellar_asset_contract),
@@ -138,22 +138,25 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
         create_flash_loan_receiver_contract(&env);
 
     let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..3)
-        .map(|_| {
+        .map(|i| {
             let (token, token_admin_client) = create_token_contract(&env, &token_admin);
             let s_token = create_s_token_contract(&env, &pool.address, &token.address);
             let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
-            let decimals = s_token.decimals();
+            let decimals = (i == 0).then(|| 7).unwrap_or(9);
+
             assert!(pool.get_reserve(&s_token.address).is_none());
 
             pool.init_reserve(
                 &token.address,
-                // &(i == 2),
                 &InitReserveInput {
                     s_token_address: s_token.address.clone(),
                     debt_token_address: debt_token.address.clone(),
-                    // decimals: 9,
                 },
             );
+
+            if i == 0 {
+                pool.set_base_asset(&token.address, &decimals)
+            }
 
             let liq_bonus = 11000; //110%
             let liq_cap = 100_000_000 * 10_i128.pow(decimals); // 100M
@@ -182,14 +185,12 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             assert_eq!(reserve_config.util_cap, util_cap);
             assert_eq!(reserve_config.discount, discount);
 
-            pool.set_price_feed(
-                &price_feed.address,
-                &soroban_sdk::vec![env, token.address.clone()],
-            );
-            price_feed.set_price(&token.address.clone(), &FixedI128::DENOMINATOR);
-
-            let pool_price_feed = pool.price_feed(&token.address);
-            assert_eq!(pool_price_feed, Some(price_feed.address.clone()));
+            match i {
+                0 => price_feed.init(&token.address.clone(), &100_000_000_000_000),
+                1 => price_feed.init(&token.address.clone(), &10_000_000_000_000_000),
+                2 => price_feed.init(&token.address.clone(), &10_000_000_000_000_000),
+                _ => panic!(),
+            };
 
             ReserveConfig {
                 token,
@@ -199,6 +200,32 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             }
         })
         .collect();
+
+    let feed_inputs = Vec::from_array(
+        &env,
+        [
+            PriceFeedInput {
+                asset: reserves[0].token.address.clone(),
+                feed: price_feed.address.clone(),
+                asset_decimals: 7,
+                feed_decimals: 14,
+            },
+            PriceFeedInput {
+                asset: reserves[1].token.address.clone(),
+                feed: price_feed.address.clone(),
+                asset_decimals: 9,
+                feed_decimals: 16,
+            },
+            PriceFeedInput {
+                asset: reserves[2].token.address.clone(),
+                feed: price_feed.address.clone(),
+                asset_decimals: 9,
+                feed_decimals: 16,
+            },
+        ],
+    );
+
+    pool.set_price_feed(&feed_inputs);
 
     Sut {
         pool,
@@ -218,28 +245,33 @@ pub(crate) fn fill_pool<'a, 'b>(
     sut: &'a Sut,
     with_borrowing: bool,
 ) -> (Address, Address, &'a ReserveConfig<'a>) {
-    let initial_amount: i128 = 1_000_000_000;
     let lender = Address::random(&env);
     let borrower = Address::random(&env);
     let debt_token = sut.reserves[1].token.address.clone();
 
-    for r in sut.reserves.iter() {
-        r.token_admin.mint(&lender, &initial_amount);
-        assert_eq!(r.token.balance(&lender), initial_amount);
+    for i in 0..3 {
+        let amount = (i == 0).then(|| 10_000_000).unwrap_or(1_000_000_000);
 
-        r.token_admin.mint(&borrower, &initial_amount);
-        assert_eq!(r.token.balance(&borrower), initial_amount);
+        sut.reserves[i].token_admin.mint(&lender, &amount);
+        sut.reserves[i].token_admin.mint(&borrower, &amount);
+
+        assert_eq!(sut.reserves[i].token.balance(&lender), amount);
+        assert_eq!(sut.reserves[i].token.balance(&borrower), amount);
     }
 
     //lender deposit all tokens
-    let deposit_amount = 100_000_000;
-    for r in sut.reserves.iter() {
-        let pool_balance = r.token.balance(&r.s_token.address);
-        sut.pool.deposit(&lender, &r.token.address, &deposit_amount);
-        assert_eq!(r.s_token.balance(&lender), deposit_amount);
+    for i in 0..3 {
+        let amount = (i == 0).then(|| 1_000_000).unwrap_or(100_000_000);
+        let stoken = sut.reserves[i].s_token.address.clone();
+        let token = sut.reserves[i].token.address.clone();
+        let pool_balance = sut.reserves[i].token.balance(&stoken);
+
+        sut.pool.deposit(&lender, &token, &amount);
+
+        assert_eq!(sut.reserves[i].s_token.balance(&lender), amount);
         assert_eq!(
-            r.token.balance(&r.s_token.address),
-            pool_balance + deposit_amount
+            sut.reserves[i].token.balance(&stoken),
+            pool_balance + amount
         );
     }
 
@@ -247,8 +279,8 @@ pub(crate) fn fill_pool<'a, 'b>(
 
     //borrower deposit first token and borrow second token
     sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &deposit_amount);
-    assert_eq!(sut.reserves[0].s_token.balance(&borrower), deposit_amount);
+        .deposit(&borrower, &sut.reserves[0].token.address, &1_000_000);
+    assert_eq!(sut.reserves[0].s_token.balance(&borrower), 1_000_000);
 
     if with_borrowing {
         let borrow_amount = 40_000_000;
@@ -264,26 +296,28 @@ pub(crate) fn fill_pool_two<'a, 'b>(
     sut: &'a Sut,
 ) -> (Address, Address, Address, &'a ReserveConfig<'a>) {
     let (lender_1, borrower, debt_token) = fill_pool(env, sut, true);
-
-    let initial_amount: i128 = 1_000_000_000;
     let lender_2 = Address::random(env);
 
-    for r in sut.reserves.iter() {
-        r.token_admin.mint(&lender_2, &initial_amount);
-        assert_eq!(r.token.balance(&lender_2), initial_amount);
+    for i in 0..3 {
+        let amount = (i == 0).then(|| 10_000_000).unwrap_or(1_000_000_000);
+
+        sut.reserves[i].token_admin.mint(&lender_2, &amount);
+        assert_eq!(sut.reserves[i].token.balance(&lender_2), amount);
     }
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     //lender deposit all tokens
-    let deposit_amount = 100_000_000;
-    for r in sut.reserves.iter() {
-        let pool_balance = r.token.balance(&r.s_token.address);
-        sut.pool
-            .deposit(&lender_2, &r.token.address, &deposit_amount);
+    for i in 0..3 {
+        let amount = (i == 0).then(|| 1_000_000).unwrap_or(100_000_000);
+        let stoken = sut.reserves[i].s_token.address.clone();
+        let token = sut.reserves[i].token.address.clone();
+        let pool_balance = sut.reserves[i].token.balance(&stoken);
+
+        sut.pool.deposit(&lender_2, &token, &amount);
         assert_eq!(
-            r.token.balance(&r.s_token.address),
-            pool_balance + deposit_amount
+            sut.reserves[i].token.balance(&stoken),
+            pool_balance + amount
         );
     }
 
@@ -317,18 +351,23 @@ pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Ad
     let borrower1 = Address::random(&env);
     let borrower2 = Address::random(&env);
 
-    for reserve in sut.reserves.iter() {
-        reserve.token_admin.mint(&lender, &100_000_000_000);
-        reserve.token_admin.mint(&borrower1, &100_000_000_000);
-        reserve.token_admin.mint(&borrower2, &100_000_000_000);
+    for i in 0..3 {
+        let amount = (i == 0).then(|| 1_000_000_000).unwrap_or(100_000_000_000);
+
+        sut.reserves[i].token_admin.mint(&lender, &amount);
+        sut.reserves[i].token_admin.mint(&borrower1, &amount);
+        sut.reserves[i].token_admin.mint(&borrower2, &amount);
+
+        let amount = (i == 0).then(|| 100_000_000).unwrap_or(10_000_000_000);
+
         sut.pool
-            .deposit(&lender, &reserve.token.address, &10_000_000_000);
+            .deposit(&lender, &sut.reserves[i].token.address, &amount);
     }
 
     env.ledger().with_mut(|li| li.timestamp = 1 * DAY);
 
     sut.pool
-        .deposit(&borrower1, &sut.reserves[0].token.address, &10_000_000_000);
+        .deposit(&borrower1, &sut.reserves[0].token.address, &100_000_000);
     sut.pool
         .deposit(&borrower1, &sut.reserves[1].token.address, &10_000_000_000);
     sut.pool
@@ -337,7 +376,7 @@ pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Ad
     sut.pool
         .deposit(&borrower2, &sut.reserves[2].token.address, &20_000_000_000);
     sut.pool
-        .borrow(&borrower2, &sut.reserves[0].token.address, &6_000_000_000);
+        .borrow(&borrower2, &sut.reserves[0].token.address, &60_000_000);
     sut.pool
         .borrow(&borrower2, &sut.reserves[1].token.address, &5_999_000_000);
 

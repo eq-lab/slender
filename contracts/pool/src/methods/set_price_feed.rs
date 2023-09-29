@@ -1,16 +1,15 @@
 use pool_interface::types::error::Error;
-use soroban_sdk::{Address, Env, Vec};
+use pool_interface::types::price_feed_input::PriceFeedInput;
+use soroban_sdk::{Env, Vec};
 
 use crate::storage::write_price_feed;
-use crate::types::price_provider::PriceProvider;
 
 use super::utils::validation::require_admin;
 
-pub fn set_price_feed(env: &Env, feed: &Address, assets: &Vec<Address>) -> Result<(), Error> {
+pub fn set_price_feed(env: &Env, inputs: &Vec<PriceFeedInput>) -> Result<(), Error> {
     require_admin(env)?;
-    PriceProvider::new(env, feed);
 
-    write_price_feed(env, feed, assets);
+    write_price_feed(env, inputs);
 
     Ok(())
 }

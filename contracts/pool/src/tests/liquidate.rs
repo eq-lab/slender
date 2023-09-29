@@ -76,13 +76,13 @@ fn should_fail_when_oracle_price_is_negative() {
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
     let token_address = debt_config.token.address.clone();
 
-    sut.price_feed.set_price(&token_address, &-1_000);
+    sut.price_feed.init(&token_address, &-10_000_000_000);
     sut.pool.liquidate(&liquidator, &borrower, &false);
 }
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #308)")]
-fn sould_fail_when_not_enough_collateral() {
+fn should_fail_when_not_enough_collateral() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -90,8 +90,7 @@ fn sould_fail_when_not_enough_collateral() {
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
     let token_address = debt_config.token.address.clone();
 
-    sut.price_feed
-        .set_price(&token_address, &(10i128.pow(sut.price_feed.decimals()) * 2));
+    sut.price_feed.init(&token_address, &(10i128.pow(16) * 2));
     sut.pool.liquidate(&liquidator, &borrower, &false);
 }
 
@@ -123,8 +122,7 @@ fn should_liquidate_and_receive_collateral_partially() {
     sut.reserves[2].token_admin.mint(&borrower, &100_000_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &90_000_000);
-    sut.price_feed
-        .set_price(&token_address, &(10i128.pow(sut.price_feed.decimals()) * 2));
+    sut.price_feed.init(&token_address, &(10i128.pow(16) * 2));
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
@@ -164,9 +162,9 @@ fn should_liquidate_and_receive_collateral_partially() {
     let liquidator_stoken_1_balance_after = sut.reserves[0].s_token.balance(&liquidator);
     let liquidator_stoken_2_balance_after = sut.reserves[2].s_token.balance(&liquidator);
 
-    assert_eq!(underlying_1_supply_before, 200_000_000);
+    assert_eq!(underlying_1_supply_before, 2_000_000);
     assert_eq!(underlying_2_supply_before, 190_000_000);
-    assert_eq!(borrower_stoken_1_balance_before, 100_000_000);
+    assert_eq!(borrower_stoken_1_balance_before, 1_000_000);
     assert_eq!(borrower_stoken_2_balance_before, 90_000_000);
     assert_eq!(borrower_debt_balance_before, 60_000_000);
     assert_eq!(liquidator_repayment_balance_before, 1_000_000_000);
@@ -175,14 +173,14 @@ fn should_liquidate_and_receive_collateral_partially() {
     assert_eq!(liquidator_stoken_1_balance_before, 0);
     assert_eq!(liquidator_stoken_2_balance_before, 0);
 
-    assert_eq!(underlying_1_supply_after, 100_000_000);
-    assert_eq!(underlying_2_supply_after, 157_838_303);
+    assert_eq!(underlying_1_supply_after, 1_000_000);
+    assert_eq!(underlying_2_supply_after, 157_838_500);
     assert_eq!(borrower_stoken_1_balance_after, 0);
-    assert_eq!(borrower_stoken_2_balance_after, 57_838_303);
+    assert_eq!(borrower_stoken_2_balance_after, 57_838_500);
     assert_eq!(borrower_debt_balance_after, 0);
     assert_eq!(liquidator_repayment_balance_after, 939_926_501);
-    assert_eq!(liquidator_underlying_1_balance_after, 100_000_000);
-    assert_eq!(liquidator_underlying_2_balance_after, 32_161_697);
+    assert_eq!(liquidator_underlying_1_balance_after, 1_000_000);
+    assert_eq!(liquidator_underlying_2_balance_after, 32_161_500);
     assert_eq!(liquidator_stoken_1_balance_after, 0);
     assert_eq!(liquidator_stoken_2_balance_after, 0);
 }
@@ -201,8 +199,7 @@ fn should_receive_stokens_when_requested() {
     sut.reserves[2].token_admin.mint(&borrower, &100_000_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &90_000_000);
-    sut.price_feed
-        .set_price(&token_address, &(10i128.pow(sut.price_feed.decimals()) * 2));
+    sut.price_feed.init(&token_address, &(10i128.pow(16) * 2));
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
@@ -242,9 +239,9 @@ fn should_receive_stokens_when_requested() {
     let liquidator_stoken_1_balance_after = sut.reserves[0].s_token.balance(&liquidator);
     let liquidator_stoken_2_balance_after = sut.reserves[2].s_token.balance(&liquidator);
 
-    assert_eq!(underlying_1_supply_before, 200_000_000);
+    assert_eq!(underlying_1_supply_before, 2_000_000);
     assert_eq!(underlying_2_supply_before, 190_000_000);
-    assert_eq!(borrower_stoken_1_balance_before, 100_000_000);
+    assert_eq!(borrower_stoken_1_balance_before, 1_000_000);
     assert_eq!(borrower_stoken_2_balance_before, 90_000_000);
     assert_eq!(borrower_debt_balance_before, 60_000_000);
     assert_eq!(liquidator_repayment_balance_before, 1_000_000_000);
@@ -253,16 +250,16 @@ fn should_receive_stokens_when_requested() {
     assert_eq!(liquidator_stoken_1_balance_before, 0);
     assert_eq!(liquidator_stoken_2_balance_before, 0);
 
-    assert_eq!(underlying_1_supply_after, 200_000_000);
+    assert_eq!(underlying_1_supply_after, 2_000_000);
     assert_eq!(underlying_2_supply_after, 190_000_000);
     assert_eq!(borrower_stoken_1_balance_after, 0);
-    assert_eq!(borrower_stoken_2_balance_after, 57_838_303);
+    assert_eq!(borrower_stoken_2_balance_after, 57_838_500);
     assert_eq!(borrower_debt_balance_after, 0);
     assert_eq!(liquidator_repayment_balance_after, 939_926_501);
     assert_eq!(liquidator_underlying_1_balance_after, 0);
     assert_eq!(liquidator_underlying_2_balance_after, 0);
-    assert_eq!(liquidator_stoken_1_balance_after, 100_000_000);
-    assert_eq!(liquidator_stoken_2_balance_after, 32_161_697);
+    assert_eq!(liquidator_stoken_1_balance_after, 1_000_000);
+    assert_eq!(liquidator_stoken_2_balance_after, 32_161_500);
 }
 
 #[test]
@@ -277,17 +274,16 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
 
     env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
 
-    sut.reserves[0].token_admin.mint(&liquidator, &100_000_000);
+    sut.reserves[0].token_admin.mint(&liquidator, &1_000_000);
     sut.reserves[2].token_admin.mint(&borrower, &100_000_000);
 
     sut.pool
         .deposit(&liquidator, &debt_config.token.address, &100_000_000);
     sut.pool
-        .borrow(&liquidator, &sut.reserves[0].token.address, &20_000_000);
+        .borrow(&liquidator, &sut.reserves[0].token.address, &200_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &90_000_000);
-    sut.price_feed
-        .set_price(&token_address, &(10i128.pow(sut.price_feed.decimals()) * 2));
+    sut.price_feed.init(&token_address, &(10i128.pow(16) * 2));
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
@@ -403,14 +399,14 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
         .pool
         .token_total_supply(&sut.reserves[2].debt_token.address);
 
-    assert_eq!(underlying_1_supply_before, 180_000_000);
+    assert_eq!(underlying_1_supply_before, 1_800_000);
     assert_eq!(underlying_2_supply_before, 190_000_000);
-    assert_eq!(borrower_stoken_1_balance_before, 100_000_000);
+    assert_eq!(borrower_stoken_1_balance_before, 1_000_000);
     assert_eq!(borrower_stoken_2_balance_before, 90_000_000);
     assert_eq!(borrower_debt_balance_before, 60_000_000);
-    assert_eq!(liquidator_debt_balance_before, 20_000_000);
+    assert_eq!(liquidator_debt_balance_before, 200_000);
     assert_eq!(liquidator_repayment_balance_before, 900_000_000);
-    assert_eq!(liquidator_underlying_1_balance_before, 120_000_000);
+    assert_eq!(liquidator_underlying_1_balance_before, 1_200_000);
     assert_eq!(liquidator_underlying_2_balance_before, 0);
     assert_eq!(liquidator_stoken_1_balance_before, 0);
     assert_eq!(liquidator_stoken_2_balance_before, 0);
@@ -458,18 +454,18 @@ fn should_repay_liquidator_debt_when_stokens_requested() {
         pool_debt_token_2_total_supply_before
     );
 
-    assert_eq!(underlying_1_supply_after, 179_994_205);
+    assert_eq!(underlying_1_supply_after, 1_799_943);
     assert_eq!(underlying_2_supply_after, 190_000_000);
     assert_eq!(borrower_stoken_1_balance_after, 0);
-    assert_eq!(borrower_stoken_2_balance_after, 57_900_798);
+    assert_eq!(borrower_stoken_2_balance_after, 57_900_900);
     assert_eq!(borrower_debt_balance_after, 0);
     assert_eq!(liquidator_debt_balance_after, 0);
     assert_eq!(liquidator_repayment_balance_after, 839_953_606);
-    assert_eq!(liquidator_underlying_1_balance_after, 120_000_000);
+    assert_eq!(liquidator_underlying_1_balance_after, 1_200_000);
     assert_eq!(liquidator_underlying_2_balance_after, 0);
-    assert_eq!(liquidator_stoken_1_balance_after, 79_994_208);
-    assert_eq!(liquidator_stoken_2_balance_after, 32_099_202);
-    assert_eq!(treasury_underlying_balance_after, 5_795);
+    assert_eq!(liquidator_stoken_1_balance_after, 799_943);
+    assert_eq!(liquidator_stoken_2_balance_after, 32_099_100);
+    assert_eq!(treasury_underlying_balance_after, 57);
 
     assert_eq!(
         borrower_stoken_1_balance_after,
@@ -538,17 +534,16 @@ fn should_change_user_config() {
         .get_reserve(&sut.reserves[2].token.address)
         .unwrap();
 
-    sut.reserves[0].token_admin.mint(&liquidator, &100_000_000);
+    sut.reserves[0].token_admin.mint(&liquidator, &1_000_000);
     sut.reserves[2].token_admin.mint(&borrower, &100_000_000);
 
     sut.pool
         .deposit(&liquidator, &debt_config.token.address, &100_000_000);
     sut.pool
-        .borrow(&liquidator, &sut.reserves[0].token.address, &20_000_000);
+        .borrow(&liquidator, &sut.reserves[0].token.address, &200_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &90_000_000);
-    sut.price_feed
-        .set_price(&token_address, &(10i128.pow(sut.price_feed.decimals()) * 2));
+    sut.price_feed.init(&token_address, &(10i128.pow(16) * 2));
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
@@ -689,7 +684,7 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "liquidation"), borrower.clone()).into_val(&env),
-                (60_048_996i128, 66_053_895i128).into_val(&env)
+                (600_489i128, 660_537i128).into_val(&env)
             ),
         ]
     );

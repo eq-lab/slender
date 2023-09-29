@@ -9,7 +9,7 @@ use soroban_sdk::{
     testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
     token::Client as TokenClient,
     token::StellarAssetClient as TokenAdminClient,
-    vec, Address, Env, IntoVal, Symbol,
+    Address, Env, IntoVal, Symbol, Vec,
 };
 
 use self::pool::{CollateralParamsInput, IRParams, InitReserveInput};
@@ -62,8 +62,19 @@ fn create_token<'a>(
     let underlying_asset = TokenClient::new(e, stellar_asset);
     let underlying_asset_admin = TokenAdminClient::new(e, stellar_asset);
     e.budget().reset_default();
-    let oracle = oracle::Client::new(e, &e.register_contract_wasm(None, oracle::WASM));
-    pool.set_price_feed(&oracle.address, &vec![e, underlying_asset.address.clone()]);
+    let price_feed = oracle::Client::new(e, &e.register_contract_wasm(None, oracle::WASM));
+
+    let feed_inputs = Vec::from_array(
+        &e,
+        [pool::PriceFeedInput {
+            asset: underlying_asset.address.clone(),
+            feed: price_feed.address.clone(),
+            asset_decimals: 7,
+            feed_decimals: 14,
+        }],
+    );
+
+    pool.set_price_feed(&feed_inputs);
 
     s_token.initialize(
         &"name".into_val(e),
@@ -102,13 +113,8 @@ fn test() {
     let init_reserve_input = InitReserveInput {
         s_token_address: s_token.address.clone(),
         debt_token_address: debt_token.address.clone(),
-        // decimals: 9,
     };
-    pool.init_reserve(
-        &underlying.address,
-        // &false,
-        &init_reserve_input,
-    );
+    pool.init_reserve(&underlying.address, &init_reserve_input);
 
     e.budget().reset_default();
 

@@ -15,18 +15,23 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     let lender = Address::random(&env);
     let borrower = Address::random(&env);
 
-    for r in sut.reserves.iter() {
-        r.token_admin.mint(&lender, &1_000_000_000);
-        r.token_admin.mint(&borrower, &1_000_000_000);
+    for i in 0..3 {
+        let amount = (i == 0).then(|| 10_000_000).unwrap_or(1_000_000_000);
+
+        sut.reserves[i].token_admin.mint(&lender, &amount);
+        sut.reserves[i].token_admin.mint(&borrower, &amount);
     }
 
     env.ledger().with_mut(|l| l.timestamp = DAY);
 
-    for r in sut.reserves.iter() {
-        sut.pool.deposit(&lender, &r.token.address, &100_000_000);
+    for i in 0..3 {
+        let amount = (i == 0).then(|| 1_000_000).unwrap_or(100_000_000);
+
+        sut.pool
+            .deposit(&lender, &sut.reserves[i].token.address, &amount);
     }
 
-    sut.pool.deposit(&borrower, &deposit_token, &100_000_000);
+    sut.pool.deposit(&borrower, &deposit_token, &1_000_000);
     sut.pool.borrow(&borrower, &debt_token, &40_000_000);
 
     env.ledger().with_mut(|l| l.timestamp = 2 * DAY);
@@ -34,7 +39,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     let collat_coeff_initial = sut.pool.collat_coeff(&debt_token);
 
     sut.pool
-        .withdraw(&borrower, &deposit_token, &10_000_000, &lender);
+        .withdraw(&borrower, &deposit_token, &100_000, &lender);
 
     env.ledger().with_mut(|l| l.timestamp = 3 * DAY);
     let collat_coeff_after_withdraw = sut.pool.collat_coeff(&debt_token);
@@ -44,7 +49,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     env.ledger().with_mut(|l| l.timestamp = 4 * DAY);
     let collat_coeff_after_borrow = sut.pool.collat_coeff(&debt_token);
 
-    sut.price_feed.set_price(&debt_token, &1_200_000_000);
+    sut.price_feed.init(&debt_token, &12_000_000_000_000_000);
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
     let collat_coeff_after_price_change = sut.pool.collat_coeff(&debt_token);

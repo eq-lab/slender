@@ -1,13 +1,11 @@
 #![cfg(test)]
 extern crate std;
 
-use soroban_sdk::testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation};
+use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
 use soroban_sdk::{IntoVal, Symbol};
 
 use crate::tests::sut::init_pool;
 use crate::*;
-
-use super::sut::{create_pool_contract, create_token_contract};
 
 #[test]
 fn should_require_admin() {
@@ -16,7 +14,7 @@ fn should_require_admin() {
 
     let sut = init_pool(&env, false);
     let underlying_token = sut.reserves[0].token.address.clone();
-    sut.pool.set_base_asset(&underlying_token, &true);
+    sut.pool.set_base_asset(&underlying_token, &9u32);
 
     assert_eq!(
         env.auths(),
@@ -26,7 +24,7 @@ fn should_require_admin() {
                 function: AuthorizedFunction::Contract((
                     sut.pool.address.clone(),
                     Symbol::new(&env, "set_base_asset"),
-                    (underlying_token, true).into_val(&env)
+                    (underlying_token, 9u32).into_val(&env)
                 )),
                 sub_invocations: std::vec![]
             }
@@ -35,34 +33,22 @@ fn should_require_admin() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #100)")]
-fn should_fail_when_reserve_not_exists() {
-    let env = Env::default();
-    env.mock_all_auths();
-    let admin = Address::random(&env);
-    let token_admin = Address::random(&env);
-
-    let (underlying_token, _) = create_token_contract(&env, &token_admin);
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
-
-    pool.set_base_asset(&underlying_token.address, &true);
-}
-
-#[test]
 fn should_set_base_asset() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
-    let underlying_token = sut.reserves[0].token.address.clone();
+    let underlying_token_1 = sut.reserves[0].token.address.clone();
+    let underlying_token_2 = sut.reserves[1].token.address.clone();
 
-    sut.pool.set_base_asset(&underlying_token, &true);
+    let base_asset_init = sut.pool.base_asset();
 
-    let reserve = sut.pool.get_reserve(&underlying_token).unwrap();
-    assert_eq!(reserve.configuration.is_base_asset, true);
+    assert_eq!(base_asset_init.address, underlying_token_1);
+    assert_eq!(base_asset_init.decimals, 7u32);
 
-    sut.pool.set_base_asset(&underlying_token, &false);
+    sut.pool.set_base_asset(&underlying_token_2, &9u32);
+    let base_asset_after = sut.pool.base_asset();
 
-    let reserve = sut.pool.get_reserve(&underlying_token).unwrap();
-    assert_eq!(reserve.configuration.is_base_asset, false);
+    assert_eq!(base_asset_after.address, underlying_token_2);
+    assert_eq!(base_asset_after.decimals, 9u32);
 }

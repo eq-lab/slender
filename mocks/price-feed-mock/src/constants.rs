@@ -1,1 +1,1 @@
-pub const DECIMALS: u32 = 9;
+pub const DECIMALS: u32 = 7;

@@ -1,22 +1,24 @@
 #![deny(warnings)]
 #![no_std]
 
+use methods::set_base_asset::set_base_asset;
 use methods::{
     account_position::account_position, borrow::borrow, collat_coeff::collat_coeff,
     configure_as_collateral::configure_as_collateral, debt_coeff::debt_coeff, deposit::deposit,
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, finalize_transfer::finalize_transfer,
     flash_loan::flash_loan, init_reserve::init_reserve, initialize::initialize,
     liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral,
-    set_base_asset::set_base_asset, set_decimals::set_decimals,
     set_flash_loan_fee::set_flash_loan_fee, set_ir_params::set_ir_params, set_pause::set_pause,
     set_price_feed::set_price_feed, set_reserve_status::set_reserve_status,
     set_reserve_timestamp_window::set_reserve_timestamp_window, upgrade::upgrade,
     upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token, withdraw::withdraw,
 };
+use pool_interface::types::base_asset_config::BaseAssetConfig;
 use pool_interface::types::{
     account_position::AccountPosition, collateral_params_input::CollateralParamsInput,
     error::Error, flash_loan_asset::FlashLoanAsset, init_reserve_input::InitReserveInput,
-    ir_params::IRParams, reserve_data::ReserveData, user_config::UserConfiguration,
+    ir_params::IRParams, price_feed_config::PriceFeedConfig, price_feed_input::PriceFeedInput,
+    reserve_data::ReserveData, user_config::UserConfiguration,
 };
 use pool_interface::LendingPoolTrait;
 use soroban_sdk::{contract, contractimpl, Address, Bytes, BytesN, Env, Vec};
@@ -69,14 +71,6 @@ impl LendingPoolTrait for LendingPool {
         init_reserve(&env, &asset, &input)
     }
 
-    fn set_decimals(env: Env, asset: Address, decimals: u32) -> Result<(), Error> {
-        set_decimals(&env, &asset, decimals)
-    }
-
-    fn set_base_asset(env: Env, asset: Address, is_base: bool) -> Result<(), Error> {
-        set_base_asset(&env, &asset, is_base)
-    }
-
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error> {
         set_reserve_status(&env, &asset, is_active)
     }
@@ -121,11 +115,19 @@ impl LendingPoolTrait for LendingPool {
         debt_coeff(&env, &asset)
     }
 
-    fn set_price_feed(env: Env, feed: Address, assets: Vec<Address>) -> Result<(), Error> {
-        set_price_feed(&env, &feed, &assets)
+    fn base_asset(env: Env) -> Result<BaseAssetConfig, Error> {
+        read_base_asset(&env)
     }
 
-    fn price_feed(env: Env, asset: Address) -> Option<Address> {
+    fn set_base_asset(env: Env, asset: Address, decimals: u32) -> Result<(), Error> {
+        set_base_asset(&env, &asset, decimals)
+    }
+
+    fn set_price_feed(env: Env, inputs: Vec<PriceFeedInput>) -> Result<(), Error> {
+        set_price_feed(&env, &inputs)
+    }
+
+    fn price_feed(env: Env, asset: Address) -> Option<PriceFeedConfig> {
         read_price_feed(&env, &asset).ok()
     }
 
