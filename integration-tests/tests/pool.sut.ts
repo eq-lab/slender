@@ -469,14 +469,19 @@ export async function flashLoan(
     );
 }
 
-export async function initializeFlashLoanReceiver(client: SorobanClient, signer: Keypair, receiverAddress: string): Promise<SendTransactionResult> {
+export async function initializeFlashLoanReceiver(
+    client: SorobanClient,
+    signer: Keypair,
+    receiverAddress: string,
+    shouldFail: boolean
+): Promise<SendTransactionResult> {
     return client.sendTransaction(
         receiverAddress,
         "initialize",
         signer,
         3,
         convertToScvAddress(process.env.SLENDER_POOL),
-        convertToScvBool(false),
+        convertToScvBool(shouldFail),
     );
 }
 
