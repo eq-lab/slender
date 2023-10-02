@@ -211,8 +211,6 @@ fn liquidate_receive_stoken_when_borrower_has_one_debt() {
 
     sut.pool
         .deposit(&liquidator, &sut.reserves[2].token.address, &10_000_000_000);
-    // sut.pool
-    //     .borrow(&liquidator, &sut.reserves[0].token.address, &1_000_000_000);
     sut.pool
         .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
 
@@ -251,8 +249,6 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
         .deposit(&liquidator, &sut.reserves[0].token.address, &100_000_000);
     sut.pool
         .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
-    // sut.pool
-    //     .borrow(&liquidator, &sut.reserves[2].token.address, &1_000_000_000);
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
