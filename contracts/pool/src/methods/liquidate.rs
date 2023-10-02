@@ -132,8 +132,6 @@ fn do_liquidate(
         let mut liquidator_configurator = UserConfigurator::new(env, liquidator, true);
         let liquidator_config = liquidator_configurator.user_config()?;
 
-        let _id = reserve.get_id();
-
         assert_with_error!(
             env,
             !liquidator_config.is_borrowing(env, reserve.get_id()),
@@ -248,8 +246,6 @@ fn do_liquidate(
 
         recalculate_reserve_data(env, asset, reserve_data, s_token_supply, debt_token_supply)?;
     }
-
-    let _pos = account_position(env, who).unwrap();
 
     user_configurator.write();
 
