@@ -36,7 +36,6 @@ impl<'a> PriceProvider<'a> {
         FixedI128::from_inner(price)
             .mul_int(amount)
             .and_then(|a| FixedI128::from_rational(a, 10i128.pow(config.asset_decimals)))
-            .filter(|_| *asset != self.base_asset.address)
             .and_then(|a| a.to_precision(self.base_asset.decimals))
             .ok_or(Error::InvalidAssetPrice)
     }
@@ -52,7 +51,6 @@ impl<'a> PriceProvider<'a> {
         FixedI128::from_inner(price)
             .recip_mul_int(amount)
             .and_then(|a| FixedI128::from_rational(a, 10i128.pow(self.base_asset.decimals)))
-            .filter(|_| *asset != self.base_asset.address)
             .and_then(|a| a.to_precision(config.asset_decimals))
             .ok_or(Error::InvalidAssetPrice)
     }
