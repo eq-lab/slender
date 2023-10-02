@@ -2,7 +2,7 @@ use common::FixedI128;
 use pool_interface::types::account_position::AccountPosition;
 use pool_interface::types::error::Error;
 use pool_interface::types::user_config::UserConfiguration;
-use soroban_sdk::{assert_with_error, vec, Address, Env, Map, Vec};
+use soroban_sdk::{assert_with_error, Address, Env, Map, Vec};
 
 use crate::storage::{
     read_reserve, read_reserves, read_token_balance, read_token_total_supply, read_user_config,
@@ -41,7 +41,7 @@ pub fn calc_account_data(
 ) -> Result<AccountData, Error> {
     let liquidation = liquidate_debt.is_some();
     if user_config.is_empty() {
-        return Ok(AccountData::default(env, liquidation));
+        return Ok(AccountData::default());
     }
 
     let CalcAccountDataCache {
@@ -120,6 +120,8 @@ pub fn calc_account_data(
                     asset,
                     s_token_balance: who_collat,
                     collat_coeff: collat_coeff.into_inner(),
+                    compounded_collat: compounded_balance,
+                    is_last_collateral: false,
                 });
                 sorted_collateral_to_receive.set(curr_discount, collateral_to_receive);
             }
@@ -165,14 +167,12 @@ pub fn calc_account_data(
         .ok_or(Error::CalcAccountDataMathError)?;
 
     let liquidation_data = || -> LiquidationData {
-        let mut collateral_to_receive = vec![env];
         let sorted = sorted_collateral_to_receive.values();
-        for v in sorted {
-            for c in v {
-                collateral_to_receive.push_back(c);
-            }
+        let mut collateral_to_receive = sorted.first().and_then(|v| v.first());
+        let is_last_collateral = sorted.iter().fold(0, |acc, v| acc + v.len()) == 1;
+        if let Some(c) = collateral_to_receive.as_mut() {
+            c.is_last_collateral = is_last_collateral;
         }
-
         LiquidationData {
             debt_to_cover_in_base,
             debt_to_cover,

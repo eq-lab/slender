@@ -101,8 +101,7 @@ fn should_fail_when_not_enough_collateral() {
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
     let token_address = debt_config.token.address.clone();
 
-    sut.price_feed
-        .init(&token_address, &(10i128.pow(16) * 2));
+    sut.price_feed.init(&token_address, &(10i128.pow(16) * 2));
     sut.pool
         .liquidate(&liquidator, &borrower, &debt_config.token.address, &false);
 }
@@ -136,8 +135,7 @@ fn should_liquidate_and_receive_collateral_partially() {
     sut.reserves[2].token_admin.mint(&borrower, &100_000_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &50_000_000);
-    sut.price_feed
-        .init(&token_address, &(10i128.pow(16) * 2));
+    sut.price_feed.init(&token_address, &(10i128.pow(16) * 2));
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
@@ -179,7 +177,7 @@ fn should_liquidate_and_receive_collateral_partially() {
 
     let _borrower_stoken_2_balance_after_full_liquidation =
         sut.reserves[2].s_token.balance(&borrower);
-        let _underlying_2_supply_after_full_liquidation = sut
+    let _underlying_2_supply_after_full_liquidation = sut
         .pool
         .stoken_underlying_balance(&sut.reserves[2].s_token.address);
 
@@ -243,9 +241,8 @@ fn should_receive_stokens_when_requested() {
     sut.reserves[2].token_admin.mint(&borrower, &100_000_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &50_000_000);
-    
-    sut.price_feed
-        .init(&token_address, &(10i128.pow(16) * 2));
+
+    sut.price_feed.init(&token_address, &(10i128.pow(16) * 2));
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
@@ -372,7 +369,10 @@ fn should_change_user_config() {
         .borrow(&liquidator, &sut.reserves[2].token.address, &20_000_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &120_000_000);
-    sut.price_feed.init(&token_address, &(10i128.pow(16) * 3_200_000_000 / 1_000_000_000));
+    sut.price_feed.init(
+        &token_address,
+        &(10i128.pow(16) * 3_200_000_000 / 1_000_000_000),
+    );
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
@@ -572,8 +572,11 @@ fn should_fail_when_have_debt_in_receiving_s_token() {
     let sut = init_pool(&env, false);
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
 
-    sut.pool.deposit(&liquidator, &debt_config.token.address, &500_000_000);
-    sut.pool.borrow(&liquidator, &sut.reserves[0].token.address, &1_000_000);
+    sut.pool
+        .deposit(&liquidator, &debt_config.token.address, &500_000_000);
+    sut.pool
+        .borrow(&liquidator, &sut.reserves[0].token.address, &1_000_000);
 
-    sut.pool.liquidate(&liquidator, &borrower, &debt_config.token.address, &true);
+    sut.pool
+        .liquidate(&liquidator, &borrower, &debt_config.token.address, &true);
 }
