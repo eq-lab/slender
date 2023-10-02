@@ -121,7 +121,7 @@ pub fn calc_account_data(
                     s_token_balance: who_collat,
                     collat_coeff: collat_coeff.into_inner(),
                     compounded_collat: compounded_balance,
-                    is_last_collateral: false,
+                    is_last_collateral: Default::default(),
                 });
                 sorted_collateral_to_receive.set(curr_discount, collateral_to_receive);
             }
