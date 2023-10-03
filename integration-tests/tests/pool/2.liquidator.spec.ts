@@ -158,19 +158,73 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
             && borrower1Position.npv > -10_000n);
     });
 
-    // TODO: requires optimization
-    it("Case 5: Liquidator liquidates Borrower's positions", async function () {
+    it("Case 5: Liquidator liquidates Borrower's position partialy", async function () {
         // Liquidator1 liquidates Borrower1's positions
-        await liquidate(client, liquidator1Keys, borrower1Address, false);
+        const liquidator1USDCBalanceBefore = await tokenBalanceOf(client, "USDC", liquidator1Address);
+        const borrower1SUsdcBalanceBefore = await sTokenBalanceOf(client, "USDC", borrower1Address);
+        const dXlmSupplyBefore = await debtTokenTotalSupply(client, "XLM");
+        const borrower1DXlmBalanceBefore = await debtTokenBalanceOf(client, "XLM", borrower1Address);
+        const borrower1PositionBefore = await accountPosition(client, borrower1Keys);
+
+        await liquidate(client, liquidator1Keys, borrower1Address, "XLM", false);
 
         const liquidator1XrpBalance = await tokenBalanceOf(client, "XRP", liquidator1Address);
         const liquidator1SXrpBalance = await sTokenBalanceOf(client, "XRP", liquidator1Address);
-        const liquidator1USDCBalance = await tokenBalanceOf(client, "USDC", liquidator1Address);
-        const liquidator1SUsdcBalance = await sTokenBalanceOf(client, "USDC", liquidator1Address);
+        const liquidator1USDCBalanceAfter = await tokenBalanceOf(client, "USDC", liquidator1Address);
+        const liquidator1SUsdcBalanceAfter = await sTokenBalanceOf(client, "USDC", liquidator1Address);
         const liquidator1DUsdcBalance = await debtTokenBalanceOf(client, "USDC", liquidator1Address);
 
         const borrower1SXrpBalance = await sTokenBalanceOf(client, "XRP", borrower1Address);
-        const borrower1SUsdcBalance = await sTokenBalanceOf(client, "USDC", borrower1Address);
+        const borrower1SUsdcBalanceAfter = await sTokenBalanceOf(client, "USDC", borrower1Address);
+        const borrower1DXlmBalanceAfter = await debtTokenBalanceOf(client, "XLM", borrower1Address);
+
+        const dXlmSupplyAfter = await debtTokenTotalSupply(client, "XLM");
+        const dUsdcSupply = await debtTokenTotalSupply(client, "USDC");
+
+        const borrower1PositionAfter = await accountPosition(client, borrower1Keys);
+
+        assert.equal(liquidator1XrpBalance, 10_000_000_000n);
+        assert.equal(liquidator1SXrpBalance, 0n);
+        assert.equal(liquidator1USDCBalanceBefore, liquidator1USDCBalanceAfter);
+        assert.equal(liquidator1SUsdcBalanceAfter, 0n);
+        assert.equal(liquidator1DUsdcBalance, 1_000_000_000n);
+
+        assert.equal(borrower1SXrpBalance, 0n);
+        assert.equal(borrower1SUsdcBalanceBefore, borrower1SUsdcBalanceAfter);
+        assert(borrower1DXlmBalanceAfter < borrower1DXlmBalanceBefore);
+
+        assert(dXlmSupplyAfter < dXlmSupplyBefore);
+        assert.equal(dUsdcSupply, 1_000_000_000n);
+
+        assert(borrower1PositionAfter.debt < borrower1PositionBefore.debt);
+    });
+
+    it("Case 6: Drop the USDC price so Borrower's NPV <= 0", async function () {
+        // USDC price is set to 0.45
+        await initPrice(client, "USDC", 4_500_000_000_000_000n);
+
+        const borrower1Position = await accountPosition(client, borrower1Keys);
+
+        assert(borrower1Position.npv < 0n);
+    });
+
+    it("Case 7: Liquidator liquidates Borrower's position fully", async function () {
+        // Liquidator1 liquidates Borrower1's positions
+        const liquidator1XrpBalanceBefore = await tokenBalanceOf(client, "XRP", liquidator1Address);
+        const borrower1SXrpBalanceBefore = await sTokenBalanceOf(client, "XRP", borrower1Address);
+        const liquidator1UsdcBalanceBefore = await tokenBalanceOf(client, "USDC", liquidator1Address);
+        const borrower1SUsdcBalanceBefore = await sTokenBalanceOf(client, "USDC", borrower1Address);
+
+        await liquidate(client, liquidator1Keys, borrower1Address, "XLM", false);
+
+        const liquidator1UsdcBalanceAfter = await tokenBalanceOf(client, "USDC", liquidator1Address);
+        const liquidator1SUsdcBalance = await sTokenBalanceOf(client, "USDC", liquidator1Address);
+        const liquidator1XrpBalanceAfter = await tokenBalanceOf(client, "XRP", liquidator1Address);
+        const liquidator1SXrpBalance = await sTokenBalanceOf(client, "XRP", liquidator1Address);
+        const liquidator1DXrpBalance = await debtTokenBalanceOf(client, "XRP", liquidator1Address);
+
+        const borrower1SUsdcBalanceAfter = await sTokenBalanceOf(client, "USDC", borrower1Address);
+        const borrower1SXrpBalanceAfter = await sTokenBalanceOf(client, "XRP", borrower1Address);
         const borrower1DXlmBalance = await debtTokenBalanceOf(client, "XLM", borrower1Address);
 
         const dXlmSupply = await debtTokenTotalSupply(client, "XLM");
@@ -178,16 +232,14 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
-        assert.equal(liquidator1XrpBalance, 10_000_000_000n);
-        assert.equal(liquidator1SXrpBalance, 0n);
-        assert(liquidator1USDCBalance > 4_000_000_000n
-            && liquidator1USDCBalance < 5_000_000_000n);
+        assert(liquidator1UsdcBalanceAfter > liquidator1UsdcBalanceBefore);
         assert.equal(liquidator1SUsdcBalance, 0n);
-        assert.equal(liquidator1DUsdcBalance, 1_000_000_000n);
+        assert.equal(liquidator1XrpBalanceBefore, liquidator1XrpBalanceAfter);
+        assert.equal(liquidator1SXrpBalance, 0n);
+        assert.equal(liquidator1DXrpBalance, 0n);
 
-        assert.equal(borrower1SXrpBalance, 0n);
-        assert(borrower1SUsdcBalance > 6_000_000_000n
-            && borrower1SUsdcBalance < 7_000_000_000n);
+        assert(borrower1SUsdcBalanceAfter < borrower1SUsdcBalanceBefore);
+        assert.equal(borrower1SXrpBalanceBefore, borrower1SXrpBalanceAfter);
         assert.equal(borrower1DXlmBalance, 0n);
 
         assert.equal(dXlmSupply, 0n);

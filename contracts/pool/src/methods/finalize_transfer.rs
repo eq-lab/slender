@@ -62,7 +62,7 @@ pub fn finalize_transfer(
             },
             from_config,
             &mut PriceProvider::new(env)?,
-            false,
+            None,
         )?;
 
         require_good_position(env, &from_account_data);

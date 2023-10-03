@@ -133,7 +133,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await initPrice(client, "USDC", 15_000_000_000_000_000n);
 
         await expect(
-            liquidate(client, liquidator1Keys, borrower1Address, false)
+            liquidate(client, liquidator1Keys, borrower1Address, "USDC", false)
                 .then((result) => writeBudgetSnapshot("liquidate", result))
         ).to.not.eventually.rejected;
     });

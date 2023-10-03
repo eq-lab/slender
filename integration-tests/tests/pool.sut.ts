@@ -34,6 +34,17 @@ export interface FlashLoanAsset {
     borrow: boolean
 }
 
+interface PriceFeedConfig {
+    feed: string,
+    feed_decimals: bigint,
+    asset_decimals: bigint,
+}
+
+interface PriceData {
+    price: bigint,
+    timestamp: bigint,
+}
+
 export async function init(client: SorobanClient): Promise<void> {
     console.log("    Contracts initialization has been started");
 
@@ -76,16 +87,25 @@ export async function init(client: SorobanClient): Promise<void> {
 
     await initPoolPriceFeed(client, [{
         asset: "XLM",
-        assetDecimals: 7,
-        feedDecimals: 14
+        priceFeedConfig: {
+            asset_decimals: 7n,
+            feed_decimals: 14n,
+            feed: process.env.SLENDER_PRICE_FEED
+        }
     }, {
         asset: "XRP",
-        assetDecimals: 9,
-        feedDecimals: 16
+        priceFeedConfig: {
+            asset_decimals: 9n,
+            feed_decimals: 16n,
+            feed: process.env.SLENDER_PRICE_FEED
+        }
     }, {
         asset: "USDC",
-        assetDecimals: 9,
-        feedDecimals: 16
+        priceFeedConfig: {
+            asset_decimals: 9n,
+            feed_decimals: 16n,
+            feed: process.env.SLENDER_PRICE_FEED
+        }
     }]);
 
     console.log("    Contracts initialization has been finished");
@@ -300,6 +320,7 @@ export async function liquidate(
     client: SorobanClient,
     signer: Keypair,
     who: string,
+    debtToLiquidate: SlenderAsset,
     receiveStoken: boolean,
 ): Promise<SendTransactionResult> {
     const txResult = await client.sendTransaction(
@@ -309,6 +330,7 @@ export async function liquidate(
         3,
         convertToScvAddress(signer.publicKey()),
         convertToScvAddress(who),
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${debtToLiquidate}`]),
         convertToScvBool(receiveStoken)
     );
 
@@ -386,7 +408,7 @@ export async function deployReceiverMock(): Promise<string> {
     return (flashLoadReceiverMockAddress as string).trim();
 }
 
-export async function liquidateCli(liquidatorKeys: Keypair, borrower: string, receiveStoken: boolean): Promise<string> {
+export async function liquidateCli(liquidatorKeys: Keypair, borrower: string, debtAsset: SlenderAsset, receiveStoken: boolean): Promise<string> {
     const liquidateResult = (await new Promise((resolve) => {
         exec(`soroban --very-verbose contract invoke \
         --id ${process.env.SLENDER_POOL} \
@@ -397,6 +419,7 @@ export async function liquidateCli(liquidatorKeys: Keypair, borrower: string, re
         liquidate \
         --liquidator ${liquidatorKeys.publicKey()} \
         --who ${borrower} \
+        --debt_asset ${process.env[`SLENDER_TOKEN_${debtAsset}`]} \
         --receive_stoken ${receiveStoken}`, (error, stdout, stderr) => {
             if (error) {
                 resolve(stderr);
@@ -501,6 +524,26 @@ export function writeBudgetSnapshot(label: string, transactionResult: SendTransa
                 }
             }, null, 2)}\n`, { flag: 'a' });
     }
+}
+
+export async function readPriceFeed(client: SorobanClient, asset: SlenderAsset): Promise<PriceFeedConfig> {
+    const xdrResponse = await client.simulateTransaction(
+        process.env.SLENDER_POOL,
+        "price_feed",
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
+    );
+
+    return parseScvToJs<PriceFeedConfig>(xdrResponse);
+}
+
+export async function readPrice(client: SorobanClient, feed: string, asset: SlenderAsset): Promise<bigint> {
+    const xdrResponse = await client.simulateTransaction(
+        feed,
+        "lastprice",
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
+    );
+
+    return (parseScvToJs<PriceData>(xdrResponse)).price;
 }
 
 async function initContract<T>(
@@ -642,7 +685,7 @@ async function initPoolCollateral(client: SorobanClient, asset: SlenderAsset): P
 
 async function initPoolPriceFeed(
     client: SorobanClient,
-    inputs: { asset: SlenderAsset, assetDecimals: number, feedDecimals: number }[]
+    inputs: { asset: SlenderAsset, priceFeedConfig: PriceFeedConfig }[]
 ): Promise<void> {
     await initContract(
         "POOL_PRICE_FEED_SET",
@@ -653,9 +696,9 @@ async function initPoolPriceFeed(
             3,
             convertToScvVec(inputs.map(input => convertToScvMap({
                 "asset": convertToScvAddress(process.env[`SLENDER_TOKEN_${input.asset}`]),
-                "asset_decimals": convertToScvU32(input.assetDecimals),
-                "feed": convertToScvAddress(process.env.SLENDER_PRICE_FEED),
-                "feed_decimals": convertToScvU32(input.feedDecimals)
+                "asset_decimals": convertToScvU32(Number(input.priceFeedConfig.asset_decimals)),
+                "feed": convertToScvAddress(input.priceFeedConfig.feed),
+                "feed_decimals": convertToScvU32(Number(input.priceFeedConfig.feed_decimals))
             })))
         )
     );

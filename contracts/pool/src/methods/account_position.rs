@@ -2,7 +2,7 @@ use common::FixedI128;
 use pool_interface::types::account_position::AccountPosition;
 use pool_interface::types::error::Error;
 use pool_interface::types::user_config::UserConfiguration;
-use soroban_sdk::{assert_with_error, vec, Address, Env, Map, Vec};
+use soroban_sdk::{assert_with_error, Address, Env, Map, Vec};
 
 use crate::storage::{
     read_reserve, read_reserves, read_token_balance, read_token_total_supply, read_user_config,
@@ -11,6 +11,7 @@ use crate::types::account_data::AccountData;
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_collateral::LiquidationCollateral;
 use crate::types::liquidation_data::LiquidationData;
+use crate::types::liquidation_debt::LiquidationDebt;
 use crate::types::price_provider::PriceProvider;
 
 use super::utils::get_collat_coeff::get_collat_coeff;
@@ -24,7 +25,7 @@ pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Err
         &CalcAccountDataCache::none(),
         &user_config,
         &mut PriceProvider::new(env)?,
-        false,
+        None,
     )?;
 
     Ok(account_data.get_position())
@@ -36,10 +37,11 @@ pub fn calc_account_data(
     cache: &CalcAccountDataCache,
     user_config: &UserConfiguration,
     price_provider: &mut PriceProvider,
-    liquidation: bool,
+    liquidate_debt: Option<Address>,
 ) -> Result<AccountData, Error> {
+    let liquidation = liquidate_debt.is_some();
     if user_config.is_empty() {
-        return Ok(AccountData::default(env, liquidation));
+        return Ok(AccountData::default());
     }
 
     let CalcAccountDataCache {
@@ -51,8 +53,8 @@ pub fn calc_account_data(
 
     let mut total_discounted_collateral_in_base: i128 = 0;
     let mut total_debt_in_base: i128 = 0;
-    let mut total_debt_with_penalty_in_base: i128 = 0;
-    let mut debt_to_cover = Vec::new(env);
+    let mut debt_to_cover_in_base: i128 = 0;
+    let mut debt_to_cover: Option<_> = None;
     let mut sorted_collateral_to_receive = Map::new(env);
     let reserves = read_reserves(env);
     let reserves_len =
@@ -118,6 +120,8 @@ pub fn calc_account_data(
                     asset,
                     s_token_balance: who_collat,
                     collat_coeff: collat_coeff.into_inner(),
+                    compounded_collat: compounded_balance,
+                    is_last_collateral: Default::default(),
                 });
                 sorted_collateral_to_receive.set(curr_discount, collateral_to_receive);
             }
@@ -140,17 +144,20 @@ pub fn calc_account_data(
                 .checked_add(debt_balance_in_base)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
-            if liquidation {
-                let liq_bonus = FixedI128::from_percentage(reserve.configuration.liq_bonus)
-                    .ok_or(Error::CalcAccountDataMathError)?;
-                let liquidation_debt = liq_bonus
-                    .mul_int(debt_balance_in_base)
-                    .ok_or(Error::CalcAccountDataMathError)?;
-                total_debt_with_penalty_in_base = total_debt_with_penalty_in_base
-                    .checked_add(liquidation_debt)
-                    .ok_or(Error::CalcAccountDataMathError)?;
+            if liquidate_debt
+                .as_ref()
+                .map(|debt| debt == &asset)
+                .unwrap_or(false)
+            {
+                debt_to_cover_in_base = debt_balance_in_base;
 
-                debt_to_cover.push_back((asset, reserve, compounded_balance, who_debt));
+                debt_to_cover = Some(LiquidationDebt {
+                    asset,
+                    reserve_data: reserve,
+                    compounded_debt: compounded_balance,
+                    debt_token_balance: who_debt,
+                    debt_coeff: debt_coeff.into_inner(),
+                });
             }
         }
     }
@@ -160,16 +167,14 @@ pub fn calc_account_data(
         .ok_or(Error::CalcAccountDataMathError)?;
 
     let liquidation_data = || -> LiquidationData {
-        let mut collateral_to_receive = vec![env];
         let sorted = sorted_collateral_to_receive.values();
-        for v in sorted {
-            for c in v {
-                collateral_to_receive.push_back(c);
-            }
+        let mut collateral_to_receive = sorted.first().and_then(|v| v.first());
+        let is_last_collateral = sorted.iter().fold(0, |acc, v| acc + v.len()) == 1;
+        if let Some(c) = collateral_to_receive.as_mut() {
+            c.is_last_collateral = is_last_collateral;
         }
-
         LiquidationData {
-            total_debt_with_penalty_in_base,
+            debt_to_cover_in_base,
             debt_to_cover,
             collateral_to_receive,
         }

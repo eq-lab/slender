@@ -1,10 +1,9 @@
 use pool_interface::types::account_position::AccountPosition;
-use soroban_sdk::Env;
 
 use super::liquidation_data::LiquidationData;
 
 #[allow(dead_code)] //TODO: remove after full implement validate_borrow
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct AccountData {
     /// Total collateral expresed in XLM
     pub discounted_collateral: i128,
@@ -17,15 +16,6 @@ pub struct AccountData {
 }
 
 impl AccountData {
-    pub fn default(env: &Env, liquidation: bool) -> Self {
-        Self {
-            discounted_collateral: 0,
-            debt: 0,
-            liquidation: liquidation.then_some(LiquidationData::default(env)),
-            npv: 0,
-        }
-    }
-
     pub fn is_good_position(&self) -> bool {
         self.npv > 0
     }

@@ -92,7 +92,7 @@ pub fn do_borrow(
         },
         user_config,
         &mut price_provider,
-        false,
+        None,
     )?;
 
     assert_with_error!(

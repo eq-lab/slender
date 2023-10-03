@@ -56,7 +56,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
 
     let position_after_change_price = sut.pool.account_position(&borrower);
 
-    sut.pool.liquidate(&lender, &borrower, &false);
+    sut.pool.liquidate(&lender, &borrower, &debt_token, &false);
     let position_after_liquidate = sut.pool.account_position(&borrower);
 
     assert_eq!(position_after_deposit.discounted_collateral, 600_000);
