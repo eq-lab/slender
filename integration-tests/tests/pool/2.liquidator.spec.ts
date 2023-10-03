@@ -158,7 +158,6 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
             && borrower1Position.npv > -10_000n);
     });
 
-    // TODO: requires optimization
     it("Case 5: Liquidator liquidates Borrower's position partialy", async function () {
         // Liquidator1 liquidates Borrower1's positions
         const liquidator1USDCBalanceBefore = await tokenBalanceOf(client, "USDC", liquidator1Address);

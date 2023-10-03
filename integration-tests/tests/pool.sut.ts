@@ -87,16 +87,25 @@ export async function init(client: SorobanClient): Promise<void> {
 
     await initPoolPriceFeed(client, [{
         asset: "XLM",
-        assetDecimals: 7,
-        feedDecimals: 14
+        priceFeedConfig: {
+            asset_decimals: 7n,
+            feed_decimals: 14n,
+            feed: process.env.SLENDER_PRICE_FEED
+        }
     }, {
         asset: "XRP",
-        assetDecimals: 9,
-        feedDecimals: 16
+        priceFeedConfig: {
+            asset_decimals: 9n,
+            feed_decimals: 16n,
+            feed: process.env.SLENDER_PRICE_FEED
+        }
     }, {
         asset: "USDC",
-        assetDecimals: 9,
-        feedDecimals: 16
+        priceFeedConfig: {
+            asset_decimals: 9n,
+            feed_decimals: 16n,
+            feed: process.env.SLENDER_PRICE_FEED
+        }
     }]);
 
     console.log("    Contracts initialization has been finished");
@@ -671,7 +680,7 @@ async function initPoolCollateral(client: SorobanClient, asset: SlenderAsset): P
 
 async function initPoolPriceFeed(
     client: SorobanClient,
-    inputs: { asset: SlenderAsset, assetDecimals: number, feedDecimals: number }[]
+    inputs: { asset: SlenderAsset, priceFeedConfig: PriceFeedConfig }[]
 ): Promise<void> {
     await initContract(
         "POOL_PRICE_FEED_SET",
@@ -682,9 +691,9 @@ async function initPoolPriceFeed(
             3,
             convertToScvVec(inputs.map(input => convertToScvMap({
                 "asset": convertToScvAddress(process.env[`SLENDER_TOKEN_${input.asset}`]),
-                "asset_decimals": convertToScvU32(input.assetDecimals),
-                "feed": convertToScvAddress(process.env.SLENDER_PRICE_FEED),
-                "feed_decimals": convertToScvU32(input.feedDecimals)
+                "asset_decimals": convertToScvU32(Number(input.priceFeedConfig.asset_decimals)),
+                "feed": convertToScvAddress(input.priceFeedConfig.feed),
+                "feed_decimals": convertToScvU32(Number(input.priceFeedConfig.feed_decimals))
             })))
         )
     );
