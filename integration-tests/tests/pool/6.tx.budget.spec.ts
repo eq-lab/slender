@@ -141,7 +141,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
     // TODO: requires optimization
     it("Case 6: flash_loan", async function () {
         const flashLoanReceiverMock = await deployFlashLoanReceiverMock();
-        await initializeFlashLoanReceiver(client, adminKeys, flashLoanReceiverMock);
+        await initializeFlashLoanReceiver(client, adminKeys, flashLoanReceiverMock, false);
 
         const loanAssets: FlashLoanAsset[] = [
             {
