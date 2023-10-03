@@ -24,7 +24,7 @@ import { assert, expect, use } from "chai";
 import chaiAsPromised from 'chai-as-promised';
 use(chaiAsPromised);
 
-describe("LendingPool: Lenders get and borrowers pay interest when time passed", function () {
+describe("LendingPool: Borrower makes a call to the flash loan with custom receiver contract", function () {
     let client: SorobanClient;
     let treasuryAddress: string;
     let borrower1Address: string;
