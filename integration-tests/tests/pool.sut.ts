@@ -515,7 +515,7 @@ export function writeBudgetSnapshot(label: string, transactionResult: SendTransa
             `${JSON.stringify({
                 [label]: {
                     cost: transactionResult.simulation.cost,
-                    events: transactionResult.simulation.events.reduce((acc, e) => acc + e.toXDR("base64").length, 0),
+                    events: transactionResult.simulation.events.reduce((acc, e) => acc + e.event().toXDR().length, 0),
                     readBytes: resources.readBytes(),
                     writeBytes: resources.writeBytes(),
                     ledgerReads: resources.footprint().readOnly().length,
