@@ -111,4 +111,43 @@ mod fixedi128 {
         let zero = FixedI128::from_inner(0);
         assert_eq!(zero.recip_mul_int(value), None);
     }
+
+    #[test]
+    fn recip_mul_int_ceil() {
+        let inner = 1000054757;
+        let fixed = FixedI128::from_inner(inner);
+        let value = 1;
+        assert_eq!(fixed.recip_mul_int_ceil(value).unwrap(), 1);
+
+        let value2 = 2;
+        assert_eq!(fixed.recip_mul_int_ceil(value2).unwrap(), 2);
+
+        let zero = FixedI128::from_inner(0);
+        assert_eq!(zero.recip_mul_int_ceil(value), None);
+
+        assert_eq!(
+            fixed.recip_mul_int_ceil(inner).unwrap(),
+            FixedI128::DENOMINATOR
+        );
+
+        let zero = 0;
+        assert_eq!(fixed.recip_mul_int_ceil(zero).unwrap(), 0);
+
+        assert_eq!(
+            fixed.recip_mul_int_ceil(inner + 1).unwrap(),
+            FixedI128::DENOMINATOR + 1
+        );
+        assert_eq!(
+            fixed.recip_mul_int_ceil(inner + 2).unwrap(),
+            FixedI128::DENOMINATOR + 2
+        );
+        assert_eq!(
+            fixed.recip_mul_int_ceil(inner + 9).unwrap(),
+            FixedI128::DENOMINATOR + 9
+        );
+        assert_eq!(
+            fixed.recip_mul_int_ceil(inner + 10).unwrap(),
+            FixedI128::DENOMINATOR + 10
+        );
+    }
 }

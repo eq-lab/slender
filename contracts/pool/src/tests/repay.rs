@@ -24,7 +24,7 @@ fn should_partially_repay() {
     assert_eq!(stoken_underlying_balance, 60_000_000);
     assert_eq!(user_balance, 1_040_000_000);
     assert_eq!(treasury_balance, 0);
-    assert_eq!(user_debt_balance, 40_000_000);
+    assert_eq!(user_debt_balance, 40_000_001);
 
     sut.pool.repay(&borrower, &debt_token, &20_000_000i128);
 
@@ -36,7 +36,7 @@ fn should_partially_repay() {
     assert_eq!(stoken_underlying_balance, 79_997_089);
     assert_eq!(user_balance, 1_020_000_000);
     assert_eq!(treasury_balance, 2_911);
-    assert_eq!(user_debt_balance, 20_004_548);
+    assert_eq!(user_debt_balance, 20_004_549);
 }
 
 #[test]
@@ -60,7 +60,7 @@ fn should_fully_repay() {
     assert_eq!(stoken_underlying_balance, 60_000_000);
     assert_eq!(user_balance, 1_040_000_000);
     assert_eq!(treasury_balance, 0);
-    assert_eq!(user_debt_balance, 40_000_000);
+    assert_eq!(user_debt_balance, 40_000_001);
 
     sut.pool.repay(&borrower, &debt_token, &i128::MAX);
 
@@ -69,8 +69,8 @@ fn should_fully_repay() {
     let treasury_balance = debt_config.token.balance(&treasury_address);
     let user_debt_balance = debt_config.debt_token.balance(&borrower);
 
-    assert_eq!(stoken_underlying_balance, 100_003_274);
-    assert_eq!(user_balance, 999_990_903);
+    assert_eq!(stoken_underlying_balance, 100_003_275);
+    assert_eq!(user_balance, 999_990_902);
     assert_eq!(treasury_balance, 5_823);
     assert_eq!(user_debt_balance, 0);
 }
@@ -174,8 +174,63 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "repay"), borrower.clone()).into_val(&env),
-                (debt_token, 40_009_097i128).into_val(&env)
+                (debt_token, 40_009_098i128).into_val(&env)
             ),
         ]
     );
+}
+
+#[test]
+fn ceil() {
+    extern crate std;
+    let env = Env::default();
+    env.mock_all_auths();
+    let sut = init_pool(&env, false);
+    let (_, _, _debt_config) = fill_pool(&env, &sut, true);
+    // let _asset_to_borrow = &debt_config.token.address;
+    // let attacker = Address::random(&env);
+    // sut.reserves[0].token_admin.mint(&attacker, &9999999999999999999);
+    // sut.pool
+    //     .deposit(&attacker, &sut.reserves[0].token.address, &99999999999999999999);
+
+    // sut.pool.borrow(&attacker, asset_to_borrow, &1);
+    // let debt_token_balance = debt_config.debt_token.balance(&attacker);
+    // std::println!("{:?} borrow", debt_token_balance);
+
+    // let mut i = 1;
+    // let input = loop {
+    //     env.budget().reset_unlimited();
+    //     sut.pool.borrow(&attacker, asset_to_borrow, &i);
+    //     let debt_token_balance = debt_config.debt_token.balance(&attacker);
+    //     std::println!("{:?} borrow", debt_token_balance);
+    //     if debt_token_balance == 0 {
+    //         std::println!("{:?} borrow", debt_token_balance);
+    //         break i;
+    //     }
+    //     // if debt_token_balance > 0 {
+    //     //     std::println!("{:?} borrow", debt_token_balance);
+    //     //     break i;
+    //     // }
+    //     // let collateral_amount = r.deposit_liquidity(i).unwrap();
+    //     // let output = r.redeem_collateral(collateral_amount).unwrap();
+    //     if i == 1 {
+    //         continue;
+    //     }
+    //     sut.pool.repay(&attacker, asset_to_borrow, &(i - 1));
+
+    //     let debt_token_balance = debt_config.debt_token.balance(&attacker);
+    //     // let debt_coeff = sut.pool.debt_coeff(asset_to_borrow);
+
+    //     if debt_token_balance == 0 {
+    //         std::println!("repay");
+    //         break i;
+    //     }
+
+    //     i += 1;
+
+    //     sut.pool.repay(&attacker, &asset_to_borrow, &i128::MAX);
+
+    //     // token balance after full repay ?
+    // };
+    // std::println!("{:?}", input);
 }

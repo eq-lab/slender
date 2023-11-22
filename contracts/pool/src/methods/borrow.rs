@@ -103,7 +103,7 @@ pub fn do_borrow(
 
     let debt_coeff = get_actual_borrower_accrued_rate(env, reserve)?;
     let amount_of_debt_token = debt_coeff
-        .recip_mul_int(amount)
+        .recip_mul_int_ceil(amount)
         .ok_or(Error::MathOverflowError)?;
 
     require_util_cap_not_exceeded(

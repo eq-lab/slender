@@ -198,7 +198,7 @@ fn should_liquidate_and_receive_collateral_partially() {
     assert_eq!(underlying_2_supply_before, 150_000_000);
     assert_eq!(borrower_stoken_0_balance_before, 1_000_000);
     assert_eq!(borrower_stoken_2_balance_before, 50_000_000);
-    assert_eq!(borrower_debt_balance_before, 60_000_000);
+    assert_eq!(borrower_debt_balance_before, 60_000_001);
     assert_eq!(liquidator_repayment_balance_before, 1_000_000_000);
     assert_eq!(liquidator_underlying_0_balance_before, 0);
     assert_eq!(liquidator_underlying_2_balance_before, 0);
@@ -207,7 +207,7 @@ fn should_liquidate_and_receive_collateral_partially() {
 
     assert_eq!(underlying_0_supply_after_partial_liquidation, 1_000_000);
     assert_eq!(borrower_stoken_0_balance_after_partial_liquidation, 0);
-    assert_eq!(borrower_debt_balance_after_partial_liquidation, 15_055_058);
+    assert_eq!(borrower_debt_balance_after_partial_liquidation, 15_055_059);
     assert_eq!(
         liquidator_repayment_balance_after_partial_liquidation,
         955_000_000
@@ -307,7 +307,7 @@ fn should_receive_stokens_when_requested() {
     assert_eq!(underlying_2_supply_before, 150_000_000);
     assert_eq!(borrower_stoken_1_balance_before, 1_000_000);
     assert_eq!(borrower_stoken_2_balance_before, 50_000_000);
-    assert_eq!(borrower_debt_balance_before, 60_000_000);
+    assert_eq!(borrower_debt_balance_before, 60_000_001);
     assert_eq!(liquidator_repayment_balance_before, 1_000_000_000);
     assert_eq!(liquidator_underlying_1_balance_before, 0);
     assert_eq!(liquidator_underlying_2_balance_before, 0);
@@ -328,7 +328,7 @@ fn should_receive_stokens_when_requested() {
     assert_eq!(borrower_debt_balance_after_full_liquidation, 0);
     assert_eq!(
         liquidator_repayment_balance_after_full_liquidation,
-        939_933_589
+        939_933_588
     );
     assert_eq!(
         liquidator_stoken_2_balance_after_full_liquidation,

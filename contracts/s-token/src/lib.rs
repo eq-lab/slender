@@ -2,7 +2,10 @@
 #![no_std]
 
 use crate::storage::*;
-use common_token::{balance::*, require_nonnegative_amount, storage::*, verify_caller_is_pool};
+use common_token::{
+    balance::*, require_nonnegative_amount, require_positive_amount, storage::*,
+    verify_caller_is_pool,
+};
 use pool_interface::LendingPoolClient;
 use s_token_interface::STokenTrait;
 use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, String};
@@ -172,7 +175,7 @@ impl STokenTrait for SToken {
     ///
     fn transfer(e: Env, from: Address, to: Address, amount: i128) {
         from.require_auth();
-        require_nonnegative_amount(amount);
+        require_positive_amount(amount);
 
         do_transfer(&e, from, to, amount, true);
     }
@@ -194,7 +197,7 @@ impl STokenTrait for SToken {
     ///
     fn transfer_from(e: Env, spender: Address, from: Address, to: Address, amount: i128) {
         spender.require_auth();
-        require_nonnegative_amount(amount);
+        require_positive_amount(amount);
         spend_allowance(&e, from.clone(), spender, amount);
 
         do_transfer(&e, from, to, amount, true);
@@ -337,7 +340,7 @@ impl STokenTrait for SToken {
     ///
     fn transfer_on_liquidation(e: Env, from: Address, to: Address, amount: i128) {
         verify_caller_is_pool(&e);
-        require_nonnegative_amount(amount);
+        require_positive_amount(amount);
 
         do_transfer(&e, from, to, amount, false);
     }
@@ -355,7 +358,7 @@ impl STokenTrait for SToken {
     /// Panics if caller is not associated pool.
     ///
     fn transfer_underlying_to(e: Env, to: Address, amount: i128) {
-        require_nonnegative_amount(amount);
+        require_positive_amount(amount);
         verify_caller_is_pool(&e);
 
         let underlying_asset = read_underlying_asset(&e);

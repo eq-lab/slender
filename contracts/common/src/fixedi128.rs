@@ -90,6 +90,25 @@ impl FixedI128 {
             .checked_div(self.0)
     }
 
+    /// Calculates division of non fixed int value and fixed value, e.g.  other / self and rounds towards infinity.
+    /// Result is int value
+    pub fn recip_mul_int_ceil<T: Into<i128>>(self, other: T) -> Option<i128> {
+        let other = other.into();
+        if other == 0 {
+            return Some(0);
+        }
+        let mb_res = Self::DENOMINATOR.checked_mul(other)?.checked_div(self.0);
+        mb_res.map(|res| {
+            if res == 0 {
+                1
+            } else if other >= self.0 && other % self.0 == 0 {
+                res
+            } else {
+                res + 1
+            }
+        })
+    }
+
     /// Multiply inner value of fixed
     pub fn mul_inner<T: Into<i128>>(self, value: T) -> Option<FixedI128> {
         self.0.checked_mul(value.into()).map(FixedI128)

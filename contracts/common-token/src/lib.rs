@@ -17,3 +17,9 @@ pub fn require_nonnegative_amount(amount: i128) {
         panic!("negative amount is not allowed: {}", amount)
     }
 }
+
+pub fn require_positive_amount(amount: i128) {
+    if amount <= 0 {
+        panic!("zero or negative amount is not allowed: {}", amount)
+    }
+}

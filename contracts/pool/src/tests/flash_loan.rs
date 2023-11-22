@@ -167,7 +167,7 @@ fn should_borrow_if_borrowing_specified_on_asset() {
     let borrower_debt_after = sut.reserves[2].debt_token.balance(&borrower);
 
     assert_eq!(borrower_debt_before, 0);
-    assert_eq!(borrower_debt_after, 3000000);
+    assert_eq!(borrower_debt_after, 3000001);
 }
 
 #[test]

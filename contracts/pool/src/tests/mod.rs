@@ -16,6 +16,7 @@ pub mod liquidate;
 pub mod paused;
 pub mod rates;
 pub mod repay;
+pub mod rounding;
 pub mod set_as_collateral;
 pub mod set_base_asset;
 pub mod set_flash_loan_fee;
