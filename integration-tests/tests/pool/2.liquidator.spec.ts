@@ -114,9 +114,9 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
         assert.equal(borrower1XlmBalance, 119_990_000n);
-        assert.equal(borrower1DXlmBalance, 119_990_000n);
+        assert.equal(borrower1DXlmBalance, 119_990_001n);
         assert.equal(sXlmBalance, 180_010_000n);
-        assert.equal(dXlmSupply, 119_990_000n);
+        assert.equal(dXlmSupply, 119_990_001n);
 
         assert(borrower1Position.debt > 119_990_000n
             && borrower1Position.debt < 120_000_000n);

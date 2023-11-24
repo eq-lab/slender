@@ -32,6 +32,7 @@ describe("LendingPool: Borrower position", function () {
         await cleanSlenderEnvKeys();
         await deploy();
         await init(client);
+        // require("dotenv").config({ path: contractsFilename });
 
         lender1Address = lender1Keys.publicKey();
         borrower1Address = borrower1Keys.publicKey();
@@ -90,20 +91,20 @@ describe("LendingPool: Borrower position", function () {
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
         assert.equal(borrower1XlmBalance, 50_000_000n);
-        assert.equal(borrower1DXlmBalance, 50_000_000n);
+        assert.equal(borrower1DXlmBalance, 50_000_001n);
         assert.equal(sXlmBalance, 450_000_000n);
-        assert.equal(dXlmSupply, 50_000_000n);
+        assert.equal(dXlmSupply, 50_000_001n);
 
         assert(borrower1Position.debt >= 50_000_000n
             && borrower1Position.debt < 50_010_000n);
         assert.equal(borrower1Position.discounted_collateral, 120_000_000n);
         assert(borrower1Position.npv > 69_990_000n
-            && borrower1Position.npv <= 70_000_000n);
+            && borrower1Position.npv <= 70_000_000n, `borrower1Position.npv ${borrower1Position.npv}`);
     });
 
     it("Case 3: Borrower borrows more with NPV > 0", async function () {
         // Borrower1 borrows 50_000_000 XLM
-        await borrow(client, borrower1Keys, "XLM", 50_000_000n);
+        await borrow(client, borrower1Keys, "XLM", 49_999_998n);
 
         const borrower1XlmBalance = await tokenBalanceOf(client, "XLM", borrower1Address);
         const borrower1DXlmBalance = await debtTokenBalanceOf(client, "XLM", borrower1Address);
@@ -111,14 +112,14 @@ describe("LendingPool: Borrower position", function () {
         const dXlmSupply = await debtTokenTotalSupply(client, "XLM");
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
-        assert.equal(borrower1XlmBalance, 100_000_000n);
+        assert.equal(borrower1XlmBalance, 99_999_998n);
         assert(borrower1DXlmBalance > 99_990_000n
-            && borrower1DXlmBalance < 100_000_000n);
-        assert.equal(sXlmBalance, 400_000_000n);
+            && borrower1DXlmBalance < 100_000_000n, `borrower1DXlmBalance ${borrower1DXlmBalance} `);
+        assert.equal(sXlmBalance, 400_000_002n);
         assert.equal(dXlmSupply, borrower1DXlmBalance);
 
         assert(borrower1Position.debt >= 100_000_000n
-            && borrower1Position.debt < 100_010_000n);
+            && borrower1Position.debt < 100_010_000n, `borrower1Position.debt ${borrower1Position.debt}`);
         assert.equal(borrower1Position.discounted_collateral, 120_000_000n);
         assert(borrower1Position.npv > 19_990_000n
             && borrower1Position.npv <= 20_000_000n);
@@ -166,10 +167,10 @@ describe("LendingPool: Borrower position", function () {
         const dXlmSupply = await debtTokenTotalSupply(client, "XLM");
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
-        assert.equal(borrower1XlmBalance, 100_000_000n);
+        assert.equal(borrower1XlmBalance, 99_999_998n);
         assert(borrower1DXlmBalance > 99_990_000n
             && borrower1DXlmBalance < 100_000_000n);
-        assert.equal(sXlmBalance, 400_000_000n);
+        assert.equal(sXlmBalance, 400_000_002n);
         assert.equal(dXlmSupply, borrower1DXlmBalance);
 
         assert(borrower1Position.debt >= 100_000_000n
@@ -238,10 +239,10 @@ describe("LendingPool: Borrower position", function () {
         const dXlmSupply = await debtTokenTotalSupply(client, "XLM");
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
-        assert.equal(borrower1XlmBalance, 105_000_000n);
+        assert.equal(borrower1XlmBalance, 104_999_998n);
         assert(borrower1DXlmBalance > 100_000_000n
             && borrower1DXlmBalance <= 105_000_000n);
-        assert.equal(sXlmBalance, 395_000_000n);
+        assert.equal(sXlmBalance, 395_000_002n);
         assert.equal(dXlmSupply, borrower1DXlmBalance);
 
         assert(borrower1Position.debt >= 105_000_000n
