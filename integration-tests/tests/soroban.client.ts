@@ -64,7 +64,7 @@ export class SorobanClient {
         let attempts = 15;
 
         if (response.status == "ERROR") {
-            throw Error(`Failed to send transaction: ${response.errorResultXdr}`);
+            throw Error(`Failed to send transaction: ${response.errorResult.toXDR("base64")}`);
         }
 
         do {
