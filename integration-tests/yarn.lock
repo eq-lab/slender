@@ -134,10 +134,10 @@ asynckit@^0.4.0:
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
   integrity sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==
 
-axios@^1.4.0:
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/axios/-/axios-1.4.0.tgz#38a7bf1224cd308de271146038b551d725f0be1f"
-  integrity sha512-S4XCWMEmzvo64T9GfvQDOXgYRDJ/wsSZc7Jvdgx5u1sd0JwsuPLqb3SYmusag+edF6ziyMensPVqLTSc1PiSEA==
+axios@^1.6.0:
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/axios/-/axios-1.6.2.tgz#de67d42c755b571d3e698df1b6504cde9b0ee9f2"
+  integrity sha512-7i24Ri4pmDRfJTR7LDBhsOTtcm+9kjX5WiY1X3wIisx6G9So3pfMkEiU7emUBe46oceVImccTEM3k6C5dbVW8A==
   dependencies:
     follow-redirects "^1.15.0"
     form-data "^4.0.0"
@@ -747,21 +747,21 @@ sodium-native@^4.0.1:
   dependencies:
     node-gyp-build "^4.6.0"
 
-soroban-client@1.0.0-beta.2:
-  version "1.0.0-beta.2"
-  resolved "https://registry.yarnpkg.com/soroban-client/-/soroban-client-1.0.0-beta.2.tgz#a59f9bd88436d6f06f38213efc4547676bee70d1"
-  integrity sha512-v5h3yvef7HkUD3H26w33NUEgRXcPiOSDWEsVzMloaxsprs3N002tXJHvFF+Uw1eYt50Uk6bvqBgvkLwX10VENw==
+soroban-client@1.0.0-beta.4:
+  version "1.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/soroban-client/-/soroban-client-1.0.0-beta.4.tgz#f2e0b0b1c4511bd04381a3cff3a45cfba7d0dc31"
+  integrity sha512-M1jLCwQtWZkQIJ6U72nYpvj+giYnB2/Vw4E1DBaiCgg5iWIWatDto+QTI/aUR9m7fNGTt/AhFtQzhjksK1rFkQ==
   dependencies:
-    axios "^1.4.0"
+    axios "^1.6.0"
     bignumber.js "^9.1.1"
     buffer "^6.0.3"
-    stellar-base v10.0.0-beta.1
+    stellar-base v10.0.0-beta.4
     urijs "^1.19.1"
 
-stellar-base@v10.0.0-beta.1:
-  version "10.0.0-beta.1"
-  resolved "https://registry.yarnpkg.com/stellar-base/-/stellar-base-10.0.0-beta.1.tgz#5b4209fbc44b8af82dd3ee8b7f6f4397126d8c3b"
-  integrity sha512-zXC5AsbUsLi57JruyeIMv23s3iUxq/P2ZFrSJ+FerLIZjSAjY8EDs4zwY4LCuu7swUu46Lm8GK6sqxUZCPekHw==
+stellar-base@v10.0.0-beta.4:
+  version "10.0.0-beta.4"
+  resolved "https://registry.yarnpkg.com/stellar-base/-/stellar-base-10.0.0-beta.4.tgz#818d3b5dd702a7d18f1db47a72837cec80616716"
+  integrity sha512-3EXDFHSahVDMTHrHiFOO8kFf5KN+AL4x5kd5rxjElElPG+385cyWDbO83GrNmDGU/u9/XiVL+riJjz5gQTv6RQ==
   dependencies:
     base32.js "^0.1.0"
     bignumber.js "^9.1.2"
