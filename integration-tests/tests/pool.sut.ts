@@ -53,11 +53,13 @@ export async function init(client: SorobanClient): Promise<void> {
     let salt = 0;
     const generateSalt = (value: number): string => String(value).padStart(64, '0');
 
-    await initToken(client, "XLM", "Lumens", 7);
+    // await initToken(client, "XLM", "Lumens", 7);
     await initToken(client, "XRP", "Ripple", 9);
     await initToken(client, "USDC", "USD Coin", 9);
 
     await initPool(client, `${generateSalt(++salt)}`);
+    // need to create treasury account to be able to receive native XLM token
+    await client.registerAccount(treasuryKeys.publicKey());
 
     await initSToken(client, "XLM", `${generateSalt(++salt)}`);
     await initSToken(client, "XRP", `${generateSalt(++salt)}`);
