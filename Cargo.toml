@@ -2,12 +2,19 @@
 resolver = "2"
 
 members = [
-    "common",
-    "deployer",
-    "pool",
-    "pool-interface",
-    "s-token",
-    "s-token-interface",
+    "contracts/common",
+    "contracts/common-token",
+    "contracts/deployer",
+    "contracts/pool",
+    "contracts/s-token",
+    "contracts/debt-token",
+    "interfaces/pool-interface",
+    "interfaces/price-feed-interface",
+    "interfaces/s-token-interface",
+    "interfaces/debt-token-interface",
+    "interfaces/flash-loan-receiver-interface",
+    "mocks/flash-loan-receiver-mock",
+    "mocks/price-feed-mock",
 ]
 
 [profile.release]
@@ -25,7 +32,10 @@ inherits = "release"
 debug-assertions = true
 
 [workspace.dependencies.soroban-sdk]
-version = "0.8.4"
+version = "20.0.0-rc2"
+
+[workspace.dependencies.soroban-token-sdk]
+version = "20.0.0-rc2.2"
 
 [workspace.dependencies.fixed-point-math]
 version = "0.0.2"

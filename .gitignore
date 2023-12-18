@@ -1,5 +1,9 @@
-.vscode
+.idea
+.vscode/settings.json
 
 **/target
 
-scripts/.contracts
+integration-tests/.contracts
+integration-tests/node_modules
+
+.DS_Store

@@ -1,0 +1,19 @@
+[package]
+name = "debt-token"
+version = "0.1.0"
+edition = "2021"
+authors = ["eq-lab"]
+description = "Debt-token contract"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+soroban-token-sdk = { workspace = true }
+debt-token-interface = { path = "../../interfaces/debt-token-interface", version = "0.1.0", package = "debt-token-interface" }
+common-token = { path = "../common-token", version = "0.1.0", package = "common-token" }
+
+[dev_dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+debt-token-interface = { path = "../../interfaces/debt-token-interface" }

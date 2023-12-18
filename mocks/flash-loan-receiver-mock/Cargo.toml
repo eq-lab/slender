@@ -1,0 +1,16 @@
+[package]
+name = "flash-loan-receiver-mock"
+authors = ["eq-lab"]
+version = "0.1.0"
+edition = "2021"
+description = "Flash Loan Receiver Mock"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+testutils = ["soroban-sdk/testutils"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+flash-loan-receiver-interface = { path = "../../interfaces/flash-loan-receiver-interface", version = "0.1.0", package = "flash-loan-receiver-interface" }

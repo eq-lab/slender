@@ -1,0 +1,10 @@
+[package]
+name = "common-token"
+authors = ["eq-lab"]
+version = "0.1.0"
+edition = "2021"
+description = "Common stoken & debt-token implementation"
+
+[dependencies]
+soroban-sdk = { workspace = true }
+soroban-token-sdk = { workspace = true }

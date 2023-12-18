@@ -1,0 +1,9 @@
+[package]
+name = "debt-token-interface"
+authors = ["eq-lab"]
+version = "0.1.0"
+edition = "2021"
+description = "Debt token interface"
+
+[dependencies]
+soroban-sdk = { workspace = true }

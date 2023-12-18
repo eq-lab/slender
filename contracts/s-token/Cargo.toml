@@ -1,0 +1,25 @@
+[package]
+name = "s-token"
+authors = ["eq-lab"]
+version = "0.1.0"
+edition = "2021"
+description = "SToken contract"
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+testutils = ["soroban-sdk/testutils"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+soroban-token-sdk = { workspace = true }
+s-token-interface = { path = "../../interfaces/s-token-interface", version = "0.1.0", package = "s-token-interface" }
+pool-interface = { path = "../../interfaces/pool-interface", version = "0.1.0", package = "pool-interface" }
+common = { path = "../common", version = "0.1.0", package = "common" }
+common-token = { path = "../common-token", version = "0.1.0", package = "common-token" }
+
+[dev_dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+s-token-interface = { path = "../../interfaces/s-token-interface" }
+debt-token-interface = { path = "../../interfaces/debt-token-interface", version = "0.1.0", package = "debt-token-interface" }

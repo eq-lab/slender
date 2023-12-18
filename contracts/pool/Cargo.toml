@@ -1,0 +1,37 @@
+[package]
+name = "pool"
+authors = ["eq-lab"]
+version = "0.1.0"
+edition = "2021"
+description = "Liquidity pool contract"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = { workspace = true }
+soroban-token-sdk = { workspace = true }
+s-token-interface = { path = "../../interfaces/s-token-interface", version = "0.1.0", package = "s-token-interface" }
+debt-token-interface = { path = "../../interfaces/debt-token-interface", version = "0.1.0", package = "debt-token-interface" }
+pool-interface = { path = "../../interfaces/pool-interface", version = "0.1.0", package = "pool-interface" }
+price-feed-interface = { path = "../../interfaces/price-feed-interface", version = "0.1.0", package = "price-feed-interface" }
+flash-loan-receiver-interface = { path = "../../interfaces/flash-loan-receiver-interface", version = "0.1.0", package = "flash-loan-receiver-interface" }
+common = { path = "../common", version = "0.1.0", package = "common" }
+
+[dev_dependencies]
+soroban-sdk = { workspace = true, features = ["testutils"] }
+s-token-interface = { path = "../../interfaces/s-token-interface", features = [
+    "testutils",
+] }
+pool-interface = { path = "../../interfaces/pool-interface", features = [
+    "testutils",
+] }
+
+[features]
+testutils = [
+    "soroban-sdk/testutils",
+    "s-token-interface/testutils",
+    "pool-interface/testutils",
+    "flash-loan-receiver-interface/testutils",
+]
+budget = []
