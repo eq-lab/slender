@@ -154,8 +154,8 @@ fn init_reserve() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let token_admin = Address::random(&env);
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
 
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
@@ -203,7 +203,7 @@ fn liquidate_receive_stoken_when_borrower_has_one_debt() {
 
     env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
 
-    let liquidator = Address::random(&env);
+    let liquidator = Address::generate(&env);
 
     sut.reserves[2]
         .token_admin
@@ -239,7 +239,7 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
 
     env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
 
-    let liquidator = Address::random(&env);
+    let liquidator = Address::generate(&env);
 
     for reserve in &sut.reserves {
         reserve.token_admin.mint(&liquidator, &100_000_000_000);
@@ -278,7 +278,7 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
 
     env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
 
-    let liquidator = Address::random(&env);
+    let liquidator = Address::generate(&env);
 
     sut.reserves[0]
         .token_admin
@@ -320,7 +320,7 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
 
     env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
 
-    let liquidator = Address::random(&env);
+    let liquidator = Address::generate(&env);
 
     sut.reserves[0]
         .token_admin
@@ -426,7 +426,7 @@ fn set_base_asset() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let asset = Address::random(&env);
+    let asset = Address::generate(&env);
     let sut = init_pool(&env, true);
 
     measure_budget(&env, function_name!(), || {
@@ -470,10 +470,10 @@ fn set_price_feed() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let asset_1 = Address::random(&env);
-    let asset_2 = Address::random(&env);
-    let asset_3 = Address::random(&env);
+    let admin = Address::generate(&env);
+    let asset_1 = Address::generate(&env);
+    let asset_2 = Address::generate(&env);
+    let asset_3 = Address::generate(&env);
 
     let pool = create_pool_contract(&env, &admin, false);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
@@ -526,7 +526,7 @@ fn stoken_underlying_balance() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let lender = Address::random(&env);
+    let lender = Address::generate(&env);
 
     sut.reserves[0].token_admin.mint(&lender, &20_000_000);
     sut.pool
@@ -547,8 +547,8 @@ fn treasury() {
     let flash_loan_fee = 5;
 
     pool.initialize(
-        &Address::random(&env),
-        &Address::random(&env),
+        &Address::generate(&env),
+        &Address::generate(&env),
         &flash_loan_fee,
         &IRParams {
             alpha: 143,
@@ -777,7 +777,7 @@ fn s_token_transfer() {
         &sut.reserves[2].token.address,
         &1_000_000_000,
     );
-    let to = Address::random(&env);
+    let to = Address::generate(&env);
 
     measure_budget(&env, function_name!(), || {
         sut.reserves[0]

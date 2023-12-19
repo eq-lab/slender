@@ -1,7 +1,7 @@
 use crate::{tests::sut::init_pool, *};
 
 #[test]
-fn shoould_return_flash_loan_fee() {
+fn should_return_flash_loan_fee() {
     let env = Env::default();
     env.mock_all_auths();
 

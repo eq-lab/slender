@@ -12,9 +12,9 @@ fn should_require_admin() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let asset_1 = Address::random(&env);
-    let asset_2 = Address::random(&env);
+    let admin = Address::generate(&env);
+    let asset_1 = Address::generate(&env);
+    let asset_2 = Address::generate(&env);
 
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
@@ -63,9 +63,9 @@ fn should_set_price_feed() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let asset_1 = Address::random(&env);
-    let asset_2 = Address::random(&env);
+    let admin = Address::generate(&env);
+    let asset_1 = Address::generate(&env);
+    let asset_2 = Address::generate(&env);
 
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);

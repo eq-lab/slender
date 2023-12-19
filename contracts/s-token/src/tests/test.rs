@@ -40,8 +40,8 @@ fn create_token<'a>(
     TokenAdminClient,
 ) {
     let pool = pool::Client::new(e, &e.register_contract_wasm(None, pool::WASM));
-    let pool_admin = Address::random(e);
-    let treasury = Address::random(e);
+    let pool_admin = Address::generate(e);
+    let treasury = Address::generate(e);
     let flash_loan_fee = 5;
 
     pool.initialize(
@@ -136,9 +136,9 @@ fn test() {
         );
     }
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
-    let user3 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
+    let user3 = Address::generate(&e);
 
     underlying_admin.mint(&user1, &1000);
 
@@ -287,8 +287,8 @@ fn test_burn() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
     let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
@@ -308,8 +308,8 @@ fn transfer_insufficient_balance() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
     let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
@@ -324,8 +324,8 @@ fn transfer_receive_deauthorized() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
     let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
@@ -341,8 +341,8 @@ fn transfer_spend_deauthorized() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
     let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
@@ -358,9 +358,9 @@ fn transfer_from_insufficient_allowance() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
-    let user3 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
+    let user3 = Address::generate(&e);
     let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
@@ -380,8 +380,8 @@ fn initialize_already_initialized() {
     e.mock_all_auths();
     let (token, _, _pool, _, _) = create_token(&e);
 
-    let pool = Address::random(&e);
-    let underlying_asset = Address::random(&e);
+    let pool = Address::generate(&e);
+    let underlying_asset = Address::generate(&e);
 
     token.initialize(
         &"name".into_val(&e),

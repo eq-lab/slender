@@ -1,4 +1,4 @@
-import { Keypair } from "soroban-client";
+import { Keypair } from "stellar-sdk";
 import { SendTransactionResult, SorobanClient } from "./soroban.client";
 import { adminKeys, contractsFilename, setEnv, treasuryKeys } from "./soroban.config";
 import {
@@ -53,7 +53,7 @@ export async function init(client: SorobanClient): Promise<void> {
     let salt = 0;
     const generateSalt = (value: number): string => String(value).padStart(64, '0');
 
-    // await initToken(client, "XLM", "Lumens", 7);
+    await initToken(client, "XLM", "Lumens", 7);
     await initToken(client, "XRP", "Ripple", 9);
     await initToken(client, "USDC", "USD Coin", 9);
 
@@ -521,8 +521,7 @@ export function writeBudgetSnapshot(label: string, transactionResult: SendTransa
                     readBytes: resources.readBytes(),
                     writeBytes: resources.writeBytes(),
                     ledgerReads: resources.footprint().readOnly().length,
-                    ledgerWrites: resources.footprint().readWrite().length,
-                    envelopeXdr: transactionResult.response.envelopeXdr.toXDR("base64")
+                    ledgerWrites: resources.footprint().readWrite().length
                 }
             }, null, 2)}\n`, { flag: 'a' });
     }

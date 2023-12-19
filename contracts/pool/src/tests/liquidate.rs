@@ -65,7 +65,7 @@ fn should_fail_when_good_position() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let liquidator = Address::random(&env);
+    let liquidator = Address::generate(&env);
     let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
 

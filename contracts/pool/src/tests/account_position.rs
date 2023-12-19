@@ -25,8 +25,8 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
     let debt_token = sut.reserves[1].token.address.clone();
     let deposit_token = sut.reserves[0].token.address.clone();
 
-    let lender = Address::random(&env);
-    let borrower = Address::random(&env);
+    let lender = Address::generate(&env);
+    let borrower = Address::generate(&env);
 
     for i in 0..3 {
         let amount = (i == 0).then(|| 10_000_000).unwrap_or(1_000_000_000);

@@ -8,7 +8,7 @@ fn should_require_authorized_caller() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
@@ -31,7 +31,7 @@ fn should_fail_when_pool_paused() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
@@ -45,7 +45,7 @@ fn should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
@@ -58,7 +58,7 @@ fn should_fail_when_reserve_deactivated() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
@@ -78,7 +78,7 @@ fn should_fail_when_liq_cap_exceeded() {
     let token_admin = &sut.reserves[0].token_admin;
     let decimals = token.decimals();
 
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let initial_balance = 1_000_000_000 * 10i128.pow(decimals);
 
     token_admin.mint(&user, &initial_balance);
@@ -93,7 +93,7 @@ fn should_change_user_config() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
@@ -114,7 +114,7 @@ fn should_change_balances() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
@@ -196,7 +196,7 @@ fn should_emit_events() {
 
     let sut = init_pool(&env, false);
 
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let token_address = sut.token().address.clone();
 
     sut.token_admin().mint(&user, &10_000_000_000);

@@ -1,7 +1,7 @@
 use crate::{tests::sut::init_pool, *};
 
 #[test]
-fn shoould_return_paused_flag() {
+fn should_return_paused_flag() {
     let env = Env::default();
     env.mock_all_auths();
 

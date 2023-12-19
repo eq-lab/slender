@@ -143,7 +143,7 @@ fn should_fail_when_user_config_not_exist() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
-    let borrower = Address::random(&env);
+    let borrower = Address::generate(&env);
 
     sut.pool.borrow(&borrower, &sut.token().address, &1);
 }
