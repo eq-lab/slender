@@ -4,7 +4,7 @@ extern crate std;
 use crate::*;
 use debt_token_interface::DebtTokenClient;
 use flash_loan_receiver_interface::FlashLoanReceiverClient;
-use price_feed_interface::PriceFeedClient;
+use price_feed_interface::{Asset, PriceFeedClient};
 use s_token_interface::STokenClient;
 use soroban_sdk::testutils::{Address as _, Ledger};
 use soroban_sdk::token::Client as TokenClient;
@@ -186,9 +186,15 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             assert_eq!(reserve_config.discount, discount);
 
             match i {
-                0 => price_feed.init(&token.address.clone(), &100_000_000_000_000),
-                1 => price_feed.init(&token.address.clone(), &10_000_000_000_000_000),
-                2 => price_feed.init(&token.address.clone(), &10_000_000_000_000_000),
+                0 => price_feed.init(&Asset::Stellar(token.address.clone()), &100_000_000_000_000),
+                1 => price_feed.init(
+                    &Asset::Stellar(token.address.clone()),
+                    &10_000_000_000_000_000,
+                ),
+                2 => price_feed.init(
+                    &Asset::Stellar(token.address.clone()),
+                    &10_000_000_000_000_000,
+                ),
                 _ => panic!(),
             };
 

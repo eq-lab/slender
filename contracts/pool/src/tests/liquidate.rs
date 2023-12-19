@@ -1,5 +1,6 @@
 use crate::tests::sut::{fill_pool, fill_pool_three, init_pool, DAY};
 use crate::*;
+use price_feed_interface::Asset;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
 use soroban_sdk::{symbol_short, vec, IntoVal, Symbol};
 
@@ -86,7 +87,8 @@ fn should_fail_when_oracle_price_is_negative() {
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
     let token_address = debt_config.token.address.clone();
 
-    sut.price_feed.init(&token_address, &-10_000_000_000);
+    sut.price_feed
+        .init(&Asset::Stellar(token_address), &-10_000_000_000);
     sut.pool
         .liquidate(&liquidator, &borrower, &debt_config.token.address, &false);
 }
@@ -101,7 +103,8 @@ fn should_fail_when_not_enough_collateral() {
     let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
     let token_address = debt_config.token.address.clone();
 
-    sut.price_feed.init(&token_address, &(10i128.pow(16) * 2));
+    sut.price_feed
+        .init(&Asset::Stellar(token_address), &(10i128.pow(16) * 2));
     sut.pool
         .liquidate(&liquidator, &borrower, &debt_config.token.address, &false);
 }
@@ -135,7 +138,8 @@ fn should_liquidate_and_receive_collateral_partially() {
     sut.reserves[2].token_admin.mint(&borrower, &100_000_000);
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &50_000_000);
-    sut.price_feed.init(&token_address, &(10i128.pow(16) * 2));
+    sut.price_feed
+        .init(&Asset::Stellar(token_address), &(10i128.pow(16) * 2));
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
@@ -242,7 +246,8 @@ fn should_receive_stokens_when_requested() {
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &50_000_000);
 
-    sut.price_feed.init(&token_address, &(10i128.pow(16) * 2));
+    sut.price_feed
+        .init(&Asset::Stellar(token_address), &(10i128.pow(16) * 2));
 
     env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
 
@@ -370,7 +375,7 @@ fn should_change_user_config() {
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &120_000_000);
     sut.price_feed.init(
-        &token_address,
+        &Asset::Stellar(token_address),
         &(10i128.pow(16) * 3_200_000_000 / 1_000_000_000),
     );
 

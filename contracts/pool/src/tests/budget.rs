@@ -7,7 +7,7 @@ use pool_interface::types::init_reserve_input::InitReserveInput;
 use pool_interface::types::ir_params::IRParams;
 use pool_interface::types::price_feed_input::PriceFeedInput;
 use pool_interface::LendingPoolClient;
-use price_feed_interface::PriceFeedClient;
+use price_feed_interface::{Asset, PriceFeedClient};
 use soroban_sdk::testutils::{Address as _, Ledger};
 use soroban_sdk::{vec, Address, Bytes, Env, IntoVal, Symbol, Val, Vec};
 use std::fs::OpenOptions;
@@ -216,8 +216,10 @@ fn liquidate_receive_stoken_when_borrower_has_one_debt() {
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
-    sut.price_feed
-        .init(&sut.reserves[2].token.address, &10_010_000_000_000_000);
+    sut.price_feed.init(
+        &Asset::Stellar(sut.reserves[2].token.address.clone()),
+        &10_010_000_000_000_000,
+    );
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(
@@ -252,8 +254,10 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
-    sut.price_feed
-        .init(&sut.reserves[0].token.address, &110_000_000_000_000);
+    sut.price_feed.init(
+        &Asset::Stellar(sut.reserves[0].token.address.clone()),
+        &110_000_000_000_000,
+    );
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(
@@ -297,8 +301,10 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
-    sut.price_feed
-        .init(&sut.reserves[2].token.address, &10_010_000_000_000_000);
+    sut.price_feed.init(
+        &Asset::Stellar(sut.reserves[2].token.address.clone()),
+        &10_010_000_000_000_000,
+    );
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(
@@ -339,8 +345,10 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
-    sut.price_feed
-        .init(&sut.reserves[0].token.address, &100_100_000_000_000);
+    sut.price_feed.init(
+        &Asset::Stellar(sut.reserves[0].token.address.clone()),
+        &100_100_000_000_000,
+    );
 
     measure_budget(&env, function_name!(), || {
         sut.pool.liquidate(

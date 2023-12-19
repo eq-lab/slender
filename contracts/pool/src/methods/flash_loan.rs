@@ -1,5 +1,5 @@
 use common::FixedI128;
-use flash_loan_receiver_interface::{Asset as ReceiverAsset, FlashLoanReceiverClient};
+use flash_loan_receiver_interface::{FlashLoanReceiverClient, LoanAsset as ReceiverAsset};
 use pool_interface::types::error::Error;
 use pool_interface::types::flash_loan_asset::FlashLoanAsset;
 use s_token_interface::STokenClient;

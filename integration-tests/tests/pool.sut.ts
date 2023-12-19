@@ -1,4 +1,4 @@
-import { Keypair } from "stellar-sdk";
+import { Keypair, xdr } from "stellar-sdk";
 import { SendTransactionResult, SorobanClient } from "./soroban.client";
 import { adminKeys, contractsFilename, setEnv, treasuryKeys } from "./soroban.config";
 import {
@@ -747,7 +747,10 @@ export async function initPrice(
         "init",
         adminKeys,
         3,
-        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
+        convertToScvVec([
+            xdr.ScVal.scvSymbol("Stellar"),
+            convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
+        ]),
         convertToScvI128(price),
     );
 }
