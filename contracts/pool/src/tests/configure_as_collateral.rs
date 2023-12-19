@@ -8,7 +8,7 @@ use soroban_sdk::{
 };
 
 #[test]
-fn shoould_require_admin() {
+fn should_require_admin() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -43,7 +43,7 @@ fn shoould_require_admin() {
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #401)")]
-fn shoould_fail_when_invalid_discount() {
+fn should_fail_when_invalid_discount() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -63,7 +63,7 @@ fn shoould_fail_when_invalid_discount() {
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #401)")]
-fn shoould_fail_when_invalid_util_cap() {
+fn should_fail_when_invalid_util_cap() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -83,7 +83,7 @@ fn shoould_fail_when_invalid_util_cap() {
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #403)")]
-fn shoould_fail_when_invalid_liq_bonus() {
+fn should_fail_when_invalid_liq_bonus() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -103,7 +103,7 @@ fn shoould_fail_when_invalid_liq_bonus() {
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #404)")]
-fn shoould_fail_when_invalid_liq_cap() {
+fn should_fail_when_invalid_liq_cap() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -121,7 +121,7 @@ fn shoould_fail_when_invalid_liq_cap() {
 }
 
 #[test]
-fn shoould_set_collateral_config() {
+fn should_set_collateral_config() {
     let env = Env::default();
     env.mock_all_auths();
 

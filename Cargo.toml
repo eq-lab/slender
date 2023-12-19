@@ -32,10 +32,10 @@ inherits = "release"
 debug-assertions = true
 
 [workspace.dependencies.soroban-sdk]
-version = "20.0.0-rc2"
+version = "20.0.2"
 
 [workspace.dependencies.soroban-token-sdk]
-version = "20.0.0-rc2.2"
+version = "20.0.2"
 
-[workspace.dependencies.fixed-point-math]
-version = "0.0.2"
+[workspace.dependencies.soroban-fixed-point-math]
+version = "1.0.0"

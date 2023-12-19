@@ -7,7 +7,7 @@ use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
 use soroban_sdk::{vec, IntoVal, Symbol};
 
 #[test]
-fn shoould_require_admin() {
+fn should_require_admin() {
     let env = Env::default();
     env.mock_all_auths();
 

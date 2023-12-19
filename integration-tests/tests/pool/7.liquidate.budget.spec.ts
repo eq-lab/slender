@@ -1,4 +1,4 @@
-import { Keypair, xdr } from "soroban-client";
+import { Keypair, xdr } from "stellar-sdk";
 import {
     I128_MAX,
     accountPosition,
@@ -101,7 +101,7 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
 
         xrpFactor = BigInt(Math.pow(10, Number(xrpPriceFeed.asset_decimals)));
         usdcFactor = BigInt(Math.pow(10, Number(usdcPriceFeed.asset_decimals)));
-            
+
         xrpPrice = await readPrice(client, xrpPriceFeed.feed, "XRP");
         usdcPrice = await readPrice(client, xrpPriceFeed.feed, "USDC");
 

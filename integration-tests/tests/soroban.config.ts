@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from "fs";
-import { Keypair } from "soroban-client";
+import { Keypair } from "stellar-sdk";
 
 export const contractsFilename = "../deploy/artifacts/.contracts";
 

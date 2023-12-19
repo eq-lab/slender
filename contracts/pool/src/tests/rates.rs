@@ -139,8 +139,8 @@ fn should_calc_borrower_and_lender_rates() {
     let total_debt = 20;
 
     let input = InitReserveInput {
-        s_token_address: Address::random(env),
-        debt_token_address: Address::random(env),
+        s_token_address: Address::generate(env),
+        debt_token_address: Address::generate(env),
     };
     let reserve_data = ReserveData::new(env, &input);
     let ir_params = get_default_ir_params();
@@ -166,8 +166,8 @@ fn should_fail_when_collateral_is_zero() {
     let total_debt = 100;
 
     let input = InitReserveInput {
-        s_token_address: Address::random(env),
-        debt_token_address: Address::random(env),
+        s_token_address: Address::generate(env),
+        debt_token_address: Address::generate(env),
     };
     let reserve_data = ReserveData::new(env, &input);
     let ir_params = get_default_ir_params();
@@ -186,8 +186,8 @@ fn should_update_rates_over_time() {
 
     let debt_asset_1 = sut.reserves[1].token.address.clone();
 
-    let lender = Address::random(&env);
-    let borrower = Address::random(&env);
+    let lender = Address::generate(&env);
+    let borrower = Address::generate(&env);
 
     for r in sut.reserves.iter() {
         r.token_admin.mint(&lender, &1_000_000_000);

@@ -47,8 +47,9 @@ sleep 10
 
 echo "Admin's account has been funded"
 
-TOKEN_XLM="CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
-echo "  XLM contract address: $TOKEN_XLM"
+TOKEN_XLM=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+# TOKEN_XLM="CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+echo "  XLM contract address: $TOKEN_XRP"
 
 TOKEN_XRP=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
 echo "  XRP contract address: $TOKEN_XRP"

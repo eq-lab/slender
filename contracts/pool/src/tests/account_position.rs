@@ -1,6 +1,7 @@
 use super::sut::fill_pool_three;
 use crate::tests::sut::init_pool;
 use crate::*;
+use price_feed_interface::Asset;
 use soroban_sdk::testutils::Address as _;
 
 #[test]
@@ -25,8 +26,8 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
     let debt_token = sut.reserves[1].token.address.clone();
     let deposit_token = sut.reserves[0].token.address.clone();
 
-    let lender = Address::random(&env);
-    let borrower = Address::random(&env);
+    let lender = Address::generate(&env);
+    let borrower = Address::generate(&env);
 
     for i in 0..3 {
         let amount = (i == 0).then(|| 10_000_000).unwrap_or(1_000_000_000);
@@ -52,7 +53,8 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
         .withdraw(&borrower, &deposit_token, &100_000, &lender);
     let position_after_withdraw = sut.pool.account_position(&borrower);
 
-    sut.price_feed.init(&debt_token, &14_000_000_000_000_000);
+    sut.price_feed
+        .init(&Asset::Stellar(debt_token.clone()), &14_000_000_000_000_000);
 
     let position_after_change_price = sut.pool.account_position(&borrower);
 

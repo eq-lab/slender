@@ -1,7 +1,7 @@
 use common::FixedI128;
 use pool_interface::types::price_feed_config::PriceFeedConfig;
 use pool_interface::types::{base_asset_config::BaseAssetConfig, error::Error};
-use price_feed_interface::PriceFeedClient;
+use price_feed_interface::{Asset, PriceFeedClient};
 use soroban_sdk::{Address, Env, Map};
 
 use crate::storage::{read_base_asset, read_price_feed};
@@ -74,7 +74,9 @@ impl<'a> PriceProvider<'a> {
             Some(price) => Ok(price),
             None => {
                 let client = PriceFeedClient::new(self.env, &config.feed);
-                let price_data = client.lastprice(asset).ok_or(Error::NoPriceForAsset)?;
+                let price_data = client
+                    .lastprice(&Asset::Stellar(asset.clone()))
+                    .ok_or(Error::NoPriceForAsset)?;
 
                 if price_data.price <= 0 {
                     return Err(Error::InvalidAssetPrice);

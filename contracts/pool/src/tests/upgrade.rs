@@ -20,7 +20,7 @@ pub mod debt_token_v2 {
 }
 
 #[test]
-fn shoould_require_admin() {
+fn should_require_admin() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -46,7 +46,7 @@ fn shoould_require_admin() {
 }
 
 #[test]
-fn shoould_upgrade_contracts() {
+fn should_upgrade_contracts() {
     let env = Env::default();
     env.mock_all_auths();
 

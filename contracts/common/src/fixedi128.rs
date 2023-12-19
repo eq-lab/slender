@@ -1,4 +1,4 @@
-use fixed_point_math::FixedPoint;
+use soroban_fixed_point_math::FixedPoint;
 
 use crate::PERCENTAGE_FACTOR;
 

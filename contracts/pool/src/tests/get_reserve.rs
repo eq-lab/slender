@@ -9,7 +9,7 @@ fn should_be_none_when_not_initialized() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let uninitialized_asset = Address::random(&env);
+    let uninitialized_asset = Address::generate(&env);
     let sut = init_pool(&env, false);
 
     let reserve = sut.pool.get_reserve(&uninitialized_asset);
@@ -18,12 +18,12 @@ fn should_be_none_when_not_initialized() {
 }
 
 #[test]
-fn shoould_return_reserve() {
+fn should_return_reserve() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let token_admin = Address::random(&env);
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
 
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);

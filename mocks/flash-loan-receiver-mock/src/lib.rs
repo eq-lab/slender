@@ -1,7 +1,7 @@
 #![deny(warnings)]
 #![no_std]
 
-use flash_loan_receiver_interface::{Asset, FlashLoanReceiverTrait};
+use flash_loan_receiver_interface::{FlashLoanReceiverTrait, LoanAsset};
 use soroban_sdk::{contract, contractclient, contractimpl, token, Address, Bytes, Env, Vec};
 use storage::{read_pool, read_should_fail, write_pool, write_should_fail};
 
@@ -17,7 +17,7 @@ pub struct FlashLoanReceiver;
 
 #[contractimpl]
 impl FlashLoanReceiverTrait for FlashLoanReceiver {
-    fn receive(env: Env, initiator: Address, assets: Vec<Asset>, _params: Bytes) -> bool {
+    fn receive(env: Env, initiator: Address, assets: Vec<LoanAsset>, _params: Bytes) -> bool {
         if read_should_fail(&env) {
             return false;
         }

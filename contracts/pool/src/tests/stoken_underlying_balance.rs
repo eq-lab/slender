@@ -8,7 +8,7 @@ fn should_not_be_changed_when_direct_transfer_to_underlying_asset() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
-    let lender = Address::random(&env);
+    let lender = Address::generate(&env);
 
     sut.reserves[0].token_admin.mint(&lender, &2_000_000_000);
     sut.pool

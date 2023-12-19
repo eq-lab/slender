@@ -106,7 +106,7 @@ fn should_fail_when_unknown_asset() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let unknown_asset = Address::random(&env);
+    let unknown_asset = Address::generate(&env);
     let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
 
@@ -121,7 +121,7 @@ fn should_change_user_config() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
@@ -339,8 +339,8 @@ fn should_emit_events() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let user_1 = Address::random(&env);
-    let user_2 = Address::random(&env);
+    let user_1 = Address::generate(&env);
+    let user_2 = Address::generate(&env);
 
     let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();

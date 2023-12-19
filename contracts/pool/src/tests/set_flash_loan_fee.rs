@@ -8,7 +8,7 @@ use soroban_sdk::{
 };
 
 #[test]
-fn shoould_require_admin() {
+fn should_require_admin() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -33,7 +33,7 @@ fn shoould_require_admin() {
 }
 
 #[test]
-fn shoould_set_flash_loan_fee() {
+fn should_set_flash_loan_fee() {
     let env = Env::default();
     env.mock_all_auths();
 

@@ -35,7 +35,7 @@ fn should_require_admin() {
 }
 
 #[test]
-fn shoould_set_borrowing_status() {
+fn should_set_borrowing_status() {
     let env = Env::default();
     env.mock_all_auths();
 
