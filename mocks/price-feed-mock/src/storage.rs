@@ -1,4 +1,4 @@
-use price_feed_interface::Asset;
+use price_feed_interface::types::asset::Asset;
 use soroban_sdk::{contracttype, Address, Env};
 
 #[derive(Clone)]

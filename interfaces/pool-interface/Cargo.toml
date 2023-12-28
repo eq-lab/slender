@@ -9,6 +9,7 @@ description = "Liquidity pool interface"
 [dependencies]
 soroban-sdk = { workspace = true }
 common = { path = "../../contracts/common", version = "0.1.0", package = "common" }
+price-feed-interface = { path = "../../interfaces/price-feed-interface", version = "0.1.0", package = "price-feed-interface" }
 
 [features]
 testutils = ["soroban-sdk/testutils"]
