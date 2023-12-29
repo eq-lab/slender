@@ -88,6 +88,10 @@ impl<'a> PriceProvider<'a> {
             Some(price) => Ok(price),
             None => {
                 let client = PriceFeedClient::new(self.env, &config.feed);
+
+                // TODO: TWAP
+                // TODO: Medianizer - implement multiple price oracles for an asset
+                // TODO: and calculate median price
                 let price_data = client
                     .lastprice(&config.feed_asset.clone().into())
                     .ok_or(Error::NoPriceForAsset)?;
