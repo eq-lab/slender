@@ -5,9 +5,13 @@ use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::flash_loan_asset::FlashLoanAsset;
 use pool_interface::types::init_reserve_input::InitReserveInput;
 use pool_interface::types::ir_params::IRParams;
-use pool_interface::types::price_feed_input::PriceFeedInput;
+use pool_interface::types::oracle_asset::OracleAsset;
+use pool_interface::types::price_feed::PriceFeed;
+use pool_interface::types::price_feed_config_input::PriceFeedConfigInput;
 use pool_interface::LendingPoolClient;
-use price_feed_interface::{Asset, PriceFeedClient};
+use price_feed_interface::types::asset::Asset;
+use price_feed_interface::types::price_data::PriceData;
+use price_feed_interface::PriceFeedClient;
 use soroban_sdk::testutils::{Address as _, Ledger};
 use soroban_sdk::{vec, Address, Bytes, Env, IntoVal, Symbol, Val, Vec};
 use std::fs::OpenOptions;
@@ -218,7 +222,13 @@ fn liquidate_receive_stoken_when_borrower_has_one_debt() {
 
     sut.price_feed.init(
         &Asset::Stellar(sut.reserves[2].token.address.clone()),
-        &10_010_000_000_000_000,
+        &vec![
+            &env,
+            PriceData {
+                price: 10_010_000_000_000_000,
+                timestamp: 0,
+            },
+        ],
     );
 
     measure_budget(&env, function_name!(), || {
@@ -256,7 +266,13 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
 
     sut.price_feed.init(
         &Asset::Stellar(sut.reserves[0].token.address.clone()),
-        &110_000_000_000_000,
+        &vec![
+            &env,
+            PriceData {
+                price: 110_000_000_000_000,
+                timestamp: 0,
+            },
+        ],
     );
 
     measure_budget(&env, function_name!(), || {
@@ -303,7 +319,13 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
 
     sut.price_feed.init(
         &Asset::Stellar(sut.reserves[2].token.address.clone()),
-        &10_010_000_000_000_000,
+        &vec![
+            &env,
+            PriceData {
+                price: 10_010_000_000_000_000,
+                timestamp: 0,
+            },
+        ],
     );
 
     measure_budget(&env, function_name!(), || {
@@ -347,7 +369,13 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
 
     sut.price_feed.init(
         &Asset::Stellar(sut.reserves[0].token.address.clone()),
-        &100_100_000_000_000,
+        &vec![
+            &env,
+            PriceData {
+                price: 100_100_000_000_000,
+                timestamp: 0,
+            },
+        ],
     );
 
     measure_budget(&env, function_name!(), || {
@@ -380,7 +408,7 @@ fn price_feed() {
     let sut = init_pool(&env, true);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.price_feed(&sut.token().address);
+        sut.pool.price_feeds(&sut.token().address);
     });
 }
 
@@ -489,29 +517,50 @@ fn set_price_feed() {
     let feed_inputs = Vec::from_array(
         &env,
         [
-            PriceFeedInput {
+            PriceFeedConfigInput {
                 asset: asset_1.clone(),
-                feed: price_feed.address.clone(),
                 asset_decimals: 7,
-                feed_decimals: 14,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(asset_1),
+                        feed_decimals: 14,
+                        twap_records: 10,
+                    },
+                ],
             },
-            PriceFeedInput {
+            PriceFeedConfigInput {
                 asset: asset_2.clone(),
-                feed: price_feed.address.clone(),
                 asset_decimals: 9,
-                feed_decimals: 16,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(asset_2),
+                        feed_decimals: 16,
+                        twap_records: 10,
+                    },
+                ],
             },
-            PriceFeedInput {
+            PriceFeedConfigInput {
                 asset: asset_3.clone(),
-                feed: price_feed.address.clone(),
                 asset_decimals: 9,
-                feed_decimals: 16,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(asset_3),
+                        feed_decimals: 16,
+                        twap_records: 10,
+                    },
+                ],
             },
         ],
     );
 
     measure_budget(&env, function_name!(), || {
-        pool.set_price_feed(&feed_inputs);
+        pool.set_price_feeds(&feed_inputs);
     });
 }
 

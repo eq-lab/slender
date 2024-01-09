@@ -34,18 +34,15 @@ impl PriceFeedTrait for PriceFeedMock {
         unimplemented!()
     }
 
-    fn prices(_env: Env, _asset: Asset, _records: u32) -> Option<Vec<PriceData>> {
+    fn prices(env: Env, asset: Asset, _records: u32) -> Option<Vec<PriceData>> {
+        read_prices(&env, &asset)
+    }
+
+    fn lastprice(_env: Env, _asset: Asset) -> Option<PriceData> {
         unimplemented!()
     }
 
-    fn lastprice(env: Env, asset: Asset) -> Option<PriceData> {
-        Some(PriceData {
-            price: read_asset_price(&env, asset.clone()).unwrap(),
-            timestamp: env.ledger().timestamp(),
-        })
-    }
-
-    fn init(env: Env, asset: Asset, price: i128) {
-        write_init_data(&env, asset, price);
+    fn init(env: Env, asset: Asset, prices: Vec<PriceData>) {
+        write_init_data(&env, &asset, prices);
     }
 }

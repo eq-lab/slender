@@ -4,13 +4,17 @@ extern crate std;
 use crate::*;
 use debt_token_interface::DebtTokenClient;
 use flash_loan_receiver_interface::FlashLoanReceiverClient;
-use price_feed_interface::{Asset, PriceFeedClient};
+use pool_interface::types::oracle_asset::OracleAsset;
+use pool_interface::types::price_feed::PriceFeed;
+use price_feed_interface::types::asset::Asset;
+use price_feed_interface::types::price_data::PriceData;
+use price_feed_interface::PriceFeedClient;
 use s_token_interface::STokenClient;
 use soroban_sdk::testutils::{Address as _, Ledger};
 use soroban_sdk::token::Client as TokenClient;
 use soroban_sdk::token::StellarAssetClient as TokenAdminClient;
-use soroban_sdk::Env;
 use soroban_sdk::IntoVal;
+use soroban_sdk::{vec, Env};
 
 mod pool {
     soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/pool.wasm");
@@ -186,14 +190,71 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             assert_eq!(reserve_config.discount, discount);
 
             match i {
-                0 => price_feed.init(&Asset::Stellar(token.address.clone()), &100_000_000_000_000),
+                0 => price_feed.init(
+                    &Asset::Stellar(token.address.clone()),
+                    &vec![
+                        &env,
+                        PriceData {
+                            price: 46789557663,
+                            timestamp: 1704790200000,
+                        },
+                        PriceData {
+                            price: 47064816168,
+                            timestamp: 1704789900000,
+                        },
+                        PriceData {
+                            price: 46777180452,
+                            timestamp: 1704789600000,
+                        },
+                        PriceData {
+                            price: 46624266753,
+                            timestamp: 1704789300000,
+                        },
+                    ],
+                ),
                 1 => price_feed.init(
                     &Asset::Stellar(token.address.clone()),
-                    &10_000_000_000_000_000,
+                    &vec![
+                        &env,
+                        PriceData {
+                            price: 46789557663,
+                            timestamp: 1704790200000,
+                        },
+                        PriceData {
+                            price: 47064816168,
+                            timestamp: 1704789900000,
+                        },
+                        PriceData {
+                            price: 46777180452,
+                            timestamp: 1704789600000,
+                        },
+                        PriceData {
+                            price: 46624266753,
+                            timestamp: 1704789300000,
+                        },
+                    ],
                 ),
                 2 => price_feed.init(
                     &Asset::Stellar(token.address.clone()),
-                    &10_000_000_000_000_000,
+                    &vec![
+                        &env,
+                        PriceData {
+                            price: 46789557663,
+                            timestamp: 1704790200000,
+                        },
+                        PriceData {
+                            price: 47064816168,
+                            timestamp: 1704789900000,
+                        },
+                        PriceData {
+                            price: 46777180452,
+                            timestamp: 1704789600000,
+                        },
+                        PriceData {
+                            price: 46624266753,
+                            timestamp: 1704789300000,
+                        },
+                    ],
                 ),
                 _ => panic!(),
             };
@@ -210,28 +271,49 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
     let feed_inputs = Vec::from_array(
         &env,
         [
-            PriceFeedInput {
+            PriceFeedConfigInput {
                 asset: reserves[0].token.address.clone(),
-                feed: price_feed.address.clone(),
                 asset_decimals: 7,
-                feed_decimals: 14,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(reserves[0].token.address.clone()),
+                        feed_decimals: 14,
+                        twap_records: 10,
+                    },
+                ],
             },
-            PriceFeedInput {
+            PriceFeedConfigInput {
                 asset: reserves[1].token.address.clone(),
-                feed: price_feed.address.clone(),
                 asset_decimals: 9,
-                feed_decimals: 16,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(reserves[1].token.address.clone()),
+                        feed_decimals: 16,
+                        twap_records: 10,
+                    },
+                ],
             },
-            PriceFeedInput {
+            PriceFeedConfigInput {
                 asset: reserves[2].token.address.clone(),
-                feed: price_feed.address.clone(),
-                asset_decimals: 9,
-                feed_decimals: 16,
+                asset_decimals: 7,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(reserves[2].token.address.clone()),
+                        feed_decimals: 14,
+                        twap_records: 10,
+                    },
+                ],
             },
         ],
     );
 
-    pool.set_price_feed(&feed_inputs);
+    pool.set_price_feeds(&feed_inputs);
 
     Sut {
         pool,

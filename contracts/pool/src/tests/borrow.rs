@@ -1,6 +1,7 @@
 use super::sut::DAY;
 use crate::tests::sut::{fill_pool, init_pool};
-use price_feed_interface::Asset;
+use price_feed_interface::types::asset::Asset;
+use price_feed_interface::types::price_data::PriceData;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
 use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
@@ -120,8 +121,16 @@ fn should_fail_when_oracle_price_is_negative() {
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
-    sut.price_feed
-        .init(&Asset::Stellar(token_address.clone()), &-10_000_000_000);
+    sut.price_feed.init(
+        &Asset::Stellar(token_address.clone()),
+        &vec![
+            &env,
+            PriceData {
+                price: -10_000_000_000,
+                timestamp: 0,
+            },
+        ],
+    );
     sut.pool.borrow(&borrower, &token_address, &10_000_000);
 }
 
@@ -332,6 +341,9 @@ fn should_emit_events() {
     let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
+
+    // TODO: remove
+    env.ledger().with_mut(|li| li.timestamp = 1705090200000);
 
     sut.pool.borrow(&borrower, &token_address, &20_000_000);
 

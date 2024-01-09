@@ -39,5 +39,5 @@ pub trait PriceFeedTrait {
     fn lastprice(env: Env, asset: Asset) -> Option<PriceData>;
 
     /// Sets price in base asset for a given asset. Note: not a SEP-40 method.
-    fn init(env: Env, asset: Asset, price: i128);
+    fn init(env: Env, asset: Asset, prices: Vec<PriceData>);
 }

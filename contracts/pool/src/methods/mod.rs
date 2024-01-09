@@ -16,7 +16,7 @@ pub mod set_base_asset;
 pub mod set_flash_loan_fee;
 pub mod set_ir_params;
 pub mod set_pause;
-pub mod set_price_feed;
+pub mod set_price_feeds;
 pub mod set_reserve_status;
 pub mod set_reserve_timestamp_window;
 pub mod upgrade;
