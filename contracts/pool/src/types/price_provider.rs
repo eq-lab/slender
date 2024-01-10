@@ -1,10 +1,12 @@
+use core::ops::Div;
+
 use common::FixedI128;
 use pool_interface::types::base_asset_config::BaseAssetConfig;
 use pool_interface::types::error::Error;
 use pool_interface::types::price_feed::PriceFeed;
 use pool_interface::types::price_feed_config::PriceFeedConfig;
 use price_feed_interface::PriceFeedClient;
-use soroban_sdk::{Address, Env, Map};
+use soroban_sdk::{Address, Env, Map, Vec};
 
 use crate::storage::{read_base_asset, read_price_feeds};
 
@@ -33,9 +35,9 @@ impl<'a> PriceProvider<'a> {
         }
 
         let config = self.config(asset)?;
-        let price = self.price(asset, &config)?;
+        let median_twap_price = self.price(asset, &config)?;
 
-        FixedI128::from_inner(price)
+        median_twap_price
             .mul_int(amount)
             .and_then(|a| FixedI128::from_rational(a, 10i128.pow(config.asset_decimals)))
             .and_then(|a| a.to_precision(base_asset.decimals))
@@ -50,9 +52,9 @@ impl<'a> PriceProvider<'a> {
         }
 
         let config = self.config(asset)?;
-        let price = self.price(asset, &config)?;
+        let median_twap_price = self.price(asset, &config)?;
 
-        FixedI128::from_inner(price)
+        median_twap_price
             .recip_mul_int(amount)
             .and_then(|a| FixedI128::from_rational(a, 10i128.pow(base_asset.decimals)))
             .and_then(|a| a.to_precision(config.asset_decimals))
@@ -83,36 +85,43 @@ impl<'a> PriceProvider<'a> {
         }
     }
 
-    fn price(&mut self, asset: &Address, config: &PriceFeedConfig) -> Result<i128, Error> {
+    fn price(&mut self, asset: &Address, config: &PriceFeedConfig) -> Result<FixedI128, Error> {
         let price = self.prices.get(asset.clone());
 
         match price {
-            Some(price) => Ok(price),
+            Some(price) => Ok(FixedI128::from_inner(price)),
             None => {
-                // TODO: TWAP
-                // TODO: Medianizer - implement multiple price oracles for an asset
-                // TODO: and calculate median price
+                let mut sorted_twap_prices = Map::new(self.env);
 
                 let feeds_len = config.feeds.len();
-
-                let mut price = 0;
+                let max_feed_decimals = config.feeds.iter().map(|f| f.feed_decimals).max().unwrap();
 
                 for i in 0..feeds_len {
-                    price = self.twap(&config.feeds.get_unchecked(i))?;
+                    let feed = &config.feeds.get_unchecked(i);
+                    let twap_price = self.twap(feed)?;
+
+                    let twap_price = if max_feed_decimals.eq(&feed.feed_decimals) {
+                        twap_price
+                    } else {
+                        twap_price
+                            .checked_mul(10i128.pow(max_feed_decimals.into()))
+                            .ok_or(Error::MathOverflowError)?
+                            .checked_div(10i128.pow(feed.feed_decimals.into()))
+                            .ok_or(Error::MathOverflowError)?
+                    };
+
+                    sorted_twap_prices.set(twap_price, twap_price);
                 }
 
-                // let price_data = client
-                //     .lastprice(&config.feed_asset.clone().into())
-                //     .ok_or(Error::NoPriceForAsset)?;
+                let median_price = FixedI128::from_rational(
+                    self.median(&sorted_twap_prices.keys())?,
+                    10i128.pow(max_feed_decimals.into()),
+                )
+                .ok_or(Error::MathOverflowError)?;
 
-                let actual_price = price;
-                // FixedI128::from_rational(price_data.price, 10i128.pow(config.feed_decimals))
-                //     .ok_or(Error::InvalidAssetPrice)?
-                //     .into_inner();
+                self.prices.set(asset.clone(), median_price.into_inner());
 
-                self.prices.set(asset.clone(), actual_price);
-
-                Ok(actual_price)
+                Ok(median_price)
             }
         }
     }
@@ -181,5 +190,29 @@ impl<'a> PriceProvider<'a> {
             .ok_or(Error::MathOverflowError)?;
 
         Ok(twap_price)
+    }
+
+    fn median(&mut self, prices: &Vec<i128>) -> Result<i128, Error> {
+        let prices_len = prices.len();
+
+        if prices_len == 1 {
+            return Ok(prices.first_unchecked());
+        }
+
+        let index = prices_len / 2;
+
+        let median_price = if prices_len % 2 == 0 {
+            let price_1 = prices.get_unchecked(index - 1);
+            let price_2 = prices.get_unchecked(index);
+
+            price_1
+                .checked_add(price_2)
+                .ok_or(Error::MathOverflowError)?
+                .div(2)
+        } else {
+            prices.get_unchecked(index)
+        };
+
+        return Ok(median_price);
     }
 }
