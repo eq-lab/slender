@@ -65,7 +65,7 @@ fn should_require_admin() {
             AuthorizedInvocation {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
-                    Symbol::new(&env, "set_price_feed"),
+                    Symbol::new(&env, "set_price_feeds"),
                     vec![&env, feed_inputs.into_val(&env)]
                 )),
                 sub_invocations: std::vec![]

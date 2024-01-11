@@ -263,7 +263,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             },
             PriceFeedConfigInput {
                 asset: reserves[2].token.address.clone(),
-                asset_decimals: 7,
+                asset_decimals: 9,
                 feeds: vec![
                     &env,
                     PriceFeed {

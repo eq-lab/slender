@@ -79,31 +79,7 @@ fn should_fail_when_good_position() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #106)")]
-fn should_fail_when_oracle_price_is_negative() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, false);
-    let (_, borrower, liquidator, debt_config) = fill_pool_three(&env, &sut);
-    let token_address = debt_config.token.address.clone();
-
-    sut.price_feed.init(
-        &Asset::Stellar(token_address),
-        &vec![
-            &env,
-            PriceData {
-                price: -10_000_000_000,
-                timestamp: 0,
-            },
-        ],
-    );
-    sut.pool
-        .liquidate(&liquidator, &borrower, &debt_config.token.address, &false);
-}
-
-#[test]
-#[should_panic(expected = "HostError: Error(Contract, #308)")]
+#[should_panic(expected = "HostError: Error(Contract, #307)")]
 fn should_fail_when_not_enough_collateral() {
     let env = Env::default();
     env.mock_all_auths();

@@ -12,25 +12,25 @@ use crate::storage::{read_base_asset, read_price_feeds};
 
 pub struct PriceProvider<'a> {
     env: &'a Env,
-    base_asset: Option<BaseAssetConfig>,
+    base_asset: BaseAssetConfig,
     configs: Map<Address, PriceFeedConfig>,
     prices: Map<Address, i128>,
 }
 
 impl<'a> PriceProvider<'a> {
     pub fn new(env: &'a Env) -> Result<Self, Error> {
+        let base_asset = read_base_asset(env)?;
+
         Ok(Self {
             env,
-            base_asset: None,
+            base_asset,
             configs: Map::new(env),
             prices: Map::new(env),
         })
     }
 
     pub fn convert_to_base(&mut self, asset: &Address, amount: i128) -> Result<i128, Error> {
-        let base_asset = self.base_asset()?;
-
-        if base_asset.address == *asset {
+        if self.base_asset.address == *asset {
             return Ok(amount);
         }
 
@@ -40,14 +40,12 @@ impl<'a> PriceProvider<'a> {
         median_twap_price
             .mul_int(amount)
             .and_then(|a| FixedI128::from_rational(a, 10i128.pow(config.asset_decimals)))
-            .and_then(|a| a.to_precision(base_asset.decimals))
+            .and_then(|a| a.to_precision(self.base_asset.decimals))
             .ok_or(Error::InvalidAssetPrice)
     }
 
     pub fn convert_from_base(&mut self, asset: &Address, amount: i128) -> Result<i128, Error> {
-        let base_asset = self.base_asset()?;
-
-        if base_asset.address == *asset {
+        if self.base_asset.address == *asset {
             return Ok(amount);
         }
 
@@ -56,21 +54,9 @@ impl<'a> PriceProvider<'a> {
 
         median_twap_price
             .recip_mul_int(amount)
-            .and_then(|a| FixedI128::from_rational(a, 10i128.pow(base_asset.decimals)))
+            .and_then(|a| FixedI128::from_rational(a, 10i128.pow(self.base_asset.decimals)))
             .and_then(|a| a.to_precision(config.asset_decimals))
             .ok_or(Error::InvalidAssetPrice)
-    }
-
-    fn base_asset(&mut self) -> Result<BaseAssetConfig, Error> {
-        match &self.base_asset {
-            Some(config) => Ok(config.clone()),
-            None => {
-                let base_asset = read_base_asset(self.env)?;
-                self.base_asset = Some(base_asset.clone());
-
-                Ok(base_asset)
-            }
-        }
     }
 
     fn config(&mut self, asset: &Address) -> Result<PriceFeedConfig, Error> {
