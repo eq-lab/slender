@@ -88,42 +88,31 @@ impl<'a> PriceProvider<'a> {
     fn price(&mut self, asset: &Address, config: &PriceFeedConfig) -> Result<FixedI128, Error> {
         let price = self.prices.get(asset.clone());
 
-        match price {
-            Some(price) => Ok(FixedI128::from_inner(price)),
+        let price = match price {
+            Some(price) => price,
             None => {
                 let mut sorted_twap_prices = Map::new(self.env);
 
-                let feeds_len = config.feeds.len();
-                let max_feed_decimals = config.feeds.iter().map(|f| f.feed_decimals).max().unwrap();
-
-                for i in 0..feeds_len {
-                    let feed = &config.feeds.get_unchecked(i);
-                    let twap_price = self.twap(feed)?;
-
-                    let twap_price = if max_feed_decimals.eq(&feed.feed_decimals) {
-                        twap_price
-                    } else {
-                        twap_price
-                            .checked_mul(10i128.pow(max_feed_decimals.into()))
-                            .ok_or(Error::MathOverflowError)?
-                            .checked_div(10i128.pow(feed.feed_decimals.into()))
-                            .ok_or(Error::MathOverflowError)?
-                    };
+                for feed in config.feeds.iter() {
+                    let twap_price = FixedI128::from_rational(
+                        self.twap(&feed)?,
+                        10i128.pow(feed.feed_decimals.into()),
+                    )
+                    .ok_or(Error::MathOverflowError)?
+                    .into_inner();
 
                     sorted_twap_prices.set(twap_price, twap_price);
                 }
 
-                let median_price = FixedI128::from_rational(
-                    self.median(&sorted_twap_prices.keys())?,
-                    10i128.pow(max_feed_decimals.into()),
-                )
-                .ok_or(Error::MathOverflowError)?;
+                let median_twap_price = self.median(&sorted_twap_prices.keys())?;
 
-                self.prices.set(asset.clone(), median_price.into_inner());
+                self.prices.set(asset.clone(), median_twap_price);
 
-                Ok(median_price)
+                median_twap_price
             }
-        }
+        };
+
+        Ok(FixedI128::from_inner(price))
     }
 
     fn twap(&mut self, config: &PriceFeed) -> Result<i128, Error> {

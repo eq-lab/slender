@@ -195,20 +195,8 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     &vec![
                         &env,
                         PriceData {
-                            price: 46789557663,
+                            price: 100_000_000_000_000,
                             timestamp: 1704790200000,
-                        },
-                        PriceData {
-                            price: 47064816168,
-                            timestamp: 1704789900000,
-                        },
-                        PriceData {
-                            price: 46777180452,
-                            timestamp: 1704789600000,
-                        },
-                        PriceData {
-                            price: 46624266753,
-                            timestamp: 1704789300000,
                         },
                     ],
                 ),
@@ -217,20 +205,8 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     &vec![
                         &env,
                         PriceData {
-                            price: 46789557663,
+                            price: 10_000_000_000_000_000,
                             timestamp: 1704790200000,
-                        },
-                        PriceData {
-                            price: 47064816168,
-                            timestamp: 1704789900000,
-                        },
-                        PriceData {
-                            price: 46777180452,
-                            timestamp: 1704789600000,
-                        },
-                        PriceData {
-                            price: 46624266753,
-                            timestamp: 1704789300000,
                         },
                     ],
                 ),
@@ -239,20 +215,8 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     &vec![
                         &env,
                         PriceData {
-                            price: 46789557663,
+                            price: 10_000_000_000_000_000,
                             timestamp: 1704790200000,
-                        },
-                        PriceData {
-                            price: 47064816168,
-                            timestamp: 1704789900000,
-                        },
-                        PriceData {
-                            price: 46777180452,
-                            timestamp: 1704789600000,
-                        },
-                        PriceData {
-                            price: 46624266753,
-                            timestamp: 1704789300000,
                         },
                     ],
                 ),
@@ -305,7 +269,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     PriceFeed {
                         feed: price_feed.address.clone(),
                         feed_asset: OracleAsset::Stellar(reserves[2].token.address.clone()),
-                        feed_decimals: 14,
+                        feed_decimals: 16,
                         twap_records: 10,
                     },
                 ],

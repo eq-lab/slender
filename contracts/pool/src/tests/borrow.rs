@@ -342,9 +342,6 @@ fn should_emit_events() {
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
-    // TODO: remove
-    env.ledger().with_mut(|li| li.timestamp = 1705090200000);
-
     sut.pool.borrow(&borrower, &token_address, &20_000_000);
 
     let mut events = env.events().all();
