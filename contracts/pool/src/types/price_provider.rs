@@ -80,12 +80,10 @@ impl<'a> PriceProvider<'a> {
                 let mut sorted_twap_prices = Map::new(self.env);
 
                 for feed in config.feeds.iter() {
-                    let twap_price = FixedI128::from_rational(
-                        self.twap(&feed)?,
-                        10i128.pow(feed.feed_decimals.into()),
-                    )
-                    .ok_or(Error::MathOverflowError)?
-                    .into_inner();
+                    let twap_price =
+                        FixedI128::from_rational(self.twap(&feed)?, 10i128.pow(feed.feed_decimals))
+                            .ok_or(Error::MathOverflowError)?
+                            .into_inner();
 
                     sorted_twap_prices.set(twap_price, twap_price);
                 }
@@ -188,6 +186,6 @@ impl<'a> PriceProvider<'a> {
             prices.get_unchecked(index)
         };
 
-        return Ok(median_price);
+        Ok(median_price)
     }
 }

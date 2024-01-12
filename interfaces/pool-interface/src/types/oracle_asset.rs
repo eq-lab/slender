@@ -8,9 +8,9 @@ pub enum OracleAsset {
     Other(Symbol),
 }
 
-impl Into<Asset> for OracleAsset {
-    fn into(self) -> Asset {
-        match self {
+impl From<OracleAsset> for Asset {
+    fn from(asset: OracleAsset) -> Self {
+        match asset {
             OracleAsset::Stellar(address) => Asset::Stellar(address),
             OracleAsset::Other(symbol) => Asset::Other(symbol),
         }
