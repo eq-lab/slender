@@ -1,7 +1,6 @@
 pub mod account_position;
 pub mod borrow;
-// TODO: uncomment!
-// #[cfg(feature = "budget")]
+#[cfg(feature = "budget")]
 pub mod budget;
 pub mod collat_coeff;
 pub mod configure_as_collateral;
@@ -30,6 +29,7 @@ pub mod soroban_map;
 pub mod stoken_underlying_balance;
 mod sut;
 pub mod treasury;
+pub mod twap_median_price;
 pub mod upgrade;
 pub mod user_configuration;
 pub mod withdraw;

@@ -397,7 +397,7 @@ pub(crate) fn fill_pool_three<'a, 'b>(
     (lender, borrower, liquidator, debt_config)
 }
 
-// #[cfg(feature = "budget")]
+#[cfg(feature = "budget")]
 pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Address, Address) {
     let lender = Address::generate(&env);
     let borrower1 = Address::generate(&env);

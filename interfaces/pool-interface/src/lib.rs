@@ -141,4 +141,6 @@ pub trait LendingPoolTrait {
         assets: Vec<FlashLoanAsset>,
         params: Bytes,
     ) -> Result<(), Error>;
+
+    fn twap_median_price(env: Env, asset: Address, amount: i128) -> Result<i128, Error>;
 }

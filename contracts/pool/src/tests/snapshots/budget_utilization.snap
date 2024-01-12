@@ -1,288 +1,66 @@
-['pool::tests::budget::configure_as_collateral'] = {
-    "cpu_cost": 24093921,
-    "memory_cost": 3994085,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
 ['pool::tests::budget::account_position'] = {
-    "cpu_cost": 30376812,
-    "memory_cost": 7090480,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::enable_borrowing_on_reserve'] = {
-    "cpu_cost": 24071670,
-    "memory_cost": 3987082,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::flash_loan_fee'] = {
-    "cpu_cost": 23646596,
-    "memory_cost": 3903139,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::debt_coeff'] = {
-    "cpu_cost": 23862635,
-    "memory_cost": 3937842,
+    "cpu_cost": 30523104,
+    "memory_cost": 7106868,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::borrow'] = {
-    "cpu_cost": 43638145,
-    "memory_cost": 11056187,
+    "cpu_cost": 43785157,
+    "memory_cost": 11072575,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::collat_coeff'] = {
-    "cpu_cost": 24192806,
-    "memory_cost": 3995759,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::deposit'] = {
-    "cpu_cost": 33636299,
-    "memory_cost": 6354346,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::flash_loan_with_borrow'] = {
-    "cpu_cost": 86280887,
-    "memory_cost": 24456325,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::init_reserve'] = {
-    "cpu_cost": 199454,
-    "memory_cost": 37514,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::get_reserve'] = {
-    "cpu_cost": 23708981,
-    "memory_cost": 3905185,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::flash_loan_without_borrow'] = {
-    "cpu_cost": 52580427,
-    "memory_cost": 12302133,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::ir_params'] = {
-    "cpu_cost": 23711718,
-    "memory_cost": 3918554,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::liquidate_receive_stoken_when_borrower_has_two_debts'] = {
-    "cpu_cost": 44687473,
-    "memory_cost": 11227950,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::liquidate_receive_stoken_when_borrower_has_one_debt'] = {
-    "cpu_cost": 45093959,
-    "memory_cost": 11285473,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::liquidate_receive_underlying_when_borrower_has_two_debts'] = {
-    "cpu_cost": 44828610,
-    "memory_cost": 11235825,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::liquidate_receive_underlying_when_borrower_has_one_debt'] = {
-    "cpu_cost": 45145118,
-    "memory_cost": 11298488,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::paused'] = {
-    "cpu_cost": 23638748,
-    "memory_cost": 3902929,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::price_feed'] = {
-    "cpu_cost": 23652057,
-    "memory_cost": 3903466,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::repay_full'] = {
-    "cpu_cost": 30114588,
-    "memory_cost": 6007026,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::s_token_transfer'] = {
-    "cpu_cost": 38321730,
-    "memory_cost": 9210804,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::repay_partial'] = {
-    "cpu_cost": 30140196,
-    "memory_cost": 5997784,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::set_base_asset'] = {
-    "cpu_cost": 23910090,
-    "memory_cost": 3968155,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::set_flash_loan_fee'] = {
-    "cpu_cost": 23905584,
-    "memory_cost": 3967077,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::set_ir_params'] = {
-    "cpu_cost": 23930787,
-    "memory_cost": 3974292,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::set_pause'] = {
-    "cpu_cost": 23900077,
-    "memory_cost": 3967037,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::set_as_collateral'] = {
-    "cpu_cost": 29679226,
-    "memory_cost": 6989871,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::set_price_feed'] = {
-    "cpu_cost": 256840,
-    "memory_cost": 73371,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::set_reserve_status'] = {
-    "cpu_cost": 24071223,
-    "memory_cost": 3987040,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::treasury'] = {
-    "cpu_cost": 47789,
-    "memory_cost": 7386,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::stoken_underlying_balance'] = {
-    "cpu_cost": 23661997,
-    "memory_cost": 3906217,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::upgrade'] = {
-    "cpu_cost": 23835650,
-    "memory_cost": 3952893,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::upgrade_s_token'] = {
-    "cpu_cost": 31432093,
-    "memory_cost": 5985997,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::upgrade_debt_token'] = {
-    "cpu_cost": 27602737,
-    "memory_cost": 5548058,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::user_configuration'] = {
-    "cpu_cost": 23512926,
-    "memory_cost": 3882736,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::withdraw_full'] = {
-    "cpu_cost": 39739352,
-    "memory_cost": 9435382,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::withdraw_partial'] = {
-    "cpu_cost": 39667037,
-    "memory_cost": 9425710,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::account_position'] = {
-    "cpu_cost": 30376812,
-    "memory_cost": 7090480,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::borrow'] = {
-    "cpu_cost": 43638145,
-    "memory_cost": 11056187,
-    "cpu_limit_exceeded": false,
-    "memory_limit_exceeded": false,
-}
-['pool::tests::budget::collat_coeff'] = {
-    "cpu_cost": 24192806,
-    "memory_cost": 3995759,
+    "cpu_cost": 24337082,
+    "memory_cost": 4012147,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::configure_as_collateral'] = {
-    "cpu_cost": 24093921,
-    "memory_cost": 3994085,
+    "cpu_cost": 24236757,
+    "memory_cost": 4010473,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::debt_coeff'] = {
-    "cpu_cost": 23862635,
-    "memory_cost": 3937842,
+    "cpu_cost": 24006479,
+    "memory_cost": 3954230,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::deposit'] = {
-    "cpu_cost": 33636299,
-    "memory_cost": 6354346,
+    "cpu_cost": 33781151,
+    "memory_cost": 6370734,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::enable_borrowing_on_reserve'] = {
-    "cpu_cost": 24071670,
-    "memory_cost": 3987082,
+    "cpu_cost": 24214506,
+    "memory_cost": 4003470,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::flash_loan_fee'] = {
-    "cpu_cost": 23646596,
-    "memory_cost": 3903139,
+    "cpu_cost": 23789720,
+    "memory_cost": 3919527,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::flash_loan_with_borrow'] = {
-    "cpu_cost": 86280887,
-    "memory_cost": 24456325,
+    "cpu_cost": 86420123,
+    "memory_cost": 24472713,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::flash_loan_without_borrow'] = {
-    "cpu_cost": 52580427,
-    "memory_cost": 12302133,
+    "cpu_cost": 52724127,
+    "memory_cost": 12318521,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::get_reserve'] = {
-    "cpu_cost": 23708981,
-    "memory_cost": 3905185,
+    "cpu_cost": 23852105,
+    "memory_cost": 3921573,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
@@ -293,92 +71,92 @@
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::ir_params'] = {
-    "cpu_cost": 23711718,
-    "memory_cost": 3918554,
+    "cpu_cost": 23855418,
+    "memory_cost": 3934942,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::liquidate_receive_stoken_when_borrower_has_one_debt'] = {
-    "cpu_cost": 45093959,
-    "memory_cost": 11285473,
+    "cpu_cost": 45241691,
+    "memory_cost": 11301861,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::liquidate_receive_stoken_when_borrower_has_two_debts'] = {
-    "cpu_cost": 44687473,
-    "memory_cost": 11227950,
+    "cpu_cost": 44834773,
+    "memory_cost": 11244338,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::liquidate_receive_underlying_when_borrower_has_one_debt'] = {
-    "cpu_cost": 45145118,
-    "memory_cost": 11298488,
+    "cpu_cost": 45284354,
+    "memory_cost": 11314876,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::liquidate_receive_underlying_when_borrower_has_two_debts'] = {
-    "cpu_cost": 44828610,
-    "memory_cost": 11235825,
+    "cpu_cost": 44968566,
+    "memory_cost": 11252213,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::paused'] = {
-    "cpu_cost": 23638748,
-    "memory_cost": 3902929,
+    "cpu_cost": 23781872,
+    "memory_cost": 3919317,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::price_feed'] = {
-    "cpu_cost": 23652057,
-    "memory_cost": 3903466,
+    "cpu_cost": 23795181,
+    "memory_cost": 3919854,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::repay_full'] = {
-    "cpu_cost": 30114588,
-    "memory_cost": 6007026,
+    "cpu_cost": 30260160,
+    "memory_cost": 6023414,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::repay_partial'] = {
-    "cpu_cost": 30140196,
-    "memory_cost": 5997784,
+    "cpu_cost": 30285768,
+    "memory_cost": 6014172,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::s_token_transfer'] = {
-    "cpu_cost": 38321730,
-    "memory_cost": 9210804,
+    "cpu_cost": 38463126,
+    "memory_cost": 9227192,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::set_as_collateral'] = {
-    "cpu_cost": 29679226,
-    "memory_cost": 6989871,
+    "cpu_cost": 29824510,
+    "memory_cost": 7006259,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::set_base_asset'] = {
-    "cpu_cost": 23910090,
-    "memory_cost": 3968155,
+    "cpu_cost": 24053070,
+    "memory_cost": 3984543,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::set_flash_loan_fee'] = {
-    "cpu_cost": 23905584,
-    "memory_cost": 3967077,
+    "cpu_cost": 24048564,
+    "memory_cost": 3983465,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::set_ir_params'] = {
-    "cpu_cost": 23930787,
-    "memory_cost": 3974292,
+    "cpu_cost": 24073767,
+    "memory_cost": 3990680,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::set_pause'] = {
-    "cpu_cost": 23900077,
-    "memory_cost": 3967037,
+    "cpu_cost": 24043057,
+    "memory_cost": 3983425,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
@@ -389,14 +167,14 @@
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::set_reserve_status'] = {
-    "cpu_cost": 24071223,
-    "memory_cost": 3987040,
+    "cpu_cost": 24214059,
+    "memory_cost": 4003428,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::stoken_underlying_balance'] = {
-    "cpu_cost": 23661997,
-    "memory_cost": 3906217,
+    "cpu_cost": 23805697,
+    "memory_cost": 3922605,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
@@ -407,38 +185,38 @@
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::upgrade'] = {
-    "cpu_cost": 23835650,
-    "memory_cost": 3952893,
+    "cpu_cost": 23979350,
+    "memory_cost": 3969281,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::upgrade_debt_token'] = {
-    "cpu_cost": 27602737,
-    "memory_cost": 5548058,
+    "cpu_cost": 27746581,
+    "memory_cost": 5564446,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::upgrade_s_token'] = {
-    "cpu_cost": 31432093,
-    "memory_cost": 5985997,
+    "cpu_cost": 31575649,
+    "memory_cost": 6002385,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::user_configuration'] = {
-    "cpu_cost": 23512926,
-    "memory_cost": 3882736,
+    "cpu_cost": 23656194,
+    "memory_cost": 3899124,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::withdraw_full'] = {
-    "cpu_cost": 39739352,
-    "memory_cost": 9435382,
+    "cpu_cost": 39885932,
+    "memory_cost": 9451770,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }
 ['pool::tests::budget::withdraw_partial'] = {
-    "cpu_cost": 39667037,
-    "memory_cost": 9425710,
+    "cpu_cost": 39813617,
+    "memory_cost": 9442098,
     "cpu_limit_exceeded": false,
     "memory_limit_exceeded": false,
 }

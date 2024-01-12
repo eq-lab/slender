@@ -19,6 +19,7 @@ pub mod set_pause;
 pub mod set_price_feeds;
 pub mod set_reserve_status;
 pub mod set_reserve_timestamp_window;
+pub mod twap_median_price;
 pub mod upgrade;
 pub mod upgrade_debt_token;
 pub mod upgrade_s_token;
