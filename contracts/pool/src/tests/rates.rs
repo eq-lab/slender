@@ -135,7 +135,6 @@ fn should_calc_accrued_rate() {
 #[test]
 fn should_calc_borrower_and_lender_rates() {
     let env = &Env::default();
-    let asset = Address::generate(env);
     let total_collateral = 100;
     let total_debt = 20;
 
@@ -143,7 +142,7 @@ fn should_calc_borrower_and_lender_rates() {
         s_token_address: Address::generate(env),
         debt_token_address: Address::generate(env),
     };
-    let reserve_data = ReserveData::new(env, &asset, &input);
+    let reserve_data = ReserveData::new(env, &input);
     let ir_params = get_default_ir_params();
 
     let accrued_rates =
@@ -163,7 +162,6 @@ fn should_calc_borrower_and_lender_rates() {
 #[test]
 fn should_fail_when_collateral_is_zero() {
     let env = &Env::default();
-    let asset = Address::generate(env);
     let total_collateral = 0;
     let total_debt = 100;
 
@@ -171,7 +169,7 @@ fn should_fail_when_collateral_is_zero() {
         s_token_address: Address::generate(env),
         debt_token_address: Address::generate(env),
     };
-    let reserve_data = ReserveData::new(env, &asset, &input);
+    let reserve_data = ReserveData::new(env, &input);
     let ir_params = get_default_ir_params();
 
     let mb_accrued_rates =

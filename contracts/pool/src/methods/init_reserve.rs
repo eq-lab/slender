@@ -11,7 +11,7 @@ pub fn init_reserve(env: &Env, asset: &Address, input: &InitReserveInput) -> Res
     require_admin(env)?;
     require_uninitialized_reserve(env, asset);
 
-    let mut reserve_data = ReserveData::new(env, asset, input);
+    let mut reserve_data = ReserveData::new(env, input);
     let mut reserves = read_reserves(env);
     let reserves_len = reserves.len();
 

@@ -3,7 +3,6 @@ use soroban_sdk::{contracttype, Address, BytesN, Env};
 
 use super::collateral_params_input::CollateralParamsInput;
 use super::init_reserve_input::InitReserveInput;
-use super::oracle_asset::OracleAsset;
 use super::reserve_configuration::ReserveConfiguration;
 
 #[derive(Debug, Clone)]
@@ -15,7 +14,6 @@ pub struct ReserveData {
     pub borrower_ar: i128,
     pub borrower_ir: i128,
     pub last_update_timestamp: u64,
-    pub oracle_asset: OracleAsset,
     pub s_token_address: Address,
     pub debt_token_address: Address,
     /// The id of the reserve (position in the list of the active reserves).
@@ -23,7 +21,7 @@ pub struct ReserveData {
 }
 
 impl ReserveData {
-    pub fn new(env: &Env, asset: &Address, input: &InitReserveInput) -> Self {
+    pub fn new(env: &Env, input: &InitReserveInput) -> Self {
         let InitReserveInput {
             s_token_address,
             debt_token_address,
@@ -33,7 +31,6 @@ impl ReserveData {
             lender_ir: Default::default(),
             borrower_ar: FixedI128::ONE.into_inner(),
             borrower_ir: Default::default(),
-            oracle_asset: OracleAsset::Stellar(asset.clone()),
             s_token_address: s_token_address.clone(),
             debt_token_address: debt_token_address.clone(),
             configuration: ReserveConfiguration::default(),
