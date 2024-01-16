@@ -5,7 +5,7 @@ use soroban_sdk::contracttype;
 pub struct ReserveConfiguration {
     pub is_active: bool,
     pub borrowing_enabled: bool,
-    pub liq_bonus: u32,
+    pub liq_bonus: u32, // TODO: replace with dynamic liq_penalty
     pub liq_cap: i128,
     pub util_cap: u32,
     /// Specifies what fraction of the underlying asset counts toward

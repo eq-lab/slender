@@ -27,6 +27,7 @@ pub trait LendingPoolTrait {
         admin: Address,
         treasury: Address,
         flash_loan_fee: u32,
+        initial_health: u32,
         ir_params: IRParams,
     ) -> Result<(), Error>;
 
@@ -60,6 +61,10 @@ pub trait LendingPoolTrait {
     fn base_asset(env: Env) -> Result<BaseAssetConfig, Error>;
 
     fn set_base_asset(env: Env, asset: Address, decimals: u32) -> Result<(), Error>;
+
+    fn initial_health(env: Env) -> Result<u32, Error>;
+
+    fn set_initial_health(env: Env, value: u32) -> Result<(), Error>;
 
     fn set_price_feeds(env: Env, inputs: Vec<PriceFeedConfigInput>) -> Result<(), Error>;
 

@@ -1,11 +1,12 @@
-use common::FixedI128;
+use common::{FixedI128, PERCENTAGE_FACTOR};
 use pool_interface::types::account_position::AccountPosition;
 use pool_interface::types::error::Error;
 use pool_interface::types::user_config::UserConfiguration;
 use soroban_sdk::{assert_with_error, Address, Env, Map, Vec};
 
 use crate::storage::{
-    read_reserve, read_reserves, read_token_balance, read_token_total_supply, read_user_config,
+    read_initial_health, read_reserve, read_reserves, read_token_balance, read_token_total_supply,
+    read_user_config,
 };
 use crate::types::account_data::AccountData;
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
@@ -57,6 +58,7 @@ pub fn calc_account_data(
     let mut debt_to_cover: Option<_> = None;
     let mut sorted_collateral_to_receive = Map::new(env);
     let reserves = read_reserves(env);
+    let initial_health = read_initial_health(env)?;
     let reserves_len =
         u8::try_from(reserves.len()).map_err(|_| Error::ReservesMaxCapacityExceeded)?;
 
@@ -165,6 +167,16 @@ pub fn calc_account_data(
     let npv = total_discounted_collateral_in_base
         .checked_sub(total_debt_in_base)
         .ok_or(Error::CalcAccountDataMathError)?;
+
+    let npv_bp = FixedI128::from_rational(total_discounted_collateral_in_base, npv)
+        .ok_or(Error::CalcAccountDataMathError)?
+        .into_inner()
+        .min(PERCENTAGE_FACTOR.into());
+
+    let liq_bonus = npv_bp.min(0).abs().min(PERCENTAGE_FACTOR.into());
+
+    let initial_health =
+        FixedI128::from_percentage(initial_health).ok_or(Error::CalcAccountDataMathError)?;
 
     let liquidation_data = || -> LiquidationData {
         let sorted = sorted_collateral_to_receive.values();
