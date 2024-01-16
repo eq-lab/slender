@@ -16,7 +16,6 @@ fn should_require_admin() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liq_bonus: 11_000,
         liq_cap: 100_000_000 * 10_i128.pow(decimals),
         util_cap: 9_000,
         discount: 6_000,
@@ -51,7 +50,6 @@ fn should_fail_when_invalid_discount() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liq_bonus: 11_000,
         liq_cap: 100_000_000 * 10_i128.pow(decimals),
         util_cap: 9_000,
         discount: 10_001,
@@ -71,29 +69,8 @@ fn should_fail_when_invalid_util_cap() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liq_bonus: 11_000,
         liq_cap: 100_000_000 * 10_i128.pow(decimals),
         util_cap: 10_001,
-        discount: 6_000,
-    };
-
-    sut.pool
-        .configure_as_collateral(&asset_address.clone(), &params.clone());
-}
-
-#[test]
-#[should_panic(expected = "HostError: Error(Contract, #403)")]
-fn should_fail_when_invalid_liq_bonus() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, false);
-    let asset_address = sut.token().address.clone();
-    let decimals = sut.s_token().decimals();
-    let params = CollateralParamsInput {
-        liq_bonus: 9_000,
-        liq_cap: 100_000_000 * 10_i128.pow(decimals),
-        util_cap: 10_000,
         discount: 6_000,
     };
 
@@ -110,7 +87,6 @@ fn should_fail_when_invalid_liq_cap() {
     let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
     let params = CollateralParamsInput {
-        liq_bonus: 11_000,
         liq_cap: -1,
         util_cap: 10_000,
         discount: 6_000,
@@ -129,7 +105,6 @@ fn should_set_collateral_config() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liq_bonus: 12_000,
         liq_cap: 200_000_000 * 10_i128.pow(decimals),
         util_cap: 8_000,
         discount: 5_000,
@@ -155,7 +130,6 @@ fn should_emit_events() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liq_bonus: 11_000,
         liq_cap: 100_000_000 * 10_i128.pow(decimals),
         util_cap: 9_000,
         discount: 6_000,
@@ -177,7 +151,6 @@ fn should_emit_events() {
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "collat_config_change"), &asset_address).into_val(&env),
                 (
-                    params.liq_bonus,
                     params.liq_cap,
                     params.util_cap,
                     params.discount

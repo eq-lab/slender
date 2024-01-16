@@ -676,7 +676,6 @@ async function initPoolCollateral(client: SorobanClient, asset: SlenderAsset): P
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvMap({
                 "discount": convertToScvU32(6000),
-                "liq_bonus": convertToScvU32(11000),
                 "liq_cap": convertToScvI128(1000000000000000n),
                 "util_cap": convertToScvU32(9000)
             })

@@ -2,8 +2,9 @@ use common::{FixedI128, PERCENTAGE_FACTOR};
 use pool_interface::types::account_position::AccountPosition;
 use pool_interface::types::error::Error;
 use pool_interface::types::user_config::UserConfiguration;
-use soroban_sdk::{assert_with_error, Address, Env, Map, Vec};
+use soroban_sdk::{assert_with_error, Address, Env, Map};
 
+use crate::methods::utils::rate::calc_utilization;
 use crate::storage::{
     read_initial_health, read_reserve, read_reserves, read_token_balance, read_token_total_supply,
     read_user_config,
@@ -52,11 +53,11 @@ pub fn calc_account_data(
         mb_debt_token_supply,
     } = cache;
 
-    let mut total_discounted_collateral_in_base: i128 = 0;
+    let mut total_discounted_collat_in_base: i128 = 0;
     let mut total_debt_in_base: i128 = 0;
-    let mut debt_to_cover_in_base: i128 = 0;
     let mut debt_to_cover: Option<_> = None;
-    let mut sorted_collateral_to_receive = Map::new(env);
+    let mut sorted_collat_to_receive = Map::new(env);
+    let mut sorted_debt_to_cover = Map::new(env);
     let reserves = read_reserves(env);
     let initial_health = read_initial_health(env)?;
     let reserves_len =
@@ -82,6 +83,7 @@ pub fn calc_account_data(
                 .filter(|x| x.asset == reserve.s_token_address)
                 .map(|x| x.balance)
                 .unwrap_or_else(|| read_token_total_supply(env, &reserve.s_token_address));
+
             let debt_token_supply = mb_debt_token_supply
                 .filter(|x| x.asset == reserve.debt_token_address)
                 .map(|x| x.balance)
@@ -108,24 +110,22 @@ pub fn calc_account_data(
                 .mul_int(compounded_balance_in_base)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
-            total_discounted_collateral_in_base = total_discounted_collateral_in_base
+            total_discounted_collat_in_base = total_discounted_collat_in_base
                 .checked_add(discounted_balance_in_base)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
             if liquidation {
-                let curr_discount = reserve.configuration.discount;
-                let mut collateral_to_receive = sorted_collateral_to_receive
-                    .get(curr_discount)
-                    .unwrap_or(Vec::new(env));
-                collateral_to_receive.push_back(LiquidationCollateral {
-                    reserve_data: reserve,
-                    asset,
-                    s_token_balance: who_collat,
-                    collat_coeff: collat_coeff.into_inner(),
-                    compounded_collat: compounded_balance,
-                    is_last_collateral: Default::default(),
-                });
-                sorted_collateral_to_receive.set(curr_discount, collateral_to_receive);
+                sorted_collat_to_receive.set(
+                    reserve.configuration.liq_order,
+                    LiquidationCollateral {
+                        reserve_data: reserve,
+                        asset,
+                        s_token_balance: who_collat,
+                        compounded_collat: compounded_balance,
+                        collat_coeff: collat_coeff.into_inner(),
+                        collat_discount: reserve.configuration.discount,
+                    },
+                );
             }
         } else if user_config.is_borrowing(env, i) {
             let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?;
@@ -146,54 +146,70 @@ pub fn calc_account_data(
                 .checked_add(debt_balance_in_base)
                 .ok_or(Error::CalcAccountDataMathError)?;
 
-            if liquidate_debt
-                .as_ref()
-                .map(|debt| debt == &asset)
-                .unwrap_or(false)
-            {
-                debt_to_cover_in_base = debt_balance_in_base;
+            if liquidation {
+                let s_token_supply = mb_s_token_supply
+                    .filter(|x| x.asset == reserve.s_token_address)
+                    .map(|x| x.balance)
+                    .unwrap_or_else(|| read_token_total_supply(env, &reserve.s_token_address));
 
-                debt_to_cover = Some(LiquidationDebt {
-                    asset,
-                    reserve_data: reserve,
-                    compounded_debt: compounded_balance,
-                    debt_token_balance: who_debt,
-                    debt_coeff: debt_coeff.into_inner(),
-                });
+                let debt_token_supply = mb_debt_token_supply
+                    .filter(|x| x.asset == reserve.debt_token_address)
+                    .map(|x| x.balance)
+                    .unwrap_or_else(|| read_token_total_supply(env, &reserve.debt_token_address));
+
+                let utilization =
+                    calc_utilization(s_token_supply, debt_token_supply).unwrap_or_default();
+
+                // TODO: what if 2 debts has same utilization?
+                // we will skip covering one of it
+                sorted_debt_to_cover.set(
+                    utilization.into_inner(),
+                    LiquidationDebt {
+                        asset,
+                        reserve_data: reserve,
+                        compounded_debt: compounded_balance,
+                        debt_token_balance: who_debt,
+                        debt_coeff: debt_coeff.into_inner(),
+                    },
+                );
             }
         }
     }
 
-    let npv = total_discounted_collateral_in_base
+    let npv = total_discounted_collat_in_base
         .checked_sub(total_debt_in_base)
         .ok_or(Error::CalcAccountDataMathError)?;
 
-    let npv_bp = FixedI128::from_rational(total_discounted_collateral_in_base, npv)
+    let npv_bp = FixedI128::from_rational(total_discounted_collat_in_base, npv)
         .ok_or(Error::CalcAccountDataMathError)?
         .into_inner()
         .min(PERCENTAGE_FACTOR.into());
 
     let liq_bonus = npv_bp.min(0).abs().min(PERCENTAGE_FACTOR.into());
 
+    if npv.lt(&0) {
+        //
+    }
+
     let initial_health =
         FixedI128::from_percentage(initial_health).ok_or(Error::CalcAccountDataMathError)?;
 
     let liquidation_data = || -> LiquidationData {
-        let sorted = sorted_collateral_to_receive.values();
-        let mut collateral_to_receive = sorted.first().and_then(|v| v.first());
-        let is_last_collateral = sorted.iter().fold(0, |acc, v| acc + v.len()) == 1;
-        if let Some(c) = collateral_to_receive.as_mut() {
-            c.is_last_collateral = is_last_collateral;
+        let sorted = sorted_collat_to_receive.values();
+        let mut collat_to_receive = sorted.first().and_then(|v| v.first());
+        let is_last_collat = sorted.iter().fold(0, |acc, v| acc + v.len()) == 1;
+        if let Some(c) = collat_to_receive.as_mut() {
+            c.is_last_collat = is_last_collat;
         }
         LiquidationData {
             debt_to_cover_in_base,
             debt_to_cover,
-            collateral_to_receive,
+            collat_to_receive,
         }
     };
 
     Ok(AccountData {
-        discounted_collateral: total_discounted_collateral_in_base,
+        discounted_collateral: total_discounted_collat_in_base,
         debt: total_debt_in_base,
         liquidation: liquidation.then_some(liquidation_data()),
         npv,

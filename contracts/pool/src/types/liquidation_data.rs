@@ -5,5 +5,5 @@ use super::liquidation_debt::LiquidationDebt;
 pub struct LiquidationData {
     pub debt_to_cover_in_base: i128,
     pub debt_to_cover: Option<LiquidationDebt>,
-    pub collateral_to_receive: Option<LiquidationCollateral>,
+    pub collat_to_receive: Option<LiquidationCollateral>,
 }

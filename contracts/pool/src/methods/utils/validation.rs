@@ -30,7 +30,6 @@ pub fn require_valid_ir_params(env: &Env, params: &IRParams) {
 pub fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
     require_lte_percentage_factor(env, params.discount);
     require_lte_percentage_factor(env, params.util_cap);
-    require_gt_percentage_factor(env, params.liq_bonus);
     require_positive(env, params.liq_cap);
 }
 

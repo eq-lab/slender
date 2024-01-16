@@ -9,5 +9,5 @@ pub struct LiquidationCollateral {
     pub s_token_balance: i128,
     pub collat_coeff: i128,
     pub compounded_collat: i128,
-    pub is_last_collateral: bool,
+    pub collat_discount: u32,
 }

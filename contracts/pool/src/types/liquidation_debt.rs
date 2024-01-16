@@ -1,7 +1,8 @@
 use pool_interface::types::reserve_data::ReserveData;
-use soroban_sdk::Address;
+use soroban_sdk::{contracttype, Address};
 
 #[derive(Debug, Clone)]
+#[contracttype]
 pub struct LiquidationDebt {
     pub asset: Address,
     pub reserve_data: ReserveData,

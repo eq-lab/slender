@@ -84,9 +84,9 @@ fn do_liquidate(
         reserve_data: reserve,
         s_token_balance: who_s_token_balance,
         collat_coeff: coll_coeff_fixed,
-        is_last_collateral,
+        is_last_collat: is_last_collateral,
         compounded_collat: who_compounded_collat,
-    } = liquidation_data.collateral_to_receive.clone().unwrap();
+    } = liquidation_data.collat_to_receive.clone().unwrap();
 
     let coll_coeff = FixedI128::from_inner(coll_coeff_fixed);
 
