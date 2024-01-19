@@ -63,12 +63,11 @@ pub(crate) fn reserve_deactivated(e: &Env, asset: &Address) {
     e.events().publish(topics, ());
 }
 
-// TODO: !!!
-// pub(crate) fn liquidation(e: &Env, who: &Address, covered_debt: i128, liquidated_collateral: i128) {
-//     let topics = (Symbol::new(e, "liquidation"), who.clone());
-//     e.events()
-//         .publish(topics, (covered_debt, liquidated_collateral));
-// }
+pub(crate) fn liquidation(e: &Env, who: &Address, covered_debt: i128, liquidated_collateral: i128) {
+    let topics = (Symbol::new(e, "liquidation"), who.clone());
+    e.events()
+        .publish(topics, (covered_debt, liquidated_collateral));
+}
 
 pub(crate) fn flash_loan(
     e: &Env,

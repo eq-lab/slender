@@ -190,8 +190,8 @@ pub fn calc_account_data(
     Ok(AccountData {
         discounted_collateral: total_discounted_collat_in_base,
         debt: total_debt_in_base,
-        liquidation_debt: liquidation.then_some(sorted_debt_to_pay()),
-        liquidation_collat: liquidation.then_some(sorted_collat_to_receive.values()),
+        liq_debts: liquidation.then_some(sorted_debt_to_pay()),
+        liq_collats: liquidation.then_some(sorted_collat_to_receive.values()),
         npv,
     })
 }

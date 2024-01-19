@@ -12,9 +12,9 @@ pub struct AccountData {
     /// Net position value in XLM
     pub npv: i128,
     /// Liquidation debt ordered by max utilization
-    pub liquidation_debt: Option<Vec<LiquidationAsset>>,
+    pub liq_debts: Option<Vec<LiquidationAsset>>,
     /// Liquidation collateral ordered by liq_order
-    pub liquidation_collat: Option<Vec<LiquidationAsset>>,
+    pub liq_collats: Option<Vec<LiquidationAsset>>,
 }
 
 impl AccountData {
