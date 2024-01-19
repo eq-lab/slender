@@ -3,10 +3,10 @@ use soroban_sdk::{contracttype, Address};
 
 #[derive(Debug, Clone)]
 #[contracttype]
-pub struct LiquidationDebt {
+pub struct LiquidationAsset {
     pub asset: Address,
-    pub reserve_data: ReserveData,
-    pub debt_token_balance: i128,
-    pub debt_coeff: i128,
-    pub compounded_debt: i128,
+    pub reserve: ReserveData,
+    pub lp_balance: i128,
+    pub comp_balance: i128,
+    pub coeff: i128,
 }

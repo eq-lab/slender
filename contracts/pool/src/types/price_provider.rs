@@ -59,6 +59,13 @@ impl<'a> PriceProvider<'a> {
             .ok_or(Error::InvalidAssetPrice)
     }
 
+    // TODO: remove
+    // pub fn price_base(&mut self, asset: &Address) -> Result<i128, Error> {
+    //     let config = self.config(asset)?;
+
+    //     self.convert_to_base(asset, 10i128.pow(config.asset_decimals))
+    // }
+
     fn config(&mut self, asset: &Address) -> Result<PriceFeedConfig, Error> {
         match self.configs.get(asset.clone()) {
             Some(config) => Ok(config),

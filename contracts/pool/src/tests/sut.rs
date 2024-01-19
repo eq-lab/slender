@@ -69,11 +69,13 @@ pub(crate) fn create_pool_contract<'a>(
 
     let treasury = Address::generate(e);
     let flash_loan_fee = 5;
+    let initial_health = 2_500;
 
     client.initialize(
         &admin,
         &treasury,
         &flash_loan_fee,
+        &initial_health,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
@@ -163,7 +165,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             }
 
             let liq_cap = 100_000_000 * 10_i128.pow(decimals); // 100M
-            let liq_order = 1;
+            let liq_order = i + 1;
             let util_cap = 9000; //90%
             let discount = 6000; //60%
 
@@ -194,6 +196,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     &vec![
                         &env,
                         PriceData {
+                            // TODO: price: 100_000_000_000_000,
                             price: 100_000_000_000_000,
                             timestamp: 1704790200000,
                         },
@@ -204,7 +207,8 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     &vec![
                         &env,
                         PriceData {
-                            price: 10_000_000_000_000_000,
+                            // TODO: price: 10_000_000_000_000_000,
+                            price: 8_000_000_000_000_000,
                             timestamp: 1704790200000,
                         },
                     ],
@@ -214,7 +218,8 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     &vec![
                         &env,
                         PriceData {
-                            price: 10_000_000_000_000_000,
+                            // TODO: price: 10_000_000_000_000_000,
+                            price: 5_000_000_000_000_000,
                             timestamp: 1704790200000,
                         },
                     ],

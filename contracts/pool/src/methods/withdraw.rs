@@ -89,7 +89,7 @@ pub fn withdraw(
             },
             user_config,
             &mut PriceProvider::new(env)?,
-            None,
+            false,
         )?;
 
         require_good_position(env, &account_data);

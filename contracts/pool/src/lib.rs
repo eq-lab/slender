@@ -1,16 +1,15 @@
 #![deny(warnings)]
 #![no_std]
 
-use methods::set_base_asset::set_base_asset;
 use methods::{
     account_position::account_position, borrow::borrow, collat_coeff::collat_coeff,
     configure_as_collateral::configure_as_collateral, debt_coeff::debt_coeff, deposit::deposit,
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, finalize_transfer::finalize_transfer,
     flash_loan::flash_loan, init_reserve::init_reserve, initialize::initialize,
     liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral,
-    set_flash_loan_fee::set_flash_loan_fee, set_initial_health::set_initial_health,
-    set_ir_params::set_ir_params, set_pause::set_pause, set_price_feeds::set_price_feeds,
-    set_reserve_status::set_reserve_status,
+    set_base_asset::set_base_asset, set_flash_loan_fee::set_flash_loan_fee,
+    set_initial_health::set_initial_health, set_ir_params::set_ir_params, set_pause::set_pause,
+    set_price_feeds::set_price_feeds, set_reserve_status::set_reserve_status,
     set_reserve_timestamp_window::set_reserve_timestamp_window,
     twap_median_price::twap_median_price, upgrade::upgrade, upgrade_debt_token::upgrade_debt_token,
     upgrade_s_token::upgrade_s_token, withdraw::withdraw,
@@ -214,10 +213,9 @@ impl LendingPoolTrait for LendingPool {
         env: Env,
         liquidator: Address,
         who: Address,
-        debt_asset: Address,
         receive_stoken: bool,
     ) -> Result<(), Error> {
-        liquidate(&env, &liquidator, &who, debt_asset, receive_stoken)
+        liquidate(&env, &liquidator, &who, receive_stoken)
     }
 
     fn set_as_collateral(

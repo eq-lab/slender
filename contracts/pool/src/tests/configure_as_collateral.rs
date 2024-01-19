@@ -19,6 +19,7 @@ fn should_require_admin() {
         liq_cap: 100_000_000 * 10_i128.pow(decimals),
         util_cap: 9_000,
         discount: 6_000,
+        liq_order: 1,
     };
 
     sut.pool
@@ -53,6 +54,7 @@ fn should_fail_when_invalid_discount() {
         liq_cap: 100_000_000 * 10_i128.pow(decimals),
         util_cap: 9_000,
         discount: 10_001,
+        liq_order: 1,
     };
 
     sut.pool
@@ -72,6 +74,7 @@ fn should_fail_when_invalid_util_cap() {
         liq_cap: 100_000_000 * 10_i128.pow(decimals),
         util_cap: 10_001,
         discount: 6_000,
+        liq_order: 1,
     };
 
     sut.pool
@@ -80,6 +83,7 @@ fn should_fail_when_invalid_util_cap() {
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #404)")]
+// TODO: add validation for initial_health
 fn should_fail_when_invalid_liq_cap() {
     let env = Env::default();
     env.mock_all_auths();
@@ -90,6 +94,7 @@ fn should_fail_when_invalid_liq_cap() {
         liq_cap: -1,
         util_cap: 10_000,
         discount: 6_000,
+        liq_order: 1,
     };
 
     sut.pool
@@ -108,6 +113,7 @@ fn should_set_collateral_config() {
         liq_cap: 200_000_000 * 10_i128.pow(decimals),
         util_cap: 8_000,
         discount: 5_000,
+        liq_order: 1,
     };
 
     sut.pool
@@ -133,6 +139,7 @@ fn should_emit_events() {
         liq_cap: 100_000_000 * 10_i128.pow(decimals),
         util_cap: 9_000,
         discount: 6_000,
+        liq_order: 1,
     };
 
     assert_eq!(
@@ -150,12 +157,7 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "collat_config_change"), &asset_address).into_val(&env),
-                (
-                    params.liq_cap,
-                    params.util_cap,
-                    params.discount
-                )
-                    .into_val(&env)
+                (params.liq_cap, params.util_cap, params.discount).into_val(&env)
             ),
         ]
     );
