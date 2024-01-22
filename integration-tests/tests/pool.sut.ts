@@ -637,6 +637,7 @@ async function initPool(client: SorobanClient, salt: string): Promise<void> {
             convertToScvAddress(adminKeys.publicKey()),
             convertToScvAddress(treasuryKeys.publicKey()),
             convertToScvU32(5),
+            convertToScvU32(2_500),
             convertToScvMap({
                 "alpha": convertToScvU32(143),
                 "initial_rate": convertToScvU32(200),
