@@ -22,7 +22,7 @@ pub enum CommonDataKey {
 pub fn read_pool(env: &Env) -> Address {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -33,7 +33,7 @@ pub fn read_pool(env: &Env) -> Address {
 pub fn write_pool(env: &Env, id: &Address) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage().instance().set(&CommonDataKey::Pool, id);
 }
@@ -41,7 +41,7 @@ pub fn write_pool(env: &Env, id: &Address) {
 pub fn has_pool(env: &Env) -> bool {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage().instance().has(&CommonDataKey::Pool)
 }
@@ -51,7 +51,7 @@ pub fn read_balance(env: &Env, addr: Address) -> i128 {
     let balance = env.storage().persistent().get(&key);
 
     if balance.is_some() {
-        env.storage().persistent().bump(
+        env.storage().persistent().extend_ttl(
             &key,
             LOW_USER_DATA_BUMP_LEDGERS,
             HIGH_USER_DATA_BUMP_LEDGERS,
@@ -64,7 +64,7 @@ pub fn read_balance(env: &Env, addr: Address) -> i128 {
 pub fn write_balance(env: &Env, addr: Address, amount: i128) {
     let key = CommonDataKey::Balance(addr);
     env.storage().persistent().set(&key, &amount);
-    env.storage().persistent().bump(
+    env.storage().persistent().extend_ttl(
         &key,
         LOW_USER_DATA_BUMP_LEDGERS,
         HIGH_USER_DATA_BUMP_LEDGERS,
@@ -76,7 +76,7 @@ pub fn is_authorized(env: &Env, addr: Address) -> bool {
     let is_authorized = env.storage().persistent().get(&key);
 
     if is_authorized.is_some() {
-        env.storage().persistent().bump(
+        env.storage().persistent().extend_ttl(
             &key,
             LOW_USER_DATA_BUMP_LEDGERS,
             HIGH_USER_DATA_BUMP_LEDGERS,
@@ -89,7 +89,7 @@ pub fn is_authorized(env: &Env, addr: Address) -> bool {
 pub fn write_authorization(env: &Env, addr: Address, is_authorized: bool) {
     let key = CommonDataKey::State(addr);
     env.storage().persistent().set(&key, &is_authorized);
-    env.storage().persistent().bump(
+    env.storage().persistent().extend_ttl(
         &key,
         LOW_USER_DATA_BUMP_LEDGERS,
         HIGH_USER_DATA_BUMP_LEDGERS,
@@ -114,7 +114,7 @@ pub fn read_symbol(env: &Env) -> String {
 pub fn read_total_supply(env: &Env) -> i128 {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -125,7 +125,7 @@ pub fn read_total_supply(env: &Env) -> i128 {
 pub fn write_total_supply(env: &Env, val: i128) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()

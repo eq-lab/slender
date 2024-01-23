@@ -4,7 +4,7 @@ extern crate std;
 use crate::*;
 use debt_token_interface::DebtTokenClient;
 use flash_loan_receiver_interface::FlashLoanReceiverClient;
-use price_feed_interface::PriceFeedClient;
+use price_feed_interface::{Asset, PriceFeedClient};
 use s_token_interface::STokenClient;
 use soroban_sdk::testutils::{Address as _, Ledger};
 use soroban_sdk::token::Client as TokenClient;
@@ -63,7 +63,7 @@ pub(crate) fn create_pool_contract<'a>(
         LendingPoolClient::new(e, &e.register_contract(None, LendingPool))
     };
 
-    let treasury = Address::random(e);
+    let treasury = Address::generate(e);
     let flash_loan_fee = 5;
 
     client.initialize(
@@ -129,8 +129,8 @@ pub(crate) fn create_flash_loan_receiver_contract<'a>(e: &Env) -> FlashLoanRecei
 pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
     env.budget().reset_unlimited();
 
-    let admin = Address::random(&env);
-    let token_admin = Address::random(&env);
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
 
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, use_pool_wasm);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
@@ -186,9 +186,15 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             assert_eq!(reserve_config.discount, discount);
 
             match i {
-                0 => price_feed.init(&token.address.clone(), &100_000_000_000_000),
-                1 => price_feed.init(&token.address.clone(), &10_000_000_000_000_000),
-                2 => price_feed.init(&token.address.clone(), &10_000_000_000_000_000),
+                0 => price_feed.init(&Asset::Stellar(token.address.clone()), &100_000_000_000_000),
+                1 => price_feed.init(
+                    &Asset::Stellar(token.address.clone()),
+                    &10_000_000_000_000_000,
+                ),
+                2 => price_feed.init(
+                    &Asset::Stellar(token.address.clone()),
+                    &10_000_000_000_000_000,
+                ),
                 _ => panic!(),
             };
 
@@ -245,8 +251,8 @@ pub(crate) fn fill_pool<'a, 'b>(
     sut: &'a Sut,
     with_borrowing: bool,
 ) -> (Address, Address, &'a ReserveConfig<'a>) {
-    let lender = Address::random(&env);
-    let borrower = Address::random(&env);
+    let lender = Address::generate(&env);
+    let borrower = Address::generate(&env);
     let debt_token = sut.reserves[1].token.address.clone();
 
     for i in 0..3 {
@@ -296,7 +302,7 @@ pub(crate) fn fill_pool_two<'a, 'b>(
     sut: &'a Sut,
 ) -> (Address, Address, Address, &'a ReserveConfig<'a>) {
     let (lender_1, borrower, debt_token) = fill_pool(env, sut, true);
-    let lender_2 = Address::random(env);
+    let lender_2 = Address::generate(env);
 
     for i in 0..3 {
         let amount = (i == 0).then(|| 10_000_000).unwrap_or(1_000_000_000);
@@ -333,7 +339,7 @@ pub(crate) fn fill_pool_three<'a, 'b>(
     let (lender, borrower, debt_config) = fill_pool(env, sut, false);
     let debt_token = debt_config.token.address.clone();
 
-    let liquidator = Address::random(&env);
+    let liquidator = Address::generate(&env);
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
@@ -347,9 +353,9 @@ pub(crate) fn fill_pool_three<'a, 'b>(
 
 // #[cfg(feature = "budget")]
 pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Address, Address) {
-    let lender = Address::random(&env);
-    let borrower1 = Address::random(&env);
-    let borrower2 = Address::random(&env);
+    let lender = Address::generate(&env);
+    let borrower1 = Address::generate(&env);
+    let borrower2 = Address::generate(&env);
 
     for i in 0..3 {
         let amount = (i == 0).then(|| 1_000_000_000).unwrap_or(100_000_000_000);

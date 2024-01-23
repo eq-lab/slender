@@ -265,7 +265,7 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         const dXlmSupply = await debtTokenTotalSupply(client, "XLM");
 
         assert(borrower1XlmBalance < 10_000_000n
-            && borrower1XlmBalance >9_990_000n);
+            && borrower1XlmBalance > 9_990_000n);
         assert(treasuryXlmBalance > 0 && treasuryXlmBalance < 1_000n);
         assert.equal(borrower1DXlmBalance, 0n);
         assert(sXlmBalance + treasuryXlmBalance > 90_000_000n

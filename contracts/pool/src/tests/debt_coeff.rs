@@ -2,6 +2,7 @@ use crate::methods::utils::rate::calc_next_accrued_rate;
 use crate::tests::sut::{fill_pool, fill_pool_three, init_pool, DAY};
 use crate::*;
 use common::FixedI128;
+use price_feed_interface::Asset;
 use soroban_sdk::testutils::{Address as _, Ledger};
 
 #[test]
@@ -14,8 +15,8 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     let debt_token = sut.reserves[1].token.address.clone();
     let deposit_token = sut.reserves[0].token.address.clone();
 
-    let lender = Address::random(&env);
-    let borrower = Address::random(&env);
+    let lender = Address::generate(&env);
+    let borrower = Address::generate(&env);
 
     for i in 0..3 {
         let amount = (i == 0).then(|| 10_000_000).unwrap_or(1_000_000_000);
@@ -51,7 +52,8 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     env.ledger().with_mut(|l| l.timestamp = 4 * DAY);
     let debt_coeff_after_borrow = sut.pool.debt_coeff(&debt_token);
 
-    sut.price_feed.init(&debt_token, &12_000_000_000_000_000);
+    sut.price_feed
+        .init(&Asset::Stellar(debt_token.clone()), &12_000_000_000_000_000);
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
     let debt_coeff_after_price_change = sut.pool.debt_coeff(&debt_token);

@@ -137,7 +137,7 @@ fn should_emit_events() {
 fn init(env: &Env) -> (Sut, Address, u8, Address) {
     let sut = init_pool(env, false);
 
-    let user = Address::random(env);
+    let user = Address::generate(env);
     deposit(&sut.pool, sut.token_admin(), &user);
     let reserve_index = sut
         .pool
@@ -151,7 +151,7 @@ fn init(env: &Env) -> (Sut, Address, u8, Address) {
 /// Returns Sut, user address, collat reserve index, debt reserve index, collat token address, debt token address
 pub fn init_with_debt(env: &Env) -> (Sut, Address, (u8, u8), (Address, Address)) {
     let (sut, user, collat_reserve_index, collat_address) = init(env);
-    let lender = Address::random(env);
+    let lender = Address::generate(env);
     let token_admin = &sut.reserves[1].token_admin;
 
     deposit(&sut.pool, token_admin, &lender);

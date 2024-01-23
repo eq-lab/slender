@@ -13,7 +13,7 @@ fn rounding_deposit_withdraw() {
     let (_, _borrower, debt_config) = fill_pool(&env, &sut, true);
     let token_address = debt_config.token.address.clone();
 
-    let attacker = Address::random(&env);
+    let attacker = Address::generate(&env);
     sut.reserves[1]
         .token_admin
         .mint(&attacker, &100_000_000_000);
@@ -77,7 +77,7 @@ fn rounding_borrow_repay() {
     let (_, _borrower, _debt_config) = fill_pool(&env, &sut, true);
     let token_address = sut.reserves[1].token.address.clone();
 
-    let attacker = Address::random(&env);
+    let attacker = Address::generate(&env);
     sut.reserves[0]
         .token_admin
         .mint(&attacker, &100_000_000_000);
