@@ -2,17 +2,16 @@
 extern crate std;
 
 use crate::SToken;
+
 use debt_token_interface::DebtTokenClient;
 use s_token_interface::STokenClient;
-use soroban_sdk::{
-    symbol_short,
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
-    token::Client as TokenClient,
-    token::StellarAssetClient as TokenAdminClient,
-    Address, Env, IntoVal, Symbol, Vec,
-};
+use soroban_sdk::testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation};
+use soroban_sdk::token::{Client as TokenClient, StellarAssetClient as TokenAdminClient};
+use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
-use self::pool::{CollateralParamsInput, IRParams, InitReserveInput};
+use self::pool::{
+    CollateralParamsInput, IRParams, InitReserveInput, OracleAsset, PriceFeed, PriceFeedConfigInput,
+};
 
 mod pool {
     soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/pool.wasm");
@@ -64,17 +63,24 @@ fn create_token<'a>(
     e.budget().reset_default();
     let price_feed = oracle::Client::new(e, &e.register_contract_wasm(None, oracle::WASM));
 
-    let feed_inputs = Vec::from_array(
+    let feed_inputs = vec![
         &e,
-        [pool::PriceFeedInput {
+        PriceFeedConfigInput {
             asset: underlying_asset.address.clone(),
-            feed: price_feed.address.clone(),
             asset_decimals: 7,
-            feed_decimals: 14,
-        }],
-    );
+            feeds: vec![
+                &e,
+                PriceFeed {
+                    feed: price_feed.address.clone(),
+                    feed_asset: OracleAsset::Stellar(underlying_asset.address.clone()),
+                    feed_decimals: 14,
+                    twap_records: 10,
+                },
+            ],
+        },
+    ];
 
-    pool.set_price_feed(&feed_inputs);
+    pool.set_price_feeds(&feed_inputs);
 
     s_token.initialize(
         &"name".into_val(e),

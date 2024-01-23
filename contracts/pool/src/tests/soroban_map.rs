@@ -19,15 +19,15 @@ fn should_sort_() {
     map.set(sorted_keys[9], sorted_values_by_keys[9]);
     map.set(sorted_keys[1], sorted_values_by_keys[1]);
 
-    let mut i: usize = 0;
-    for (key, _) in map.clone() {
+    for (i, (key, _)) in map.clone().iter().enumerate() {
         assert_eq!(key, sorted_keys[i]);
-        i += 1;
     }
 
-    i = 0;
-    for value in map.values() {
+    for (i, key) in map.clone().keys().iter().enumerate() {
+        assert_eq!(key, sorted_keys[i]);
+    }
+
+    for (i, value) in map.clone().values().iter().enumerate() {
         assert_eq!(value, sorted_values_by_keys[i]);
-        i += 1;
     }
 }

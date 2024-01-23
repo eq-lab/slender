@@ -1,6 +1,5 @@
 use super::sut::DAY;
 use crate::tests::sut::{fill_pool, init_pool};
-use price_feed_interface::Asset;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
 use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
@@ -81,7 +80,7 @@ fn should_fail_when_borrowing_disabled() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #310)")]
+#[should_panic(expected = "HostError: Error(Contract, #309)")]
 fn should_fail_when_borrowing_collat_asset() {
     let env = Env::default();
     env.mock_all_auths();
@@ -95,7 +94,7 @@ fn should_fail_when_borrowing_collat_asset() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #311)")]
+#[should_panic(expected = "HostError: Error(Contract, #310)")]
 fn should_fail_when_util_cap_exceeded() {
     let env = Env::default();
     env.mock_all_auths();
@@ -108,21 +107,6 @@ fn should_fail_when_util_cap_exceeded() {
         .deposit(&borrower, &sut.reserves[0].token.address, &1_000_000);
 
     sut.pool.borrow(&borrower, &token_address, &100_000_000);
-}
-
-#[test]
-#[should_panic(expected = "HostError: Error(Contract, #106)")]
-fn should_fail_when_oracle_price_is_negative() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, false);
-    let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
-    let token_address = debt_config.token.address.clone();
-
-    sut.price_feed
-        .init(&Asset::Stellar(token_address.clone()), &-10_000_000_000);
-    sut.pool.borrow(&borrower, &token_address, &10_000_000);
 }
 
 #[test]

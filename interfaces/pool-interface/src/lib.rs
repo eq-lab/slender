@@ -10,7 +10,7 @@ use types::flash_loan_asset::FlashLoanAsset;
 use types::init_reserve_input::InitReserveInput;
 use types::ir_params::IRParams;
 use types::price_feed_config::PriceFeedConfig;
-use types::price_feed_input::PriceFeedInput;
+use types::price_feed_config_input::PriceFeedConfigInput;
 use types::reserve_data::ReserveData;
 use types::user_config::UserConfiguration;
 
@@ -61,9 +61,9 @@ pub trait LendingPoolTrait {
 
     fn set_base_asset(env: Env, asset: Address, decimals: u32) -> Result<(), Error>;
 
-    fn set_price_feed(env: Env, inputs: Vec<PriceFeedInput>) -> Result<(), Error>;
+    fn set_price_feeds(env: Env, inputs: Vec<PriceFeedConfigInput>) -> Result<(), Error>;
 
-    fn price_feed(env: Env, asset: Address) -> Option<PriceFeedConfig>;
+    fn price_feeds(env: Env, asset: Address) -> Option<PriceFeedConfig>;
 
     fn set_ir_params(env: Env, input: IRParams) -> Result<(), Error>;
 
@@ -141,4 +141,6 @@ pub trait LendingPoolTrait {
         assets: Vec<FlashLoanAsset>,
         params: Bytes,
     ) -> Result<(), Error>;
+
+    fn twap_median_price(env: Env, asset: Address, amount: i128) -> Result<i128, Error>;
 }

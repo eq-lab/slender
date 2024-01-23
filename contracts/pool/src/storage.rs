@@ -1,9 +1,10 @@
 use pool_interface::types::base_asset_config::BaseAssetConfig;
+use pool_interface::types::error::Error;
 use pool_interface::types::ir_params::IRParams;
-use pool_interface::types::price_feed_input::PriceFeedInput;
+use pool_interface::types::price_feed_config::PriceFeedConfig;
+use pool_interface::types::price_feed_config_input::PriceFeedConfigInput;
 use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::user_config::UserConfiguration;
-use pool_interface::types::{error::Error, price_feed_config::PriceFeedConfig};
 use soroban_sdk::{assert_with_error, contracttype, vec, Address, Env, Vec};
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17_280;
@@ -174,7 +175,7 @@ pub fn write_user_config(env: &Env, user: &Address, config: &UserConfiguration) 
     );
 }
 
-pub fn read_price_feed(env: &Env, asset: &Address) -> Result<PriceFeedConfig, Error> {
+pub fn read_price_feeds(env: &Env, asset: &Address) -> Result<PriceFeedConfig, Error> {
     env.storage()
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
@@ -187,7 +188,7 @@ pub fn read_price_feed(env: &Env, asset: &Address) -> Result<PriceFeedConfig, Er
         .ok_or(Error::NoPriceFeed)
 }
 
-pub fn write_price_feed(env: &Env, inputs: &Vec<PriceFeedInput>) {
+pub fn write_price_feeds(env: &Env, inputs: &Vec<PriceFeedConfigInput>) {
     env.storage()
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
@@ -195,9 +196,12 @@ pub fn write_price_feed(env: &Env, inputs: &Vec<PriceFeedInput>) {
     for input in inputs.iter() {
         let data_key = DataKey::PriceFeed(input.asset.clone());
 
-        env.storage()
-            .instance()
-            .set(&data_key, &PriceFeedConfig::new(&input));
+        let config = PriceFeedConfig {
+            asset_decimals: input.asset_decimals,
+            feeds: input.feeds,
+        };
+
+        env.storage().instance().set(&data_key, &config);
     }
 }
 

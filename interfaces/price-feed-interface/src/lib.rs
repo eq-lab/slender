@@ -5,24 +5,13 @@
 #![deny(warnings)]
 #![no_std]
 
-use soroban_sdk::{contractclient, contractspecfn, contracttype, Address, Env, Symbol, Vec};
+use soroban_sdk::{contractclient, contractspecfn, Env, Vec};
+use types::asset::Asset;
+use types::price_data::PriceData;
+
+pub mod types;
 
 pub struct Spec;
-
-/// Price data for an asset at a specific timestamp
-#[contracttype]
-#[derive(Clone)]
-pub struct PriceData {
-    pub price: i128,
-    pub timestamp: u64,
-}
-
-#[contracttype]
-#[derive(Clone)]
-pub enum Asset {
-    Stellar(Address),
-    Other(Symbol),
-}
 
 /// Oracle feed interface description
 #[contractspecfn(name = "Spec", export = false)]
@@ -50,5 +39,5 @@ pub trait PriceFeedTrait {
     fn lastprice(env: Env, asset: Asset) -> Option<PriceData>;
 
     /// Sets price in base asset for a given asset. Note: not a SEP-40 method.
-    fn init(env: Env, asset: Asset, price: i128);
+    fn init(env: Env, asset: Asset, prices: Vec<PriceData>);
 }

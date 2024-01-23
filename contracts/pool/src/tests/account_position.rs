@@ -1,8 +1,10 @@
 use super::sut::fill_pool_three;
 use crate::tests::sut::init_pool;
 use crate::*;
-use price_feed_interface::Asset;
+use price_feed_interface::types::asset::Asset;
+use price_feed_interface::types::price_data::PriceData;
 use soroban_sdk::testutils::Address as _;
+use soroban_sdk::vec;
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #202)")]
@@ -53,8 +55,16 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
         .withdraw(&borrower, &deposit_token, &100_000, &lender);
     let position_after_withdraw = sut.pool.account_position(&borrower);
 
-    sut.price_feed
-        .init(&Asset::Stellar(debt_token.clone()), &14_000_000_000_000_000);
+    sut.price_feed.init(
+        &Asset::Stellar(debt_token.clone()),
+        &vec![
+            &env,
+            PriceData {
+                price: 14_000_000_000_000_000,
+                timestamp: 0,
+            },
+        ],
+    );
 
     let position_after_change_price = sut.pool.account_position(&borrower);
 
