@@ -3,7 +3,7 @@ use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use pool_interface::types::reserve_data::ReserveData;
 use s_token_interface::STokenClient;
-use soroban_sdk::{assert_with_error, Address, Env};
+use soroban_sdk::{Address, Env};
 
 use crate::event;
 use crate::storage::{
@@ -18,8 +18,9 @@ use super::account_position::calc_account_data;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_borrowing_enabled, require_not_in_collateral_asset,
-    require_not_paused, require_positive_amount, require_util_cap_not_exceeded,
+    require_active_reserve, require_borrowing_enabled, require_gte_initial_health,
+    require_not_in_collateral_asset, require_not_paused, require_positive_amount,
+    require_util_cap_not_exceeded,
 };
 
 pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
@@ -95,11 +96,7 @@ pub fn do_borrow(
         false,
     )?;
 
-    assert_with_error!(
-        env,
-        account_data.npv >= amount_in_base,
-        Error::CollateralNotCoverNewBorrow
-    );
+    require_gte_initial_health(env, &account_data, amount_in_base)?;
 
     let debt_coeff = get_actual_borrower_accrued_rate(env, reserve)?;
     let amount_of_debt_token = debt_coeff

@@ -150,7 +150,7 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
 
     it("Case 4: Drop the XRP price so Borrower's NPV <= 0", async function () {
         // XRP price is set to 999_800_000
-        await initPrice(client, "XRP", 9_998_000_000_000_000n);
+        await initPrice(client, "XRP", 9_998_000_000_000_000n, 0);
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
@@ -166,7 +166,8 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
         const borrower1DXlmBalanceBefore = await debtTokenBalanceOf(client, "XLM", borrower1Address);
         const borrower1PositionBefore = await accountPosition(client, borrower1Keys);
 
-        await liquidate(client, liquidator1Keys, borrower1Address, "XLM", false);
+        await liquidate(client, liquidator1Keys, borrower1Address, false);
+        // await liquidate(client, liquidator1Keys, borrower1Address, "XLM", false);
 
         const liquidator1XrpBalance = await tokenBalanceOf(client, "XRP", liquidator1Address);
         const liquidator1SXrpBalance = await sTokenBalanceOf(client, "XRP", liquidator1Address);
@@ -201,7 +202,7 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
 
     it("Case 6: Drop the USDC price so Borrower's NPV <= 0", async function () {
         // USDC price is set to 0.45
-        await initPrice(client, "USDC", 4_500_000_000_000_000n);
+        await initPrice(client, "USDC", 4_500_000_000_000_000n, 0);
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
@@ -215,7 +216,8 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
         const liquidator1UsdcBalanceBefore = await tokenBalanceOf(client, "USDC", liquidator1Address);
         const borrower1SUsdcBalanceBefore = await sTokenBalanceOf(client, "USDC", borrower1Address);
 
-        await liquidate(client, liquidator1Keys, borrower1Address, "XLM", false);
+        await liquidate(client, liquidator1Keys, borrower1Address, false);
+        // await liquidate(client, liquidator1Keys, borrower1Address, "XLM", false);
 
         const liquidator1UsdcBalanceAfter = await tokenBalanceOf(client, "USDC", liquidator1Address);
         const liquidator1SUsdcBalance = await sTokenBalanceOf(client, "USDC", liquidator1Address);

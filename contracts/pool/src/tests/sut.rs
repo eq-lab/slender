@@ -196,7 +196,6 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     &vec![
                         &env,
                         PriceData {
-                            // TODO: price: 100_000_000_000_000,
                             price: 100_000_000_000_000,
                             timestamp: 1704790200000,
                         },
@@ -207,8 +206,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     &vec![
                         &env,
                         PriceData {
-                            // TODO: price: 10_000_000_000_000_000,
-                            price: 8_000_000_000_000_000,
+                            price: 10_000_000_000_000_000,
                             timestamp: 1704790200000,
                         },
                     ],
@@ -218,8 +216,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     &vec![
                         &env,
                         PriceData {
-                            // TODO: price: 10_000_000_000_000_000,
-                            price: 5_000_000_000_000_000,
+                            price: 10_000_000_000_000_000,
                             timestamp: 1704790200000,
                         },
                     ],

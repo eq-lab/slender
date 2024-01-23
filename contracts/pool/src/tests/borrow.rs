@@ -1,10 +1,7 @@
 use super::sut::DAY;
 use crate::tests::sut::{fill_pool, init_pool};
-use price_feed_interface::types::asset::Asset;
-use price_feed_interface::types::price_data::PriceData;
-use price_feed_interface::PriceFeedClient;
-use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Ledger};
-use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal};
+use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
+use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
 #[test]
 fn should_require_authorized_caller() {
@@ -317,91 +314,140 @@ fn should_emit_events() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
-    // TODO: uncomment
-    // let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
-    // let token_address = debt_config.token.address.clone();
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
+    let token_address = debt_config.token.address.clone();
 
-    // sut.pool.borrow(&borrower, &token_address, &20_000_000);
+    sut.pool.borrow(&borrower, &token_address, &20_000_000);
 
-    // TODO: remove
-    let lender = Address::generate(&env);
-    let borrower = Address::generate(&env);
+    let mut events = env.events().all();
+    let event = events.pop_back_unchecked();
 
-    for i in 0..3 {
-        let amount = 100_000_000_000_000;
-
-        sut.reserves[i].token_admin.mint(&lender, &amount);
-        sut.reserves[i].token_admin.mint(&borrower, &amount);
-
-        assert_eq!(sut.reserves[i].token.balance(&lender), amount);
-        assert_eq!(sut.reserves[i].token.balance(&borrower), amount);
-    }
-
-    //lender deposit all tokens
-    for i in 0..3 {
-        let amount = 10_000_000_000_000;
-        let stoken = sut.reserves[i].s_token.address.clone();
-        let token = sut.reserves[i].token.address.clone();
-        let pool_balance = sut.reserves[i].token.balance(&stoken);
-
-        sut.pool.deposit(&lender, &token, &amount);
-
-        assert_eq!(sut.reserves[i].s_token.balance(&lender), amount);
-        assert_eq!(
-            sut.reserves[i].token.balance(&stoken),
-            pool_balance + amount
-        );
-    }
-
-    // env.ledger().with_mut(|li| li.timestamp = DAY);
-
-    //borrower deposit first token and borrow second token
-    sut.pool
-        .deposit(&borrower, &sut.reserves[0].token.address, &4_000_000_000);
-    sut.pool
-        .deposit(&borrower, &sut.reserves[1].token.address, &900_000_000_000);
-
-    sut.pool.borrow(
-        &borrower,
-        &sut.reserves[2].token.address.clone(),
-        &800_000_000_000,
-    );
-
-    let debt_feed_address = sut
-        .pool
-        .price_feeds(&sut.reserves[2].token.address.clone())
-        .unwrap()
-        .feeds
-        .get_unchecked(0)
-        .feed;
-    let feed = PriceFeedClient::new(&env, &debt_feed_address);
-    feed.init(
-        &Asset::Stellar(sut.reserves[2].token.address.clone()),
-        &vec![
+    assert_eq!(
+        vec![&env, event],
+        vec![
             &env,
-            PriceData {
-                price: 10_000_000_000_000_000,
-                timestamp: 1704790200000,
-            },
-        ],
+            (
+                sut.pool.address.clone(),
+                (Symbol::new(&env, "borrow"), borrower.clone()).into_val(&env),
+                (token_address.clone(), 20_000_000i128).into_val(&env)
+            ),
+        ]
     );
-
-    sut.pool.liquidate(&lender, &borrower, &false);
-
-    let _account_position = sut.pool.account_position(&borrower);
-
-    // let mut events = env.events().all();
-    // let event = events.pop_back_unchecked();
-
-    // assert_eq!(
-    //     vec![&env, event],
-    //     vec![
-    //         &env,
-    //         (
-    //             sut.pool.address.clone(),
-    //             (Symbol::new(&env, "borrow"), borrower.clone()).into_val(&env),
-    //             (token_address.clone(), 20_000_000i128).into_val(&env)
-    //         ),
-    //     ]
-    // );
 }
+
+// TODO: remove
+// #[test]
+// fn should_emit_events() {
+//     let env = Env::default();
+//     env.mock_all_auths();
+
+//     let sut = init_pool(&env, false);
+//     // TODO: uncomment
+//     // let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
+//     // let token_address = debt_config.token.address.clone();
+
+//     // sut.pool.borrow(&borrower, &token_address, &20_000_000);
+
+//     // TODO: remove
+//     let lender = Address::generate(&env);
+//     let borrower = Address::generate(&env);
+
+//     for i in 0..3 {
+//         let amount = 100_000_000_000_000;
+
+//         sut.reserves[i].token_admin.mint(&lender, &amount);
+//         sut.reserves[i].token_admin.mint(&borrower, &amount);
+
+//         assert_eq!(sut.reserves[i].token.balance(&lender), amount);
+//         assert_eq!(sut.reserves[i].token.balance(&borrower), amount);
+//     }
+
+//     //lender deposit all tokens
+//     for i in 0..3 {
+//         let amount = 10_000_000_000_000;
+//         let stoken = sut.reserves[i].s_token.address.clone();
+//         let token = sut.reserves[i].token.address.clone();
+//         let pool_balance = sut.reserves[i].token.balance(&stoken);
+
+//         sut.pool.deposit(&lender, &token, &amount);
+
+//         assert_eq!(sut.reserves[i].s_token.balance(&lender), amount);
+//         assert_eq!(
+//             sut.reserves[i].token.balance(&stoken),
+//             pool_balance + amount
+//         );
+//     }
+
+//     let debt_feed_address = sut
+//         .pool
+//         .price_feeds(&sut.reserves[2].token.address.clone())
+//         .unwrap()
+//         .feeds
+//         .get_unchecked(0)
+//         .feed;
+//     let feed = PriceFeedClient::new(&env, &debt_feed_address);
+//     feed.init(
+//         &Asset::Stellar(sut.reserves[2].token.address.clone()),
+//         &vec![
+//             &env,
+//             PriceData {
+//                 price: 1_000_000_000_000_000,
+//                 timestamp: 1704790200000,
+//             },
+//         ],
+//     );
+//     // env.ledger().with_mut(|li| li.timestamp = DAY);
+
+//     //borrower deposit first token and borrow second token
+//     sut.pool
+//         .deposit(&borrower, &sut.reserves[0].token.address, &2_000_000_000);
+//     sut.pool.deposit(
+//         &borrower,
+//         &sut.reserves[1].token.address,
+//         &1_000_000_000_000,
+//     );
+
+//     // sut.pool.borrow(
+//     //     &borrower,
+//     //     &sut.reserves[1].token.address.clone(),
+//     //     &400_000_000_000,
+//     // );
+//     sut.pool.borrow(
+//         &borrower,
+//         &sut.reserves[2].token.address.clone(),
+//         &800_000_000_000,
+//     );
+
+//     feed.init(
+//         &Asset::Stellar(sut.reserves[2].token.address.clone()),
+//         &vec![
+//             &env,
+//             PriceData {
+//                 price: 11_000_000_000_000_000,
+//                 timestamp: 1704790200000,
+//             },
+//         ],
+//     );
+
+//     let _account_position = sut.pool.account_position(&borrower);
+
+//     sut.pool.liquidate(&lender, &borrower, &false);
+
+//     let _account_position = sut.pool.account_position(&borrower);
+//     let _account_position = sut.pool.account_position(&borrower);
+
+//     // let mut events = env.events().all();
+//     // let event = events.pop_back_unchecked();
+
+//     // assert_eq!(
+//     //     vec![&env, event],
+//     //     vec![
+//     //         &env,
+//     //         (
+//     //             sut.pool.address.clone(),
+//     //             (Symbol::new(&env, "borrow"), borrower.clone()).into_val(&env),
+//     //             (token_address.clone(), 20_000_000i128).into_val(&env)
+//     //         ),
+//     //     ]
+//     // );
+// }

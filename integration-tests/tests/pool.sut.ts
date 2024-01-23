@@ -11,7 +11,8 @@ import {
     parseMetaXdrToJs,
     convertToScvBytes,
     convertToScvString,
-    parseScvToJs
+    parseScvToJs,
+    convertToScvU64
 } from "./soroban.converter";
 import { exec } from "child_process";
 import * as fs from 'fs';
@@ -36,8 +37,9 @@ export interface FlashLoanAsset {
 
 interface PriceFeedConfig {
     feed: string,
-    feed_decimals: bigint,
-    asset_decimals: bigint,
+    feed_asset: SlenderAsset,
+    feed_decimals: number,
+    twap_records: number,
 }
 
 interface PriceData {
@@ -73,9 +75,9 @@ export async function init(client: SorobanClient): Promise<void> {
     await initPoolReserve(client, "XRP");
     await initPoolReserve(client, "USDC");
 
-    await initPoolCollateral(client, "XLM");
-    await initPoolCollateral(client, "XRP");
-    await initPoolCollateral(client, "USDC");
+    await initPoolCollateral(client, "XLM", 3);
+    await initPoolCollateral(client, "XRP", 1);
+    await initPoolCollateral(client, "USDC", 2);
 
     await initPoolBorrowing(client, "XLM");
     await initPoolBorrowing(client, "XRP");
@@ -83,30 +85,36 @@ export async function init(client: SorobanClient): Promise<void> {
 
     await initBaseAsset(client, "XLM", 7);
 
-    await initPrice(client, "XLM", 100_000_000_000_000n);
-    await initPrice(client, "XRP", 10_000_000_000_000_000n);
-    await initPrice(client, "USDC", 10_000_000_000_000_000n);
+    await initPrice(client, "XLM", 100_000_000_000_000n, 0);
+    await initPrice(client, "XRP", 10_000_000_000_000_000n, 0);
+    await initPrice(client, "USDC", 10_000_000_000_000_000n, 0);
 
     await initPoolPriceFeed(client, [{
         asset: "XLM",
+        asset_decimals: 7,
         priceFeedConfig: {
-            asset_decimals: 7n,
-            feed_decimals: 14n,
-            feed: process.env.SLENDER_PRICE_FEED
+            feed_asset: "XLM",
+            feed_decimals: 14,
+            feed: process.env.SLENDER_PRICE_FEED,
+            twap_records: 1
         }
     }, {
         asset: "XRP",
+        asset_decimals: 9,
         priceFeedConfig: {
-            asset_decimals: 9n,
-            feed_decimals: 16n,
-            feed: process.env.SLENDER_PRICE_FEED
+            feed_asset: "XRP",
+            feed_decimals: 16,
+            feed: process.env.SLENDER_PRICE_FEED,
+            twap_records: 1
         }
     }, {
         asset: "USDC",
+        asset_decimals: 9,
         priceFeedConfig: {
-            asset_decimals: 9n,
-            feed_decimals: 16n,
-            feed: process.env.SLENDER_PRICE_FEED
+            feed_asset: "USDC",
+            feed_decimals: 16,
+            feed: process.env.SLENDER_PRICE_FEED,
+            twap_records: 1
         }
     }]);
 
@@ -322,7 +330,6 @@ export async function liquidate(
     client: SorobanClient,
     signer: Keypair,
     who: string,
-    debtToLiquidate: SlenderAsset,
     receiveStoken: boolean,
 ): Promise<SendTransactionResult> {
     const txResult = await client.sendTransaction(
@@ -332,7 +339,6 @@ export async function liquidate(
         3,
         convertToScvAddress(signer.publicKey()),
         convertToScvAddress(who),
-        convertToScvAddress(process.env[`SLENDER_TOKEN_${debtToLiquidate}`]),
         convertToScvBool(receiveStoken)
     );
 
@@ -666,7 +672,11 @@ async function initPoolReserve(client: SorobanClient, asset: SlenderAsset): Prom
     );
 }
 
-async function initPoolCollateral(client: SorobanClient, asset: SlenderAsset): Promise<void> {
+async function initPoolCollateral(
+    client: SorobanClient,
+    asset: SlenderAsset,
+    order: number
+): Promise<void> {
     await initContract(
         `POOL_${asset}_COLLATERAL_CONFIGURED`,
         () => client.sendTransaction(
@@ -678,6 +688,7 @@ async function initPoolCollateral(client: SorobanClient, asset: SlenderAsset): P
             convertToScvMap({
                 "discount": convertToScvU32(6000),
                 "liq_cap": convertToScvI128(1000000000000000n),
+                "liq_order": convertToScvU32(order),
                 "util_cap": convertToScvU32(9000)
             })
         )
@@ -686,20 +697,33 @@ async function initPoolCollateral(client: SorobanClient, asset: SlenderAsset): P
 
 async function initPoolPriceFeed(
     client: SorobanClient,
-    inputs: { asset: SlenderAsset, priceFeedConfig: PriceFeedConfig }[]
+    inputs: {
+        asset: SlenderAsset,
+        asset_decimals: number,
+        priceFeedConfig: PriceFeedConfig
+    }[]
 ): Promise<void> {
     await initContract(
         "POOL_PRICE_FEED_SET",
         () => client.sendTransaction(
             process.env.SLENDER_POOL,
-            "set_price_feed",
+            "set_price_feeds",
             adminKeys,
             3,
             convertToScvVec(inputs.map(input => convertToScvMap({
                 "asset": convertToScvAddress(process.env[`SLENDER_TOKEN_${input.asset}`]),
-                "asset_decimals": convertToScvU32(Number(input.priceFeedConfig.asset_decimals)),
-                "feed": convertToScvAddress(input.priceFeedConfig.feed),
-                "feed_decimals": convertToScvU32(Number(input.priceFeedConfig.feed_decimals))
+                "asset_decimals": convertToScvU32(input.asset_decimals),
+                "feeds": convertToScvVec([
+                    convertToScvMap({
+                        "feed": convertToScvAddress(input.priceFeedConfig.feed),
+                        "feed_asset": convertToScvVec([
+                            xdr.ScVal.scvSymbol("Stellar"),
+                            convertToScvAddress(process.env[`SLENDER_TOKEN_${input.priceFeedConfig.feed_asset}`])
+                        ]),
+                        "feed_decimals": convertToScvU32(input.priceFeedConfig.feed_decimals),
+                        "twap_records": convertToScvU32(input.priceFeedConfig.twap_records)
+                    })
+                ]),
             })))
         )
     );
@@ -741,6 +765,7 @@ export async function initPrice(
     client: SorobanClient,
     asset: SlenderAsset,
     price: bigint,
+    timestamp: number,
 ): Promise<void> {
     await client.sendTransaction(
         process.env.SLENDER_PRICE_FEED,
@@ -751,6 +776,11 @@ export async function initPrice(
             xdr.ScVal.scvSymbol("Stellar"),
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
         ]),
-        convertToScvI128(price),
+        convertToScvVec([
+            convertToScvMap({
+                "price": convertToScvI128(price),
+                "timestamp": convertToScvU64(timestamp)
+            })
+        ]),
     );
 }

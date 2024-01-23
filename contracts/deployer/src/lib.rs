@@ -14,6 +14,7 @@ impl Deployer {
     /// Deploy the pool contract wasm and after deployment invoke the `initialize` function
     /// of the contract with the given admin address. Returns the contract ID and
     /// result of the `initialize` function.
+    #[allow(clippy::too_many_arguments)]
     pub fn deploy_pool(
         env: Env,
         salt: BytesN<32>,

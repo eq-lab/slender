@@ -6,7 +6,7 @@ use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::user_config::UserConfiguration;
 use soroban_sdk::{assert_with_error, panic_with_error, Address, Env};
 
-use crate::storage::{has_admin, has_reserve, paused, read_admin};
+use crate::storage::{has_admin, has_reserve, paused, read_admin, read_initial_health};
 use crate::types::account_data::AccountData;
 
 pub fn require_admin_not_exist(env: &Env) {
@@ -125,6 +125,29 @@ pub fn require_util_cap_not_exceeded(
     let util_cap = FixedI128::from_percentage(util_cap).ok_or(Error::ValidateBorrowMathError)?;
 
     assert_with_error!(env, utilization <= util_cap, Error::UtilizationCapExceeded);
+
+    Ok(())
+}
+
+pub fn require_gte_initial_health(
+    env: &Env,
+    account_data: &AccountData,
+    borrow_amount_in_base: i128,
+) -> Result<(), Error> {
+    let npv_after = account_data
+        .npv
+        .checked_sub(borrow_amount_in_base)
+        .ok_or(Error::MathOverflowError)?;
+    let npv_after_percent = FixedI128::from_rational(npv_after, account_data.discounted_collateral)
+        .ok_or(Error::MathOverflowError)?;
+    let initial_health_percent =
+        FixedI128::from_percentage(read_initial_health(env)?).ok_or(Error::MathOverflowError)?;
+
+    assert_with_error!(
+        env,
+        npv_after_percent >= initial_health_percent,
+        Error::CollateralNotCoverNewBorrow
+    );
 
     Ok(())
 }

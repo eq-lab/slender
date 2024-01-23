@@ -24,7 +24,7 @@ pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Err
         &CalcAccountDataCache::none(),
         &user_config,
         &mut PriceProvider::new(env)?,
-        true, // TODO: replace with false
+        false,
     )?;
 
     Ok(account_data.get_position())
@@ -38,8 +38,6 @@ pub fn calc_account_data(
     price_provider: &mut PriceProvider,
     liquidation: bool,
 ) -> Result<AccountData, Error> {
-    // TODO: user can't borrow if npv < initial_health
-
     if user_config.is_empty() {
         return Ok(AccountData::default());
     }
