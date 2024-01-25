@@ -67,7 +67,7 @@ fn should_fail_when_reserve_deactivated() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #311)")]
+#[should_panic(expected = "HostError: Error(Contract, #312)")]
 fn should_fail_when_liq_cap_exceeded() {
     let env = Env::default();
     env.mock_all_auths();

@@ -24,6 +24,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
+    sut.pool.set_initial_health(&2_500);
 
     let debt_token = sut.reserves[1].token.address.clone();
     let deposit_token = sut.reserves[0].token.address.clone();
@@ -87,7 +88,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
     assert_eq!(position_after_change_price.debt, 560_000);
     assert_eq!(position_after_change_price.npv, -20_000);
 
-    assert_eq!(position_after_liquidate.discounted_collateral, 170_400);
-    assert_eq!(position_after_liquidate.debt, 0);
-    assert_eq!(position_after_liquidate.npv, 170_400);
+    assert_eq!(position_after_liquidate.discounted_collateral, 358_700);
+    assert_eq!(position_after_liquidate.debt, 269_026);
+    assert_eq!(position_after_liquidate.npv, 89_674);
 }

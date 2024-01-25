@@ -83,7 +83,6 @@ fn should_fail_when_invalid_util_cap() {
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #404)")]
-// TODO: add validation for initial_health
 fn should_fail_when_invalid_liq_cap() {
     let env = Env::default();
     env.mock_all_auths();

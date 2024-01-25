@@ -69,7 +69,7 @@ pub(crate) fn create_pool_contract<'a>(
 
     let treasury = Address::generate(e);
     let flash_loan_fee = 5;
-    let initial_health = 2_500;
+    let initial_health = 0;
 
     client.initialize(
         &admin,
@@ -436,6 +436,46 @@ pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Ad
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     (lender, borrower1, borrower2)
+}
+
+pub(crate) fn fill_pool_six<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Address) {
+    let lender = Address::generate(&env);
+    let liquidator = Address::generate(&env);
+    let borrower = Address::generate(&env);
+
+    for i in 0..3 {
+        let amount = (i == 0)
+            .then(|| 10_000_000_000)
+            .unwrap_or(1_000_000_000_000);
+
+        sut.reserves[i].token_admin.mint(&lender, &amount);
+        sut.reserves[i].token_admin.mint(&borrower, &amount);
+        sut.reserves[i].token_admin.mint(&liquidator, &amount);
+
+        assert_eq!(sut.reserves[i].token.balance(&lender), amount);
+        assert_eq!(sut.reserves[i].token.balance(&borrower), amount);
+        assert_eq!(sut.reserves[i].token.balance(&liquidator), amount);
+    }
+
+    //lender deposit all tokens
+    for i in 0..3 {
+        let amount = (i == 0)
+            .then(|| 10_000_000_000)
+            .unwrap_or(1_000_000_000_000);
+        let stoken = sut.reserves[i].s_token.address.clone();
+        let token = sut.reserves[i].token.address.clone();
+        let pool_balance = sut.reserves[i].token.balance(&stoken);
+
+        sut.pool.deposit(&lender, &token, &amount);
+
+        assert_eq!(sut.reserves[i].s_token.balance(&lender), amount);
+        assert_eq!(
+            sut.reserves[i].token.balance(&stoken),
+            pool_balance + amount
+        );
+    }
+
+    (liquidator, borrower)
 }
 
 #[allow(dead_code)]

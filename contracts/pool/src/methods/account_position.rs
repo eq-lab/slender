@@ -4,7 +4,6 @@ use pool_interface::types::error::Error;
 use pool_interface::types::user_config::UserConfiguration;
 use soroban_sdk::{assert_with_error, Address, Env, Map, Vec};
 
-use crate::methods::utils::rate::calc_utilization;
 use crate::storage::{
     read_reserve, read_reserves, read_token_balance, read_token_total_supply, read_user_config,
 };
@@ -150,8 +149,8 @@ pub fn calc_account_data(
                     .map(|x| x.balance)
                     .unwrap_or_else(|| read_token_total_supply(env, &reserve.debt_token_address));
 
-                let utilization = calc_utilization(s_token_supply, debt_token_supply)
-                    .unwrap_or_default()
+                let utilization = FixedI128::from_rational(debt_token_supply, s_token_supply)
+                    .ok_or(Error::CalcAccountDataMathError)?
                     .into_inner();
 
                 let mut debt_to_cover = sorted_debt_to_cover

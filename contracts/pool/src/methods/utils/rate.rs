@@ -20,7 +20,16 @@ pub fn calc_interest_rate(
     total_debt: i128,
     ir_params: &IRParams,
 ) -> Option<FixedI128> {
-    let u = calc_utilization(total_collateral, total_debt)?;
+    if total_collateral.is_negative() || total_debt.is_negative() {
+        return None;
+    }
+
+    let u = FixedI128::from_rational(total_debt, total_collateral)?;
+
+    if u.is_zero() {
+        return Some(FixedI128::ZERO);
+    }
+
     let max_rate = FixedI128::from_percentage(ir_params.max_rate)?;
 
     if u >= FixedI128::ONE {
@@ -62,20 +71,6 @@ pub fn calc_interest_rate(
     let ir = initial_rate.checked_div(denom)?;
 
     Some(FixedI128::min(ir, max_rate))
-}
-
-pub fn calc_utilization(total_collateral: i128, total_debt: i128) -> Option<FixedI128> {
-    if total_collateral.is_negative() || total_debt.is_negative() {
-        return None;
-    }
-
-    let utilization = FixedI128::from_rational(total_debt, total_collateral)?;
-
-    if utilization.is_zero() {
-        return Some(FixedI128::ZERO);
-    }
-
-    Some(utilization)
 }
 
 /// Calculate accrued rate on time `t` AR(t) = AR(t-1)*(1 + r(t-1)*elapsed_time)
