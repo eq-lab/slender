@@ -12,7 +12,7 @@ use crate::types::user_configurator::UserConfigurator;
 use super::utils::get_collat_coeff::get_collat_coeff;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_liq_cap_not_exceeded, require_not_paused,
+    require_active_reserve, require_liquidity_cap_not_exceeded, require_not_paused,
     require_positive_amount, require_zero_debt,
 };
 
@@ -69,7 +69,7 @@ fn do_deposit(
     amount: i128,
 ) -> Result<(bool, i128), Error> {
     let balance = read_stoken_underlying_balance(env, &reserve.s_token_address);
-    require_liq_cap_not_exceeded(env, reserve, debt_token_supply, balance, amount)?;
+    require_liquidity_cap_not_exceeded(env, reserve, debt_token_supply, balance, amount)?;
 
     let collat_coeff = get_collat_coeff(env, reserve, s_token_supply, debt_token_supply)?;
     let is_first_deposit = who_collat == 0;

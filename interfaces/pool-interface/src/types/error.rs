@@ -18,6 +18,7 @@ pub enum Error {
     InvalidAssetPrice = 106,
     BaseAssetNotInitialized = 107,
     InitialHealthNotInitialized = 108,
+    LiquidationOrderMustBeUnique = 109,
 
     UserConfigInvalidIndex = 200,
     NotEnoughAvailableUserBalance = 201,

@@ -8,6 +8,7 @@ use soroban_sdk::{assert_with_error, panic_with_error, Address, Env};
 
 use crate::storage::{has_admin, has_reserve, paused, read_admin, read_initial_health};
 use crate::types::account_data::AccountData;
+use crate::{read_reserve, read_reserves};
 
 pub fn require_admin_not_exist(env: &Env) {
     if has_admin(env) {
@@ -30,7 +31,7 @@ pub fn require_valid_ir_params(env: &Env, params: &IRParams) {
 pub fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
     require_lte_percentage_factor(env, params.discount);
     require_lte_percentage_factor(env, params.util_cap);
-    require_positive(env, params.liq_cap);
+    require_positive(env, params.liquidity_cap);
 }
 
 pub fn require_uninitialized_reserve(env: &Env, asset: &Address) {
@@ -85,8 +86,8 @@ pub fn require_borrowing_enabled(env: &Env, reserve: &ReserveData) {
     );
 }
 
-/// Check that balance + deposit + debt * ar_lender <= reserve.configuration.liq_cap
-pub fn require_liq_cap_not_exceeded(
+/// Check that balance + deposit + debt * ar_lender <= reserve.configuration.liquidity_cap
+pub fn require_liquidity_cap_not_exceeded(
     env: &Env,
     reserve: &ReserveData,
     debt_token_supply: i128,
@@ -103,7 +104,7 @@ pub fn require_liq_cap_not_exceeded(
 
     assert_with_error!(
         env,
-        balance_after_deposit <= reserve.configuration.liq_cap,
+        balance_after_deposit <= reserve.configuration.liquidity_cap,
         Error::LiqCapExceeded
     );
 
@@ -180,4 +181,29 @@ pub fn require_zero_debt(env: &Env, user_config: &UserConfiguration, reserve_id:
         !user_config.is_borrowing(env, reserve_id),
         Error::MustNotHaveDebt
     );
+}
+
+pub fn require_unique_liquidation_order(
+    env: &Env,
+    asset: &Address,
+    liquidation_order: u32,
+) -> Result<(), Error> {
+    for r_asset in read_reserves(env) {
+        if r_asset.eq(asset) {
+            continue;
+        }
+
+        let reserve = read_reserve(env, &r_asset)?;
+
+        assert_with_error!(
+            env,
+            !reserve
+                .configuration
+                .liquidation_order
+                .eq(&liquidation_order),
+            Error::LiquidationOrderMustBeUnique
+        );
+    }
+
+    Ok(())
 }

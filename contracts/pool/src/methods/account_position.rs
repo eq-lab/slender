@@ -109,13 +109,13 @@ pub fn calc_account_data(
 
             if liquidation {
                 sorted_collat_to_receive.set(
-                    reserve.configuration.liq_order,
+                    reserve.configuration.liquidation_order,
                     LiquidationAsset {
                         asset,
                         reserve,
                         coeff: collat_coeff.into_inner(),
                         lp_balance: who_collat,
-                        comp_balance: who_collat,
+                        comp_balance: compounded_balance,
                     },
                 );
             }

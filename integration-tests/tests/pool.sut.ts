@@ -687,8 +687,8 @@ async function initPoolCollateral(
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvMap({
                 "discount": convertToScvU32(6000),
-                "liq_cap": convertToScvI128(1000000000000000n),
-                "liq_order": convertToScvU32(order),
+                "liquidity_cap": convertToScvI128(1000000000000000n),
+                "liquidation_order": convertToScvU32(order),
                 "util_cap": convertToScvU32(9000)
             })
         )

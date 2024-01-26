@@ -39,8 +39,10 @@ pub(crate) fn repay(e: &Env, who: &Address, asset: &Address, amount: i128) {
 
 pub(crate) fn collat_config_change(e: &Env, asset: &Address, params: &CollateralParamsInput) {
     let topics = (Symbol::new(e, "collat_config_change"), asset.clone());
-    e.events()
-        .publish(topics, (params.liq_cap, params.util_cap, params.discount));
+    e.events().publish(
+        topics,
+        (params.liquidity_cap, params.util_cap, params.discount),
+    );
 }
 
 pub(crate) fn borrowing_enabled(e: &Env, asset: &Address) {

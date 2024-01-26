@@ -13,7 +13,7 @@ pub struct AccountData {
     pub npv: i128,
     /// Liquidation debt ordered by max utilization
     pub liq_debts: Option<Vec<LiquidationAsset>>,
-    /// Liquidation collateral ordered by liq_order
+    /// Liquidation collateral ordered by liquidation_order
     pub liq_collats: Option<Vec<LiquidationAsset>>,
 }
 

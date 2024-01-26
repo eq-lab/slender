@@ -164,16 +164,16 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                 pool.set_base_asset(&token.address, &decimals)
             }
 
-            let liq_cap = 100_000_000 * 10_i128.pow(decimals); // 100M
-            let liq_order = i + 1;
+            let liquidity_cap = 100_000_000 * 10_i128.pow(decimals); // 100M
+            let liquidation_order = i + 1;
             let util_cap = 9000; //90%
             let discount = 6000; //60%
 
             pool.configure_as_collateral(
                 &token.address,
                 &CollateralParamsInput {
-                    liq_cap,
-                    liq_order,
+                    liquidity_cap,
+                    liquidation_order,
                     util_cap,
                     discount,
                 },
@@ -186,7 +186,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
 
             let reserve_config = reserve.unwrap().configuration;
             assert_eq!(reserve_config.borrowing_enabled, true);
-            assert_eq!(reserve_config.liq_cap, liq_cap);
+            assert_eq!(reserve_config.liquidity_cap, liquidity_cap);
             assert_eq!(reserve_config.util_cap, util_cap);
             assert_eq!(reserve_config.discount, discount);
 

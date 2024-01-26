@@ -92,8 +92,10 @@ pub fn withdraw(
             false,
         )?;
 
+        // TODO: do we need to check for initial_health?
         require_good_position(env, &account_data);
     }
+
     let amount_to_sub = underlying_to_withdraw
         .checked_neg()
         .ok_or(Error::MathOverflowError)?;

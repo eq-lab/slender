@@ -40,10 +40,10 @@ impl ReserveData {
     }
 
     pub fn update_collateral_config(&mut self, config: &CollateralParamsInput) {
-        self.configuration.liq_cap = config.liq_cap;
+        self.configuration.liquidity_cap = config.liquidity_cap;
         self.configuration.util_cap = config.util_cap;
         self.configuration.discount = config.discount;
-        self.configuration.liq_order = config.liq_order;
+        self.configuration.liquidation_order = config.liquidation_order;
     }
 
     pub fn get_id(&self) -> u8 {
