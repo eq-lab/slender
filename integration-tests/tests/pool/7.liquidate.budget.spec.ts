@@ -93,17 +93,18 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         await deposit(client, lender1Keys, "XRP", 160_000_000_000n);
         await deposit(client, lender1Keys, "USDC", 160_000_000_000n);
 
-        let xrpPriceFeed = await readPriceFeed(client, "XRP");
-        let usdcPriceFeed = await readPriceFeed(client, "USDC");
+        // TODO: uncomment code below
+        // let xrpPriceFeed = await readPriceFeed(client, "XRP");
+        // let usdcPriceFeed = await readPriceFeed(client, "USDC");
 
-        xrpPriceFactor = BigInt(Math.pow(10, Number(xrpPriceFeed.feed_decimals)));
-        usdcPriceFactor = BigInt(Math.pow(10, Number(usdcPriceFeed.feed_decimals)));
+        // xrpPriceFactor = BigInt(Math.pow(10, Number(xrpPriceFeed.feed_decimals)));
+        // usdcPriceFactor = BigInt(Math.pow(10, Number(usdcPriceFeed.feed_decimals)));
 
-        xrpFactor = BigInt(Math.pow(10, Number(xrpPriceFeed.asset_decimals)));
-        usdcFactor = BigInt(Math.pow(10, Number(usdcPriceFeed.asset_decimals)));
+        // xrpFactor = BigInt(Math.pow(10, Number(xrpPriceFeed.asset_decimals)));
+        // usdcFactor = BigInt(Math.pow(10, Number(usdcPriceFeed.asset_decimals)));
 
-        xrpPrice = await readPrice(client, xrpPriceFeed.feed, "XRP");
-        usdcPrice = await readPrice(client, xrpPriceFeed.feed, "USDC");
+        // xrpPrice = await readPrice(client, xrpPriceFeed.feed, "XRP");
+        // usdcPrice = await readPrice(client, xrpPriceFeed.feed, "USDC");
 
 
         await delay(100_000);
@@ -155,18 +156,27 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower1Keys));
 
         usdcPrice = mulPrice(usdcPrice, usdcPriceFactor, 1.5);
-        await initPrice(client, "USDC", usdcPrice);
+        await initPrice(client, "USDC", usdcPrice, 0);
 
         console.log(await accountPosition(client, borrower1Keys));
 
         try {
-            await liquidate(client, liquidatorKeys, borrower1Address, "USDC", false)
+            await liquidate(client, liquidatorKeys, borrower1Address, false)
                 .then((result) => writeBudgetSnapshot("liquidateUnderlying1", result));
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, "USDC", false);
             fs.writeFileSync(CASE_1_LOG, liquidateRes);
         }
+
+        // try {
+        //     await liquidate(client, liquidatorKeys, borrower1Address, "USDC", false)
+        //         .then((result) => writeBudgetSnapshot("liquidateUnderlying1", result));
+        // } catch (e) {
+        //     console.error(e);
+        //     const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, "USDC", false);
+        //     fs.writeFileSync(CASE_1_LOG, liquidateRes);
+        // }
     })
 
     it("Case 2: liquidate with receiving underlying when borrower has one debt and one deposit", async function () {
@@ -176,36 +186,52 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower1Keys));
 
         usdcPrice = mulPrice(usdcPrice, usdcPriceFactor, 1.5);
-        await initPrice(client, "USDC", usdcPrice);
+        await initPrice(client, "USDC", usdcPrice, 0);
 
         console.log(await accountPosition(client, borrower1Keys));
 
         try {
-            await liquidate(client, liquidatorKeys, borrower1Address, "USDC", false)
+            await liquidate(client, liquidatorKeys, borrower1Address, false)
                 .then((result) => writeBudgetSnapshot("liquidateUnderlying2", result));
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, "USDC", false);
             fs.writeFileSync(CASE_2_LOG, liquidateRes);
         }
+        // try {
+        //     await liquidate(client, liquidatorKeys, borrower1Address, "USDC", false)
+        //         .then((result) => writeBudgetSnapshot("liquidateUnderlying2", result));
+        // } catch (e) {
+        //     console.error(e);
+        //     const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, "USDC", false);
+        //     fs.writeFileSync(CASE_2_LOG, liquidateRes);
+        // }
     })
 
     it("Case 3: liquidate with receiving underlying when borrower has two debts and one deposit", async function () {
         console.log(await accountPosition(client, borrower2Keys));
 
         xrpPrice = mulPrice(xrpPrice, xrpPriceFactor, 1.5);
-        await initPrice(client, "XRP", xrpPrice);
+        await initPrice(client, "XRP", xrpPrice, 0);
 
         console.log(await accountPosition(client, borrower2Keys));
 
         try {
-            await liquidate(client, liquidatorKeys, borrower2Address, "XLM", false)
+            await liquidate(client, liquidatorKeys, borrower2Address, false)
                 .then((result) => writeBudgetSnapshot("liquidateUnderlying3", result));
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower2Address, "XLM", false);
             fs.writeFileSync(CASE_3_LOG, liquidateRes);
         }
+        // try {
+        //     await liquidate(client, liquidatorKeys, borrower2Address, "XLM", false)
+        //         .then((result) => writeBudgetSnapshot("liquidateUnderlying3", result));
+        // } catch (e) {
+        //     console.error(e);
+        //     const liquidateRes = await liquidateCli(liquidatorKeys, borrower2Address, "XLM", false);
+        //     fs.writeFileSync(CASE_3_LOG, liquidateRes);
+        // }
     })
 
     it("Case 4: liquidate with receiving sToken when borrower has one debt and two deposits", async function () {
@@ -215,18 +241,26 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower1Keys));
 
         usdcPrice = mulPrice(usdcPrice, usdcPriceFactor, 1.5);
-        await initPrice(client, "USDC", usdcPrice);
+        await initPrice(client, "USDC", usdcPrice, 0);
 
         console.log(await accountPosition(client, borrower1Keys));
 
         try {
-            await liquidate(client, liquidatorKeys, borrower1Address, "USDC", true)
+            await liquidate(client, liquidatorKeys, borrower1Address, true)
                 .then((result) => writeBudgetSnapshot("liquidateSToken4", result));
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, "USDC", true);
             fs.writeFileSync(CASE_4_LOG, liquidateRes);
         }
+        // try {
+        //     await liquidate(client, liquidatorKeys, borrower1Address, "USDC", true)
+        //         .then((result) => writeBudgetSnapshot("liquidateSToken4", result));
+        // } catch (e) {
+        //     console.error(e);
+        //     const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, "USDC", true);
+        //     fs.writeFileSync(CASE_4_LOG, liquidateRes);
+        // }
     })
 
     it("Case 5: liquidate with receiving sToken borrower has one debt and one deposit", async function () {
@@ -238,18 +272,26 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower1Keys));
 
         usdcPrice = mulPrice(usdcPrice, usdcPriceFactor, 1.5);
-        await initPrice(client, "USDC", usdcPrice);
+        await initPrice(client, "USDC", usdcPrice, 0);
 
         console.log(await accountPosition(client, borrower1Keys));
 
         try {
-            await liquidate(client, liquidatorKeys, borrower1Address, "USDC", true)
+            await liquidate(client, liquidatorKeys, borrower1Address, true)
                 .then((result) => writeBudgetSnapshot("liquidateSToken5", result));
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, "USDC", true);
             fs.writeFileSync(CASE_5_LOG, liquidateRes);
         }
+        // try {
+        //     await liquidate(client, liquidatorKeys, borrower1Address, "USDC", true)
+        //         .then((result) => writeBudgetSnapshot("liquidateSToken5", result));
+        // } catch (e) {
+        //     console.error(e);
+        //     const liquidateRes = await liquidateCli(liquidatorKeys, borrower1Address, "USDC", true);
+        //     fs.writeFileSync(CASE_5_LOG, liquidateRes);
+        // }
     })
 
     it("Case 6: liquidate with receiving sToken when borrower has two debts and one deposit", async function () {
@@ -258,17 +300,25 @@ describe("LendingPool: liquidation cases must not exceed CPU/MEM limits", functi
         console.log(await accountPosition(client, borrower2Keys));
 
         xrpPrice = mulPrice(xrpPrice, xrpPriceFactor, 1.5);
-        await initPrice(client, "XRP", xrpPrice);
+        await initPrice(client, "XRP", xrpPrice, 0);
 
         console.log(await accountPosition(client, borrower2Keys));
 
         try {
-            await liquidate(client, liquidatorKeys, borrower2Address, "XLM", true)
+            await liquidate(client, liquidatorKeys, borrower2Address, true)
                 .then((result) => writeBudgetSnapshot("liquidateSToken6", result));
         } catch (e) {
             console.error(e);
             const liquidateRes = await liquidateCli(liquidatorKeys, borrower2Address, "XLM", true);
             fs.writeFileSync(CASE_6_LOG, liquidateRes);
         }
+        // try {
+        //     await liquidate(client, liquidatorKeys, borrower2Address, "XLM", true)
+        //         .then((result) => writeBudgetSnapshot("liquidateSToken6", result));
+        // } catch (e) {
+        //     console.error(e);
+        //     const liquidateRes = await liquidateCli(liquidatorKeys, borrower2Address, "XLM", true);
+        //     fs.writeFileSync(CASE_6_LOG, liquidateRes);
+        // }
     })
 })

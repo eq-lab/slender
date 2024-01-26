@@ -149,7 +149,7 @@ describe("LendingPool: Borrower position", function () {
 
     it("Case 5: Drop the XRP price so Borrower's NPV <= 0", async function () {
         // XRP price is set to 900_000_000
-        await initPrice(client, "XRP", 9_000_000_000_000_000n);
+        await initPrice(client, "XRP", 9_000_000_000_000_000n, 0);
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 

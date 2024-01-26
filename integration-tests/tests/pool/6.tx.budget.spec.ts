@@ -130,12 +130,16 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await borrow(client, liquidator1Keys, "XLM", 10_000_000n);
         await borrow(client, liquidator1Keys, "XRP", 1_000_000_000n);
 
-        await initPrice(client, "USDC", 15_000_000_000_000_000n);
+        await initPrice(client, "USDC", 15_000_000_000_000_000n, 0);
 
         await expect(
-            liquidate(client, liquidator1Keys, borrower1Address, "USDC", false)
+            liquidate(client, liquidator1Keys, borrower1Address, false)
                 .then((result) => writeBudgetSnapshot("liquidate", result))
         ).to.not.eventually.rejected;
+        // await expect(
+        //     liquidate(client, liquidator1Keys, borrower1Address, "USDC", false)
+        //         .then((result) => writeBudgetSnapshot("liquidate", result))
+        // ).to.not.eventually.rejected;
     });
 
     it("Case 6: flash_loan", async function () {

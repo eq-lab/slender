@@ -48,6 +48,10 @@ export function convertToScvU32(value: number): xdr.ScVal {
     return xdr.ScVal.scvU32(value);
 }
 
+export function convertToScvU64(value: number): xdr.ScVal {
+    return xdr.ScVal.scvU64(new xdr.Uint64(value));
+}
+
 export function convertToScvString(value: string): xdr.ScVal {
     return xdr.ScVal.scvString(value);
 }

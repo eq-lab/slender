@@ -41,12 +41,7 @@ pub(crate) fn collat_config_change(e: &Env, asset: &Address, params: &Collateral
     let topics = (Symbol::new(e, "collat_config_change"), asset.clone());
     e.events().publish(
         topics,
-        (
-            params.liq_bonus,
-            params.liq_cap,
-            params.util_cap,
-            params.discount,
-        ),
+        (params.liquidity_cap, params.util_cap, params.discount),
     );
 }
 

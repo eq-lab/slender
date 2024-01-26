@@ -166,7 +166,7 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
 
     it("Case 4: Drop the USDC price so Borrower's NPV <= 0", async function () {
         // USDC price is set to 0.9991
-        await initPrice(client, "USDC", 9_991_000_000_000_000n);
+        await initPrice(client, "USDC", 9_991_000_000_000_000n, 0);
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
@@ -175,8 +175,10 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
     });
 
     it("Case 5: Liquidator tries to liquidate Borrower's position", async function () {
-        await expect(liquidate(client, liquidator1Keys, borrower1Address, "XLM", true))
+        await expect(liquidate(client, liquidator1Keys, borrower1Address, true))
             .to.eventually.rejected;
+            // await expect(liquidate(client, liquidator1Keys, borrower1Address, "XLM", true))
+            //     .to.eventually.rejected;
     });
 
     // TODO: requires optimization
@@ -186,7 +188,8 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         // Liquidator1 liquidates Borrower1's positions
         const liquidator1XrpBalanceBefore = await tokenBalanceOf(client, "XRP", liquidator1Address);
         
-        await liquidate(client, liquidator1Keys, borrower1Address, "XLM", true);
+        await liquidate(client, liquidator1Keys, borrower1Address, true);
+        // await liquidate(client, liquidator1Keys, borrower1Address, "XLM", true);
 
         const liquidator1XrpBalanceAfter = await tokenBalanceOf(client, "XRP", liquidator1Address);
         const liquidator1SXrpBalance = await sTokenBalanceOf(client, "XRP", liquidator1Address);
@@ -229,7 +232,7 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
 
     it("Case 6: Drop the USDC price so Borrower's NPV <= 0", async function () {
         // USDC price is set to 0.45
-        await initPrice(client, "USDC", 4_500_000_000_000_000n);
+        await initPrice(client, "USDC", 4_500_000_000_000_000n, 0);
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
@@ -241,7 +244,8 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         const liquidator1XrpBalanceBefore = await tokenBalanceOf(client, "XRP", liquidator1Address);
         const borrower1SUsdcBalanceBefore = await sTokenBalanceOf(client, "USDC", borrower1Address);
 
-        await liquidate(client, liquidator1Keys, borrower1Address, "XLM", true);
+        await liquidate(client, liquidator1Keys, borrower1Address, true);
+        // await liquidate(client, liquidator1Keys, borrower1Address, "XLM", true);
 
         const liquidator1XrpBalanceAfter = await tokenBalanceOf(client, "XRP", liquidator1Address);
         const liquidator1SXrpBalance = await sTokenBalanceOf(client, "XRP", liquidator1Address);

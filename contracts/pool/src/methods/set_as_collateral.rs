@@ -40,7 +40,7 @@ pub fn set_as_collateral(
             &CalcAccountDataCache::none(),
             user_config,
             &mut PriceProvider::new(env)?,
-            None,
+            false,
         )?;
 
         require_good_position(env, &account_data);

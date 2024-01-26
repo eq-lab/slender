@@ -88,8 +88,8 @@ fn configure_as_collateral() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liq_bonus: 11_000,
-        liq_cap: 100_000_000 * 10_i128.pow(decimals),
+        liquidity_cap: 100_000_000 * 10_i128.pow(decimals),
+        liquidation_order: 1,
         util_cap: 9_000,
         discount: 6_000,
     };
@@ -195,53 +195,6 @@ fn ir_params() {
 }
 
 #[test]
-fn liquidate_receive_stoken_when_borrower_has_one_debt() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, true);
-    let (_, borrower, _) = fill_pool_four(&env, &sut);
-
-    sut.pool
-        .borrow(&borrower, &sut.reserves[2].token.address, &5_990_400_000);
-
-    env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
-
-    let liquidator = Address::generate(&env);
-
-    sut.reserves[2]
-        .token_admin
-        .mint(&liquidator, &100_000_000_000);
-
-    sut.pool
-        .deposit(&liquidator, &sut.reserves[2].token.address, &10_000_000_000);
-    sut.pool
-        .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
-
-    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
-
-    sut.price_feed.init(
-        &Asset::Stellar(sut.reserves[2].token.address.clone()),
-        &vec![
-            &env,
-            PriceData {
-                price: 10_010_000_000_000_000,
-                timestamp: 0,
-            },
-        ],
-    );
-
-    measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(
-            &liquidator,
-            &borrower,
-            &sut.reserves[2].token.address,
-            &true,
-        );
-    });
-}
-
-#[test]
 fn liquidate_receive_stoken_when_borrower_has_two_debts() {
     let env = Env::default();
     env.mock_all_auths();
@@ -276,12 +229,7 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
     );
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(
-            &liquidator,
-            &borrower,
-            &sut.reserves[0].token.address,
-            &true,
-        );
+        sut.pool.liquidate(&liquidator, &borrower, &true);
     });
 }
 
@@ -292,9 +240,10 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
 
     let sut = init_pool(&env, true);
     let (_, borrower, _) = fill_pool_four(&env, &sut);
+    sut.pool.set_initial_health(&100);
 
     sut.pool
-        .borrow(&borrower, &sut.reserves[2].token.address, &5_990_400_000);
+        .borrow(&borrower, &sut.reserves[2].token.address, &4_990_400_000);
 
     env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
 
@@ -322,19 +271,14 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
         &vec![
             &env,
             PriceData {
-                price: 10_010_000_000_000_000,
+                price: 12_000_000_000_000_000,
                 timestamp: 0,
             },
         ],
     );
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(
-            &liquidator,
-            &borrower,
-            &sut.reserves[2].token.address,
-            &false,
-        );
+        sut.pool.liquidate(&liquidator, &borrower, &false);
     });
 }
 
@@ -379,12 +323,7 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
     );
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(
-            &liquidator,
-            &borrower,
-            &sut.reserves[1].token.address,
-            &false,
-        );
+        sut.pool.liquidate(&liquidator, &borrower, &false);
     });
 }
 
@@ -607,6 +546,7 @@ fn treasury() {
         &Address::generate(&env),
         &Address::generate(&env),
         &flash_loan_fee,
+        &2_500,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
