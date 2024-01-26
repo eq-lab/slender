@@ -17,6 +17,7 @@ pub enum Error {
     ReserveAlreadyInitialized = 105,
     InvalidAssetPrice = 106,
     BaseAssetNotInitialized = 107,
+    NotFungible = 108,
 
     UserConfigInvalidIndex = 200,
     NotEnoughAvailableUserBalance = 201,

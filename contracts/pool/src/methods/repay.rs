@@ -1,7 +1,7 @@
 use common::FixedI128;
 use debt_token_interface::DebtTokenClient;
 use pool_interface::types::error::Error;
-use pool_interface::types::reserve_data::ReserveData;
+use pool_interface::types::reserve_type::ReserveType;
 use soroban_sdk::{token, Address, Env};
 
 use crate::event;
@@ -27,38 +27,42 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
 
-    let mut user_configurator = UserConfigurator::new(env, who, false);
-    let user_config = user_configurator.user_config()?;
-    require_debt(env, user_config, reserve.get_id());
+    // as it's no debt for RWA so there is nothing to repay
+    if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type {
+        let mut user_configurator = UserConfigurator::new(env, who, false);
+        let user_config = user_configurator.user_config()?;
+        require_debt(env, user_config, reserve.get_id());
 
-    let s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
-    let debt_token_supply = read_token_total_supply(env, &reserve.debt_token_address);
+        let s_token_supply = read_token_total_supply(env, &s_token_address);
+        let debt_token_supply = read_token_total_supply(env, &debt_token_address);
 
-    let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?;
-    let collat_coeff = get_collat_coeff(env, &reserve, s_token_supply, debt_token_supply)?;
+        let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?;
+        let collat_coeff = get_collat_coeff(env, &reserve, &s_token_address, s_token_supply, debt_token_supply)?;
 
-    let (is_repayed, debt_token_supply_after) = do_repay(
-        env,
-        who,
-        asset,
-        &reserve,
-        collat_coeff,
-        debt_coeff,
-        debt_token_supply,
-        amount,
-    )?;
+        let (is_repayed, debt_token_supply_after) = do_repay(
+            env,
+            who,
+            asset,
+            &s_token_address,
+            &debt_token_address,
+            collat_coeff,
+            debt_coeff,
+            debt_token_supply,
+            amount,
+        )?;
 
-    user_configurator
-        .repay(reserve.get_id(), is_repayed)?
-        .write();
+        user_configurator
+            .repay(reserve.get_id(), is_repayed)?
+            .write();
 
-    recalculate_reserve_data(
-        env,
-        asset,
-        &reserve,
-        s_token_supply,
-        debt_token_supply_after,
-    )?;
+        recalculate_reserve_data(
+            env,
+            asset,
+            &reserve,
+            s_token_supply,
+            debt_token_supply_after,
+        )?;
+    }
 
     Ok(())
 }
@@ -71,13 +75,14 @@ pub fn do_repay(
     env: &Env,
     who: &Address,
     asset: &Address,
-    reserve: &ReserveData,
+    s_token_address: &Address,
+    debt_token_address: &Address,
     collat_coeff: FixedI128,
     debt_coeff: FixedI128,
     debt_token_supply: i128,
     amount: i128,
 ) -> Result<(bool, i128), Error> {
-    let who_debt = read_token_balance(env, &reserve.debt_token_address, who);
+    let who_debt = read_token_balance(env, &debt_token_address, who);
     let borrower_actual_debt = debt_coeff
         .mul_int(who_debt)
         .ok_or(Error::MathOverflowError)?;
@@ -112,15 +117,15 @@ pub fn do_repay(
     let treasury_address = read_treasury(env);
 
     let underlying_asset = token::Client::new(env, asset);
-    let debt_token = DebtTokenClient::new(env, &reserve.debt_token_address);
+    let debt_token = DebtTokenClient::new(env, &debt_token_address);
 
-    underlying_asset.transfer(who, &reserve.s_token_address, &lender_part);
+    underlying_asset.transfer(who, &s_token_address, &lender_part);
     underlying_asset.transfer(who, &treasury_address, &treasury_part);
     debt_token.burn(who, &borrower_debt_to_burn);
 
-    add_stoken_underlying_balance(env, &reserve.s_token_address, lender_part)?;
-    write_token_total_supply(env, &reserve.debt_token_address, debt_token_supply_after)?;
-    write_token_balance(env, &reserve.debt_token_address, who, who_debt_after)?;
+    add_stoken_underlying_balance(env, &s_token_address, lender_part)?;
+    write_token_total_supply(env, &debt_token_address, debt_token_supply_after)?;
+    write_token_balance(env, &debt_token_address, who, who_debt_after)?;
 
     event::repay(env, who, asset, borrower_payback_amount);
 

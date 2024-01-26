@@ -7,11 +7,11 @@ use types::base_asset_config::BaseAssetConfig;
 use types::collateral_params_input::CollateralParamsInput;
 use types::error::Error;
 use types::flash_loan_asset::FlashLoanAsset;
-use types::init_reserve_input::InitReserveInput;
 use types::ir_params::IRParams;
 use types::price_feed_config::PriceFeedConfig;
 use types::price_feed_config_input::PriceFeedConfigInput;
 use types::reserve_data::ReserveData;
+use types::reserve_type::ReserveType;
 use types::user_config::UserConfiguration;
 
 pub mod types;
@@ -39,7 +39,7 @@ pub trait LendingPoolTrait {
 
     fn version() -> u32;
 
-    fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
+    fn init_reserve(env: Env, asset: Address, reserve_type: ReserveType) -> Result<(), Error>;
 
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error>;
 

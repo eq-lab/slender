@@ -2,6 +2,7 @@ use debt_token_interface::DebtTokenClient;
 use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use pool_interface::types::reserve_data::ReserveData;
+use pool_interface::types::reserve_type::ReserveType;
 use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, Address, Env};
 
@@ -18,8 +19,7 @@ use super::account_position::calc_account_data;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_borrowing_enabled, require_not_in_collateral_asset,
-    require_not_paused, require_positive_amount, require_util_cap_not_exceeded,
+    require_active_reserve, require_borrowing_enabled, require_fungible_reserve, require_not_in_collateral_asset, require_not_paused, require_positive_amount, require_util_cap_not_exceeded
 };
 
 pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
@@ -29,30 +29,35 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
     require_positive_amount(env, amount);
 
     let reserve = read_reserve(env, asset)?;
+    require_fungible_reserve(env, &reserve);
     require_active_reserve(env, &reserve);
     require_borrowing_enabled(env, &reserve);
 
-    let s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
+    if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type  {
+        let s_token_supply = read_token_total_supply(env, &s_token_address);
 
-    let debt_token_supply_after = do_borrow(
-        env,
-        who,
-        asset,
-        &reserve,
-        read_token_balance(env, &reserve.s_token_address, who),
-        read_token_balance(env, &reserve.debt_token_address, who),
-        s_token_supply,
-        read_token_total_supply(env, &reserve.debt_token_address),
-        amount,
-    )?;
+        let debt_token_supply_after = do_borrow(
+            env,
+            who,
+            asset,
+            &reserve,
+            read_token_balance(env, &s_token_address, who),
+            read_token_balance(env, &debt_token_address, who),
+            s_token_supply,
+            read_token_total_supply(env, &debt_token_address),
+            amount,
+            &s_token_address,
+            &debt_token_address
+        )?;
 
-    recalculate_reserve_data(
-        env,
-        asset,
-        &reserve,
-        s_token_supply,
-        debt_token_supply_after,
-    )?;
+        recalculate_reserve_data(
+            env,
+            asset,
+            &reserve,
+            s_token_supply,
+            debt_token_supply_after,
+        )?;        
+    }
 
     Ok(())
 }
@@ -68,6 +73,8 @@ pub fn do_borrow(
     s_token_supply: i128,
     debt_token_supply: i128,
     amount: i128,
+    s_token_address: &Address,
+    debt_token_address: &Address
 ) -> Result<i128, Error> {
     require_not_in_collateral_asset(env, who_collat);
     require_positive_amount(env, amount);
@@ -84,7 +91,7 @@ pub fn do_borrow(
         &CalcAccountDataCache {
             mb_who_collat: None,
             mb_who_debt: Some(&AssetBalance::new(
-                reserve.debt_token_address.clone(),
+                debt_token_address.clone(),
                 who_debt,
             )),
             mb_s_token_supply: None,
@@ -122,12 +129,12 @@ pub fn do_borrow(
         .checked_add(amount_of_debt_token)
         .ok_or(Error::MathOverflowError)?;
 
-    DebtTokenClient::new(env, &reserve.debt_token_address).mint(who, &amount_of_debt_token);
-    STokenClient::new(env, &reserve.s_token_address).transfer_underlying_to(who, &amount);
+    DebtTokenClient::new(env, &debt_token_address).mint(who, &amount_of_debt_token);
+    STokenClient::new(env, &s_token_address).transfer_underlying_to(who, &amount);
 
-    add_stoken_underlying_balance(env, &reserve.s_token_address, amount_to_sub)?;
-    write_token_total_supply(env, &reserve.debt_token_address, debt_token_supply_after)?;
-    write_token_balance(env, &reserve.debt_token_address, who, who_debt_after)?;
+    add_stoken_underlying_balance(env, &s_token_address, amount_to_sub)?;
+    write_token_total_supply(env, &debt_token_address, debt_token_supply_after)?;
+    write_token_balance(env, &debt_token_address, who, who_debt_after)?;
 
     user_configurator
         .borrow(reserve.get_id(), who_debt == 0)?

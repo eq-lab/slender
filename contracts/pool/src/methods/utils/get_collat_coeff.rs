@@ -1,6 +1,6 @@
 use common::FixedI128;
 use pool_interface::types::{error::Error, reserve_data::ReserveData};
-use soroban_sdk::Env;
+use soroban_sdk::{Address, Env};
 
 use crate::storage::read_stoken_underlying_balance;
 
@@ -11,6 +11,7 @@ use super::rate::get_actual_lender_accrued_rate;
 pub fn get_collat_coeff(
     env: &Env,
     reserve: &ReserveData,
+    s_token_address: &Address,
     s_token_supply: i128,
     debt_token_supply: i128,
 ) -> Result<FixedI128, Error> {
@@ -19,7 +20,7 @@ pub fn get_collat_coeff(
     }
 
     let collat_ar = get_actual_lender_accrued_rate(env, reserve)?;
-    let balance = read_stoken_underlying_balance(env, &reserve.s_token_address);
+    let balance = read_stoken_underlying_balance(env, &s_token_address);
 
     FixedI128::from_rational(
         balance

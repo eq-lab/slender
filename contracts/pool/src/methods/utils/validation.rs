@@ -3,6 +3,7 @@ use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::error::Error;
 use pool_interface::types::ir_params::IRParams;
 use pool_interface::types::reserve_data::ReserveData;
+use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::types::user_config::UserConfiguration;
 use soroban_sdk::{assert_with_error, panic_with_error, Address, Env};
 
@@ -157,5 +158,13 @@ pub fn require_zero_debt(env: &Env, user_config: &UserConfiguration, reserve_id:
         env,
         !user_config.is_borrowing(env, reserve_id),
         Error::MustNotHaveDebt
+    );
+}
+
+pub fn require_fungible_reserve(env: &Env, reserve: &ReserveData) {
+    assert_with_error!(
+        env,
+        matches!(reserve.reserve_type, ReserveType::RWA),
+        Error::NotFungible
     );
 }
