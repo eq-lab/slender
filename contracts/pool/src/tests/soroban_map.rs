@@ -1,4 +1,4 @@
-use soroban_sdk::{Env, Map};
+use soroban_sdk::{vec, Env, Map, Vec};
 
 #[test]
 fn should_sort_() {
@@ -30,4 +30,19 @@ fn should_sort_() {
     for (i, value) in map.clone().values().iter().enumerate() {
         assert_eq!(value, sorted_values_by_keys[i]);
     }
+
+    let mut map: Map<u32, Vec<u32>> = Map::new(&env);
+
+    map.set(5, vec![&env, 8, 9]);
+    map.set(2, vec![&env, 3, 5, 2]);
+    map.set(7, vec![&env, 6, 4]);
+    map.set(1, vec![&env, 1]);
+
+    let mut result = Vec::new(&env);
+
+    for a in map.values().into_iter().flatten() {
+        result.push_front(a);
+    }
+
+    assert_eq!(result, vec![&env, 4, 6, 9, 8, 2, 5, 3, 1]);
 }

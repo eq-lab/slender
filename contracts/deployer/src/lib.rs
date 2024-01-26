@@ -14,6 +14,7 @@ impl Deployer {
     /// Deploy the pool contract wasm and after deployment invoke the `initialize` function
     /// of the contract with the given admin address. Returns the contract ID and
     /// result of the `initialize` function.
+    #[allow(clippy::too_many_arguments)]
     pub fn deploy_pool(
         env: Env,
         salt: BytesN<32>,
@@ -21,6 +22,7 @@ impl Deployer {
         admin: Address,
         treasury: Address,
         flash_loan_fee: u32,
+        initial_health: u32,
         ir_params: IRParams,
     ) -> (Address, Val) {
         let id = env.deployer().with_current_contract(salt).deploy(wasm_hash);
@@ -30,6 +32,7 @@ impl Deployer {
             admin.into_val(&env),
             treasury.into_val(&env),
             flash_loan_fee.into_val(&env),
+            initial_health.into_val(&env),
             ir_params.into_val(&env),
         ];
         let res: Val = env.invoke_contract(&id, &init_fn, init_args);

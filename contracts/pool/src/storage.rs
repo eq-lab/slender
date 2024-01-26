@@ -32,6 +32,7 @@ pub enum DataKey {
     STokenUnderlyingBalance(Address),
     TokenSupply(Address),
     TokenBalance(Address, Address),
+    InitialHealth,
 }
 
 pub fn has_admin(env: &Env) -> bool {
@@ -221,6 +222,29 @@ pub fn read_base_asset(env: &Env) -> Result<BaseAssetConfig, Error> {
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     let data_key = DataKey::BaseAsset;
+
+    env.storage()
+        .instance()
+        .get(&data_key)
+        .ok_or(Error::BaseAssetNotInitialized)
+}
+
+pub fn write_initial_health(env: &Env, value: u32) {
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    let data_key = DataKey::InitialHealth;
+
+    env.storage().instance().set(&data_key, &value);
+}
+
+pub fn read_initial_health(env: &Env) -> Result<u32, Error> {
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    let data_key = DataKey::InitialHealth;
 
     env.storage()
         .instance()

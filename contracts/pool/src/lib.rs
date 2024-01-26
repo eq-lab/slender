@@ -1,14 +1,14 @@
 #![deny(warnings)]
 #![no_std]
 
-use methods::set_base_asset::set_base_asset;
 use methods::{
     account_position::account_position, borrow::borrow, collat_coeff::collat_coeff,
     configure_as_collateral::configure_as_collateral, debt_coeff::debt_coeff, deposit::deposit,
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, finalize_transfer::finalize_transfer,
     flash_loan::flash_loan, init_reserve::init_reserve, initialize::initialize,
     liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral,
-    set_flash_loan_fee::set_flash_loan_fee, set_ir_params::set_ir_params, set_pause::set_pause,
+    set_base_asset::set_base_asset, set_flash_loan_fee::set_flash_loan_fee,
+    set_initial_health::set_initial_health, set_ir_params::set_ir_params, set_pause::set_pause,
     set_price_feeds::set_price_feeds, set_reserve_status::set_reserve_status,
     set_reserve_timestamp_window::set_reserve_timestamp_window,
     twap_median_price::twap_median_price, upgrade::upgrade, upgrade_debt_token::upgrade_debt_token,
@@ -44,9 +44,17 @@ impl LendingPoolTrait for LendingPool {
         admin: Address,
         treasury: Address,
         flash_loan_fee: u32,
+        initial_health: u32,
         ir_params: IRParams,
     ) -> Result<(), Error> {
-        initialize(&env, &admin, &treasury, flash_loan_fee, &ir_params)
+        initialize(
+            &env,
+            &admin,
+            &treasury,
+            flash_loan_fee,
+            initial_health,
+            &ir_params,
+        )
     }
 
     fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), Error> {
@@ -125,6 +133,14 @@ impl LendingPoolTrait for LendingPool {
         set_base_asset(&env, &asset, decimals)
     }
 
+    fn initial_health(env: Env) -> Result<u32, Error> {
+        read_initial_health(&env)
+    }
+
+    fn set_initial_health(env: Env, value: u32) -> Result<(), Error> {
+        set_initial_health(&env, value)
+    }
+
     fn set_price_feeds(env: Env, inputs: Vec<PriceFeedConfigInput>) -> Result<(), Error> {
         set_price_feeds(&env, &inputs)
     }
@@ -198,10 +214,9 @@ impl LendingPoolTrait for LendingPool {
         env: Env,
         liquidator: Address,
         who: Address,
-        debt_asset: Address,
         receive_stoken: bool,
     ) -> Result<(), Error> {
-        liquidate(&env, &liquidator, &who, debt_asset, receive_stoken)
+        liquidate(&env, &liquidator, &who, receive_stoken)
     }
 
     fn set_as_collateral(

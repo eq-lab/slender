@@ -80,7 +80,7 @@ fn should_fail_when_borrowing_disabled() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #309)")]
+#[should_panic(expected = "HostError: Error(Contract, #310)")]
 fn should_fail_when_borrowing_collat_asset() {
     let env = Env::default();
     env.mock_all_auths();
@@ -94,7 +94,7 @@ fn should_fail_when_borrowing_collat_asset() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #310)")]
+#[should_panic(expected = "HostError: Error(Contract, #311)")]
 fn should_fail_when_util_cap_exceeded() {
     let env = Env::default();
     env.mock_all_auths();
@@ -132,6 +132,20 @@ fn should_fail_when_user_config_not_exist() {
     let borrower = Address::generate(&env);
 
     sut.pool.borrow(&borrower, &sut.token().address, &1);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #301)")]
+fn should_fail_when_lt_initial_health() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
+    let token_address = debt_config.token.address.clone();
+
+    sut.pool.set_initial_health(&2_500);
+    sut.pool.borrow(&borrower, &token_address, &50_000_000);
 }
 
 #[test]

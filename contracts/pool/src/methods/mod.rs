@@ -14,6 +14,7 @@ pub mod repay;
 pub mod set_as_collateral;
 pub mod set_base_asset;
 pub mod set_flash_loan_fee;
+pub mod set_initial_health;
 pub mod set_ir_params;
 pub mod set_pause;
 pub mod set_price_feeds;

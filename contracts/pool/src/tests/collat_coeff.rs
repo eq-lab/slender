@@ -11,6 +11,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
+    sut.pool.set_initial_health(&2_500);
 
     let debt_token = sut.reserves[1].token.address.clone();
     let deposit_token = sut.reserves[0].token.address.clone();
@@ -47,7 +48,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     env.ledger().with_mut(|l| l.timestamp = 3 * DAY);
     let collat_coeff_after_withdraw = sut.pool.collat_coeff(&debt_token);
 
-    sut.pool.borrow(&borrower, &debt_token, &10_000_000);
+    sut.pool.borrow(&borrower, &debt_token, &400_000);
 
     env.ledger().with_mut(|l| l.timestamp = 4 * DAY);
     let collat_coeff_after_borrow = sut.pool.collat_coeff(&debt_token);
@@ -57,7 +58,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
         &vec![
             &env,
             PriceData {
-                price: 12_000_000_000_000_000,
+                price: 14_000_000_000_000_000,
                 timestamp: 0,
             },
         ],
@@ -66,16 +67,16 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
     let collat_coeff_after_price_change = sut.pool.collat_coeff(&debt_token);
 
-    sut.pool.liquidate(&lender, &borrower, &debt_token, &false);
+    sut.pool.liquidate(&lender, &borrower, &false);
 
     env.ledger().with_mut(|l| l.timestamp = 6 * DAY);
     let collat_coeff_after_liquidate = sut.pool.collat_coeff(&debt_token);
 
     assert_eq!(collat_coeff_initial, 1_000_000_010);
     assert_eq!(collat_coeff_after_withdraw, 1_000_000_010);
-    assert_eq!(collat_coeff_after_borrow, 1_000_199_500);
-    assert_eq!(collat_coeff_after_price_change, 1_000_266_010);
-    assert_eq!(collat_coeff_after_liquidate, 1_000_295_560);
+    assert_eq!(collat_coeff_after_borrow, 1_000_125_260);
+    assert_eq!(collat_coeff_after_price_change, 1_000_167_020);
+    assert_eq!(collat_coeff_after_liquidate, 1_000_175_510);
 }
 
 #[test]

@@ -42,11 +42,13 @@ fn create_token<'a>(
     let pool_admin = Address::generate(e);
     let treasury = Address::generate(e);
     let flash_loan_fee = 5;
+    let initial_health = 2_500;
 
     pool.initialize(
         &pool_admin,
         &treasury,
         &flash_loan_fee,
+        &initial_health,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
@@ -126,16 +128,16 @@ fn test() {
 
     {
         let underlying_decimals = underlying.decimals();
-        let liq_bonus = 11000; //110%
-        let liq_cap = 100_000_000 * 10_i128.pow(underlying_decimals); // 100M
+        let liquidity_cap = 100_000_000 * 10_i128.pow(underlying_decimals); // 100M
         let discount = 6000; //60%
         let util_cap = 9000; //90%
+        let liquidation_order = 1;
 
         pool.configure_as_collateral(
             &underlying.address,
             &CollateralParamsInput {
-                liq_bonus,
-                liq_cap,
+                liquidity_cap,
+                liquidation_order,
                 discount,
                 util_cap,
             },

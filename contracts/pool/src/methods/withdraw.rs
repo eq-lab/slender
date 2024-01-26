@@ -77,24 +77,25 @@ pub fn withdraw(
                 who,
                 &CalcAccountDataCache {
                     mb_who_collat: Some(&AssetBalance::new(
-                        s_token.address.clone(),
-                        collat_balance_after,
-                    )),
-                    mb_who_debt: None,
-                    mb_s_token_supply: Some(&AssetBalance::new(
-                        s_token.address.clone(),
-                        s_token_supply_after,
-                    )),
-                    mb_debt_token_supply: Some(&AssetBalance::new(
-                        debt_token_address.clone(),
-                        debt_token_supply,
-                    )),
+             s_token.address.clone(),
+            collat_balance_after,
+                )),
+                mb_who_debt: None,
+                mb_s_token_supply: Some(&AssetBalance::new(
+            s_token.address.clone(),
+            s_token_supply_after,
+                )),
+                mb_debt_token_supply: Some(&AssetBalance::new(
+         debt_token_address.clone(),
+        debt_token_supply,
+                )),
                 },
-                user_config,
+            user_config,
                 &mut PriceProvider::new(env)?,
-                None,
+                false,
             )?;
 
+            // TODO: do we need to check for initial_health?
             require_good_position(env, &account_data);
         }
         let amount_to_sub = underlying_to_withdraw

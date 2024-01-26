@@ -1,8 +1,8 @@
 use pool_interface::types::account_position::AccountPosition;
+use soroban_sdk::Vec;
 
-use super::liquidation_data::LiquidationData;
+use super::liquidation_asset::LiquidationAsset;
 
-#[allow(dead_code)] //TODO: remove after full implement validate_borrow
 #[derive(Debug, Clone, Default)]
 pub struct AccountData {
     /// Total collateral expresed in XLM
@@ -11,8 +11,10 @@ pub struct AccountData {
     pub debt: i128,
     /// Net position value in XLM
     pub npv: i128,
-    /// Liquidation data
-    pub liquidation: Option<LiquidationData>,
+    /// Liquidation debt ordered by max utilization
+    pub liq_debts: Option<Vec<LiquidationAsset>>,
+    /// Liquidation collateral ordered by liquidation_order
+    pub liq_collats: Option<Vec<LiquidationAsset>>,
 }
 
 impl AccountData {
