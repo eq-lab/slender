@@ -4,7 +4,7 @@ use soroban_sdk::{contracttype, Address};
 #[derive(Debug, Clone)]
 pub enum ReserveType {
     /// Fungible reserve for wich created sToken and debtToken
-    Fungible (Address, Address),
+    Fungible(Address, Address),
     /// RWA reserve
-    RWA
+    RWA,
 }

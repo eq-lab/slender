@@ -19,7 +19,9 @@ use super::account_position::calc_account_data;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_borrowing_enabled, require_gte_initial_health, require_fungible_reserve, require_not_in_collateral_asset, require_not_paused, require_positive_amount, require_util_cap_not_exceeded
+    require_active_reserve, require_borrowing_enabled, require_fungible_reserve,
+    require_gte_initial_health, require_not_in_collateral_asset, require_not_paused,
+    require_positive_amount, require_util_cap_not_exceeded,
 };
 
 pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
@@ -33,7 +35,7 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
     require_active_reserve(env, &reserve);
     require_borrowing_enabled(env, &reserve);
 
-    if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type  {
+    if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type {
         let s_token_supply = read_token_total_supply(env, &s_token_address);
 
         let debt_token_supply_after = do_borrow(
@@ -47,7 +49,7 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
             read_token_total_supply(env, &debt_token_address),
             amount,
             &s_token_address,
-            &debt_token_address
+            &debt_token_address,
         )?;
 
         recalculate_reserve_data(
@@ -56,7 +58,7 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
             &reserve,
             s_token_supply,
             debt_token_supply_after,
-        )?;        
+        )?;
     }
 
     Ok(())
@@ -74,7 +76,7 @@ pub fn do_borrow(
     debt_token_supply: i128,
     amount: i128,
     s_token_address: &Address,
-    debt_token_address: &Address
+    debt_token_address: &Address,
 ) -> Result<i128, Error> {
     require_not_in_collateral_asset(env, who_collat);
     require_positive_amount(env, amount);
@@ -90,10 +92,7 @@ pub fn do_borrow(
         who,
         &CalcAccountDataCache {
             mb_who_collat: None,
-            mb_who_debt: Some(&AssetBalance::new(
-                debt_token_address.clone(),
-                who_debt,
-            )),
+            mb_who_debt: Some(&AssetBalance::new(debt_token_address.clone(), who_debt)),
             mb_s_token_supply: None,
             mb_debt_token_supply: None,
         },

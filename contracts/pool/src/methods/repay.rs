@@ -37,7 +37,13 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
         let debt_token_supply = read_token_total_supply(env, &debt_token_address);
 
         let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?;
-        let collat_coeff = get_collat_coeff(env, &reserve, &s_token_address, s_token_supply, debt_token_supply)?;
+        let collat_coeff = get_collat_coeff(
+            env,
+            &reserve,
+            &s_token_address,
+            s_token_supply,
+            debt_token_supply,
+        )?;
 
         let (is_repayed, debt_token_supply_after) = do_repay(
             env,

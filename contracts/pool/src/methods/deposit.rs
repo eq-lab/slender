@@ -30,35 +30,35 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
     let user_config = user_configurator.user_config()?;
     require_zero_debt(env, user_config, reserve.get_id());
 
-    let is_first_deposit = if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type {
-        let debt_token_supply = read_token_total_supply(env, &debt_token_address);
+    let is_first_deposit =
+        if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type {
+            let debt_token_supply = read_token_total_supply(env, &debt_token_address);
 
-        let (is_first_deposit, s_token_supply_after) = do_deposit_fungible(
-            env,
-            who,
-            asset,
-            &reserve,
-            read_token_total_supply(env, &s_token_address),
-            debt_token_supply,
-            read_token_balance(env, &s_token_address, who),
-            amount,
-            &s_token_address
-        )?;
+            let (is_first_deposit, s_token_supply_after) = do_deposit_fungible(
+                env,
+                who,
+                asset,
+                &reserve,
+                read_token_total_supply(env, &s_token_address),
+                debt_token_supply,
+                read_token_balance(env, &s_token_address, who),
+                amount,
+                &s_token_address,
+            )?;
 
-        
-        recalculate_reserve_data(
-            env,
-            asset,
-            &reserve,
-            s_token_supply_after,
-            debt_token_supply,
-        )?;
+            recalculate_reserve_data(
+                env,
+                asset,
+                &reserve,
+                s_token_supply_after,
+                debt_token_supply,
+            )?;
 
-        is_first_deposit
-    } else {
-        do_deposit_rwa(env, who, asset, amount)
-    };
-    
+            is_first_deposit
+        } else {
+            do_deposit_rwa(env, who, asset, amount)
+        };
+
     user_configurator
         .deposit(reserve.get_id(), asset, is_first_deposit)?
         .write();
@@ -76,12 +76,18 @@ fn do_deposit_fungible(
     debt_token_supply: i128,
     who_collat: i128,
     amount: i128,
-    s_token_address: &Address
+    s_token_address: &Address,
 ) -> Result<(bool, i128), Error> {
     let balance = read_stoken_underlying_balance(env, &s_token_address);
     require_liquidity_cap_not_exceeded(env, reserve, debt_token_supply, balance, amount)?;
 
-    let collat_coeff = get_collat_coeff(env, reserve, &s_token_address, s_token_supply, debt_token_supply)?;
+    let collat_coeff = get_collat_coeff(
+        env,
+        reserve,
+        &s_token_address,
+        s_token_supply,
+        debt_token_supply,
+    )?;
     let is_first_deposit = who_collat == 0;
     let amount_to_mint = collat_coeff
         .recip_mul_int(amount)

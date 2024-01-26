@@ -1,5 +1,5 @@
-use pool_interface::types::{error::Error, reserve_type::ReserveType};
 use pool_interface::types::reserve_data::ReserveData;
+use pool_interface::types::{error::Error, reserve_type::ReserveType};
 use soroban_sdk::{assert_with_error, Address, BytesN, Env};
 
 use crate::storage::{read_reserves, write_reserve, write_reserves};

@@ -10,7 +10,8 @@ use crate::types::user_configurator::UserConfigurator;
 
 use super::account_position::calc_account_data;
 use super::utils::validation::{
-    require_active_reserve, require_fungible_reserve, require_good_position, require_not_paused, require_zero_debt
+    require_active_reserve, require_fungible_reserve, require_good_position, require_not_paused,
+    require_zero_debt,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -44,7 +45,9 @@ pub fn finalize_transfer(
         let mut from_configurator = UserConfigurator::new(env, from, false);
         let from_config = from_configurator.user_config()?;
 
-        if from_config.is_borrowing_any() && from_config.is_using_as_collateral(env, reserve.get_id()) {
+        if from_config.is_borrowing_any()
+            && from_config.is_using_as_collateral(env, reserve.get_id())
+        {
             let from_account_data = calc_account_data(
                 env,
                 from,

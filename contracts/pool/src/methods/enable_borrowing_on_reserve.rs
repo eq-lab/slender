@@ -14,7 +14,7 @@ pub fn enable_borrowing_on_reserve(env: &Env, asset: &Address, enabled: bool) ->
     if enabled {
         require_fungible_reserve(env, &reserve);
     }
-    
+
     reserve.configuration.borrowing_enabled = enabled;
     write_reserve(env, asset, &reserve);
 

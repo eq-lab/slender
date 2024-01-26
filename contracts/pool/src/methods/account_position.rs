@@ -81,7 +81,7 @@ pub fn calc_account_data(
                 &mut sorted_collat_to_receive,
                 &mut total_discounted_collat_in_base,
                 &mut total_debt_in_base,
-                &mut sorted_debt_to_cover
+                &mut sorted_debt_to_cover,
             )?;
         } else {
             calculate_rwa(
@@ -93,7 +93,7 @@ pub fn calc_account_data(
                 liquidation,
                 price_provider,
                 &mut sorted_collat_to_receive,
-                &mut total_discounted_collat_in_base
+                &mut total_discounted_collat_in_base,
             );
         }
     }
@@ -156,7 +156,13 @@ fn calculate_fungible(
             .map(|x| x.balance)
             .unwrap_or_else(|| read_token_total_supply(env, &debt_token_address));
 
-        let collat_coeff = get_collat_coeff(env, &reserve, &s_token_address, s_token_supply, debt_token_supply)?;
+        let collat_coeff = get_collat_coeff(
+            env,
+            &reserve,
+            &s_token_address,
+            s_token_supply,
+            debt_token_supply,
+        )?;
 
         let who_collat = mb_who_collat
             .filter(|x| x.asset == s_token_address)
@@ -205,8 +211,7 @@ fn calculate_fungible(
             .mul_int(who_debt)
             .ok_or(Error::CalcAccountDataMathError)?;
 
-        let debt_balance_in_base =
-            price_provider.convert_to_base(&asset, compounded_balance)?;
+        let debt_balance_in_base = price_provider.convert_to_base(&asset, compounded_balance)?;
 
         *total_debt_in_base = total_debt_in_base
             .checked_add(debt_balance_in_base)
@@ -265,8 +270,7 @@ fn calculate_rwa(
         // TODO: depence on RWA implementation
         let balance = 1;
 
-        let balance_in_base =
-            price_provider.convert_to_base(&asset, balance)?;
+        let balance_in_base = price_provider.convert_to_base(&asset, balance)?;
 
         let discounted_balance_in_base = discount
             .mul_int(balance_in_base)
@@ -278,13 +282,16 @@ fn calculate_rwa(
 
         if liquidation {
             let curr_discount = reserve.configuration.discount;
-            sorted_collateral_to_receive.set(reserve.configuration.liquidation_order, LiquidationAsset {
-                reserve,
-                asset,
-                lp_balance: None,
-                coeff: None,
-                comp_balance: balance,
-            });
+            sorted_collateral_to_receive.set(
+                reserve.configuration.liquidation_order,
+                LiquidationAsset {
+                    reserve,
+                    asset,
+                    lp_balance: None,
+                    coeff: None,
+                    comp_balance: balance,
+                },
+            );
         }
     }
 

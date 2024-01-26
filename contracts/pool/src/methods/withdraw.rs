@@ -35,10 +35,15 @@ pub fn withdraw(
     require_active_reserve(env, &reserve);
 
     if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type {
-
         let s_token_supply = read_token_total_supply(env, &s_token_address);
         let debt_token_supply = read_token_total_supply(env, &debt_token_address);
-        let collat_coeff = get_collat_coeff(env, &reserve, &s_token_address, s_token_supply, debt_token_supply)?;
+        let collat_coeff = get_collat_coeff(
+            env,
+            &reserve,
+            &s_token_address,
+            s_token_supply,
+            debt_token_supply,
+        )?;
 
         let s_token = STokenClient::new(env, &s_token_address);
 
@@ -71,26 +76,28 @@ pub fn withdraw(
             .checked_sub(s_token_to_burn)
             .ok_or(Error::InvalidAmount)?;
 
-        if user_config.is_borrowing_any() && user_config.is_using_as_collateral(env, reserve.get_id()) {
+        if user_config.is_borrowing_any()
+            && user_config.is_using_as_collateral(env, reserve.get_id())
+        {
             let account_data = calc_account_data(
                 env,
                 who,
                 &CalcAccountDataCache {
                     mb_who_collat: Some(&AssetBalance::new(
-             s_token.address.clone(),
-            collat_balance_after,
-                )),
-                mb_who_debt: None,
-                mb_s_token_supply: Some(&AssetBalance::new(
-            s_token.address.clone(),
-            s_token_supply_after,
-                )),
-                mb_debt_token_supply: Some(&AssetBalance::new(
-         debt_token_address.clone(),
-        debt_token_supply,
-                )),
+                        s_token.address.clone(),
+                        collat_balance_after,
+                    )),
+                    mb_who_debt: None,
+                    mb_s_token_supply: Some(&AssetBalance::new(
+                        s_token.address.clone(),
+                        s_token_supply_after,
+                    )),
+                    mb_debt_token_supply: Some(&AssetBalance::new(
+                        debt_token_address.clone(),
+                        debt_token_supply,
+                    )),
                 },
-            user_config,
+                user_config,
                 &mut PriceProvider::new(env)?,
                 false,
             )?;

@@ -103,7 +103,7 @@ pub fn flash_loan(
                     read_token_total_supply(env, &debt_token_address),
                     received_asset.amount,
                     &s_token_address,
-                    &debt_token_address
+                    &debt_token_address,
                 )?;
 
                 recalculate_reserve_data(
