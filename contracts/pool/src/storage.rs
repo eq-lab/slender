@@ -249,7 +249,7 @@ pub fn read_initial_health(env: &Env) -> Result<u32, Error> {
     env.storage()
         .instance()
         .get(&data_key)
-        .ok_or(Error::BaseAssetNotInitialized)
+        .ok_or(Error::InitialHealthNotInitialized)
 }
 
 pub fn paused(env: &Env) -> bool {
