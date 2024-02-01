@@ -15,7 +15,7 @@ use super::utils::get_collat_coeff::get_collat_coeff;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_debt, require_not_paused, require_positive_amount,
+    require_active_reserve, require_debt, require_fungible_reserve, require_not_paused, require_positive_amount
 };
 
 pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
@@ -23,24 +23,24 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
 
     require_not_paused(env);
     require_positive_amount(env, amount);
-
+    
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
+    require_fungible_reserve(env, &reserve);
 
-    // as it's no debt for RWA so there is nothing to repay
-    if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type {
+    if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
         let mut user_configurator = UserConfigurator::new(env, who, false);
         let user_config = user_configurator.user_config()?;
         require_debt(env, user_config, reserve.get_id());
 
-        let s_token_supply = read_token_total_supply(env, &s_token_address);
-        let debt_token_supply = read_token_total_supply(env, &debt_token_address);
+        let s_token_supply = read_token_total_supply(env, s_token_address);
+        let debt_token_supply = read_token_total_supply(env, debt_token_address);
 
         let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?;
         let collat_coeff = get_collat_coeff(
             env,
             &reserve,
-            &s_token_address,
+            s_token_address,
             s_token_supply,
             debt_token_supply,
         )?;
@@ -49,8 +49,8 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
             env,
             who,
             asset,
-            &s_token_address,
-            &debt_token_address,
+            s_token_address,
+            debt_token_address,
             collat_coeff,
             debt_coeff,
             debt_token_supply,

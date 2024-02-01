@@ -1,5 +1,6 @@
 use common::FixedI128;
 use pool_interface::types::account_position::AccountPosition;
+use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::reserve_type::ReserveType;
@@ -66,7 +67,9 @@ pub fn calc_account_data(
             Error::NoActiveReserve
         );
 
-        if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type {
+        if let ReserveType::Fungible(s_token_address, debt_token_address) =
+            reserve.clone().reserve_type
+        {
             calculate_fungible(
                 env,
                 who,
@@ -88,13 +91,14 @@ pub fn calc_account_data(
                 env,
                 who,
                 user_config,
+                cache.mb_rwa_balance,
                 reserve,
                 asset,
                 liquidation,
                 price_provider,
                 &mut sorted_collat_to_receive,
                 &mut total_discounted_collat_in_base,
-            );
+            )?;
         }
     }
 
@@ -142,10 +146,11 @@ fn calculate_fungible(
         mb_who_debt,
         mb_s_token_supply,
         mb_debt_token_supply,
+        mb_rwa_balance: _
     } = cache;
 
     let reserve_index = reserve.get_id();
-    if user_config.is_using_as_collateral(env, reserve.get_id()) {
+    if user_config.is_using_as_collateral(env, reserve_index) {
         let s_token_supply = mb_s_token_supply
             .filter(|x| x.asset == s_token_address)
             .map(|x| x.balance)
@@ -199,7 +204,7 @@ fn calculate_fungible(
                 },
             );
         }
-    } else if user_config.is_borrowing(env, reserve.get_id()) {
+    } else if user_config.is_borrowing(env, reserve_index) {
         let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?;
 
         let who_debt = mb_who_debt
@@ -255,6 +260,7 @@ fn calculate_rwa(
     env: &Env,
     who: &Address,
     user_config: &UserConfiguration,
+    mb_rwa_balance: Option<&AssetBalance>,
     reserve: ReserveData,
     asset: Address,
     liquidation: bool,
@@ -267,8 +273,10 @@ fn calculate_rwa(
         let discount = FixedI128::from_percentage(reserve.configuration.discount)
             .ok_or(Error::CalcAccountDataMathError)?;
 
-        // TODO: depence on RWA implementation
-        let balance = 1;
+        let balance = mb_rwa_balance
+            .filter(|x| x.asset == asset)
+            .map(|x| x.balance)
+            .unwrap_or_else(|| read_token_balance(env, &asset, who));
 
         let balance_in_base = price_provider.convert_to_base(&asset, balance)?;
 
@@ -281,7 +289,6 @@ fn calculate_rwa(
             .ok_or(Error::CalcAccountDataMathError)?;
 
         if liquidation {
-            let curr_discount = reserve.configuration.discount;
             sorted_collateral_to_receive.set(
                 reserve.configuration.liquidation_order,
                 LiquidationAsset {

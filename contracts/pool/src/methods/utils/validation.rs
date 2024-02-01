@@ -187,7 +187,7 @@ pub fn require_zero_debt(env: &Env, user_config: &UserConfiguration, reserve_id:
 pub fn require_fungible_reserve(env: &Env, reserve: &ReserveData) {
     assert_with_error!(
         env,
-        matches!(reserve.reserve_type, ReserveType::RWA),
+        matches!(reserve.reserve_type, ReserveType::Fungible(_, _)),
         Error::NotFungible
     );
 }

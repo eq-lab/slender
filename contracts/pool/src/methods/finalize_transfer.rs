@@ -30,7 +30,8 @@ pub fn finalize_transfer(
     let reserve = read_reserve(env, asset)?;
     require_fungible_reserve(env, &reserve);
     require_active_reserve(env, &reserve);
-    if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type {
+    if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.clone().reserve_type
+    {
         s_token_address.require_auth();
 
         let mut to_configurator = UserConfigurator::new(env, to, true);
@@ -65,6 +66,7 @@ pub fn finalize_transfer(
                         debt_token_address.clone(),
                         read_token_total_supply(env, &debt_token_address),
                     )),
+                    mb_rwa_balance: None
                 },
                 from_config,
                 &mut PriceProvider::new(env)?,

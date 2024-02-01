@@ -31,7 +31,7 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
     require_zero_debt(env, user_config, reserve.get_id());
 
     let is_first_deposit =
-        if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type {
+        if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
             let debt_token_supply = read_token_total_supply(env, &debt_token_address);
 
             let (is_first_deposit, s_token_supply_after) = do_deposit_fungible(
@@ -56,7 +56,7 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
 
             is_first_deposit
         } else {
-            do_deposit_rwa(env, who, asset, amount)
+            do_deposit_rwa(env, who, asset, amount)?
         };
 
     user_configurator
@@ -111,8 +111,14 @@ fn do_deposit_fungible(
     Ok((is_first_deposit, s_token_supply_after))
 }
 
-fn do_deposit_rwa(env: &Env, who: &Address, asset: &Address, amount: i128) -> bool {
-    // TODO
+fn do_deposit_rwa(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<bool, Error> {
+    let balance_before = read_token_balance(env, &asset, who);
+    token::Client::new(env, asset).transfer(who, &env.current_contract_address(), &amount);
+    let balance_after = balance_before
+        .checked_add(amount)
+        .ok_or(Error::MathOverflowError)?;
+    write_token_balance(env, asset, who, balance_after)?;
     event::deposit(env, who, asset, amount);
-    true
+    
+    Ok(balance_before == 0)
 }

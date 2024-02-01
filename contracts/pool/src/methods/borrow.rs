@@ -35,7 +35,7 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
     require_active_reserve(env, &reserve);
     require_borrowing_enabled(env, &reserve);
 
-    if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type {
+    if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
         let s_token_supply = read_token_total_supply(env, &s_token_address);
 
         let debt_token_supply_after = do_borrow(
@@ -48,8 +48,8 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
             s_token_supply,
             read_token_total_supply(env, &debt_token_address),
             amount,
-            &s_token_address,
-            &debt_token_address,
+            s_token_address,
+            debt_token_address,
         )?;
 
         recalculate_reserve_data(
@@ -95,6 +95,7 @@ pub fn do_borrow(
             mb_who_debt: Some(&AssetBalance::new(debt_token_address.clone(), who_debt)),
             mb_s_token_supply: None,
             mb_debt_token_supply: None,
+            mb_rwa_balance: None
         },
         user_config,
         &mut price_provider,

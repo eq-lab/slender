@@ -47,8 +47,8 @@ pub fn flash_loan(
         require_fungible_reserve(env, &reserve);
         require_borrowing_enabled(env, &reserve);
 
-        if let ReserveType::Fungible(s_token_address, _) = reserve.reserve_type {
-            let s_token = STokenClient::new(env, &s_token_address);
+        if let ReserveType::Fungible(s_token_address, _) = &reserve.reserve_type {
+            let s_token = STokenClient::new(env, s_token_address);
             s_token.transfer_underlying_to(receiver, &loan_asset.amount);
 
             reserves.push_back(reserve);
@@ -73,14 +73,14 @@ pub fn flash_loan(
         let loan_asset = loan_assets.get_unchecked(i);
         let received_asset = receiver_assets.get_unchecked(i);
         let reserve = reserves.get_unchecked(i);
-        if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type {
+        if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
             if !loan_asset.borrow {
                 let underlying_asset = token::Client::new(env, &received_asset.asset);
 
                 underlying_asset.transfer_from(
                     &env.current_contract_address(),
                     receiver,
-                    &s_token_address,
+                    s_token_address,
                     &received_asset.amount,
                 );
                 underlying_asset.transfer_from(
@@ -90,20 +90,20 @@ pub fn flash_loan(
                     &received_asset.premium,
                 );
             } else {
-                let s_token_supply = read_token_total_supply(env, &s_token_address);
+                let s_token_supply = read_token_total_supply(env, s_token_address);
 
                 let debt_token_supply_after = do_borrow(
                     env,
                     who,
                     &received_asset.asset,
                     &reserve,
-                    read_token_balance(env, &s_token_address, who),
-                    read_token_balance(env, &debt_token_address, who),
+                    read_token_balance(env, s_token_address, who),
+                    read_token_balance(env, debt_token_address, who),
                     s_token_supply,
-                    read_token_total_supply(env, &debt_token_address),
+                    read_token_total_supply(env, debt_token_address),
                     received_asset.amount,
-                    &s_token_address,
-                    &debt_token_address,
+                    s_token_address,
+                    debt_token_address,
                 )?;
 
                 recalculate_reserve_data(

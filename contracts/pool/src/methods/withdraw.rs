@@ -10,7 +10,7 @@ use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use pool_interface::types::reserve_type::ReserveType;
 use s_token_interface::STokenClient;
-use soroban_sdk::{assert_with_error, Address, Env};
+use soroban_sdk::{assert_with_error, token, Address, Env};
 
 use super::account_position::calc_account_data;
 use super::utils::get_collat_coeff::get_collat_coeff;
@@ -33,21 +33,23 @@ pub fn withdraw(
 
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
+    let mut user_configurator = UserConfigurator::new(env, who, false);
+    let user_config = user_configurator.user_config()?;
 
-    if let ReserveType::Fungible(s_token_address, debt_token_address) = reserve.reserve_type {
-        let s_token_supply = read_token_total_supply(env, &s_token_address);
-        let debt_token_supply = read_token_total_supply(env, &debt_token_address);
+    if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
+        let s_token_supply = read_token_total_supply(env, s_token_address);
+        let debt_token_supply = read_token_total_supply(env, debt_token_address);
         let collat_coeff = get_collat_coeff(
             env,
             &reserve,
-            &s_token_address,
+            s_token_address,
             s_token_supply,
             debt_token_supply,
         )?;
 
-        let s_token = STokenClient::new(env, &s_token_address);
+        let s_token = STokenClient::new(env, s_token_address);
 
-        let collat_balance = read_token_balance(env, &s_token_address, who);
+        let collat_balance = read_token_balance(env, s_token_address, who);
         let underlying_balance = collat_coeff
             .mul_int(collat_balance)
             .ok_or(Error::MathOverflowError)?;
@@ -67,8 +69,6 @@ pub fn withdraw(
             Error::NotEnoughAvailableUserBalance
         );
 
-        let mut user_configurator = UserConfigurator::new(env, who, false);
-        let user_config = user_configurator.user_config()?;
         let collat_balance_after = collat_balance
             .checked_sub(s_token_to_burn)
             .ok_or(Error::InvalidAmount)?;
@@ -96,6 +96,7 @@ pub fn withdraw(
                         debt_token_address.clone(),
                         debt_token_supply,
                     )),
+                    mb_rwa_balance: None
                 },
                 user_config,
                 &mut PriceProvider::new(env)?,
@@ -130,10 +131,40 @@ pub fn withdraw(
             debt_token_supply,
         )?;
     } else {
-        // TODO
-        // calc_account_data
-        // require_good_position
-        // event
+        let rwa_balance = read_token_balance(env, asset, who);
+        
+        let amount_to_withdraw = amount.min(rwa_balance);
+        let rwa_balance_after = rwa_balance - amount_to_withdraw;
+
+        if user_config.is_borrowing_any()
+            && user_config.is_using_as_collateral(env, reserve.get_id())
+        {
+            let account_data = calc_account_data(
+                env,
+                who,
+                &CalcAccountDataCache {
+                    mb_who_collat: None,
+                    mb_who_debt: None,
+                    mb_s_token_supply: None,
+                    mb_debt_token_supply: None,
+                    mb_rwa_balance: Some(&AssetBalance::new(
+                        asset.clone(), rwa_balance_after
+                    )
+                    ),
+                },
+                user_config,
+                &mut PriceProvider::new(env)?,
+                false,
+            )?;
+
+            // TODO: do we need to check for initial_health?
+            require_good_position(env, &account_data);
+        }
+        token::Client::new(env, asset).transfer(&env.current_contract_address(), &who, &amount_to_withdraw);
+
+        write_token_balance(env, &asset, who, rwa_balance_after)?;
+
+        event::withdraw(env, who, asset, to, rwa_balance_after);
     }
 
     Ok(())
