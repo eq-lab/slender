@@ -160,7 +160,13 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "collat_config_change"), &asset_address).into_val(&env),
-                (params.liquidity_cap, params.util_cap, params.discount).into_val(&env)
+                (
+                    params.liquidity_cap,
+                    params.liquidation_order,
+                    params.util_cap,
+                    params.discount
+                )
+                    .into_val(&env)
             ),
         ]
     );
