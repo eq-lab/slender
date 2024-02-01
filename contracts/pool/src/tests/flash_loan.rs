@@ -76,13 +76,13 @@ fn should_require_borrower_to_pay_fee() {
 
     let s_token_undetlying_asset_0_before = sut.reserves[0]
         .token
-        .balance(&sut.reserves[0].s_token.address);
+        .balance(&sut.reserves[0].s_token().address);
     let s_token_undetlying_asset_1_before = sut.reserves[0]
         .token
-        .balance(&sut.reserves[1].s_token.address);
+        .balance(&sut.reserves[1].s_token().address);
     let s_token_undetlying_asset_2_before = sut.reserves[0]
         .token
-        .balance(&sut.reserves[2].s_token.address);
+        .balance(&sut.reserves[2].s_token().address);
 
     sut.pool.flash_loan(
         &borrower,
@@ -97,13 +97,13 @@ fn should_require_borrower_to_pay_fee() {
 
     let s_token_undetlying_asset_0_after = sut.reserves[0]
         .token
-        .balance(&sut.reserves[0].s_token.address);
+        .balance(&sut.reserves[0].s_token().address);
     let s_token_undetlying_asset_1_after = sut.reserves[0]
         .token
-        .balance(&sut.reserves[1].s_token.address);
+        .balance(&sut.reserves[1].s_token().address);
     let s_token_undetlying_asset_2_after = sut.reserves[0]
         .token
-        .balance(&sut.reserves[2].s_token.address);
+        .balance(&sut.reserves[2].s_token().address);
 
     assert_eq!(treasury_asset_0_before, 0);
     assert_eq!(treasury_asset_1_before, 0);
@@ -155,7 +155,7 @@ fn should_borrow_if_borrowing_specified_on_asset() {
         ],
     );
 
-    let borrower_debt_before = sut.reserves[2].debt_token.balance(&borrower);
+    let borrower_debt_before = sut.reserves[2].debt_token().balance(&borrower);
 
     sut.pool.flash_loan(
         &borrower,
@@ -164,7 +164,7 @@ fn should_borrow_if_borrowing_specified_on_asset() {
         &Bytes::new(&env),
     );
 
-    let borrower_debt_after = sut.reserves[2].debt_token.balance(&borrower);
+    let borrower_debt_after = sut.reserves[2].debt_token().balance(&borrower);
 
     assert_eq!(borrower_debt_before, 0);
     assert_eq!(borrower_debt_after, 3000001);

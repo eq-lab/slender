@@ -143,22 +143,25 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
     let flash_loan_receiver: FlashLoanReceiverClient<'_> =
         create_flash_loan_receiver_contract(&env);
 
-    let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..3)
+    let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..4)
         .map(|i| {
             let (token, token_admin_client) = create_token_contract(&env, &token_admin);
-            let s_token = create_s_token_contract(&env, &pool.address, &token.address);
-            let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
             let decimals = (i == 0).then(|| 7).unwrap_or(9);
 
-            assert!(pool.get_reserve(&s_token.address).is_none());
-
-            pool.init_reserve(
-                &token.address,
-                &InitReserveInput {
-                    s_token_address: s_token.address.clone(),
-                    debt_token_address: debt_token.address.clone(),
-                },
-            );
+            let (s_token, debt_token) = if i == 3 {
+                pool.init_reserve(&token.address, &ReserveType::RWA);
+                (None, None)
+            } else {
+                let s_token = create_s_token_contract(&env, &pool.address, &token.address);
+                assert!(pool.get_reserve(&s_token.address).is_none());
+                let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
+                pool.init_reserve(
+                    &token.address,
+                    &ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone()),
+                );
+                pool.enable_borrowing_on_reserve(&token.address, &true);
+                (Some(s_token), Some(debt_token))
+            };
 
             if i == 0 {
                 pool.set_base_asset(&token.address, &decimals)
@@ -179,13 +182,11 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                 },
             );
 
-            pool.enable_borrowing_on_reserve(&token.address, &true);
-
             let reserve = pool.get_reserve(&token.address);
             assert_eq!(reserve.is_some(), true);
 
             let reserve_config = reserve.unwrap().configuration;
-            assert_eq!(reserve_config.borrowing_enabled, true);
+            assert_eq!(reserve_config.borrowing_enabled, i != 3); // borrowing disabled only for third asset (RWA)
             assert_eq!(reserve_config.liquidity_cap, liquidity_cap);
             assert_eq!(reserve_config.util_cap, util_cap);
             assert_eq!(reserve_config.discount, discount);
@@ -212,6 +213,16 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     ],
                 ),
                 2 => price_feed.init(
+                    &Asset::Stellar(token.address.clone()),
+                    &vec![
+                        &env,
+                        PriceData {
+                            price: 10_000_000_000_000_000,
+                            timestamp: 1704790200000,
+                        },
+                    ],
+                ),
+                3 => price_feed.init(
                     &Asset::Stellar(token.address.clone()),
                     &vec![
                         &env,
@@ -275,6 +286,19 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     },
                 ],
             },
+            PriceFeedConfigInput {
+                asset: reserves[3].token.address.clone(),
+                asset_decimals: 9,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(reserves[3].token.address.clone()),
+                        feed_decimals: 15,
+                        twap_records: 10,
+                    },
+                ],
+            },
         ],
     );
 
@@ -315,13 +339,13 @@ pub(crate) fn fill_pool<'a, 'b>(
     //lender deposit all tokens
     for i in 0..3 {
         let amount = (i == 0).then(|| 1_000_000).unwrap_or(100_000_000);
-        let stoken = sut.reserves[i].s_token.address.clone();
+        let stoken = sut.reserves[i].s_token().address.clone();
         let token = sut.reserves[i].token.address.clone();
         let pool_balance = sut.reserves[i].token.balance(&stoken);
 
         sut.pool.deposit(&lender, &token, &amount);
 
-        assert_eq!(sut.reserves[i].s_token.balance(&lender), amount);
+        assert_eq!(sut.reserves[i].s_token().balance(&lender), amount);
         assert_eq!(
             sut.reserves[i].token.balance(&stoken),
             pool_balance + amount
@@ -333,7 +357,7 @@ pub(crate) fn fill_pool<'a, 'b>(
     //borrower deposit first token and borrow second token
     sut.pool
         .deposit(&borrower, &sut.reserves[0].token.address, &1_000_000);
-    assert_eq!(sut.reserves[0].s_token.balance(&borrower), 1_000_000);
+    assert_eq!(sut.reserves[0].s_token().balance(&borrower), 1_000_000);
 
     if with_borrowing {
         let borrow_amount = 40_000_000;
@@ -363,7 +387,7 @@ pub(crate) fn fill_pool_two<'a, 'b>(
     //lender deposit all tokens
     for i in 0..3 {
         let amount = (i == 0).then(|| 1_000_000).unwrap_or(100_000_000);
-        let stoken = sut.reserves[i].s_token.address.clone();
+        let stoken = sut.reserves[i].s_token().address.clone();
         let token = sut.reserves[i].token.address.clone();
         let pool_balance = sut.reserves[i].token.balance(&stoken);
 
@@ -462,13 +486,13 @@ pub(crate) fn fill_pool_six<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Add
         let amount = (i == 0)
             .then(|| 10_000_000_000)
             .unwrap_or(1_000_000_000_000);
-        let stoken = sut.reserves[i].s_token.address.clone();
+        let stoken = sut.reserves[i].s_token().address.clone();
         let token = sut.reserves[i].token.address.clone();
         let pool_balance = sut.reserves[i].token.balance(&stoken);
 
         sut.pool.deposit(&lender, &token, &amount);
 
-        assert_eq!(sut.reserves[i].s_token.balance(&lender), amount);
+        assert_eq!(sut.reserves[i].s_token().balance(&lender), amount);
         assert_eq!(
             sut.reserves[i].token.balance(&stoken),
             pool_balance + amount
@@ -482,8 +506,18 @@ pub(crate) fn fill_pool_six<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Add
 pub struct ReserveConfig<'a> {
     pub token: TokenClient<'a>,
     pub token_admin: TokenAdminClient<'a>,
-    pub s_token: STokenClient<'a>,
-    pub debt_token: DebtTokenClient<'a>,
+    pub s_token: Option<STokenClient<'a>>,
+    pub debt_token: Option<DebtTokenClient<'a>>,
+}
+
+impl<'a> ReserveConfig<'a> {
+    pub fn s_token(&self) -> &STokenClient<'a> {
+        self.s_token.as_ref().unwrap()
+    }
+
+    pub fn debt_token(&self) -> &DebtTokenClient<'a> {
+        self.debt_token.as_ref().unwrap()
+    }
 }
 
 #[allow(dead_code)]
@@ -506,10 +540,14 @@ impl<'a> Sut<'a> {
     }
 
     pub fn debt_token(&self) -> &DebtTokenClient<'a> {
-        &self.reserves[0].debt_token
+        &self.reserves[0].debt_token()
     }
 
     pub fn s_token(&self) -> &STokenClient<'a> {
-        &self.reserves[0].s_token
+        &self.reserves[0].s_token()
+    }
+
+    pub fn rwa_config(&self) -> &ReserveConfig<'a> {
+        &self.reserves[3]
     }
 }

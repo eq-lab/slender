@@ -174,12 +174,13 @@ fn should_affect_account_data() {
 
     let account_position = sut.pool.account_position(&borrower);
 
-    let collat_token_total_supply = collat_token.s_token.total_supply();
-    let pool_collat_token_total_supply = sut.pool.token_total_supply(&collat_token.s_token.address);
-    let collat_token_balance = collat_token.s_token.balance(&borrower);
+    let collat_token_total_supply = collat_token.s_token().total_supply();
+    let pool_collat_token_total_supply =
+        sut.pool.token_total_supply(&collat_token.s_token().address);
+    let collat_token_balance = collat_token.s_token().balance(&borrower);
     let pool_collat_token_balance = sut
         .pool
-        .token_balance(&collat_token.s_token.address, &borrower);
+        .token_balance(&collat_token.s_token().address, &borrower);
 
     assert_eq!(collat_token_total_supply, pool_collat_token_total_supply);
     assert_eq!(collat_token_balance, pool_collat_token_balance);
@@ -236,4 +237,83 @@ fn should_emit_events() {
             ),
         ]
     );
+}
+
+#[test]
+fn rwa_change_balances() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let sut = init_pool(&env, false);
+    let (lender, borrower, _) = fill_pool(&env, &sut, true);
+    let rwa_reserve_config = sut.rwa_config();
+    rwa_reserve_config.token_admin.mint(&lender, &1_000_000_000);
+    rwa_reserve_config
+        .token_admin
+        .mint(&borrower, &1_000_000_000);
+
+    sut.pool
+        .deposit(&borrower, &rwa_reserve_config.token.address, &1_000_000_000);
+
+    let borrower_balance_after = rwa_reserve_config.token.balance(&borrower);
+    let pool_balance_after = rwa_reserve_config.token.balance(&sut.pool.address);
+    assert_eq!(borrower_balance_after, 0);
+    assert_eq!(pool_balance_after, 1_000_000_000);
+
+    sut.pool
+        .deposit(&lender, &rwa_reserve_config.token.address, &1_000_000_000);
+
+    let lender_balance_after = rwa_reserve_config.token.balance(&lender);
+    let pool_balance_after = rwa_reserve_config.token.balance(&sut.pool.address);
+    assert_eq!(lender_balance_after, 0);
+    assert_eq!(pool_balance_after, 2_000_000_000);
+}
+
+#[test]
+fn rwa_should_not_affect_coeffs() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (lender, _, debt_config) = fill_pool(&env, &sut, true);
+    let rwa_reserve_config = sut.rwa_config();
+    rwa_reserve_config.token_admin.mint(&lender, &1_000_000_000);
+    let debt_token = &debt_config.token.address;
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
+    let collat_coeff_prev = sut.pool.collat_coeff(&debt_token);
+    let debt_coeff_prev = sut.pool.debt_coeff(&debt_token);
+
+    sut.pool
+        .deposit(&lender, &rwa_reserve_config.token.address, &100_000_000);
+
+    let collat_coeff = sut.pool.collat_coeff(&debt_token);
+    let debt_coeff = sut.pool.debt_coeff(&debt_token);
+
+    assert_eq!(collat_coeff_prev, collat_coeff);
+    assert_eq!(debt_coeff_prev, debt_coeff);
+}
+
+#[test]
+fn rwa_should_affect_account_data() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
+    let rwa_reserve_config = sut.rwa_config();
+    rwa_reserve_config
+        .token_admin
+        .mint(&borrower, &1_000_000_000);
+
+    let borrower_position_prev = sut.pool.account_position(&borrower);
+
+    sut.pool
+        .deposit(&borrower, &rwa_reserve_config.token.address, &2_000_000);
+
+    let borrower_position = sut.pool.account_position(&borrower);
+
+    assert!(borrower_position_prev.discounted_collateral < borrower_position.discounted_collateral);
+    assert!(borrower_position_prev.debt == borrower_position.debt);
+    assert!(borrower_position_prev.npv < borrower_position.npv);
 }

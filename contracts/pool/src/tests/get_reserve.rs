@@ -32,10 +32,8 @@ fn should_return_reserve() {
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
-    let init_reserve_input = InitReserveInput {
-        s_token_address: s_token.address.clone(),
-        debt_token_address: debt_token.address.clone(),
-    };
+    let init_reserve_input =
+        ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
 
     pool.init_reserve(
         &underlying_token.address.clone(),
@@ -44,6 +42,5 @@ fn should_return_reserve() {
 
     let reserve = pool.get_reserve(&underlying_token.address).unwrap();
 
-    assert_eq!(reserve.s_token_address, s_token.address);
-    assert_eq!(reserve.debt_token_address, debt_token.address);
+    assert_eq!(reserve.reserve_type, init_reserve_input);
 }

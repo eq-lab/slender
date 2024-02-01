@@ -3,11 +3,11 @@ extern crate std;
 
 use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::flash_loan_asset::FlashLoanAsset;
-use pool_interface::types::init_reserve_input::InitReserveInput;
 use pool_interface::types::ir_params::IRParams;
 use pool_interface::types::oracle_asset::OracleAsset;
 use pool_interface::types::price_feed::PriceFeed;
 use pool_interface::types::price_feed_config_input::PriceFeedConfigInput;
+use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::LendingPoolClient;
 use price_feed_interface::types::asset::Asset;
 use price_feed_interface::types::price_data::PriceData;
@@ -168,10 +168,8 @@ fn init_reserve() {
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
-    let init_reserve_input = InitReserveInput {
-        s_token_address: s_token.address.clone(),
-        debt_token_address: debt_token.address.clone(),
-    };
+    let init_reserve_input =
+        ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
 
     measure_budget(&env, function_name!(), || {
         pool.init_reserve(
@@ -530,7 +528,7 @@ fn stoken_underlying_balance() {
 
     measure_budget(&env, function_name!(), || {
         sut.pool
-            .stoken_underlying_balance(&sut.reserves[0].s_token.address);
+            .stoken_underlying_balance(&sut.reserves[0].s_token().address);
     });
 }
 
@@ -778,7 +776,7 @@ fn s_token_transfer() {
 
     measure_budget(&env, function_name!(), || {
         sut.reserves[0]
-            .s_token
+            .s_token()
             .transfer(&from_borrower, &to, &100_000);
     });
 }
