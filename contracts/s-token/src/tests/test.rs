@@ -10,7 +10,7 @@ use soroban_sdk::token::{Client as TokenClient, StellarAssetClient as TokenAdmin
 use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
 use self::pool::{
-    CollateralParamsInput, IRParams, InitReserveInput, OracleAsset, PriceFeed, PriceFeedConfigInput,
+    CollateralParamsInput, IRParams, OracleAsset, PriceFeed, PriceFeedConfigInput, ReserveType,
 };
 
 mod pool {
@@ -118,10 +118,8 @@ fn test() {
     e.mock_all_auths();
 
     let (s_token, debt_token, pool, underlying, underlying_admin) = create_token(&e);
-    let init_reserve_input = InitReserveInput {
-        s_token_address: s_token.address.clone(),
-        debt_token_address: debt_token.address.clone(),
-    };
+    let init_reserve_input =
+        ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
     pool.init_reserve(&underlying.address, &init_reserve_input);
 
     e.budget().reset_default();

@@ -194,8 +194,14 @@ fn do_liquidate(
             )?;
         } else {
             let who_rwa_balance_before = read_token_balance(env, &collat.asset, who);
-            let who_rwa_balance_after = who_rwa_balance_before.checked_sub(liq_comp_amount).ok_or(Error::MathOverflowError)?;
-            token::Client::new(env, &collat.asset).transfer(&env.current_contract_address(), liquidator, &liq_comp_amount);
+            let who_rwa_balance_after = who_rwa_balance_before
+                .checked_sub(liq_comp_amount)
+                .ok_or(Error::MathOverflowError)?;
+            token::Client::new(env, &collat.asset).transfer(
+                &env.current_contract_address(),
+                liquidator,
+                &liq_comp_amount,
+            );
             write_token_balance(env, &collat.asset, &who, who_rwa_balance_after)?;
         }
 

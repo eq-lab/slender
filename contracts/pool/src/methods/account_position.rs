@@ -146,7 +146,7 @@ fn calculate_fungible(
         mb_who_debt,
         mb_s_token_supply,
         mb_debt_token_supply,
-        mb_rwa_balance: _
+        mb_rwa_balance: _,
     } = cache;
 
     let reserve_index = reserve.get_id();

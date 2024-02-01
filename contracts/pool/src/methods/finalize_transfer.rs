@@ -66,7 +66,7 @@ pub fn finalize_transfer(
                         debt_token_address.clone(),
                         read_token_total_supply(env, &debt_token_address),
                     )),
-                    mb_rwa_balance: None
+                    mb_rwa_balance: None,
                 },
                 from_config,
                 &mut PriceProvider::new(env)?,

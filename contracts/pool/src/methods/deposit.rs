@@ -119,6 +119,6 @@ fn do_deposit_rwa(env: &Env, who: &Address, asset: &Address, amount: i128) -> Re
         .ok_or(Error::MathOverflowError)?;
     write_token_balance(env, asset, who, balance_after)?;
     event::deposit(env, who, asset, amount);
-    
+
     Ok(balance_before == 0)
 }

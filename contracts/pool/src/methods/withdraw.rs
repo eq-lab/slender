@@ -96,7 +96,7 @@ pub fn withdraw(
                         debt_token_address.clone(),
                         debt_token_supply,
                     )),
-                    mb_rwa_balance: None
+                    mb_rwa_balance: None,
                 },
                 user_config,
                 &mut PriceProvider::new(env)?,
@@ -132,7 +132,7 @@ pub fn withdraw(
         )?;
     } else {
         let rwa_balance = read_token_balance(env, asset, who);
-        
+
         let amount_to_withdraw = amount.min(rwa_balance);
         let rwa_balance_after = rwa_balance - amount_to_withdraw;
 
@@ -147,10 +147,7 @@ pub fn withdraw(
                     mb_who_debt: None,
                     mb_s_token_supply: None,
                     mb_debt_token_supply: None,
-                    mb_rwa_balance: Some(&AssetBalance::new(
-                        asset.clone(), rwa_balance_after
-                    )
-                    ),
+                    mb_rwa_balance: Some(&AssetBalance::new(asset.clone(), rwa_balance_after)),
                 },
                 user_config,
                 &mut PriceProvider::new(env)?,
@@ -160,7 +157,11 @@ pub fn withdraw(
             // TODO: do we need to check for initial_health?
             require_good_position(env, &account_data);
         }
-        token::Client::new(env, asset).transfer(&env.current_contract_address(), &who, &amount_to_withdraw);
+        token::Client::new(env, asset).transfer(
+            &env.current_contract_address(),
+            &who,
+            &amount_to_withdraw,
+        );
 
         write_token_balance(env, &asset, who, rwa_balance_after)?;
 

@@ -15,7 +15,8 @@ use super::utils::get_collat_coeff::get_collat_coeff;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_debt, require_fungible_reserve, require_not_paused, require_positive_amount
+    require_active_reserve, require_debt, require_fungible_reserve, require_not_paused,
+    require_positive_amount,
 };
 
 pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
@@ -23,7 +24,7 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
 
     require_not_paused(env);
     require_positive_amount(env, amount);
-    
+
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
     require_fungible_reserve(env, &reserve);
