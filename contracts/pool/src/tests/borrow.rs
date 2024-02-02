@@ -352,7 +352,7 @@ fn should_emit_events() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #110)")]
+#[should_panic(expected = "HostError: Error(Contract, #300)")]
 fn should_fail_when_borrow_rwa() {
     let env = Env::default();
     env.mock_all_auths();
