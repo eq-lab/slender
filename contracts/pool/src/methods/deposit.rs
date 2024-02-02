@@ -32,18 +32,18 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
 
     let is_first_deposit =
         if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
-            let debt_token_supply = read_token_total_supply(env, &debt_token_address);
+            let debt_token_supply = read_token_total_supply(env, debt_token_address);
 
             let (is_first_deposit, s_token_supply_after) = do_deposit_fungible(
                 env,
                 who,
                 asset,
                 &reserve,
-                read_token_total_supply(env, &s_token_address),
+                read_token_total_supply(env, s_token_address),
                 debt_token_supply,
-                read_token_balance(env, &s_token_address, who),
+                read_token_balance(env, s_token_address, who),
                 amount,
-                &s_token_address,
+                s_token_address,
             )?;
 
             recalculate_reserve_data(
@@ -78,13 +78,13 @@ fn do_deposit_fungible(
     amount: i128,
     s_token_address: &Address,
 ) -> Result<(bool, i128), Error> {
-    let balance = read_stoken_underlying_balance(env, &s_token_address);
+    let balance = read_stoken_underlying_balance(env, s_token_address);
     require_liquidity_cap_not_exceeded(env, reserve, debt_token_supply, balance, amount)?;
 
     let collat_coeff = get_collat_coeff(
         env,
         reserve,
-        &s_token_address,
+        s_token_address,
         s_token_supply,
         debt_token_supply,
     )?;
@@ -99,12 +99,12 @@ fn do_deposit_fungible(
         .checked_add(amount_to_mint)
         .ok_or(Error::MathOverflowError)?;
 
-    token::Client::new(env, asset).transfer(who, &s_token_address, &amount);
-    STokenClient::new(env, &s_token_address).mint(who, &amount_to_mint);
+    token::Client::new(env, asset).transfer(who, s_token_address, &amount);
+    STokenClient::new(env, s_token_address).mint(who, &amount_to_mint);
 
-    add_stoken_underlying_balance(env, &s_token_address, amount)?;
-    write_token_total_supply(env, &s_token_address, s_token_supply_after)?;
-    write_token_balance(env, &s_token_address, who, who_collat_after)?;
+    add_stoken_underlying_balance(env, s_token_address, amount)?;
+    write_token_total_supply(env, s_token_address, s_token_supply_after)?;
+    write_token_balance(env, s_token_address, who, who_collat_after)?;
 
     event::deposit(env, who, asset, amount);
 
@@ -112,7 +112,7 @@ fn do_deposit_fungible(
 }
 
 fn do_deposit_rwa(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<bool, Error> {
-    let balance_before = read_token_balance(env, &asset, who);
+    let balance_before = read_token_balance(env, asset, who);
     token::Client::new(env, asset).transfer(who, &env.current_contract_address(), &amount);
     let balance_after = balance_before
         .checked_add(amount)

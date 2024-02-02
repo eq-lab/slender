@@ -125,6 +125,7 @@ pub fn calc_account_data(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
 fn calculate_fungible(
     env: &Env,
     who: &Address,
@@ -256,6 +257,7 @@ fn calculate_fungible(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn calculate_rwa(
     env: &Env,
     who: &Address,

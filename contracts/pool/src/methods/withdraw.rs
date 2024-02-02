@@ -159,11 +159,11 @@ pub fn withdraw(
         }
         token::Client::new(env, asset).transfer(
             &env.current_contract_address(),
-            &who,
+            who,
             &amount_to_withdraw,
         );
 
-        write_token_balance(env, &asset, who, rwa_balance_after)?;
+        write_token_balance(env, asset, who, rwa_balance_after)?;
 
         event::withdraw(env, who, asset, to, rwa_balance_after);
     }

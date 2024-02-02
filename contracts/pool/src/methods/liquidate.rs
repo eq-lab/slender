@@ -131,14 +131,14 @@ fn do_liquidate(
         if let ReserveType::Fungible(s_token_address, debt_token_address) =
             &collat.reserve.reserve_type
         {
-            let mut s_token_supply = read_token_total_supply(env, &s_token_address);
-            let debt_token_supply = read_token_total_supply(env, &debt_token_address);
+            let mut s_token_supply = read_token_total_supply(env, s_token_address);
+            let debt_token_supply = read_token_total_supply(env, debt_token_address);
 
             let liq_lp_amount = FixedI128::from_inner(collat.coeff.unwrap())
                 .recip_mul_int(liq_comp_amount)
                 .ok_or(Error::LiquidateMathError)?;
 
-            let s_token = STokenClient::new(env, &s_token_address);
+            let s_token = STokenClient::new(env, s_token_address);
 
             if receive_stoken {
                 let mut liquidator_configurator = UserConfigurator::new(env, liquidator, true);
@@ -177,7 +177,7 @@ fn do_liquidate(
                 add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
             }
 
-            write_token_total_supply(env, &s_token_address, s_token_supply)?;
+            write_token_total_supply(env, s_token_address, s_token_supply)?;
             write_token_balance(
                 env,
                 &s_token.address,
@@ -202,7 +202,7 @@ fn do_liquidate(
                 liquidator,
                 &liq_comp_amount,
             );
-            write_token_balance(env, &collat.asset, &who, who_rwa_balance_after)?;
+            write_token_balance(env, &collat.asset, who, who_rwa_balance_after)?;
         }
 
         user_configurator.withdraw(
@@ -256,21 +256,21 @@ fn do_liquidate(
                 };
 
             let underlying_asset = token::Client::new(env, &debt.asset);
-            let debt_token = DebtTokenClient::new(env, &debt_token_address);
+            let debt_token = DebtTokenClient::new(env, debt_token_address);
 
-            underlying_asset.transfer(liquidator, &s_token_address, &debt_comp_to_transfer);
+            underlying_asset.transfer(liquidator, s_token_address, &debt_comp_to_transfer);
 
             debt_token.burn(who, &debt_lp_to_burn);
 
-            let mut debt_token_supply = read_token_total_supply(env, &debt_token_address);
-            let s_token_supply = read_token_total_supply(env, &s_token_address);
+            let mut debt_token_supply = read_token_total_supply(env, debt_token_address);
+            let s_token_supply = read_token_total_supply(env, s_token_address);
 
             debt_token_supply = debt_token_supply
                 .checked_sub(debt_lp_to_burn)
                 .ok_or(Error::LiquidateMathError)?;
 
-            add_stoken_underlying_balance(env, &s_token_address, debt_comp_to_transfer)?;
-            write_token_total_supply(env, &debt_token_address, debt_token_supply)?;
+            add_stoken_underlying_balance(env, s_token_address, debt_comp_to_transfer)?;
+            write_token_total_supply(env, debt_token_address, debt_token_supply)?;
             write_token_balance(
                 env,
                 &debt_token.address,

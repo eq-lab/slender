@@ -18,6 +18,6 @@ pub fn collat_coeff(env: &Env, asset: &Address) -> Result<i128, Error> {
         )
         .map(|fixed| fixed.into_inner())
     } else {
-        return Err(Error::NotFungible);
+        Err(Error::NotFungible)
     }
 }

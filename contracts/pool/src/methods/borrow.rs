@@ -36,17 +36,17 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
     require_borrowing_enabled(env, &reserve);
 
     if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
-        let s_token_supply = read_token_total_supply(env, &s_token_address);
+        let s_token_supply = read_token_total_supply(env, s_token_address);
 
         let debt_token_supply_after = do_borrow(
             env,
             who,
             asset,
             &reserve,
-            read_token_balance(env, &s_token_address, who),
-            read_token_balance(env, &debt_token_address, who),
+            read_token_balance(env, s_token_address, who),
+            read_token_balance(env, debt_token_address, who),
             s_token_supply,
-            read_token_total_supply(env, &debt_token_address),
+            read_token_total_supply(env, debt_token_address),
             amount,
             s_token_address,
             debt_token_address,
@@ -125,12 +125,12 @@ pub fn do_borrow(
         .checked_add(amount_of_debt_token)
         .ok_or(Error::MathOverflowError)?;
 
-    DebtTokenClient::new(env, &debt_token_address).mint(who, &amount_of_debt_token);
-    STokenClient::new(env, &s_token_address).transfer_underlying_to(who, &amount);
+    DebtTokenClient::new(env, debt_token_address).mint(who, &amount_of_debt_token);
+    STokenClient::new(env, s_token_address).transfer_underlying_to(who, &amount);
 
-    add_stoken_underlying_balance(env, &s_token_address, amount_to_sub)?;
-    write_token_total_supply(env, &debt_token_address, debt_token_supply_after)?;
-    write_token_balance(env, &debt_token_address, who, who_debt_after)?;
+    add_stoken_underlying_balance(env, s_token_address, amount_to_sub)?;
+    write_token_total_supply(env, debt_token_address, debt_token_supply_after)?;
+    write_token_balance(env, debt_token_address, who, who_debt_after)?;
 
     user_configurator
         .borrow(reserve.get_id(), who_debt == 0)?

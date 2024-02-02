@@ -89,7 +89,7 @@ pub fn do_repay(
     debt_token_supply: i128,
     amount: i128,
 ) -> Result<(bool, i128), Error> {
-    let who_debt = read_token_balance(env, &debt_token_address, who);
+    let who_debt = read_token_balance(env, debt_token_address, who);
     let borrower_actual_debt = debt_coeff
         .mul_int(who_debt)
         .ok_or(Error::MathOverflowError)?;
@@ -124,15 +124,15 @@ pub fn do_repay(
     let treasury_address = read_treasury(env);
 
     let underlying_asset = token::Client::new(env, asset);
-    let debt_token = DebtTokenClient::new(env, &debt_token_address);
+    let debt_token = DebtTokenClient::new(env, debt_token_address);
 
-    underlying_asset.transfer(who, &s_token_address, &lender_part);
+    underlying_asset.transfer(who, s_token_address, &lender_part);
     underlying_asset.transfer(who, &treasury_address, &treasury_part);
     debt_token.burn(who, &borrower_debt_to_burn);
 
-    add_stoken_underlying_balance(env, &s_token_address, lender_part)?;
-    write_token_total_supply(env, &debt_token_address, debt_token_supply_after)?;
-    write_token_balance(env, &debt_token_address, who, who_debt_after)?;
+    add_stoken_underlying_balance(env, s_token_address, lender_part)?;
+    write_token_total_supply(env, debt_token_address, debt_token_supply_after)?;
+    write_token_balance(env, debt_token_address, who, who_debt_after)?;
 
     event::repay(env, who, asset, borrower_payback_amount);
 

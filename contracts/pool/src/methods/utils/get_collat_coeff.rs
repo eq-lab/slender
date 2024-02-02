@@ -20,7 +20,7 @@ pub fn get_collat_coeff(
     }
 
     let collat_ar = get_actual_lender_accrued_rate(env, reserve)?;
-    let balance = read_stoken_underlying_balance(env, &s_token_address);
+    let balance = read_stoken_underlying_balance(env, s_token_address);
 
     FixedI128::from_rational(
         balance
