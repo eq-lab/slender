@@ -36,7 +36,7 @@ pub fn withdraw(
     let mut user_configurator = UserConfigurator::new(env, who, false);
     let user_config = user_configurator.user_config()?;
 
-    if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
+    let (withdraw_amount, is_full_withdraw) = if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
         let s_token_supply = read_token_total_supply(env, s_token_address);
         let debt_token_supply = read_token_total_supply(env, debt_token_address);
         let collat_coeff = get_collat_coeff(
@@ -116,13 +116,6 @@ pub fn withdraw(
         write_token_total_supply(env, &s_token.address, s_token_supply_after)?;
         write_token_balance(env, &s_token.address, who, collat_balance_after)?;
 
-        let is_full_withdraw = underlying_to_withdraw == underlying_balance;
-        user_configurator
-            .withdraw(reserve.get_id(), asset, is_full_withdraw)?
-            .write();
-
-        event::withdraw(env, who, asset, to, underlying_to_withdraw);
-
         recalculate_reserve_data(
             env,
             asset,
@@ -130,11 +123,13 @@ pub fn withdraw(
             s_token_supply_after,
             debt_token_supply,
         )?;
+
+        (underlying_to_withdraw, underlying_to_withdraw == underlying_balance)
     } else {
         let rwa_balance = read_token_balance(env, asset, who);
 
-        let amount_to_withdraw = amount.min(rwa_balance);
-        let rwa_balance_after = rwa_balance - amount_to_withdraw;
+        let withdraw_amount = amount.min(rwa_balance);
+        let rwa_balance_after = rwa_balance - withdraw_amount;
 
         if user_config.is_borrowing_any()
             && user_config.is_using_as_collateral(env, reserve.get_id())
@@ -160,13 +155,19 @@ pub fn withdraw(
         token::Client::new(env, asset).transfer(
             &env.current_contract_address(),
             who,
-            &amount_to_withdraw,
+            &withdraw_amount,
         );
 
         write_token_balance(env, asset, who, rwa_balance_after)?;
 
-        event::withdraw(env, who, asset, to, rwa_balance_after);
-    }
+        (withdraw_amount, rwa_balance_after == 0)
+    };
+
+    user_configurator
+        .withdraw(reserve.get_id(), asset, is_full_withdraw)?
+        .write();
+
+    event::withdraw(env, who, asset, to, withdraw_amount);
 
     Ok(())
 }

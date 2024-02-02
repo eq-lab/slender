@@ -59,6 +59,8 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
             do_deposit_rwa(env, who, asset, amount)?
         };
 
+    event::deposit(env, who, asset, amount);
+
     user_configurator
         .deposit(reserve.get_id(), asset, is_first_deposit)?
         .write();
@@ -106,8 +108,6 @@ fn do_deposit_fungible(
     write_token_total_supply(env, s_token_address, s_token_supply_after)?;
     write_token_balance(env, s_token_address, who, who_collat_after)?;
 
-    event::deposit(env, who, asset, amount);
-
     Ok((is_first_deposit, s_token_supply_after))
 }
 
@@ -118,7 +118,6 @@ fn do_deposit_rwa(env: &Env, who: &Address, asset: &Address, amount: i128) -> Re
         .checked_add(amount)
         .ok_or(Error::MathOverflowError)?;
     write_token_balance(env, asset, who, balance_after)?;
-    event::deposit(env, who, asset, amount);
 
     Ok(balance_before == 0)
 }

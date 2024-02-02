@@ -191,6 +191,7 @@ pub fn require_fungible_reserve(env: &Env, reserve: &ReserveData) {
         Error::NotFungible
     );
 }
+
 pub fn require_unique_liquidation_order(
     env: &Env,
     asset: &Address,

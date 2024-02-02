@@ -1,7 +1,6 @@
 use common::FixedI128;
 use debt_token_interface::DebtTokenClient;
 use pool_interface::types::error::Error;
-use pool_interface::types::reserve_type::ReserveType;
 use soroban_sdk::{token, Address, Env};
 
 use crate::event;
@@ -12,10 +11,11 @@ use crate::storage::{
 use crate::types::user_configurator::UserConfigurator;
 
 use super::utils::get_collat_coeff::get_collat_coeff;
+use super::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_debt, require_fungible_reserve, require_not_paused,
+    require_active_reserve, require_debt, require_not_paused,
     require_positive_amount,
 };
 
@@ -27,49 +27,47 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
 
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
-    require_fungible_reserve(env, &reserve);
 
-    if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
-        let mut user_configurator = UserConfigurator::new(env, who, false);
-        let user_config = user_configurator.user_config()?;
-        require_debt(env, user_config, reserve.get_id());
+    let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
+    let mut user_configurator = UserConfigurator::new(env, who, false);
+    let user_config = user_configurator.user_config()?;
+    require_debt(env, user_config, reserve.get_id());
 
-        let s_token_supply = read_token_total_supply(env, s_token_address);
-        let debt_token_supply = read_token_total_supply(env, debt_token_address);
+    let s_token_supply = read_token_total_supply(env, s_token_address);
+    let debt_token_supply = read_token_total_supply(env, debt_token_address);
 
-        let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?;
-        let collat_coeff = get_collat_coeff(
-            env,
-            &reserve,
-            s_token_address,
-            s_token_supply,
-            debt_token_supply,
-        )?;
+    let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?;
+    let collat_coeff = get_collat_coeff(
+        env,
+        &reserve,
+        s_token_address,
+        s_token_supply,
+        debt_token_supply,
+    )?;
 
-        let (is_repayed, debt_token_supply_after) = do_repay(
-            env,
-            who,
-            asset,
-            s_token_address,
-            debt_token_address,
-            collat_coeff,
-            debt_coeff,
-            debt_token_supply,
-            amount,
-        )?;
+    let (is_repayed, debt_token_supply_after) = do_repay(
+        env,
+        who,
+        asset,
+        s_token_address,
+        debt_token_address,
+        collat_coeff,
+        debt_coeff,
+        debt_token_supply,
+        amount,
+    )?;
 
-        user_configurator
-            .repay(reserve.get_id(), is_repayed)?
-            .write();
+    user_configurator
+        .repay(reserve.get_id(), is_repayed)?
+        .write();
 
-        recalculate_reserve_data(
-            env,
-            asset,
-            &reserve,
-            s_token_supply,
-            debt_token_supply_after,
-        )?;
-    }
+    recalculate_reserve_data(
+        env,
+        asset,
+        &reserve,
+        s_token_supply,
+        debt_token_supply_after,
+    )?;
 
     Ok(())
 }
