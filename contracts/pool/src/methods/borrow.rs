@@ -19,9 +19,9 @@ use super::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_borrowing_enabled,
-    require_gte_initial_health, require_not_in_collateral_asset, require_not_paused,
-    require_positive_amount, require_util_cap_not_exceeded,
+    require_active_reserve, require_borrowing_enabled, require_gte_initial_health,
+    require_not_in_collateral_asset, require_not_paused, require_positive_amount,
+    require_util_cap_not_exceeded,
 };
 
 pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
@@ -36,20 +36,20 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
 
     let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
 
-    let s_token_supply = read_token_total_supply(env, &s_token_address);
+    let s_token_supply = read_token_total_supply(env, s_token_address);
 
     let debt_token_supply_after = do_borrow(
         env,
         who,
         asset,
         &reserve,
-        read_token_balance(env, &s_token_address, who),
-        read_token_balance(env, &debt_token_address, who),
+        read_token_balance(env, s_token_address, who),
+        read_token_balance(env, debt_token_address, who),
         s_token_supply,
-        read_token_total_supply(env, &debt_token_address),
+        read_token_total_supply(env, debt_token_address),
         amount,
-        &s_token_address,
-        &debt_token_address,
+        s_token_address,
+        debt_token_address,
     )?;
 
     recalculate_reserve_data(

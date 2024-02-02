@@ -14,8 +14,8 @@ pub fn upgrade_debt_token(
     require_admin(env).unwrap();
 
     let reserve = read_reserve(env, asset)?;
-    let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
-    let debt_token = DebtTokenClient::new(env, &debt_token_address);
+    let (_, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
+    let debt_token = DebtTokenClient::new(env, debt_token_address);
     debt_token.upgrade(new_wasm_hash);
 
     Ok(())

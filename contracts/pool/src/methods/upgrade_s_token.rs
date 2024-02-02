@@ -15,7 +15,7 @@ pub fn upgrade_s_token(
 
     let reserve = read_reserve(env, asset)?;
     let (s_token_address, _) = get_fungible_lp_tokens(&reserve)?;
-    let s_token = STokenClient::new(env, &s_token_address);
+    let s_token = STokenClient::new(env, s_token_address);
     s_token.upgrade(new_wasm_hash);
 
     Ok(())

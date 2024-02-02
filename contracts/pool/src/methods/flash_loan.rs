@@ -47,7 +47,7 @@ pub fn flash_loan(
 
         let (s_token_address, _) = get_fungible_lp_tokens(&reserve)?;
 
-        let s_token = STokenClient::new(env, &s_token_address);
+        let s_token = STokenClient::new(env, s_token_address);
         s_token.transfer_underlying_to(receiver, &loan_asset.amount);
 
         reserves.push_back(reserve);

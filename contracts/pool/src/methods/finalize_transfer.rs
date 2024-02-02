@@ -10,8 +10,7 @@ use crate::types::user_configurator::UserConfigurator;
 use super::account_position::calc_account_data;
 use super::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use super::utils::validation::{
-    require_active_reserve, require_good_position, require_not_paused,
-    require_zero_debt,
+    require_active_reserve, require_good_position, require_not_paused, require_zero_debt,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -44,9 +43,7 @@ pub fn finalize_transfer(
     let mut from_configurator = UserConfigurator::new(env, from, false);
     let from_config = from_configurator.user_config()?;
 
-    if from_config.is_borrowing_any()
-        && from_config.is_using_as_collateral(env, reserve.get_id())
-    {
+    if from_config.is_borrowing_any() && from_config.is_using_as_collateral(env, reserve.get_id()) {
         let from_account_data = calc_account_data(
             env,
             from,
@@ -62,7 +59,7 @@ pub fn finalize_transfer(
                 )),
                 mb_debt_token_supply: Some(&AssetBalance::new(
                     debt_token_address.clone(),
-                    read_token_total_supply(env, &debt_token_address),
+                    read_token_total_supply(env, debt_token_address),
                 )),
                 mb_rwa_balance: None,
             },
@@ -79,8 +76,8 @@ pub fn finalize_transfer(
             .checked_add(amount)
             .ok_or(Error::InvalidAmount)?;
 
-        write_token_balance(env, &s_token_address, from, balance_from_after)?;
-        write_token_balance(env, &s_token_address, to, balance_to_after)?;
+        write_token_balance(env, s_token_address, from, balance_from_after)?;
+        write_token_balance(env, s_token_address, to, balance_to_after)?;
 
         let reserve_id = reserve.get_id();
         let is_to_deposit = balance_to_before == 0 && amount != 0;
