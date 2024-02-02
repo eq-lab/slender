@@ -6,7 +6,7 @@ use soroban_sdk::{contracttype, Address};
 pub struct LiquidationAsset {
     pub asset: Address,
     pub reserve: ReserveData,
-    pub lp_balance: i128,
     pub comp_balance: i128,
-    pub coeff: i128,
+    pub lp_balance: Option<i128>,
+    pub coeff: Option<i128>,
 }

@@ -14,10 +14,11 @@ use methods::{
     twap_median_price::twap_median_price, upgrade::upgrade, upgrade_debt_token::upgrade_debt_token,
     upgrade_s_token::upgrade_s_token, withdraw::withdraw,
 };
+use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::types::{
     account_position::AccountPosition, base_asset_config::BaseAssetConfig,
     collateral_params_input::CollateralParamsInput, error::Error, flash_loan_asset::FlashLoanAsset,
-    init_reserve_input::InitReserveInput, ir_params::IRParams, price_feed_config::PriceFeedConfig,
+    ir_params::IRParams, price_feed_config::PriceFeedConfig,
     price_feed_config_input::PriceFeedConfigInput, reserve_data::ReserveData,
     user_config::UserConfiguration,
 };
@@ -76,8 +77,8 @@ impl LendingPoolTrait for LendingPool {
         1
     }
 
-    fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error> {
-        init_reserve(&env, &asset, &input)
+    fn init_reserve(env: Env, asset: Address, reserve_type: ReserveType) -> Result<(), Error> {
+        init_reserve(&env, &asset, reserve_type)
     }
 
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error> {

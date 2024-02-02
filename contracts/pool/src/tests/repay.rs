@@ -11,7 +11,7 @@ fn should_partially_repay() {
     let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
-    let stoken_token = &debt_config.s_token.address;
+    let stoken_token = &debt_config.s_token().address;
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
     let treasury_address = sut.pool.treasury().clone();
@@ -19,7 +19,7 @@ fn should_partially_repay() {
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
     let treasury_balance = debt_config.token.balance(&treasury_address);
-    let user_debt_balance = debt_config.debt_token.balance(&borrower);
+    let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 60_000_000);
     assert_eq!(user_balance, 1_040_000_000);
@@ -31,7 +31,7 @@ fn should_partially_repay() {
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
     let treasury_balance = debt_config.token.balance(&treasury_address);
-    let user_debt_balance = debt_config.debt_token.balance(&borrower);
+    let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 79_997_089);
     assert_eq!(user_balance, 1_020_000_000);
@@ -47,7 +47,7 @@ fn should_fully_repay() {
     let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
-    let stoken_token = &debt_config.s_token.address;
+    let stoken_token = &debt_config.s_token().address;
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
     let treasury_address = sut.pool.treasury().clone();
@@ -55,7 +55,7 @@ fn should_fully_repay() {
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
     let treasury_balance = debt_config.token.balance(&treasury_address);
-    let user_debt_balance = debt_config.debt_token.balance(&borrower);
+    let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 60_000_000);
     assert_eq!(user_balance, 1_040_000_000);
@@ -67,7 +67,7 @@ fn should_fully_repay() {
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
     let treasury_balance = debt_config.token.balance(&treasury_address);
-    let user_debt_balance = debt_config.debt_token.balance(&borrower);
+    let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 100_003_275);
     assert_eq!(user_balance, 999_990_902);
@@ -136,13 +136,15 @@ fn should_affect_account_data() {
 
     let account_position = sut.pool.account_position(&borrower);
 
-    let debt_token_total_supply = debt_config.debt_token.total_supply();
-    let pool_debt_token_total_supply = sut.pool.token_total_supply(&debt_config.debt_token.address);
+    let debt_token_total_supply = debt_config.debt_token().total_supply();
+    let pool_debt_token_total_supply = sut
+        .pool
+        .token_total_supply(&debt_config.debt_token().address);
 
-    let debt_token_balance = debt_config.debt_token.balance(&borrower);
+    let debt_token_balance = debt_config.debt_token().balance(&borrower);
     let pool_debt_token_balance = sut
         .pool
-        .token_balance(&debt_config.debt_token.address, &borrower);
+        .token_balance(&debt_config.debt_token().address, &borrower);
 
     assert_eq!(debt_token_total_supply, pool_debt_token_total_supply);
     assert_eq!(debt_token_balance, pool_debt_token_balance);
@@ -178,4 +180,17 @@ fn should_emit_events() {
             ),
         ]
     );
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #110)")]
+fn should_fail_when_repay_rwa() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
+    let rwa_address = sut.rwa_config().token.address.clone();
+
+    sut.pool.repay(&borrower, &rwa_address, &10_000_000);
 }

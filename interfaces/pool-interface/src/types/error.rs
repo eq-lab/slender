@@ -19,6 +19,7 @@ pub enum Error {
     BaseAssetNotInitialized = 107,
     InitialHealthNotInitialized = 108,
     LiquidationOrderMustBeUnique = 109,
+    NotFungible = 110,
 
     UserConfigInvalidIndex = 200,
     NotEnoughAvailableUserBalance = 201,

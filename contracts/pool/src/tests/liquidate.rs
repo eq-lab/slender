@@ -126,23 +126,23 @@ fn should_liquidate_reducing_position_to_healthy() {
     let borrower_token_0_before = sut.reserves[0].token.balance(&borrower);
     let borrower_token_1_before = sut.reserves[1].token.balance(&borrower);
     let borrower_token_2_before = sut.reserves[2].token.balance(&borrower);
-    let borrower_stoken_0_before = sut.reserves[0].s_token.balance(&borrower);
-    let borrower_stoken_1_before = sut.reserves[1].s_token.balance(&borrower);
-    let borrower_stoken_2_before = sut.reserves[2].s_token.balance(&borrower);
-    let borrower_dtoken_0_before = sut.reserves[0].debt_token.balance(&borrower);
-    let borrower_dtoken_1_before = sut.reserves[1].debt_token.balance(&borrower);
-    let borrower_dtoken_2_before = sut.reserves[2].debt_token.balance(&borrower);
+    let borrower_stoken_0_before = sut.reserves[0].s_token().balance(&borrower);
+    let borrower_stoken_1_before = sut.reserves[1].s_token().balance(&borrower);
+    let borrower_stoken_2_before = sut.reserves[2].s_token().balance(&borrower);
+    let borrower_dtoken_0_before = sut.reserves[0].debt_token().balance(&borrower);
+    let borrower_dtoken_1_before = sut.reserves[1].debt_token().balance(&borrower);
+    let borrower_dtoken_2_before = sut.reserves[2].debt_token().balance(&borrower);
     let borrower_account_position_before = sut.pool.account_position(&borrower);
 
     let liquidator_token_0_before = sut.reserves[0].token.balance(&liquidator);
     let liquidator_token_1_before = sut.reserves[1].token.balance(&liquidator);
     let liquidator_token_2_before = sut.reserves[2].token.balance(&liquidator);
-    let liquidator_stoken_0_before = sut.reserves[0].s_token.balance(&liquidator);
-    let liquidator_stoken_1_before = sut.reserves[1].s_token.balance(&liquidator);
-    let liquidator_stoken_2_before = sut.reserves[2].s_token.balance(&liquidator);
-    let liquidator_dtoken_0_before = sut.reserves[0].debt_token.balance(&liquidator);
-    let liquidator_dtoken_1_before = sut.reserves[1].debt_token.balance(&liquidator);
-    let liquidator_dtoken_2_before = sut.reserves[2].debt_token.balance(&liquidator);
+    let liquidator_stoken_0_before = sut.reserves[0].s_token().balance(&liquidator);
+    let liquidator_stoken_1_before = sut.reserves[1].s_token().balance(&liquidator);
+    let liquidator_stoken_2_before = sut.reserves[2].s_token().balance(&liquidator);
+    let liquidator_dtoken_0_before = sut.reserves[0].debt_token().balance(&liquidator);
+    let liquidator_dtoken_1_before = sut.reserves[1].debt_token().balance(&liquidator);
+    let liquidator_dtoken_2_before = sut.reserves[2].debt_token().balance(&liquidator);
 
     sut.price_feed.init(
         &Asset::Stellar(debt_token),
@@ -160,23 +160,23 @@ fn should_liquidate_reducing_position_to_healthy() {
     let borrower_token_0_after = sut.reserves[0].token.balance(&borrower);
     let borrower_token_1_after = sut.reserves[1].token.balance(&borrower);
     let borrower_token_2_after = sut.reserves[2].token.balance(&borrower);
-    let borrower_stoken_0_after = sut.reserves[0].s_token.balance(&borrower);
-    let borrower_stoken_1_after = sut.reserves[1].s_token.balance(&borrower);
-    let borrower_stoken_2_after = sut.reserves[2].s_token.balance(&borrower);
-    let borrower_dtoken_0_after = sut.reserves[0].debt_token.balance(&borrower);
-    let borrower_dtoken_1_after = sut.reserves[1].debt_token.balance(&borrower);
-    let borrower_dtoken_2_after = sut.reserves[2].debt_token.balance(&borrower);
+    let borrower_stoken_0_after = sut.reserves[0].s_token().balance(&borrower);
+    let borrower_stoken_1_after = sut.reserves[1].s_token().balance(&borrower);
+    let borrower_stoken_2_after = sut.reserves[2].s_token().balance(&borrower);
+    let borrower_dtoken_0_after = sut.reserves[0].debt_token().balance(&borrower);
+    let borrower_dtoken_1_after = sut.reserves[1].debt_token().balance(&borrower);
+    let borrower_dtoken_2_after = sut.reserves[2].debt_token().balance(&borrower);
     let borrower_account_position_after = sut.pool.account_position(&borrower);
 
     let liquidator_token_0_after = sut.reserves[0].token.balance(&liquidator);
     let liquidator_token_1_after = sut.reserves[1].token.balance(&liquidator);
     let liquidator_token_2_after = sut.reserves[2].token.balance(&liquidator);
-    let liquidator_stoken_0_after = sut.reserves[0].s_token.balance(&liquidator);
-    let liquidator_stoken_1_after = sut.reserves[1].s_token.balance(&liquidator);
-    let liquidator_stoken_2_after = sut.reserves[2].s_token.balance(&liquidator);
-    let liquidator_dtoken_0_after = sut.reserves[0].debt_token.balance(&liquidator);
-    let liquidator_dtoken_1_after = sut.reserves[1].debt_token.balance(&liquidator);
-    let liquidator_dtoken_2_after = sut.reserves[2].debt_token.balance(&liquidator);
+    let liquidator_stoken_0_after = sut.reserves[0].s_token().balance(&liquidator);
+    let liquidator_stoken_1_after = sut.reserves[1].s_token().balance(&liquidator);
+    let liquidator_stoken_2_after = sut.reserves[2].s_token().balance(&liquidator);
+    let liquidator_dtoken_0_after = sut.reserves[0].debt_token().balance(&liquidator);
+    let liquidator_dtoken_1_after = sut.reserves[1].debt_token().balance(&liquidator);
+    let liquidator_dtoken_2_after = sut.reserves[2].debt_token().balance(&liquidator);
 
     assert_eq!(borrower_token_0_before, 0);
     assert_eq!(borrower_token_1_before, 1_800_000_000_000);
@@ -255,23 +255,23 @@ fn should_liquidate_receiving_stokens_when_requested() {
     let borrower_token_0_before = sut.reserves[0].token.balance(&borrower);
     let borrower_token_1_before = sut.reserves[1].token.balance(&borrower);
     let borrower_token_2_before = sut.reserves[2].token.balance(&borrower);
-    let borrower_stoken_0_before = sut.reserves[0].s_token.balance(&borrower);
-    let borrower_stoken_1_before = sut.reserves[1].s_token.balance(&borrower);
-    let borrower_stoken_2_before = sut.reserves[2].s_token.balance(&borrower);
-    let borrower_dtoken_0_before = sut.reserves[0].debt_token.balance(&borrower);
-    let borrower_dtoken_1_before = sut.reserves[1].debt_token.balance(&borrower);
-    let borrower_dtoken_2_before = sut.reserves[2].debt_token.balance(&borrower);
+    let borrower_stoken_0_before = sut.reserves[0].s_token().balance(&borrower);
+    let borrower_stoken_1_before = sut.reserves[1].s_token().balance(&borrower);
+    let borrower_stoken_2_before = sut.reserves[2].s_token().balance(&borrower);
+    let borrower_dtoken_0_before = sut.reserves[0].debt_token().balance(&borrower);
+    let borrower_dtoken_1_before = sut.reserves[1].debt_token().balance(&borrower);
+    let borrower_dtoken_2_before = sut.reserves[2].debt_token().balance(&borrower);
     let borrower_account_position_before = sut.pool.account_position(&borrower);
 
     let liquidator_token_0_before = sut.reserves[0].token.balance(&liquidator);
     let liquidator_token_1_before = sut.reserves[1].token.balance(&liquidator);
     let liquidator_token_2_before = sut.reserves[2].token.balance(&liquidator);
-    let liquidator_stoken_0_before = sut.reserves[0].s_token.balance(&liquidator);
-    let liquidator_stoken_1_before = sut.reserves[1].s_token.balance(&liquidator);
-    let liquidator_stoken_2_before = sut.reserves[2].s_token.balance(&liquidator);
-    let liquidator_dtoken_0_before = sut.reserves[0].debt_token.balance(&liquidator);
-    let liquidator_dtoken_1_before = sut.reserves[1].debt_token.balance(&liquidator);
-    let liquidator_dtoken_2_before = sut.reserves[2].debt_token.balance(&liquidator);
+    let liquidator_stoken_0_before = sut.reserves[0].s_token().balance(&liquidator);
+    let liquidator_stoken_1_before = sut.reserves[1].s_token().balance(&liquidator);
+    let liquidator_stoken_2_before = sut.reserves[2].s_token().balance(&liquidator);
+    let liquidator_dtoken_0_before = sut.reserves[0].debt_token().balance(&liquidator);
+    let liquidator_dtoken_1_before = sut.reserves[1].debt_token().balance(&liquidator);
+    let liquidator_dtoken_2_before = sut.reserves[2].debt_token().balance(&liquidator);
 
     sut.price_feed.init(
         &Asset::Stellar(debt_token),
@@ -289,23 +289,23 @@ fn should_liquidate_receiving_stokens_when_requested() {
     let borrower_token_0_after = sut.reserves[0].token.balance(&borrower);
     let borrower_token_1_after = sut.reserves[1].token.balance(&borrower);
     let borrower_token_2_after = sut.reserves[2].token.balance(&borrower);
-    let borrower_stoken_0_after = sut.reserves[0].s_token.balance(&borrower);
-    let borrower_stoken_1_after = sut.reserves[1].s_token.balance(&borrower);
-    let borrower_stoken_2_after = sut.reserves[2].s_token.balance(&borrower);
-    let borrower_dtoken_0_after = sut.reserves[0].debt_token.balance(&borrower);
-    let borrower_dtoken_1_after = sut.reserves[1].debt_token.balance(&borrower);
-    let borrower_dtoken_2_after = sut.reserves[2].debt_token.balance(&borrower);
+    let borrower_stoken_0_after = sut.reserves[0].s_token().balance(&borrower);
+    let borrower_stoken_1_after = sut.reserves[1].s_token().balance(&borrower);
+    let borrower_stoken_2_after = sut.reserves[2].s_token().balance(&borrower);
+    let borrower_dtoken_0_after = sut.reserves[0].debt_token().balance(&borrower);
+    let borrower_dtoken_1_after = sut.reserves[1].debt_token().balance(&borrower);
+    let borrower_dtoken_2_after = sut.reserves[2].debt_token().balance(&borrower);
     let borrower_account_position_after = sut.pool.account_position(&borrower);
 
     let liquidator_token_0_after = sut.reserves[0].token.balance(&liquidator);
     let liquidator_token_1_after = sut.reserves[1].token.balance(&liquidator);
     let liquidator_token_2_after = sut.reserves[2].token.balance(&liquidator);
-    let liquidator_stoken_0_after = sut.reserves[0].s_token.balance(&liquidator);
-    let liquidator_stoken_1_after = sut.reserves[1].s_token.balance(&liquidator);
-    let liquidator_stoken_2_after = sut.reserves[2].s_token.balance(&liquidator);
-    let liquidator_dtoken_0_after = sut.reserves[0].debt_token.balance(&liquidator);
-    let liquidator_dtoken_1_after = sut.reserves[1].debt_token.balance(&liquidator);
-    let liquidator_dtoken_2_after = sut.reserves[2].debt_token.balance(&liquidator);
+    let liquidator_stoken_0_after = sut.reserves[0].s_token().balance(&liquidator);
+    let liquidator_stoken_1_after = sut.reserves[1].s_token().balance(&liquidator);
+    let liquidator_stoken_2_after = sut.reserves[2].s_token().balance(&liquidator);
+    let liquidator_dtoken_0_after = sut.reserves[0].debt_token().balance(&liquidator);
+    let liquidator_dtoken_1_after = sut.reserves[1].debt_token().balance(&liquidator);
+    let liquidator_dtoken_2_after = sut.reserves[2].debt_token().balance(&liquidator);
 
     assert_eq!(borrower_token_0_before, 0);
     assert_eq!(borrower_token_1_before, 1_800_000_000_000);
@@ -653,4 +653,58 @@ fn should_emit_events() {
             ),
         ]
     );
+}
+
+#[test]
+fn should_liquidate_rwa_collateral() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (liquidator, borrower) = fill_pool_six(&env, &sut);
+    let collat_1_token = sut.reserves[0].token.address.clone();
+    let rwa_token = sut.rwa_config().token.address.clone();
+    let debt_token = sut.reserves[1].token.address.clone();
+
+    sut.rwa_config()
+        .token_admin
+        .mint(&borrower, &100_000_000_000);
+
+    sut.pool.set_initial_health(&2_500);
+
+    env.ledger().with_mut(|li| li.timestamp = 10_000);
+
+    sut.pool
+        .deposit(&borrower, &collat_1_token, &10_000_000_000);
+    sut.pool.deposit(&borrower, &rwa_token, &100_000_000_000);
+    sut.pool.borrow(&borrower, &debt_token, &800_000_000_000);
+
+    let borrower_rwa_before = sut.rwa_config().token.balance(&borrower);
+    let liquidator_rwa_before = sut.rwa_config().token.balance(&liquidator);
+    let pool_rwa_before = sut.rwa_config().token.balance(&sut.pool.address);
+
+    sut.price_feed.init(
+        &Asset::Stellar(debt_token),
+        &vec![
+            &env,
+            PriceData {
+                price: (18 * 10i128.pow(15)),
+                timestamp: 0,
+            },
+        ],
+    );
+
+    sut.pool.liquidate(&liquidator, &borrower, &false);
+
+    let borrower_rwa_after = sut.rwa_config().token.balance(&borrower);
+    let liquidator_rwa_after = sut.rwa_config().token.balance(&liquidator);
+    let pool_rwa_after = sut.rwa_config().token.balance(&sut.pool.address);
+
+    assert_eq!(borrower_rwa_before, 0);
+    assert_eq!(liquidator_rwa_before, 0);
+    assert_eq!(pool_rwa_before, 100_000_000_000);
+
+    assert_eq!(borrower_rwa_after, 0);
+    assert!(liquidator_rwa_after > liquidator_rwa_before);
+    assert!(pool_rwa_after < pool_rwa_before);
 }

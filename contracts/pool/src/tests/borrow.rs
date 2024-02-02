@@ -245,13 +245,15 @@ fn should_affect_account_data() {
 
     let account_position = sut.pool.account_position(&borrower);
 
-    let debt_token_total_supply = debt_config.debt_token.total_supply();
-    let pool_debt_token_total_supply = sut.pool.token_total_supply(&debt_config.debt_token.address);
+    let debt_token_total_supply = debt_config.debt_token().total_supply();
+    let pool_debt_token_total_supply = sut
+        .pool
+        .token_total_supply(&debt_config.debt_token().address);
 
-    let debt_token_balance = debt_config.debt_token.balance(&borrower);
+    let debt_token_balance = debt_config.debt_token().balance(&borrower);
     let pool_debt_token_balance = sut
         .pool
-        .token_balance(&debt_config.debt_token.address, &borrower);
+        .token_balance(&debt_config.debt_token().address, &borrower);
 
     assert_eq!(debt_token_total_supply, pool_debt_token_total_supply);
     assert_eq!(debt_token_balance, pool_debt_token_balance);
@@ -274,34 +276,34 @@ fn should_change_balances_when_borrow_and_repay() {
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
     let treasury_before = debt_config.token.balance(&treasury);
-    let debt_balance_before = debt_config.debt_token.balance(&borrower);
-    let debt_total_before = debt_config.debt_token.total_supply();
+    let debt_balance_before = debt_config.debt_token().balance(&borrower);
+    let debt_total_before = debt_config.debt_token().total_supply();
     let borrower_balance_before = debt_config.token.balance(&borrower);
     let underlying_supply_before = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token().address);
 
     sut.pool.borrow(&borrower, &token_address, &20_000_000);
 
     let treasury_after_borrow = debt_config.token.balance(&treasury);
-    let debt_balance_after_borrow = debt_config.debt_token.balance(&borrower);
-    let debt_total_after_borrow = debt_config.debt_token.total_supply();
+    let debt_balance_after_borrow = debt_config.debt_token().balance(&borrower);
+    let debt_total_after_borrow = debt_config.debt_token().total_supply();
     let borrower_balance_after_borrow = debt_config.token.balance(&borrower);
     let underlying_supply_after_borrow = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token().address);
 
     env.ledger().with_mut(|li| li.timestamp = 30 * DAY);
 
     sut.pool.repay(&borrower, &token_address, &i128::MAX);
 
     let treasury_after_repay = debt_config.token.balance(&treasury);
-    let debt_balance_after_repay = debt_config.debt_token.balance(&borrower);
-    let debt_total_after_repay = debt_config.debt_token.total_supply();
+    let debt_balance_after_repay = debt_config.debt_token().balance(&borrower);
+    let debt_total_after_repay = debt_config.debt_token().total_supply();
     let borrower_balance_after_repay = debt_config.token.balance(&borrower);
     let underlying_supply_after_repay = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token().address);
 
     assert_eq!(treasury_before, 0);
     assert_eq!(debt_balance_before, 0);
@@ -347,4 +349,17 @@ fn should_emit_events() {
             ),
         ]
     );
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #300)")]
+fn should_fail_when_borrow_rwa() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, false);
+    let rwa_address = sut.rwa_config().token.address.clone();
+
+    sut.pool.borrow(&borrower, &rwa_address, &10_000_000);
 }

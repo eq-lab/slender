@@ -119,9 +119,9 @@ fn should_be_correctly_calculated() {
     let reserve = sut.pool.get_reserve(&debt_config.token.address).unwrap();
 
     let collat_ar = FixedI128::from_inner(reserve.lender_ar);
-    let s_token_supply = debt_config.s_token.total_supply();
-    let balance = debt_config.token.balance(&debt_config.s_token.address);
-    let debt_token_suply = debt_config.debt_token.total_supply();
+    let s_token_supply = debt_config.s_token().total_supply();
+    let balance = debt_config.token.balance(&debt_config.s_token().address);
+    let debt_token_suply = debt_config.debt_token().total_supply();
 
     let expected_collat_coeff = FixedI128::from_rational(
         balance + collat_ar.mul_int(debt_token_suply).unwrap(),

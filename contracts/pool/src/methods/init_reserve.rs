@@ -1,17 +1,16 @@
-use pool_interface::types::error::Error;
-use pool_interface::types::init_reserve_input::InitReserveInput;
 use pool_interface::types::reserve_data::ReserveData;
+use pool_interface::types::{error::Error, reserve_type::ReserveType};
 use soroban_sdk::{assert_with_error, Address, BytesN, Env};
 
 use crate::storage::{read_reserves, write_reserve, write_reserves};
 
 use super::utils::validation::{require_admin, require_uninitialized_reserve};
 
-pub fn init_reserve(env: &Env, asset: &Address, input: &InitReserveInput) -> Result<(), Error> {
+pub fn init_reserve(env: &Env, asset: &Address, reserve_type: ReserveType) -> Result<(), Error> {
     require_admin(env)?;
     require_uninitialized_reserve(env, asset);
 
-    let mut reserve_data = ReserveData::new(env, input);
+    let mut reserve_data = ReserveData::new(env, reserve_type);
     let mut reserves = read_reserves(env);
     let reserves_len = reserves.len();
 

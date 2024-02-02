@@ -1,9 +1,9 @@
 use common::FixedI128;
-use soroban_sdk::{contracttype, Address, BytesN, Env};
+use soroban_sdk::{contracttype, BytesN, Env};
 
 use super::collateral_params_input::CollateralParamsInput;
-use super::init_reserve_input::InitReserveInput;
 use super::reserve_configuration::ReserveConfiguration;
+use super::reserve_type::ReserveType;
 
 #[derive(Debug, Clone)]
 #[contracttype]
@@ -14,25 +14,19 @@ pub struct ReserveData {
     pub borrower_ar: i128,
     pub borrower_ir: i128,
     pub last_update_timestamp: u64,
-    pub s_token_address: Address,
-    pub debt_token_address: Address,
+    pub reserve_type: ReserveType,
     /// The id of the reserve (position in the list of the active reserves).
     pub id: BytesN<1>,
 }
 
 impl ReserveData {
-    pub fn new(env: &Env, input: &InitReserveInput) -> Self {
-        let InitReserveInput {
-            s_token_address,
-            debt_token_address,
-        } = input;
+    pub fn new(env: &Env, reserve_type: ReserveType) -> Self {
         Self {
             lender_ar: FixedI128::ONE.into_inner(),
             lender_ir: Default::default(),
             borrower_ar: FixedI128::ONE.into_inner(),
             borrower_ir: Default::default(),
-            s_token_address: s_token_address.clone(),
-            debt_token_address: debt_token_address.clone(),
+            reserve_type,
             configuration: ReserveConfiguration::default(),
             last_update_timestamp: env.ledger().timestamp(),
             id: zero_bytes(env), // position in reserve list

@@ -2,7 +2,7 @@ use crate::methods::utils::rate::{calc_accrued_rates, calc_interest_rate, calc_n
 use crate::tests::sut::{init_pool, DAY};
 use common::FixedI128;
 use pool_interface::types::{
-    init_reserve_input::InitReserveInput, ir_params::IRParams, reserve_data::ReserveData,
+    ir_params::IRParams, reserve_data::ReserveData, reserve_type::ReserveType,
 };
 use soroban_sdk::testutils::{Address as _, Ledger};
 use soroban_sdk::{Address, Env};
@@ -138,11 +138,8 @@ fn should_calc_borrower_and_lender_rates() {
     let total_collateral = 100;
     let total_debt = 20;
 
-    let input = InitReserveInput {
-        s_token_address: Address::generate(env),
-        debt_token_address: Address::generate(env),
-    };
-    let reserve_data = ReserveData::new(env, &input);
+    let input = ReserveType::Fungible(Address::generate(env), Address::generate(env));
+    let reserve_data = ReserveData::new(env, input);
     let ir_params = get_default_ir_params();
 
     let accrued_rates =
@@ -165,11 +162,8 @@ fn should_fail_when_collateral_is_zero() {
     let total_collateral = 0;
     let total_debt = 100;
 
-    let input = InitReserveInput {
-        s_token_address: Address::generate(env),
-        debt_token_address: Address::generate(env),
-    };
-    let reserve_data = ReserveData::new(env, &input);
+    let input = ReserveType::Fungible(Address::generate(env), Address::generate(env));
+    let reserve_data = ReserveData::new(env, input);
     let ir_params = get_default_ir_params();
 
     let mb_accrued_rates =
