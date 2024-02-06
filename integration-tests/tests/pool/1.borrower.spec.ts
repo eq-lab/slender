@@ -43,54 +43,30 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
 
         await cleanSlenderEnvKeys();
         await deploy();
+        // await deploy();
         await init(client);
+        // require("dotenv").config({ path: contractsFilename });
 
         lender1Address = lender1Keys.publicKey();
         lender2Address = lender2Keys.publicKey();
         borrower1Address = borrower1Keys.publicKey();
         borrower2Address = borrower2Keys.publicKey();
         treasuryAddress = treasuryKeys.publicKey();
+        // return;
 
         await Promise.all([
             client.registerAccount(lender1Address),
             client.registerAccount(lender2Address),
             client.registerAccount(borrower1Address),
             client.registerAccount(borrower2Address),
+            client.registerAccount(treasuryAddress),
         ]);
 
-        // await mintUnderlyingTo(client, "XLM", lender1Address, 1_000_000_000n);
-        // await mintUnderlyingTo(client, "XRP", lender2Address, 100_000_000_000n);
-        // await mintUnderlyingTo(client, "USDC", borrower1Address, 100_000_000_000n);
-        // await mintUnderlyingTo(client, "USDC", borrower2Address, 100_000_000_000n);
+        await mintUnderlyingTo(client, "XLM", lender1Address, 1_000_000_000n);
+        await mintUnderlyingTo(client, "XRP", lender2Address, 100_000_000_000n);
+        await mintUnderlyingTo(client, "USDC", borrower1Address, 100_000_000_000n);
+        await mintUnderlyingTo(client, "USDC", borrower2Address, 100_000_000_000n);
 
-        await initPrice(client, "USDC", 8_000_000_000_000_000n, 0);
-
-        await mintUnderlyingTo(client, "XLM", lender1Address, 100_000_000_000_000n);
-        await mintUnderlyingTo(client, "XRP", lender1Address, 100_000_000_000_000n);
-        await mintUnderlyingTo(client, "USDC", lender1Address, 100_000_000_000_000n);
-        await mintUnderlyingTo(client, "XLM", lender2Address, 100_000_000_000_000n);
-        await mintUnderlyingTo(client, "XRP", lender2Address, 100_000_000_000_000n);
-        await mintUnderlyingTo(client, "USDC", lender2Address, 100_000_000_000_000n);
-        await mintUnderlyingTo(client, "XLM", borrower1Address, 100_000_000_000_000n);
-        await mintUnderlyingTo(client, "XRP", borrower1Address, 100_000_000_000_000n);
-        await mintUnderlyingTo(client, "USDC", borrower1Address, 100_000_000_000_000n);
-
-        await deposit(client, lender2Keys, "XLM", 10_000_000_000_000n);
-        await deposit(client, lender2Keys, "XRP", 10_000_000_000_000n);
-        await deposit(client, lender2Keys, "USDC", 10_000_000_000_000n);
-
-        await deposit(client, borrower1Keys, "XLM", 2_000_000_000n);
-        await deposit(client, borrower1Keys, "XRP", 1_000_000_000_000n);
-
-        // await borrow(client, borrower1Keys, "XRP", 400_000_000_000n);
-        await borrow(client, borrower1Keys, "USDC", 800_000_000_000n);
-        const liquidator1Position1 = await accountPosition(client, borrower1Keys);
-
-        await initPrice(client, "USDC", 12_000_000_000_000_000n, 0);
-        const liquidator1Position2 = await accountPosition(client, borrower1Keys);
-
-        await liquidate(client, lender1Keys, borrower1Address, false);
-        const liquidator1Position3 = await accountPosition(client, borrower1Keys);
     });
 
     it("Case 1: Lenders & borrowers deposit into pool", async function () {
