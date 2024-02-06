@@ -32,7 +32,7 @@ pub fn require_valid_ir_params(env: &Env, params: &IRParams) {
 pub fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
     require_lte_percentage_factor(env, params.discount);
     require_lte_percentage_factor(env, params.util_cap);
-    require_positive(env, params.liquidity_cap);
+    require_positive(env, params.liq_cap);
 }
 
 pub fn require_uninitialized_reserve(env: &Env, asset: &Address) {
@@ -148,7 +148,7 @@ pub fn require_gte_initial_health(
     assert_with_error!(
         env,
         npv_after_percent >= initial_health_percent,
-        Error::CollateralNotCoverNewBorrow
+        Error::BelowInitialHealth
     );
 
     Ok(())
@@ -195,7 +195,7 @@ pub fn require_fungible_reserve(env: &Env, reserve: &ReserveData) {
 pub fn require_unique_liquidation_order(
     env: &Env,
     asset: &Address,
-    liquidation_order: u32,
+    pen_order: u32,
 ) -> Result<(), Error> {
     for r_asset in read_reserves(env) {
         if r_asset.eq(asset) {
@@ -208,8 +208,8 @@ pub fn require_unique_liquidation_order(
             env,
             !reserve
                 .configuration
-                .liquidation_order
-                .eq(&liquidation_order),
+                .pen_order
+                .eq(&pen_order),
             Error::LiquidationOrderMustBeUnique
         );
     }

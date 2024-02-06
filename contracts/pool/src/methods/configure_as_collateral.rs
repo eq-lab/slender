@@ -16,7 +16,7 @@ pub fn configure_as_collateral(
 ) -> Result<(), Error> {
     require_admin(env)?;
     require_valid_collateral_params(env, params);
-    require_unique_liquidation_order(env, asset, params.liquidation_order)?;
+    require_unique_liquidation_order(env, asset, params.pen_order)?;
 
     let mut reserve = read_reserve(env, asset)?;
     reserve.update_collateral_config(params);

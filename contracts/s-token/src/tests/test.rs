@@ -126,16 +126,16 @@ fn test() {
 
     {
         let underlying_decimals = underlying.decimals();
-        let liquidity_cap = 100_000_000 * 10_i128.pow(underlying_decimals); // 100M
+        let liq_cap = 100_000_000 * 10_i128.pow(underlying_decimals); // 100M
         let discount = 6000; //60%
         let util_cap = 9000; //90%
-        let liquidation_order = 1;
+        let pen_order = 1;
 
         pool.configure_as_collateral(
             &underlying.address,
             &CollateralParamsInput {
-                liquidity_cap,
-                liquidation_order,
+                liq_cap,
+                pen_order,
                 discount,
                 util_cap,
             },

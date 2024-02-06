@@ -195,7 +195,7 @@ fn calculate_fungible(
 
         if liquidation {
             sorted_collat_to_receive.set(
-                reserve.configuration.liquidation_order,
+                reserve.configuration.pen_order,
                 LiquidationAsset {
                     asset,
                     reserve,
@@ -292,7 +292,7 @@ fn calculate_rwa(
 
         if liquidation {
             sorted_collateral_to_receive.set(
-                reserve.configuration.liquidation_order,
+                reserve.configuration.pen_order,
                 LiquidationAsset {
                     reserve,
                     asset,
