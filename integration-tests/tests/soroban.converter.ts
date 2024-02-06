@@ -26,6 +26,11 @@ export function convertToScvMap(value: object): xdr.ScVal {
     return xdr.ScVal.scvMap(map);
 }
 
+export function convertToScvEnum(key: string, values: xdr.ScVal[] = []): xdr.ScVal {
+    const symbol = xdr.ScVal.scvSymbol(key);
+    return xdr.ScVal.scvVec([symbol, ...values]);
+}
+
 export function convertToScvVec(value: xdr.ScVal[]): xdr.ScVal {
     return xdr.ScVal.scvVec(value);
 }
