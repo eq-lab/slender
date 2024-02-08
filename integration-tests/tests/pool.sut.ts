@@ -48,6 +48,10 @@ interface PriceData {
     timestamp: bigint;
 }
 
+export function healthFactor(accountPosition: AccountPosition): number {
+    return Number(accountPosition.npv) / Number(accountPosition.discounted_collateral);
+}
+
 export async function init(client: SorobanClient): Promise<void> {
     console.log("    Contracts initialization has been started");
 
@@ -341,7 +345,7 @@ export async function liquidate(
         process.env.SLENDER_POOL,
         "liquidate",
         signer,
-        3,
+        10,
         convertToScvAddress(signer.publicKey()),
         convertToScvAddress(who),
         convertToScvBool(receiveStoken)
