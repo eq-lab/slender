@@ -86,8 +86,8 @@ fn do_deposit_fungible(
     let collat_coeff = get_collat_coeff(
         env,
         reserve,
-        s_token_address,
         s_token_supply,
+        read_stoken_underlying_balance(env, s_token_address),
         debt_token_supply,
     )?;
     let is_first_deposit = who_collat == 0;

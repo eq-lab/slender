@@ -206,10 +206,7 @@ pub fn require_unique_liquidation_order(
 
         assert_with_error!(
             env,
-            !reserve
-                .configuration
-                .pen_order
-                .eq(&pen_order),
+            !reserve.configuration.pen_order.eq(&pen_order),
             Error::LiquidationOrderMustBeUnique
         );
     }

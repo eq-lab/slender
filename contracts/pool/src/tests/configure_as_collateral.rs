@@ -124,10 +124,7 @@ fn should_set_collateral_config() {
     assert_eq!(reserve.configuration.liquidity_cap, params.liq_cap);
     assert_eq!(reserve.configuration.util_cap, params.util_cap);
     assert_eq!(reserve.configuration.discount, params.discount);
-    assert_eq!(
-        reserve.configuration.pen_order,
-        params.pen_order
-    );
+    assert_eq!(reserve.configuration.pen_order, params.pen_order);
 }
 
 #[test]
