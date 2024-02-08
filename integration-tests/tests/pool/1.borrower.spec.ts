@@ -9,8 +9,6 @@ import {
     deploy,
     deposit,
     init,
-    initPrice,
-    liquidate,
     mintUnderlyingTo,
     repay,
     sTokenBalanceOf,
@@ -24,7 +22,7 @@ import {
     borrower2Keys,
     lender1Keys,
     lender2Keys,
-    treasuryKeys
+    contractsFilename
 } from "../soroban.config";
 import { assert, expect, use } from "chai";
 import chaiAsPromised from 'chai-as-promised';
@@ -43,7 +41,6 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
 
         await cleanSlenderEnvKeys();
         await deploy();
-        // await deploy();
         await init(client);
         // require("dotenv").config({ path: contractsFilename });
 
@@ -51,7 +48,6 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         lender2Address = lender2Keys.publicKey();
         borrower1Address = borrower1Keys.publicKey();
         borrower2Address = borrower2Keys.publicKey();
-        treasuryAddress = treasuryKeys.publicKey();
         // return;
 
         await Promise.all([
@@ -59,7 +55,6 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
             client.registerAccount(lender2Address),
             client.registerAccount(borrower1Address),
             client.registerAccount(borrower2Address),
-            client.registerAccount(treasuryAddress),
         ]);
 
         await mintUnderlyingTo(client, "XLM", lender1Address, 1_000_000_000n);
