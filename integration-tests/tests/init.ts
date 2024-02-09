@@ -3,7 +3,8 @@ import { SorobanClient } from "./soroban.client";
 
 async function main() {
   const client = new SorobanClient();
-  await init(client);
+  const customXlm = Number(process.argv[3]) === 1;
+  await init(client, customXlm);
 }
 
 main()

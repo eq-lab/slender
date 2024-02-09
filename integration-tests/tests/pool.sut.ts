@@ -52,7 +52,7 @@ export function healthFactor(accountPosition: AccountPosition): number {
     return Number(accountPosition.npv) / Number(accountPosition.discounted_collateral);
 }
 
-export async function init(client: SorobanClient): Promise<void> {
+export async function init(client: SorobanClient, customXlm = true): Promise<void> {
     console.log("    Contracts initialization has been started");
 
     require("dotenv").config({ path: contractsFilename });
@@ -61,7 +61,10 @@ export async function init(client: SorobanClient): Promise<void> {
     const generateSalt = (value: number): string =>
         String(value).padStart(64, "0");
 
-    await initToken(client, "XLM", "Lumens", 7);
+    if (customXlm) {
+        await initToken(client, "XLM", "Lumens", 7);
+    }
+
     await initToken(client, "XRP", "Ripple", 9);
     await initToken(client, "USDC", "USD Coin", 9);
 
