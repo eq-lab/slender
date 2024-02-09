@@ -22,7 +22,7 @@ export const I128_MAX = 170_141_183_460_469_231_731_687_303_715_884_105_727n;
 
 export const BUDGET_SNAPSHOT_FILE = "snapshots/budget_utilization.snap";
 
-export type SlenderAsset = "XLM" | "XRP" | "USDC";
+export type SlenderAsset = "XLM" | "XRP" | "USDC" | "RWA";
 
 export interface AccountPosition {
     debt: bigint;
@@ -67,14 +67,15 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
 
     await initToken(client, "XRP", "Ripple", 9);
     await initToken(client, "USDC", "USD Coin", 9);
+    await initToken(client, "RWA", "RWA asset", 9);
 
     await initPool(client, `${generateSalt(++salt)}`);
     // need to create treasury account to be able to receive native XLM token
     await client.registerAccount(treasuryKeys.publicKey());
 
-    await initSToken(client, "XLM", `${generateSalt(++salt)}`);
     await initSToken(client, "XRP", `${generateSalt(++salt)}`);
     await initSToken(client, "USDC", `${generateSalt(++salt)}`);
+    await initSToken(client, "XLM", `${generateSalt(++salt)}`);
 
     await initDToken(client, "XLM", `${generateSalt(++salt)}`);
     await initDToken(client, "XRP", `${generateSalt(++salt)}`);
@@ -83,10 +84,12 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     await initPoolReserve(client, "XLM");
     await initPoolReserve(client, "XRP");
     await initPoolReserve(client, "USDC");
+    await initPoolReserve(client, "RWA", false);
 
-    await initPoolCollateral(client, "XLM", 3);
     await initPoolCollateral(client, "XRP", 1);
     await initPoolCollateral(client, "USDC", 2);
+    await initPoolCollateral(client, "XLM", 3);
+    await initPoolCollateral(client, "RWA", 4);
 
     await initPoolBorrowing(client, "XLM");
     await initPoolBorrowing(client, "XRP");
@@ -97,6 +100,7 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     await initPrice(client, "XLM", 100_000_000_000_000n, 0);
     await initPrice(client, "XRP", 10_000_000_000_000_000n, 0);
     await initPrice(client, "USDC", 10_000_000_000_000_000n, 0);
+    await initPrice(client, "RWA", 10_000_000_000_000_000n, 0);
 
     await initPoolPriceFeed(client, [
         {
@@ -126,6 +130,16 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
             feed_asset: "USDC",
             feed_decimals: 16,
             feed: process.env.SLENDER_PRICE_FEED,
+                twap_records: 1,
+            },
+        },
+        {
+            asset: "RWA",
+            asset_decimals: 9,
+            priceFeedConfig: {
+                feed_asset: "RWA",
+                feed_decimals: 16,
+                feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
             },
         },
@@ -728,7 +742,8 @@ async function initPool(client: SorobanClient, salt: string): Promise<void> {
 
 async function initPoolReserve(
     client: SorobanClient,
-    asset: SlenderAsset
+    asset: SlenderAsset,
+    fungible = true
 ): Promise<void> {
     await initContract(`POOL_${asset}_RESERVE_INITIALIZED`, () =>
         client.sendTransaction(
@@ -737,10 +752,10 @@ async function initPoolReserve(
             adminKeys,
             3,
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
-            convertToScvEnum("Fungible", [
+            fungible ? convertToScvEnum("Fungible", [
                 convertToScvAddress(process.env[`SLENDER_S_TOKEN_${asset}`]),
                 convertToScvAddress(process.env[`SLENDER_DEBT_TOKEN_${asset}`]),
-            ])
+            ]) : convertToScvEnum("RWA")
         )
     );
 }
