@@ -872,3 +872,18 @@ export async function initPrice(
         ]),
     );
 }
+
+export async function inPoolBalanceOf(
+    client: SorobanClient,
+    asset: SlenderAsset,
+    who: string,
+): Promise<bigint> {
+    const xdrResponse = await client.simulateTransaction(
+        process.env.SLENDER_POOL,
+        "balance",
+        convertToScvAddress(who),
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
+    );
+
+    return parseScvToJs(xdrResponse);
+}
