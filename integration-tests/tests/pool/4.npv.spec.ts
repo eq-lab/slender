@@ -34,11 +34,11 @@ describe("LendingPool: Borrower position", function () {
         await deploy();
         await init(client);
 
-        // require("dotenv").config({ path: contractsFilename });
-
         lender1Address = lender1Keys.publicKey();
         borrower1Address = borrower1Keys.publicKey();
 
+        // uncomment to resume test with existing contracts
+        // require("dotenv").config({ path: contractsFilename });
         // return;
 
         await Promise.all([

@@ -32,23 +32,22 @@ describe("LendingPool: Liquidation (RWA)", function () {
         client = new SorobanClient();
 
         await cleanSlenderEnvKeys();
-        // await deploy();
-        // await init(client);
-        require("dotenv").config({ path: contractsFilename });
+        await deploy();
+        await init(client);
 
         lender1Address = lender1Keys.publicKey();
         borrower1Address = borrower1Keys.publicKey();
         liquidator1Address = liquidator1Keys.publicKey();
 
-        return;
+        // uncomment to resume test with existing contracts
+        // require("dotenv").config({ path: contractsFilename });
+        // return;
 
         await Promise.all([
             client.registerAccount(lender1Address),
             client.registerAccount(borrower1Address),
             client.registerAccount(liquidator1Address),
         ]);
-
-        // return;
 
         await mintUnderlyingTo(client, "XLM", lender1Address, 1_000_000_000n);
         await mintUnderlyingTo(client, "XRP", borrower1Address, 100_000_000_000n);

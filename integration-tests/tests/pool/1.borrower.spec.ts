@@ -42,9 +42,8 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         client = new SorobanClient();
 
         await cleanSlenderEnvKeys();
-        // await deploy();
-        // await init(client);
-        require("dotenv").config({ path: contractsFilename });
+        await deploy();
+        await init(client);
 
         lender1Address = lender1Keys.publicKey();
         lender2Address = lender2Keys.publicKey();
@@ -52,7 +51,9 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         borrower2Address = borrower2Keys.publicKey();
         treasuryAddress = treasuryKeys.publicKey();
 
-        return;
+        // uncomment to resume test with existing contracts
+        // require("dotenv").config({ path: contractsFilename });
+        // return;
 
         await Promise.all([
             client.registerAccount(lender1Address),

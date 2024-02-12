@@ -38,12 +38,13 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         await deploy();
         await init(client);
 
-        // require("dotenv").config({ path: contractsFilename });
-
+        
         lender1Address = lender1Keys.publicKey();
         borrower1Address = borrower1Keys.publicKey();
         liquidator1Address = liquidator1Keys.publicKey();
-
+        
+        // uncomment to resume test with existing contracts
+        // require("dotenv").config({ path: contractsFilename });
         // return;
 
         await Promise.all([
@@ -62,14 +63,14 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
 
     it("Case 1: Liquidator, Lender & Borrower deposit assets", async function () {
         // Lender1 deposits 10 XLM
-        // await deposit(client, lender1Keys, "XLM", 300_000_000n);
-        // // Lender1 deposits 30 XRP
-        // await deposit(client, lender1Keys, "XRP", 30_000_000_000n);
-        // // Lender1 deposits 30 USDC
-        // await deposit(client, lender1Keys, "USDC", 30_000_000_000n);
+        await deposit(client, lender1Keys, "XLM", 300_000_000n);
+        // Lender1 deposits 30 XRP
+        await deposit(client, lender1Keys, "XRP", 30_000_000_000n);
+        // Lender1 deposits 30 USDC
+        await deposit(client, lender1Keys, "USDC", 30_000_000_000n);
 
-        // // Borrower1 deposits 10 XRP
-        // await deposit(client, borrower1Keys, "XRP", 10_000_000_000n);
+        // Borrower1 deposits 10 XRP
+        await deposit(client, borrower1Keys, "XRP", 10_000_000_000n);
         // Borrower1 deposits 10 USDC
         await deposit(client, borrower1Keys, "USDC", 10_000_000_000n);
 

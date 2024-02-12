@@ -48,6 +48,10 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         borrower1Address = borrower1Keys.publicKey();
         borrower2Address = borrower2Keys.publicKey();
 
+        // uncomment to resume test with existing contracts
+        // require("dotenv").config({ path: contractsFilename });
+        // return;
+
         await Promise.all([
             client.registerAccount(lender1Address),
             client.registerAccount(borrower1Address),
