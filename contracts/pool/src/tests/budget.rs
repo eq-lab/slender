@@ -88,8 +88,8 @@ fn configure_as_collateral() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liquidity_cap: 100_000_000 * 10_i128.pow(decimals),
-        liquidation_order: 1,
+        liq_cap: 100_000_000 * 10_i128.pow(decimals),
+        pen_order: 1,
         util_cap: 9_000,
         discount: 6_000,
     };

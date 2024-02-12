@@ -28,7 +28,7 @@ pub enum Error {
     MustNotHaveDebt = 204,
 
     BorrowingNotEnabled = 300,
-    CollateralNotCoverNewBorrow = 301,
+    BelowInitialHealth = 301,
     BadPosition = 302,
     GoodPosition = 303,
     InvalidAmount = 304,

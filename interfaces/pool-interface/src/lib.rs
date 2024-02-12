@@ -147,4 +147,6 @@ pub trait LendingPoolTrait {
     ) -> Result<(), Error>;
 
     fn twap_median_price(env: Env, asset: Address, amount: i128) -> Result<i128, Error>;
+
+    fn balance(env: Env, id: Address, asset: Address) -> i128;
 }

@@ -5,8 +5,9 @@ use soroban_sdk::{token, Address, Env};
 
 use crate::event;
 use crate::storage::{
-    add_stoken_underlying_balance, read_reserve, read_token_balance, read_token_total_supply,
-    read_treasury, write_token_balance, write_token_total_supply,
+    add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
+    read_token_balance, read_token_total_supply, read_treasury, write_token_balance,
+    write_token_total_supply,
 };
 use crate::types::user_configurator::UserConfigurator;
 
@@ -39,8 +40,8 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
     let collat_coeff = get_collat_coeff(
         env,
         &reserve,
-        s_token_address,
         s_token_supply,
+        read_stoken_underlying_balance(env, s_token_address),
         debt_token_supply,
     )?;
 

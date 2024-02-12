@@ -265,4 +265,8 @@ impl LendingPoolTrait for LendingPool {
     fn twap_median_price(env: Env, asset: Address, amount: i128) -> Result<i128, Error> {
         twap_median_price(env, asset, amount)
     }
+
+    fn balance(env: Env, id: Address, asset: Address) -> i128 {
+        read_token_balance(&env, &asset, &id)
+    }
 }

@@ -50,8 +50,8 @@ pub(crate) fn collat_config_change(e: &Env, asset: &Address, params: &Collateral
     e.events().publish(
         topics,
         (
-            params.liquidity_cap,
-            params.liquidation_order,
+            params.liq_cap,
+            params.pen_order,
             params.util_cap,
             params.discount,
         ),

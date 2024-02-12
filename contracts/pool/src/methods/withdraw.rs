@@ -1,7 +1,7 @@
 use crate::event;
 use crate::storage::{
-    add_stoken_underlying_balance, read_reserve, read_token_balance, read_token_total_supply,
-    write_token_balance, write_token_total_supply,
+    add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
+    read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
@@ -43,8 +43,8 @@ pub fn withdraw(
             let collat_coeff = get_collat_coeff(
                 env,
                 &reserve,
-                s_token_address,
                 s_token_supply,
+                read_stoken_underlying_balance(env, s_token_address),
                 debt_token_supply,
             )?;
 
@@ -76,6 +76,9 @@ pub fn withdraw(
             let s_token_supply_after = s_token_supply
                 .checked_sub(s_token_to_burn)
                 .ok_or(Error::InvalidAmount)?;
+            let s_token_underlying_after = read_stoken_underlying_balance(env, s_token_address)
+                .checked_sub(underlying_to_withdraw)
+                .ok_or(Error::MathOverflowError)?;
 
             if user_config.is_borrowing_any()
                 && user_config.is_using_as_collateral(env, reserve.get_id())
@@ -97,13 +100,16 @@ pub fn withdraw(
                             debt_token_address.clone(),
                             debt_token_supply,
                         )),
+                        mb_s_token_underlying_balance: Some(&AssetBalance::new(
+                            s_token_address.clone(),
+                            s_token_underlying_after,
+                        )),
                         mb_rwa_balance: None,
                     },
                     user_config,
                     &mut PriceProvider::new(env)?,
                     false,
                 )?;
-
                 // TODO: do we need to check for initial_health?
                 require_good_position(env, &account_data);
             }
@@ -146,6 +152,7 @@ pub fn withdraw(
                         mb_who_debt: None,
                         mb_s_token_supply: None,
                         mb_debt_token_supply: None,
+                        mb_s_token_underlying_balance: None,
                         mb_rwa_balance: Some(&AssetBalance::new(asset.clone(), rwa_balance_after)),
                     },
                     user_config,

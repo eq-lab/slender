@@ -168,15 +168,15 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             }
 
             let liquidity_cap = 100_000_000 * 10_i128.pow(decimals); // 100M
-            let liquidation_order = i + 1;
+            let pen_order = i + 1;
             let util_cap = 9000; //90%
             let discount = 6000; //60%
 
             pool.configure_as_collateral(
                 &token.address,
                 &CollateralParamsInput {
-                    liquidity_cap,
-                    liquidation_order,
+                    liq_cap: liquidity_cap,
+                    pen_order: pen_order,
                     util_cap,
                     discount,
                 },

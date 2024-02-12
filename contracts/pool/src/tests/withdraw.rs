@@ -515,3 +515,36 @@ fn rwa_should_affect_account_data() {
     assert!(account_position_prev.debt < account_position.debt);
     assert!(account_position_prev.npv > account_position.npv);
 }
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #302)")]
+fn should_fail_when_bad_position_after_withdraw() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+
+    let lender = Address::generate(&env);
+    let borrower = Address::generate(&env);
+    sut.reserves[0].token_admin.mint(&lender, &1_000_000_000);
+    sut.reserves[1]
+        .token_admin
+        .mint(&borrower, &100_000_000_000);
+
+    sut.pool
+        .deposit(&lender, &sut.reserves[0].token.address, &500_000_000);
+    sut.pool
+        .deposit(&borrower, &sut.reserves[1].token.address, &20_000_000_000);
+
+    sut.pool
+        .borrow(&borrower, &sut.reserves[0].token.address, &50_000_000);
+    sut.pool
+        .borrow(&borrower, &sut.reserves[0].token.address, &39_000_000);
+
+    sut.pool.withdraw(
+        &borrower,
+        &sut.reserves[1].token.address,
+        &14_000_000_000,
+        &borrower,
+    );
+}

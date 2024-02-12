@@ -16,10 +16,10 @@ fn should_require_admin() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liquidity_cap: 100_000_000 * 10_i128.pow(decimals),
+        liq_cap: 100_000_000 * 10_i128.pow(decimals),
         util_cap: 9_000,
         discount: 6_000,
-        liquidation_order: 1,
+        pen_order: 1,
     };
 
     sut.pool
@@ -51,10 +51,10 @@ fn should_fail_when_invalid_discount() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liquidity_cap: 100_000_000 * 10_i128.pow(decimals),
+        liq_cap: 100_000_000 * 10_i128.pow(decimals),
         util_cap: 9_000,
         discount: 10_001,
-        liquidation_order: 1,
+        pen_order: 1,
     };
 
     sut.pool
@@ -71,10 +71,10 @@ fn should_fail_when_invalid_util_cap() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liquidity_cap: 100_000_000 * 10_i128.pow(decimals),
+        liq_cap: 100_000_000 * 10_i128.pow(decimals),
         util_cap: 10_001,
         discount: 6_000,
-        liquidation_order: 1,
+        pen_order: 1,
     };
 
     sut.pool
@@ -90,10 +90,10 @@ fn should_fail_when_invalid_liquidity_cap() {
     let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
     let params = CollateralParamsInput {
-        liquidity_cap: -1,
+        liq_cap: -1,
         util_cap: 10_000,
         discount: 6_000,
-        liquidation_order: 1,
+        pen_order: 1,
     };
 
     sut.pool
@@ -109,10 +109,10 @@ fn should_set_collateral_config() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liquidity_cap: 200_000_000 * 10_i128.pow(decimals),
+        liq_cap: 200_000_000 * 10_i128.pow(decimals),
         util_cap: 8_000,
         discount: 5_000,
-        liquidation_order: 1,
+        pen_order: 1,
     };
 
     sut.pool
@@ -121,13 +121,10 @@ fn should_set_collateral_config() {
     let reserve = sut.pool.get_reserve(&asset_address).unwrap();
 
     assert_eq!(reserve.configuration.discount, params.discount);
-    assert_eq!(reserve.configuration.liquidity_cap, params.liquidity_cap);
+    assert_eq!(reserve.configuration.liquidity_cap, params.liq_cap);
     assert_eq!(reserve.configuration.util_cap, params.util_cap);
     assert_eq!(reserve.configuration.discount, params.discount);
-    assert_eq!(
-        reserve.configuration.liquidation_order,
-        params.liquidation_order
-    );
+    assert_eq!(reserve.configuration.pen_order, params.pen_order);
 }
 
 #[test]
@@ -139,10 +136,10 @@ fn should_emit_events() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liquidity_cap: 100_000_000 * 10_i128.pow(decimals),
+        liq_cap: 100_000_000 * 10_i128.pow(decimals),
         util_cap: 9_000,
         discount: 6_000,
-        liquidation_order: 1,
+        pen_order: 1,
     };
 
     assert_eq!(
@@ -161,8 +158,8 @@ fn should_emit_events() {
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "collat_config_change"), &asset_address).into_val(&env),
                 (
-                    params.liquidity_cap,
-                    params.liquidation_order,
+                    params.liq_cap,
+                    params.pen_order,
                     params.util_cap,
                     params.discount
                 )

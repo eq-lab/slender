@@ -8,7 +8,8 @@ use pool_interface::types::user_config::UserConfiguration;
 use soroban_sdk::{assert_with_error, Address, Env, Map, Vec};
 
 use crate::storage::{
-    read_reserve, read_reserves, read_token_balance, read_token_total_supply, read_user_config,
+    read_reserve, read_reserves, read_stoken_underlying_balance, read_token_balance,
+    read_token_total_supply, read_user_config,
 };
 use crate::types::account_data::AccountData;
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
@@ -147,6 +148,7 @@ fn calculate_fungible(
         mb_who_debt,
         mb_s_token_supply,
         mb_debt_token_supply,
+        mb_s_token_underlying_balance,
         mb_rwa_balance: _,
     } = cache;
 
@@ -162,11 +164,16 @@ fn calculate_fungible(
             .map(|x| x.balance)
             .unwrap_or_else(|| read_token_total_supply(env, &debt_token_address));
 
+        let s_token_underlying_balance = mb_s_token_underlying_balance
+            .filter(|x| x.asset == s_token_address)
+            .map(|x| x.balance)
+            .unwrap_or_else(|| read_stoken_underlying_balance(env, &s_token_address));
+
         let collat_coeff = get_collat_coeff(
             env,
             &reserve,
-            &s_token_address,
             s_token_supply,
+            s_token_underlying_balance,
             debt_token_supply,
         )?;
 
@@ -195,7 +202,7 @@ fn calculate_fungible(
 
         if liquidation {
             sorted_collat_to_receive.set(
-                reserve.configuration.liquidation_order,
+                reserve.configuration.pen_order,
                 LiquidationAsset {
                     asset,
                     reserve,
@@ -292,7 +299,7 @@ fn calculate_rwa(
 
         if liquidation {
             sorted_collateral_to_receive.set(
-                reserve.configuration.liquidation_order,
+                reserve.configuration.pen_order,
                 LiquidationAsset {
                     reserve,
                     asset,

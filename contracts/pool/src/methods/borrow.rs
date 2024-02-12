@@ -94,6 +94,7 @@ pub fn do_borrow(
             mb_who_debt: Some(&AssetBalance::new(debt_token_address.clone(), who_debt)),
             mb_s_token_supply: None,
             mb_debt_token_supply: None,
+            mb_s_token_underlying_balance: None, // used only for withdraw
             mb_rwa_balance: None,
         },
         user_config,

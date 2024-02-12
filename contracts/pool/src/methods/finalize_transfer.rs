@@ -61,6 +61,7 @@ pub fn finalize_transfer(
                     debt_token_address.clone(),
                     read_token_total_supply(env, debt_token_address),
                 )),
+                mb_s_token_underlying_balance: None,
                 mb_rwa_balance: None,
             },
             from_config,
