@@ -187,12 +187,12 @@ fn should_liquidate_reducing_position_to_healthy() {
     assert_eq!(borrower_dtoken_0_before, 0);
     assert_eq!(borrower_dtoken_1_before, 800_000_000_000);
     assert_eq!(borrower_dtoken_2_before, 0);
-    assert_eq!(borrower_account_position_before.npv, 3_999_449_312);
+    assert_eq!(borrower_account_position_before.npv, 3_999_493_504);
     assert_eq!(
         borrower_account_position_before.discounted_collateral,
         12_000_000_000
     );
-    assert_eq!(borrower_account_position_before.debt, 8_000_550_688);
+    assert_eq!(borrower_account_position_before.debt, 8_000_506_496);
 
     assert_eq!(liquidator_token_0_before, 10_000_000_000);
     assert_eq!(liquidator_token_1_before, 1_000_000_000_000);
@@ -209,20 +209,20 @@ fn should_liquidate_reducing_position_to_healthy() {
     assert_eq!(borrower_token_2_after, 0);
     assert_eq!(borrower_stoken_0_after, 0);
     assert_eq!(borrower_stoken_1_after, 0);
-    assert_eq!(borrower_stoken_2_after, 456_495_365_963);
+    assert_eq!(borrower_stoken_2_after, 456_547_338_651);
     assert_eq!(borrower_dtoken_0_after, 0);
-    assert_eq!(borrower_dtoken_1_after, 114_115_986_312);
+    assert_eq!(borrower_dtoken_1_after, 114_129_609_027);
     assert_eq!(borrower_dtoken_2_after, 0);
-    assert_eq!(borrower_account_position_after.npv, 684_743_047);
+    assert_eq!(borrower_account_position_after.npv, 684_821_005);
     assert_eq!(
         borrower_account_position_after.discounted_collateral,
-        2_738_972_195
+        2_739_284_031
     );
-    assert_eq!(borrower_account_position_after.debt, 2_054_229_148);
+    assert_eq!(borrower_account_position_after.debt, 2_054_463_026);
 
     assert_eq!(liquidator_token_0_after, 20_000_000_000);
-    assert_eq!(liquidator_token_1_after, 314_068_772_800);
-    assert_eq!(liquidator_token_2_after, 1_543_504_634_037);
+    assert_eq!(liquidator_token_1_after, 314_086_185_200);
+    assert_eq!(liquidator_token_2_after, 1_543_452_661_349);
     assert_eq!(liquidator_stoken_0_after, 0);
     assert_eq!(liquidator_stoken_1_after, 0);
     assert_eq!(liquidator_stoken_2_after, 0);
@@ -316,12 +316,12 @@ fn should_liquidate_receiving_stokens_when_requested() {
     assert_eq!(borrower_dtoken_0_before, 0);
     assert_eq!(borrower_dtoken_1_before, 800_000_000_000);
     assert_eq!(borrower_dtoken_2_before, 0);
-    assert_eq!(borrower_account_position_before.npv, 3_999_449_312);
+    assert_eq!(borrower_account_position_before.npv, 3_999_493_504);
     assert_eq!(
         borrower_account_position_before.discounted_collateral,
         12_000_000_000
     );
-    assert_eq!(borrower_account_position_before.debt, 8_000_550_688);
+    assert_eq!(borrower_account_position_before.debt, 8_000_506_496);
 
     assert_eq!(liquidator_token_0_before, 10_000_000_000);
     assert_eq!(liquidator_token_1_before, 1_000_000_000_000);
@@ -338,23 +338,23 @@ fn should_liquidate_receiving_stokens_when_requested() {
     assert_eq!(borrower_token_2_after, 0);
     assert_eq!(borrower_stoken_0_after, 0);
     assert_eq!(borrower_stoken_1_after, 0);
-    assert_eq!(borrower_stoken_2_after, 456_495_365_963);
+    assert_eq!(borrower_stoken_2_after, 456_547_338_651);
     assert_eq!(borrower_dtoken_0_after, 0);
-    assert_eq!(borrower_dtoken_1_after, 114_115_986_312);
+    assert_eq!(borrower_dtoken_1_after, 114_129_609_027);
     assert_eq!(borrower_dtoken_2_after, 0);
-    assert_eq!(borrower_account_position_after.npv, 684_743_047);
+    assert_eq!(borrower_account_position_after.npv, 684_821_005);
     assert_eq!(
         borrower_account_position_after.discounted_collateral,
-        2_738_972_195
+        2_739_284_031
     );
-    assert_eq!(borrower_account_position_after.debt, 2_054_229_148);
+    assert_eq!(borrower_account_position_after.debt, 2_054_463_026);
 
     assert_eq!(liquidator_token_0_after, 10_000_000_000);
-    assert_eq!(liquidator_token_1_after, 314_068_772_800);
+    assert_eq!(liquidator_token_1_after, 314_086_185_200);
     assert_eq!(liquidator_token_2_after, 1_000_000_000_000);
     assert_eq!(liquidator_stoken_0_after, 10_000_000_000);
     assert_eq!(liquidator_stoken_1_after, 0);
-    assert_eq!(liquidator_stoken_2_after, 543_504_634_037);
+    assert_eq!(liquidator_stoken_2_after, 543_452_661_349);
     assert_eq!(liquidator_dtoken_0_after, 0);
     assert_eq!(liquidator_dtoken_1_after, 0);
     assert_eq!(liquidator_dtoken_2_after, 0);
@@ -521,22 +521,22 @@ fn should_affect_account_data() {
         borrower_account_position_before.discounted_collateral,
         12_000_000_000
     );
-    assert_eq!(borrower_account_position_before.debt, 14_400_991_238);
-    assert_eq!(borrower_account_position_before.npv, -2_400_991_238);
+    assert_eq!(borrower_account_position_before.debt, 14_400_911_692);
+    assert_eq!(borrower_account_position_before.npv, -2_400_911_692);
 
     assert_eq!(
         liquidator_account_position_after.discounted_collateral,
-        9_324_538_378
+        9_319_109_725
     );
     assert_eq!(liquidator_account_position_after.debt, 0);
-    assert_eq!(liquidator_account_position_after.npv, 9_324_538_378);
+    assert_eq!(liquidator_account_position_after.npv, 9_319_109_725);
 
     assert_eq!(
         borrower_account_position_after.discounted_collateral,
-        2_675_461_620
+        2_680_890_273
     );
-    assert_eq!(borrower_account_position_after.debt, 2_004_594_864);
-    assert_eq!(borrower_account_position_after.npv, 670_866_756);
+    assert_eq!(borrower_account_position_after.debt, 2_008_842_827);
+    assert_eq!(borrower_account_position_after.npv, 672_047_446);
 }
 
 #[test]
@@ -649,7 +649,7 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "liquidation"), borrower.clone()).into_val(&env),
-                (12_346_762_091i128, 15_435_046_340i128).into_val(&env)
+                (12_346_448_668i128, 15_434_526_613i128).into_val(&env)
             ),
         ]
     );

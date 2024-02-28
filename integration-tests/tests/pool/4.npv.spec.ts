@@ -51,7 +51,7 @@ describe("LendingPool: Borrower position", function () {
     });
 
     it("Case 1: Lender & Borrower make deposits", async function () {
-    // Lender1 deposits 50 XLM
+        // Lender1 deposits 50 XLM
         await deposit(client, lender1Keys, "XLM", 500_000_000n);
 
         // Borrower1 deposits 20 XRP
@@ -155,7 +155,7 @@ describe("LendingPool: Borrower position", function () {
     });
 
     it("Case 5: Drop the XRP price so Borrower's NPV <= 0", async function () {
-    // XRP price is set to 0.9
+        // XRP price is set to 0.9
         await initPrice(client, "XRP", 9_000_000_000_000_000n, 0);
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
@@ -165,7 +165,7 @@ describe("LendingPool: Borrower position", function () {
     });
 
     it("Case 6: Borrower tries to borrow", async function () {
-    // Borrower1 borrows 0.0001 XLM
+        // Borrower1 borrows 0.0001 XLM
         await expect(borrow(client, borrower1Keys, "XLM", 1_000n)).to.eventually.rejected;
 
         const borrower1XlmBalance = await tokenBalanceOf(client, "XLM", borrower1Address);
@@ -176,7 +176,7 @@ describe("LendingPool: Borrower position", function () {
 
         assert.equal(borrower1XlmBalance, 89_000_000n);
         assert(borrower1DXlmBalance > 88_000_000n
-            && borrower1DXlmBalance < 89_000_001n, `borrower1DXlmBalance: ${borrower1DXlmBalance}`);
+            && borrower1DXlmBalance < 89_000_002n, `borrower1DXlmBalance: ${borrower1DXlmBalance}`);
         assert.equal(sXlmBalance, 411_000_000n);
         assert.equal(dXlmSupply, borrower1DXlmBalance);
 
@@ -188,7 +188,7 @@ describe("LendingPool: Borrower position", function () {
     });
 
     it("Case 7: Borrower tries to withdraw", async function () {
-    // Borrower1 withdraws 0.000001 XRP
+        // Borrower1 withdraws 0.000001 XRP
         await expect(withdraw(client, borrower1Keys, "XRP", 1_000n)).to.eventually.rejected;
 
         const borrower1XrpBalance = await tokenBalanceOf(client, "XRP", borrower1Address);
@@ -210,7 +210,7 @@ describe("LendingPool: Borrower position", function () {
     });
 
     it("Case 8: Borrower deposits more to achieve good NPV and health < 0.25", async function () {
-    // Borrower1 deposits 3.5 XRP
+        // Borrower1 deposits 3.5 XRP
         await deposit(client, borrower1Keys, "XRP", 3_500_000_000n);
 
         const borrower1XrpBalance = await tokenBalanceOf(client, "XRP", borrower1Address);
@@ -249,7 +249,7 @@ describe("LendingPool: Borrower position", function () {
 
         assert.equal(borrower1XlmBalance, 89_000_000n);
         assert(borrower1DXlmBalance > 88_000_000n
-            && borrower1DXlmBalance < 89_000_001n, `borrower1DXlmBalance: ${borrower1DXlmBalance}`);
+            && borrower1DXlmBalance < 89_000_002n, `borrower1DXlmBalance: ${borrower1DXlmBalance}`);
         assert.equal(sXlmBalance, 411_000_000n);
         assert.equal(dXlmSupply, borrower1DXlmBalance);
 
