@@ -38,29 +38,28 @@ pub fn calc_interest_rate(
 
     let alpha = FixedI128::from_rational(ir_params.alpha, ALPHA_DENOMINATOR)?;
 
-    let alpha_minus_one = alpha.checked_sub(FixedI128::ONE)?;
-    let alpha_minus_two = alpha_minus_one.checked_sub(FixedI128::ONE)?;
-    let alpha_minus_three = alpha_minus_two.checked_sub(FixedI128::ONE)?;
+    let neg_u = u.mul_inner(-1)?;
+    let first_term = alpha.checked_mul(neg_u)?;
 
-    let first_term = alpha.checked_mul(u)?;
-    let second_term = first_term
-        .checked_mul(u)?
-        .checked_mul(alpha_minus_one)?
-        .div_inner(2)?;
-    let third_term = second_term
-        .checked_mul(u)?
-        .checked_mul(alpha_minus_two)?
-        .div_inner(3)?;
-    let fourth_term = third_term
-        .checked_mul(u)?
-        .checked_mul(alpha_minus_three)?
-        .div_inner(4)?;
+    let num_of_iterations = if u > FixedI128::from_rational(1, 2)? {
+        19
+    } else {
+        3
+    };
+    let mut prev_term = first_term;
+    let mut terms_sum = first_term;
+    let mut alpha_mul = alpha;
+    for i in 2..(num_of_iterations + 2) {
+        alpha_mul = alpha_mul.checked_sub(FixedI128::ONE)?;
+        let next_term = prev_term
+            .checked_mul(neg_u)?
+            .checked_mul(alpha_mul)?
+            .div_inner(i)?;
+        terms_sum = terms_sum.checked_add(next_term)?;
+        prev_term = next_term;
+    }
 
-    let denom = FixedI128::ONE
-        .checked_sub(first_term)?
-        .checked_add(second_term)?
-        .checked_sub(third_term)?
-        .checked_add(fourth_term)?;
+    let denom = FixedI128::ONE.checked_add(terms_sum)?;
 
     if denom.is_negative() {
         return Some(max_rate);

@@ -98,9 +98,9 @@ fn should_change_over_time() {
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
     let debt_coeff_3 = sut.pool.debt_coeff(&debt_token);
 
-    assert_eq!(debt_coeff_1, 1_000_612_414);
-    assert_eq!(debt_coeff_2, 1_000_816_608);
-    assert_eq!(debt_coeff_3, 1_001_020_801);
+    assert_eq!(debt_coeff_1, 1_000_609_079);
+    assert_eq!(debt_coeff_2, 1_000_812_160);
+    assert_eq!(debt_coeff_3, 1_001_015_242);
 }
 
 #[test]

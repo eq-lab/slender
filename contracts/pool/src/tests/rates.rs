@@ -83,40 +83,49 @@ fn should_calc_interest_rate() {
         FixedI128::from_rational(53966913, 1_000_000_000).unwrap()
     );
 
-    //utilization = 0.75, ir ~ 0.151126740, ir = 0.02/(1-0.75)^1.43 = 0,1452030649
+    //utilization = 0.75, ir ~ 0.145205089, ir = 0.02/(1-0.75)^1.43 = 0,1452030649
     let total_debt = 75;
     let total_collateral: i128 = 100;
     let ir = calc_interest_rate(total_collateral, total_debt, &ir_params).unwrap();
     assert_eq!(
         ir,
-        FixedI128::from_rational(151126740, 1_000_000_000).unwrap()
+        FixedI128::from_rational(145205089, 1_000_000_000).unwrap()
     );
 
-    // utlization = 0.8, ir ~ 0.217230556, ir = 0.02/(1-0.8)^1.43 = 0,1997823429
+    // utlization = 0.8, ir ~ 0.199799636, ir = 0.02/(1-0.8)^1.43 = 0,1997823429
     let total_debt: i128 = 80;
     let total_collateral: i128 = 100;
     let ir = calc_interest_rate(total_collateral, total_debt, &ir_params).unwrap();
     assert_eq!(
         ir,
-        FixedI128::from_rational(217230556, 1_000_000_000).unwrap()
+        FixedI128::from_rational(199799636, 1_000_000_000).unwrap()
     );
 
-    // utilization = 0.9, ir ~ 1,017163929, ir = 0.02/(1-0.9)^1.43 = 0,5383069608
+    // utilization = 0.9, ir ~ 540574625, ir = 0.02/(1-0.9)^1.43 = 0,5383069608
     let total_debt: i128 = 90;
     let total_collateral: i128 = 100;
     let ir = calc_interest_rate(total_collateral, total_debt, &ir_params).unwrap();
     assert_eq!(
         ir,
-        FixedI128::from_rational(1017163929, 1_000_000_000).unwrap()
+        FixedI128::from_rational(540574625, 1_000_000_000).unwrap()
     );
 
-    //utilization = 0.95, ir - 5,00, ir = 0.02/(1-0.9)^1.43 = 1,117567356
+    //utilization = 0.95, ir - 1.524769809, ir = 0.02/(1-0.9)^1.43 = 1,117567356
     let total_debt: i128 = 95;
     let total_collateral: i128 = 100;
     let ir = calc_interest_rate(total_collateral, total_debt, &ir_params).unwrap();
     assert_eq!(
         ir,
-        FixedI128::from_rational(5000000000u64, 1_000_000_000).unwrap()
+        FixedI128::from_rational(1524769809, 1_000_000_000).unwrap()
+    );
+
+    //utilization = 0.99, ir - 5.0, ir = 0.02/(1-0.9)^1.43 = 14.4887192
+    let total_debt: i128 = 99;
+    let total_collateral: i128 = 100;
+    let ir = calc_interest_rate(total_collateral, total_debt, &ir_params).unwrap();
+    assert_eq!(
+        ir,
+        FixedI128::from_rational(5_000_000_000u64, 1_000_000_000).unwrap()
     );
 }
 
