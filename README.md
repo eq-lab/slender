@@ -29,7 +29,7 @@ make test
 To run the tests you need to install **soroban-cli** version 20.0.2
 
 ```shell
-cargo install --locked --version 20.1.1 soroban-cli --features opt
+cargo install --locked --version soroban-cli --features opt
 ```
 
 Run a local standalone (or Futurenet) network with the following command:
