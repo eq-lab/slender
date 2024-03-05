@@ -66,7 +66,6 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         await mintUnderlyingTo(client, "XRP", lender2Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "USDC", borrower1Address, 100_000_000_000n);
         await mintUnderlyingTo(client, "USDC", borrower2Address, 100_000_000_000n);
-
     });
 
     it("Case 1: Lenders & borrowers deposit into pool", async function () {
