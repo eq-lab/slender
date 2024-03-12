@@ -3,10 +3,14 @@ extern crate std;
 
 use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::flash_loan_asset::FlashLoanAsset;
-use pool_interface::types::init_reserve_input::InitReserveInput;
 use pool_interface::types::ir_params::IRParams;
-use pool_interface::types::price_feed_input::PriceFeedInput;
+use pool_interface::types::oracle_asset::OracleAsset;
+use pool_interface::types::price_feed::PriceFeed;
+use pool_interface::types::price_feed_config_input::PriceFeedConfigInput;
+use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::LendingPoolClient;
+use price_feed_interface::types::asset::Asset;
+use price_feed_interface::types::price_data::PriceData;
 use price_feed_interface::PriceFeedClient;
 use soroban_sdk::testutils::{Address as _, Ledger};
 use soroban_sdk::{vec, Address, Bytes, Env, IntoVal, Symbol, Val, Vec};
@@ -84,8 +88,8 @@ fn configure_as_collateral() {
     let asset_address = sut.token().address.clone();
     let decimals = sut.s_token().decimals();
     let params = CollateralParamsInput {
-        liq_bonus: 11_000,
         liq_cap: 100_000_000 * 10_i128.pow(decimals),
+        pen_order: 1,
         util_cap: 9_000,
         discount: 6_000,
     };
@@ -154,8 +158,8 @@ fn init_reserve() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let token_admin = Address::random(&env);
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
 
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
@@ -164,10 +168,8 @@ fn init_reserve() {
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
-    let init_reserve_input = InitReserveInput {
-        s_token_address: s_token.address.clone(),
-        debt_token_address: debt_token.address.clone(),
-    };
+    let init_reserve_input =
+        ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
 
     measure_budget(&env, function_name!(), || {
         pool.init_reserve(
@@ -191,45 +193,6 @@ fn ir_params() {
 }
 
 #[test]
-fn liquidate_receive_stoken_when_borrower_has_one_debt() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, true);
-    let (_, borrower, _) = fill_pool_four(&env, &sut);
-
-    sut.pool
-        .borrow(&borrower, &sut.reserves[2].token.address, &5_990_400_000);
-
-    env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
-
-    let liquidator = Address::random(&env);
-
-    sut.reserves[2]
-        .token_admin
-        .mint(&liquidator, &100_000_000_000);
-
-    sut.pool
-        .deposit(&liquidator, &sut.reserves[2].token.address, &10_000_000_000);
-    sut.pool
-        .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
-
-    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
-
-    sut.price_feed
-        .init(&sut.reserves[2].token.address, &10_010_000_000_000_000);
-
-    measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(
-            &liquidator,
-            &borrower,
-            &sut.reserves[2].token.address,
-            &true,
-        );
-    });
-}
-
-#[test]
 fn liquidate_receive_stoken_when_borrower_has_two_debts() {
     let env = Env::default();
     env.mock_all_auths();
@@ -239,7 +202,7 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
 
     env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
 
-    let liquidator = Address::random(&env);
+    let liquidator = Address::generate(&env);
 
     for reserve in &sut.reserves {
         reserve.token_admin.mint(&liquidator, &100_000_000_000);
@@ -252,16 +215,19 @@ fn liquidate_receive_stoken_when_borrower_has_two_debts() {
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
-    sut.price_feed
-        .init(&sut.reserves[0].token.address, &110_000_000_000_000);
+    sut.price_feed.init(
+        &Asset::Stellar(sut.reserves[0].token.address.clone()),
+        &vec![
+            &env,
+            PriceData {
+                price: 110_000_000_000_000,
+                timestamp: 0,
+            },
+        ],
+    );
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(
-            &liquidator,
-            &borrower,
-            &sut.reserves[0].token.address,
-            &true,
-        );
+        sut.pool.liquidate(&liquidator, &borrower, &true);
     });
 }
 
@@ -272,13 +238,14 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
 
     let sut = init_pool(&env, true);
     let (_, borrower, _) = fill_pool_four(&env, &sut);
+    sut.pool.set_initial_health(&100);
 
     sut.pool
-        .borrow(&borrower, &sut.reserves[2].token.address, &5_990_400_000);
+        .borrow(&borrower, &sut.reserves[2].token.address, &4_990_400_000);
 
     env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
 
-    let liquidator = Address::random(&env);
+    let liquidator = Address::generate(&env);
 
     sut.reserves[0]
         .token_admin
@@ -297,16 +264,19 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
-    sut.price_feed
-        .init(&sut.reserves[2].token.address, &10_010_000_000_000_000);
+    sut.price_feed.init(
+        &Asset::Stellar(sut.reserves[2].token.address.clone()),
+        &vec![
+            &env,
+            PriceData {
+                price: 12_000_000_000_000_000,
+                timestamp: 0,
+            },
+        ],
+    );
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(
-            &liquidator,
-            &borrower,
-            &sut.reserves[2].token.address,
-            &false,
-        );
+        sut.pool.liquidate(&liquidator, &borrower, &false);
     });
 }
 
@@ -320,7 +290,7 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
 
     env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
 
-    let liquidator = Address::random(&env);
+    let liquidator = Address::generate(&env);
 
     sut.reserves[0]
         .token_admin
@@ -339,16 +309,19 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
 
-    sut.price_feed
-        .init(&sut.reserves[0].token.address, &100_100_000_000_000);
+    sut.price_feed.init(
+        &Asset::Stellar(sut.reserves[0].token.address.clone()),
+        &vec![
+            &env,
+            PriceData {
+                price: 100_100_000_000_000,
+                timestamp: 0,
+            },
+        ],
+    );
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(
-            &liquidator,
-            &borrower,
-            &sut.reserves[1].token.address,
-            &false,
-        );
+        sut.pool.liquidate(&liquidator, &borrower, &false);
     });
 }
 
@@ -372,7 +345,7 @@ fn price_feed() {
     let sut = init_pool(&env, true);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.price_feed(&sut.token().address);
+        sut.pool.price_feeds(&sut.token().address);
     });
 }
 
@@ -426,7 +399,7 @@ fn set_base_asset() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let asset = Address::random(&env);
+    let asset = Address::generate(&env);
     let sut = init_pool(&env, true);
 
     measure_budget(&env, function_name!(), || {
@@ -470,10 +443,10 @@ fn set_price_feed() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let asset_1 = Address::random(&env);
-    let asset_2 = Address::random(&env);
-    let asset_3 = Address::random(&env);
+    let admin = Address::generate(&env);
+    let asset_1 = Address::generate(&env);
+    let asset_2 = Address::generate(&env);
+    let asset_3 = Address::generate(&env);
 
     let pool = create_pool_contract(&env, &admin, false);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
@@ -481,29 +454,50 @@ fn set_price_feed() {
     let feed_inputs = Vec::from_array(
         &env,
         [
-            PriceFeedInput {
+            PriceFeedConfigInput {
                 asset: asset_1.clone(),
-                feed: price_feed.address.clone(),
                 asset_decimals: 7,
-                feed_decimals: 14,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(asset_1),
+                        feed_decimals: 14,
+                        twap_records: 10,
+                    },
+                ],
             },
-            PriceFeedInput {
+            PriceFeedConfigInput {
                 asset: asset_2.clone(),
-                feed: price_feed.address.clone(),
                 asset_decimals: 9,
-                feed_decimals: 16,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(asset_2),
+                        feed_decimals: 16,
+                        twap_records: 10,
+                    },
+                ],
             },
-            PriceFeedInput {
+            PriceFeedConfigInput {
                 asset: asset_3.clone(),
-                feed: price_feed.address.clone(),
                 asset_decimals: 9,
-                feed_decimals: 16,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(asset_3),
+                        feed_decimals: 16,
+                        twap_records: 10,
+                    },
+                ],
             },
         ],
     );
 
     measure_budget(&env, function_name!(), || {
-        pool.set_price_feed(&feed_inputs);
+        pool.set_price_feeds(&feed_inputs);
     });
 }
 
@@ -526,7 +520,7 @@ fn stoken_underlying_balance() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let lender = Address::random(&env);
+    let lender = Address::generate(&env);
 
     sut.reserves[0].token_admin.mint(&lender, &20_000_000);
     sut.pool
@@ -534,7 +528,7 @@ fn stoken_underlying_balance() {
 
     measure_budget(&env, function_name!(), || {
         sut.pool
-            .stoken_underlying_balance(&sut.reserves[0].s_token.address);
+            .stoken_underlying_balance(&sut.reserves[0].s_token().address);
     });
 }
 
@@ -547,9 +541,10 @@ fn treasury() {
     let flash_loan_fee = 5;
 
     pool.initialize(
-        &Address::random(&env),
-        &Address::random(&env),
+        &Address::generate(&env),
+        &Address::generate(&env),
         &flash_loan_fee,
+        &2_500,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
@@ -777,11 +772,11 @@ fn s_token_transfer() {
         &sut.reserves[2].token.address,
         &1_000_000_000,
     );
-    let to = Address::random(&env);
+    let to = Address::generate(&env);
 
     measure_budget(&env, function_name!(), || {
         sut.reserves[0]
-            .s_token
+            .s_token()
             .transfer(&from_borrower, &to, &100_000);
     });
 }

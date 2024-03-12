@@ -106,7 +106,7 @@ fn should_fail_when_unknown_asset() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let unknown_asset = Address::random(&env);
+    let unknown_asset = Address::generate(&env);
     let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
 
@@ -121,7 +121,7 @@ fn should_change_user_config() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let user = Address::random(&env);
+    let user = Address::generate(&env);
     let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
@@ -158,23 +158,23 @@ fn should_partially_withdraw() {
 
     env.ledger().with_mut(|li| li.timestamp = 60 * DAY);
 
-    let s_token_supply_before = debt_config.s_token.total_supply();
-    let lender_stoken_balance_before = debt_config.s_token.balance(&lender);
+    let s_token_supply_before = debt_config.s_token().total_supply();
+    let lender_stoken_balance_before = debt_config.s_token().balance(&lender);
     let lender_underlying_balance_before = debt_config.token.balance(&lender);
     let s_token_underlying_supply_before = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token().address);
 
     sut.pool.withdraw(&lender, debt_token, &50_000_000, &lender);
 
     env.ledger().with_mut(|li| li.timestamp = 60 * DAY + 1);
 
-    let lender_stoken_balance = debt_config.s_token.balance(&lender);
+    let lender_stoken_balance = debt_config.s_token().balance(&lender);
     let lender_underlying_balance = debt_config.token.balance(&lender);
-    let s_token_supply = debt_config.s_token.total_supply();
+    let s_token_supply = debt_config.s_token().total_supply();
     let s_token_underlying_supply = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token().address);
 
     assert_eq!(lender_stoken_balance_before, 100_000_000);
     assert_eq!(lender_underlying_balance_before, 900_000_000);
@@ -199,23 +199,23 @@ fn should_fully_withdraw() {
 
     env.ledger().with_mut(|li| li.timestamp = 60 * DAY);
 
-    let s_token_supply_before = debt_config.s_token.total_supply();
-    let lender_stoken_balance_before = debt_config.s_token.balance(&lender);
+    let s_token_supply_before = debt_config.s_token().total_supply();
+    let lender_stoken_balance_before = debt_config.s_token().balance(&lender);
     let lender_underlying_balance_before = debt_config.token.balance(&lender);
     let s_token_underlying_supply_before = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token().address);
 
     sut.pool.withdraw(&lender, debt_token, &i128::MAX, &lender);
 
     env.ledger().with_mut(|li| li.timestamp = 60 * DAY + 1);
 
-    let lender_stoken_balance = debt_config.s_token.balance(&lender);
+    let lender_stoken_balance = debt_config.s_token().balance(&lender);
     let lender_underlying_balance = debt_config.token.balance(&lender);
-    let s_token_supply = debt_config.s_token.total_supply();
+    let s_token_supply = debt_config.s_token().total_supply();
     let s_token_underlying_supply = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token().address);
 
     assert_eq!(lender_stoken_balance_before, 100_000_000);
     assert_eq!(lender_underlying_balance_before, 900_000_000);
@@ -301,12 +301,12 @@ fn should_allow_withdraw_to_other_address() {
     env.ledger().with_mut(|li| li.timestamp = 60 * DAY);
 
     let borrower_underlying_balance_before = debt_config.token.balance(&borrower);
-    let lender_stoken_balance_before = debt_config.s_token.balance(&lender);
+    let lender_stoken_balance_before = debt_config.s_token().balance(&lender);
     let lender_underlying_balance_before = debt_config.token.balance(&lender);
-    let s_token_supply_before = debt_config.s_token.total_supply();
+    let s_token_supply_before = debt_config.s_token().total_supply();
     let s_token_underlying_supply_before = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token().address);
 
     sut.pool
         .withdraw(&lender, debt_token, &50_000_000, &borrower);
@@ -314,12 +314,12 @@ fn should_allow_withdraw_to_other_address() {
     env.ledger().with_mut(|li| li.timestamp = 60 * DAY + 1);
 
     let borrower_underlying_balance = debt_config.token.balance(&borrower);
-    let lender_stoken_balance = debt_config.s_token.balance(&lender);
+    let lender_stoken_balance = debt_config.s_token().balance(&lender);
     let lender_underlying_balance = debt_config.token.balance(&lender);
-    let s_token_supply = debt_config.s_token.total_supply();
+    let s_token_supply = debt_config.s_token().total_supply();
     let s_token_underlying_supply = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token.address);
+        .stoken_underlying_balance(&debt_config.s_token().address);
 
     assert_eq!(borrower_underlying_balance_before, 900_000_000);
     assert_eq!(lender_stoken_balance_before, 100_000_000);
@@ -339,8 +339,8 @@ fn should_emit_events() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let user_1 = Address::random(&env);
-    let user_2 = Address::random(&env);
+    let user_1 = Address::generate(&env);
+    let user_2 = Address::generate(&env);
 
     let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
@@ -382,5 +382,169 @@ fn should_emit_events() {
                 (token_address).into_val(&env)
             ),
         ]
+    );
+}
+
+#[test]
+fn rwa_partially_withdraw() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+
+    let (lender, _, _, _) = fill_pool_two(&env, &sut);
+    let rwa_config = sut.rwa_config();
+    rwa_config.token_admin.mint(&lender, &100_000_000);
+    sut.pool
+        .deposit(&lender, &rwa_config.token.address, &100_000_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 60 * DAY);
+
+    let lender_rwa_balance_before = rwa_config.token.balance(&lender);
+    let pool_rwa_balance_before = rwa_config.token.balance(&sut.pool.address);
+
+    sut.pool
+        .withdraw(&lender, &rwa_config.token.address, &50_000_000, &lender);
+
+    env.ledger().with_mut(|li| li.timestamp = 60 * DAY + 1);
+
+    let lender_rwa_balance = rwa_config.token.balance(&lender);
+    let pool_rwa_balance = rwa_config.token.balance(&sut.pool.address);
+
+    assert_eq!(lender_rwa_balance_before, 0);
+    assert_eq!(lender_rwa_balance, 50_000_000);
+    assert_eq!(pool_rwa_balance_before, 100_000_000);
+    assert_eq!(pool_rwa_balance, 50_000_000);
+}
+
+#[test]
+fn rwa_fully_withdraw() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+
+    let (lender, _, _, _) = fill_pool_two(&env, &sut);
+    let rwa_config = sut.rwa_config();
+    rwa_config.token_admin.mint(&lender, &100_000_000);
+    sut.pool
+        .deposit(&lender, &rwa_config.token.address, &100_000_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 60 * DAY);
+
+    let lender_rwa_balance_before = rwa_config.token.balance(&lender);
+    let pool_rwa_balance_before = rwa_config.token.balance(&sut.pool.address);
+
+    sut.pool
+        .withdraw(&lender, &rwa_config.token.address, &i128::MAX, &lender);
+
+    env.ledger().with_mut(|li| li.timestamp = 60 * DAY + 1);
+
+    let lender_rwa_balance = rwa_config.token.balance(&lender);
+    let pool_rwa_balance = rwa_config.token.balance(&sut.pool.address);
+
+    assert_eq!(lender_rwa_balance_before, 0);
+    assert_eq!(lender_rwa_balance, 100_000_000);
+    assert_eq!(pool_rwa_balance_before, 100_000_000);
+    assert_eq!(pool_rwa_balance, 0);
+}
+
+#[test]
+fn rwa_should_not_affect_coeffs() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+
+    let (lender, _, _, debt_reserve) = fill_pool_two(&env, &sut);
+    let debt_token = &debt_reserve.token.address;
+    let rwa_config = sut.rwa_config();
+    rwa_config.token_admin.mint(&lender, &100_000_000);
+    sut.pool
+        .deposit(&lender, &rwa_config.token.address, &100_000_000);
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
+    let collat_coeff_prev = sut.pool.collat_coeff(debt_token);
+    let debt_coeff_prev = sut.pool.debt_coeff(debt_token);
+
+    sut.pool
+        .withdraw(&lender, &rwa_config.token.address, &i128::MAX, &lender);
+
+    let collat_coeff = sut.pool.collat_coeff(debt_token);
+    let debt_coeff = sut.pool.debt_coeff(debt_token);
+
+    assert_eq!(collat_coeff_prev, collat_coeff);
+    assert_eq!(debt_coeff_prev, debt_coeff);
+}
+
+#[test]
+fn rwa_should_affect_account_data() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
+    let rwa_address = &sut.rwa_config().token.address;
+    let rwa_config = sut.rwa_config();
+    rwa_config.token_admin.mint(&borrower, &100_000_000);
+    sut.pool
+        .deposit(&borrower, &rwa_config.token.address, &100_000_000);
+
+    let account_position_prev = sut.pool.account_position(&borrower);
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
+    sut.pool
+        .withdraw(&borrower, rwa_address, &100_000, &borrower);
+
+    let account_position = sut.pool.account_position(&borrower);
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY + 1);
+
+    let collat_token_total_supply = sut.s_token().total_supply();
+    let pool_collat_token_total_supply = sut.pool.token_total_supply(&sut.s_token().address);
+
+    let collat_token_balance = sut.s_token().balance(&borrower);
+    let pool_collat_token_balance = sut.pool.token_balance(&sut.s_token().address, &borrower);
+
+    assert_eq!(collat_token_total_supply, pool_collat_token_total_supply);
+    assert_eq!(collat_token_balance, pool_collat_token_balance);
+
+    assert!(account_position_prev.discounted_collateral > account_position.discounted_collateral);
+    assert!(account_position_prev.debt < account_position.debt);
+    assert!(account_position_prev.npv > account_position.npv);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #302)")]
+fn should_fail_when_bad_position_after_withdraw() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+
+    let lender = Address::generate(&env);
+    let borrower = Address::generate(&env);
+    sut.reserves[0].token_admin.mint(&lender, &1_000_000_000);
+    sut.reserves[1]
+        .token_admin
+        .mint(&borrower, &100_000_000_000);
+
+    sut.pool
+        .deposit(&lender, &sut.reserves[0].token.address, &500_000_000);
+    sut.pool
+        .deposit(&borrower, &sut.reserves[1].token.address, &20_000_000_000);
+
+    sut.pool
+        .borrow(&borrower, &sut.reserves[0].token.address, &50_000_000);
+    sut.pool
+        .borrow(&borrower, &sut.reserves[0].token.address, &39_000_000);
+
+    sut.pool.withdraw(
+        &borrower,
+        &sut.reserves[1].token.address,
+        &14_000_000_000,
+        &borrower,
     );
 }

@@ -43,6 +43,10 @@ describe("LendingPool: Borrower makes a call to the flash loan with custom recei
         borrower1Address = borrower1Keys.publicKey();
         lender1Address = lender1Keys.publicKey();
 
+        // uncomment to resume test with existing contracts
+        // require("dotenv").config({ path: contractsFilename });
+        // return;
+
         await Promise.all([
             client.registerAccount(lender1Address),
             client.registerAccount(borrower1Address),

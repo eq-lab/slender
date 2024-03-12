@@ -35,7 +35,7 @@ fn should_require_admin() {
 }
 
 #[test]
-fn shoould_set_borrowing_status() {
+fn should_set_borrowing_status() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -105,4 +105,23 @@ fn should_emit_events() {
             ),
         ]
     );
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #110)")]
+fn should_fail_when_enable_rwa() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let rwa_address = sut.rwa_config().token.address.clone();
+
+    sut.pool
+        .enable_borrowing_on_reserve(&rwa_address.clone(), &false);
+    let reserve = sut.pool.get_reserve(&rwa_address).unwrap();
+
+    assert_eq!(reserve.configuration.borrowing_enabled, false);
+
+    sut.pool
+        .enable_borrowing_on_reserve(&rwa_address.clone(), &true);
 }

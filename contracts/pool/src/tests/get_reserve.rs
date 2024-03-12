@@ -9,7 +9,7 @@ fn should_be_none_when_not_initialized() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let uninitialized_asset = Address::random(&env);
+    let uninitialized_asset = Address::generate(&env);
     let sut = init_pool(&env, false);
 
     let reserve = sut.pool.get_reserve(&uninitialized_asset);
@@ -18,12 +18,12 @@ fn should_be_none_when_not_initialized() {
 }
 
 #[test]
-fn shoould_return_reserve() {
+fn should_return_reserve() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let token_admin = Address::random(&env);
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
 
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
@@ -32,10 +32,8 @@ fn shoould_return_reserve() {
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
-    let init_reserve_input = InitReserveInput {
-        s_token_address: s_token.address.clone(),
-        debt_token_address: debt_token.address.clone(),
-    };
+    let init_reserve_input =
+        ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
 
     pool.init_reserve(
         &underlying_token.address.clone(),
@@ -44,6 +42,5 @@ fn shoould_return_reserve() {
 
     let reserve = pool.get_reserve(&underlying_token.address).unwrap();
 
-    assert_eq!(reserve.s_token_address, s_token.address);
-    assert_eq!(reserve.debt_token_address, debt_token.address);
+    assert_eq!(reserve.reserve_type, init_reserve_input);
 }

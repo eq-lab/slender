@@ -4,13 +4,17 @@ extern crate std;
 use crate::*;
 use debt_token_interface::DebtTokenClient;
 use flash_loan_receiver_interface::FlashLoanReceiverClient;
+use pool_interface::types::oracle_asset::OracleAsset;
+use pool_interface::types::price_feed::PriceFeed;
+use price_feed_interface::types::asset::Asset;
+use price_feed_interface::types::price_data::PriceData;
 use price_feed_interface::PriceFeedClient;
 use s_token_interface::STokenClient;
 use soroban_sdk::testutils::{Address as _, Ledger};
 use soroban_sdk::token::Client as TokenClient;
 use soroban_sdk::token::StellarAssetClient as TokenAdminClient;
-use soroban_sdk::Env;
 use soroban_sdk::IntoVal;
+use soroban_sdk::{vec, Env};
 
 mod pool {
     soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/pool.wasm");
@@ -63,13 +67,15 @@ pub(crate) fn create_pool_contract<'a>(
         LendingPoolClient::new(e, &e.register_contract(None, LendingPool))
     };
 
-    let treasury = Address::random(e);
+    let treasury = Address::generate(e);
     let flash_loan_fee = 5;
+    let initial_health = 0;
 
     client.initialize(
         &admin,
         &treasury,
         &flash_loan_fee,
+        &initial_health,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
@@ -129,66 +135,103 @@ pub(crate) fn create_flash_loan_receiver_contract<'a>(e: &Env) -> FlashLoanRecei
 pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
     env.budget().reset_unlimited();
 
-    let admin = Address::random(&env);
-    let token_admin = Address::random(&env);
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
 
     let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, use_pool_wasm);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
     let flash_loan_receiver: FlashLoanReceiverClient<'_> =
         create_flash_loan_receiver_contract(&env);
 
-    let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..3)
+    let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..4)
         .map(|i| {
             let (token, token_admin_client) = create_token_contract(&env, &token_admin);
-            let s_token = create_s_token_contract(&env, &pool.address, &token.address);
-            let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
             let decimals = (i == 0).then(|| 7).unwrap_or(9);
 
-            assert!(pool.get_reserve(&s_token.address).is_none());
-
-            pool.init_reserve(
-                &token.address,
-                &InitReserveInput {
-                    s_token_address: s_token.address.clone(),
-                    debt_token_address: debt_token.address.clone(),
-                },
-            );
+            let (s_token, debt_token) = if i == 3 {
+                pool.init_reserve(&token.address, &ReserveType::RWA);
+                (None, None)
+            } else {
+                let s_token = create_s_token_contract(&env, &pool.address, &token.address);
+                assert!(pool.get_reserve(&s_token.address).is_none());
+                let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
+                pool.init_reserve(
+                    &token.address,
+                    &ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone()),
+                );
+                pool.enable_borrowing_on_reserve(&token.address, &true);
+                (Some(s_token), Some(debt_token))
+            };
 
             if i == 0 {
                 pool.set_base_asset(&token.address, &decimals)
             }
 
-            let liq_bonus = 11000; //110%
-            let liq_cap = 100_000_000 * 10_i128.pow(decimals); // 100M
+            let liquidity_cap = 100_000_000 * 10_i128.pow(decimals); // 100M
+            let pen_order = i + 1;
             let util_cap = 9000; //90%
             let discount = 6000; //60%
 
             pool.configure_as_collateral(
                 &token.address,
                 &CollateralParamsInput {
-                    liq_bonus,
-                    liq_cap,
+                    liq_cap: liquidity_cap,
+                    pen_order: pen_order,
                     util_cap,
                     discount,
                 },
             );
 
-            pool.enable_borrowing_on_reserve(&token.address, &true);
-
             let reserve = pool.get_reserve(&token.address);
             assert_eq!(reserve.is_some(), true);
 
             let reserve_config = reserve.unwrap().configuration;
-            assert_eq!(reserve_config.borrowing_enabled, true);
-            assert_eq!(reserve_config.liq_bonus, liq_bonus);
-            assert_eq!(reserve_config.liq_cap, liq_cap);
+            assert_eq!(reserve_config.borrowing_enabled, i != 3); // borrowing disabled only for third asset (RWA)
+            assert_eq!(reserve_config.liquidity_cap, liquidity_cap);
             assert_eq!(reserve_config.util_cap, util_cap);
             assert_eq!(reserve_config.discount, discount);
 
             match i {
-                0 => price_feed.init(&token.address.clone(), &100_000_000_000_000),
-                1 => price_feed.init(&token.address.clone(), &10_000_000_000_000_000),
-                2 => price_feed.init(&token.address.clone(), &10_000_000_000_000_000),
+                0 => price_feed.init(
+                    &Asset::Stellar(token.address.clone()),
+                    &vec![
+                        &env,
+                        PriceData {
+                            price: 100_000_000_000_000,
+                            timestamp: 1704790200000,
+                        },
+                    ],
+                ),
+                1 => price_feed.init(
+                    &Asset::Stellar(token.address.clone()),
+                    &vec![
+                        &env,
+                        PriceData {
+                            price: 10_000_000_000_000_000,
+                            timestamp: 1704790200000,
+                        },
+                    ],
+                ),
+                2 => price_feed.init(
+                    &Asset::Stellar(token.address.clone()),
+                    &vec![
+                        &env,
+                        PriceData {
+                            price: 10_000_000_000_000_000,
+                            timestamp: 1704790200000,
+                        },
+                    ],
+                ),
+                3 => price_feed.init(
+                    &Asset::Stellar(token.address.clone()),
+                    &vec![
+                        &env,
+                        PriceData {
+                            price: 10_000_000_000_000_000,
+                            timestamp: 1704790200000,
+                        },
+                    ],
+                ),
                 _ => panic!(),
             };
 
@@ -204,28 +247,62 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
     let feed_inputs = Vec::from_array(
         &env,
         [
-            PriceFeedInput {
+            PriceFeedConfigInput {
                 asset: reserves[0].token.address.clone(),
-                feed: price_feed.address.clone(),
                 asset_decimals: 7,
-                feed_decimals: 14,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(reserves[0].token.address.clone()),
+                        feed_decimals: 14,
+                        twap_records: 10,
+                    },
+                ],
             },
-            PriceFeedInput {
+            PriceFeedConfigInput {
                 asset: reserves[1].token.address.clone(),
-                feed: price_feed.address.clone(),
                 asset_decimals: 9,
-                feed_decimals: 16,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(reserves[1].token.address.clone()),
+                        feed_decimals: 16,
+                        twap_records: 10,
+                    },
+                ],
             },
-            PriceFeedInput {
+            PriceFeedConfigInput {
                 asset: reserves[2].token.address.clone(),
-                feed: price_feed.address.clone(),
                 asset_decimals: 9,
-                feed_decimals: 16,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(reserves[2].token.address.clone()),
+                        feed_decimals: 16,
+                        twap_records: 10,
+                    },
+                ],
+            },
+            PriceFeedConfigInput {
+                asset: reserves[3].token.address.clone(),
+                asset_decimals: 9,
+                feeds: vec![
+                    &env,
+                    PriceFeed {
+                        feed: price_feed.address.clone(),
+                        feed_asset: OracleAsset::Stellar(reserves[3].token.address.clone()),
+                        feed_decimals: 15,
+                        twap_records: 10,
+                    },
+                ],
             },
         ],
     );
 
-    pool.set_price_feed(&feed_inputs);
+    pool.set_price_feeds(&feed_inputs);
 
     Sut {
         pool,
@@ -245,8 +322,8 @@ pub(crate) fn fill_pool<'a, 'b>(
     sut: &'a Sut,
     with_borrowing: bool,
 ) -> (Address, Address, &'a ReserveConfig<'a>) {
-    let lender = Address::random(&env);
-    let borrower = Address::random(&env);
+    let lender = Address::generate(&env);
+    let borrower = Address::generate(&env);
     let debt_token = sut.reserves[1].token.address.clone();
 
     for i in 0..3 {
@@ -262,13 +339,13 @@ pub(crate) fn fill_pool<'a, 'b>(
     //lender deposit all tokens
     for i in 0..3 {
         let amount = (i == 0).then(|| 1_000_000).unwrap_or(100_000_000);
-        let stoken = sut.reserves[i].s_token.address.clone();
+        let stoken = sut.reserves[i].s_token().address.clone();
         let token = sut.reserves[i].token.address.clone();
         let pool_balance = sut.reserves[i].token.balance(&stoken);
 
         sut.pool.deposit(&lender, &token, &amount);
 
-        assert_eq!(sut.reserves[i].s_token.balance(&lender), amount);
+        assert_eq!(sut.reserves[i].s_token().balance(&lender), amount);
         assert_eq!(
             sut.reserves[i].token.balance(&stoken),
             pool_balance + amount
@@ -280,7 +357,7 @@ pub(crate) fn fill_pool<'a, 'b>(
     //borrower deposit first token and borrow second token
     sut.pool
         .deposit(&borrower, &sut.reserves[0].token.address, &1_000_000);
-    assert_eq!(sut.reserves[0].s_token.balance(&borrower), 1_000_000);
+    assert_eq!(sut.reserves[0].s_token().balance(&borrower), 1_000_000);
 
     if with_borrowing {
         let borrow_amount = 40_000_000;
@@ -296,7 +373,7 @@ pub(crate) fn fill_pool_two<'a, 'b>(
     sut: &'a Sut,
 ) -> (Address, Address, Address, &'a ReserveConfig<'a>) {
     let (lender_1, borrower, debt_token) = fill_pool(env, sut, true);
-    let lender_2 = Address::random(env);
+    let lender_2 = Address::generate(env);
 
     for i in 0..3 {
         let amount = (i == 0).then(|| 10_000_000).unwrap_or(1_000_000_000);
@@ -310,7 +387,7 @@ pub(crate) fn fill_pool_two<'a, 'b>(
     //lender deposit all tokens
     for i in 0..3 {
         let amount = (i == 0).then(|| 1_000_000).unwrap_or(100_000_000);
-        let stoken = sut.reserves[i].s_token.address.clone();
+        let stoken = sut.reserves[i].s_token().address.clone();
         let token = sut.reserves[i].token.address.clone();
         let pool_balance = sut.reserves[i].token.balance(&stoken);
 
@@ -333,7 +410,7 @@ pub(crate) fn fill_pool_three<'a, 'b>(
     let (lender, borrower, debt_config) = fill_pool(env, sut, false);
     let debt_token = debt_config.token.address.clone();
 
-    let liquidator = Address::random(&env);
+    let liquidator = Address::generate(&env);
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
@@ -345,11 +422,11 @@ pub(crate) fn fill_pool_three<'a, 'b>(
     (lender, borrower, liquidator, debt_config)
 }
 
-// #[cfg(feature = "budget")]
+#[cfg(feature = "budget")]
 pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Address, Address) {
-    let lender = Address::random(&env);
-    let borrower1 = Address::random(&env);
-    let borrower2 = Address::random(&env);
+    let lender = Address::generate(&env);
+    let borrower1 = Address::generate(&env);
+    let borrower2 = Address::generate(&env);
 
     for i in 0..3 {
         let amount = (i == 0).then(|| 1_000_000_000).unwrap_or(100_000_000_000);
@@ -385,12 +462,62 @@ pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Ad
     (lender, borrower1, borrower2)
 }
 
+pub(crate) fn fill_pool_six<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Address) {
+    let lender = Address::generate(&env);
+    let liquidator = Address::generate(&env);
+    let borrower = Address::generate(&env);
+
+    for i in 0..3 {
+        let amount = (i == 0)
+            .then(|| 10_000_000_000)
+            .unwrap_or(1_000_000_000_000);
+
+        sut.reserves[i].token_admin.mint(&lender, &amount);
+        sut.reserves[i].token_admin.mint(&borrower, &amount);
+        sut.reserves[i].token_admin.mint(&liquidator, &amount);
+
+        assert_eq!(sut.reserves[i].token.balance(&lender), amount);
+        assert_eq!(sut.reserves[i].token.balance(&borrower), amount);
+        assert_eq!(sut.reserves[i].token.balance(&liquidator), amount);
+    }
+
+    //lender deposit all tokens
+    for i in 0..3 {
+        let amount = (i == 0)
+            .then(|| 10_000_000_000)
+            .unwrap_or(1_000_000_000_000);
+        let stoken = sut.reserves[i].s_token().address.clone();
+        let token = sut.reserves[i].token.address.clone();
+        let pool_balance = sut.reserves[i].token.balance(&stoken);
+
+        sut.pool.deposit(&lender, &token, &amount);
+
+        assert_eq!(sut.reserves[i].s_token().balance(&lender), amount);
+        assert_eq!(
+            sut.reserves[i].token.balance(&stoken),
+            pool_balance + amount
+        );
+    }
+
+    (liquidator, borrower)
+}
+
 #[allow(dead_code)]
 pub struct ReserveConfig<'a> {
     pub token: TokenClient<'a>,
     pub token_admin: TokenAdminClient<'a>,
-    pub s_token: STokenClient<'a>,
-    pub debt_token: DebtTokenClient<'a>,
+    pub s_token: Option<STokenClient<'a>>,
+    pub debt_token: Option<DebtTokenClient<'a>>,
+}
+
+impl<'a> ReserveConfig<'a> {
+    pub fn s_token(&self) -> &STokenClient<'a> {
+        self.s_token.as_ref().unwrap()
+    }
+
+    pub fn debt_token(&self) -> &DebtTokenClient<'a> {
+        self.debt_token.as_ref().unwrap()
+    }
 }
 
 #[allow(dead_code)]
@@ -413,10 +540,14 @@ impl<'a> Sut<'a> {
     }
 
     pub fn debt_token(&self) -> &DebtTokenClient<'a> {
-        &self.reserves[0].debt_token
+        &self.reserves[0].debt_token()
     }
 
     pub fn s_token(&self) -> &STokenClient<'a> {
-        &self.reserves[0].s_token
+        &self.reserves[0].s_token()
+    }
+
+    pub fn rwa_config(&self) -> &ReserveConfig<'a> {
+        &self.reserves[3]
     }
 }

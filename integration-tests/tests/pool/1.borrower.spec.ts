@@ -1,5 +1,6 @@
 import { SorobanClient, delay } from "../soroban.client";
 import {
+    accountPosition,
     borrow,
     cleanSlenderEnvKeys,
     collatCoeff,
@@ -7,6 +8,7 @@ import {
     debtTokenTotalSupply,
     deploy,
     deposit,
+    inPoolBalanceOf,
     init,
     mintUnderlyingTo,
     repay,
@@ -21,6 +23,7 @@ import {
     borrower2Keys,
     lender1Keys,
     lender2Keys,
+    contractsFilename,
     treasuryKeys
 } from "../soroban.config";
 import { assert, expect, use } from "chai";
@@ -47,6 +50,10 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         borrower1Address = borrower1Keys.publicKey();
         borrower2Address = borrower2Keys.publicKey();
         treasuryAddress = treasuryKeys.publicKey();
+
+        // uncomment to resume test with existing contracts
+        // require("dotenv").config({ path: contractsFilename });
+        // return;
 
         await Promise.all([
             client.registerAccount(lender1Address),
@@ -236,7 +243,7 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
     });
 
     it("Case 7: Borrower1 makes partial repay", async function () {
-        // Borrower1 repays 10_000_000 XLM
+        // Borrower1 repays 1.0 XLM
         await repay(client, borrower1Keys, "XLM", 10_000_000n);
 
         const borrower1XlmBalance = await tokenBalanceOf(client, "XLM", borrower1Address);
@@ -265,7 +272,7 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         const dXlmSupply = await debtTokenTotalSupply(client, "XLM");
 
         assert(borrower1XlmBalance < 10_000_000n
-            && borrower1XlmBalance >9_990_000n);
+            && borrower1XlmBalance > 9_990_000n);
         assert(treasuryXlmBalance > 0 && treasuryXlmBalance < 1_000n);
         assert.equal(borrower1DXlmBalance, 0n);
         assert(sXlmBalance + treasuryXlmBalance > 90_000_000n
@@ -358,4 +365,132 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         assert.equal(sXlmSupply, lender1SXlmBalance);
         assert.equal(sXrpSupply, lender2SXrpBalance);
     });
+
+    it("Case 12: Lender & Borrower make RWA deposit", async function () {
+        const borrower1AccountPositionBefore = await accountPosition(client, borrower1Keys);
+        const lender1AccountPositionBefore = await accountPosition(client, lender1Keys);
+        const lender1InPoolBalanceBefore = await inPoolBalanceOf(client, "RWA", lender1Address);
+        const borrower1InPoolBalanceBefore = await inPoolBalanceOf(client, "RWA", borrower1Address);
+
+        await mintUnderlyingTo(client, "RWA", lender1Address, 1_000_000_000n);
+        await mintUnderlyingTo(client, "RWA", borrower1Address, 1_000_000_000n);
+
+        await deposit(client, lender1Keys, "RWA", 1_000_000_000n);
+        await deposit(client, borrower1Keys, "RWA", 1_000_000_000n);
+
+        const borrower1AccountPositionAfter = await accountPosition(client, borrower1Keys);
+        const lender1AccountPositionAfter = await accountPosition(client, lender1Keys);
+        const lender1InPoolBalanceAfter = await inPoolBalanceOf(client, "RWA", lender1Address);
+        const borrower1InPoolBalanceAfter = await inPoolBalanceOf(client, "RWA", borrower1Address);
+
+        assert.equal(lender1InPoolBalanceAfter - lender1InPoolBalanceBefore, 1_000_000_000n);
+        assert.equal(borrower1InPoolBalanceAfter - borrower1InPoolBalanceBefore, 1_000_000_000n);
+        assert(lender1AccountPositionBefore.npv < lender1AccountPositionAfter.npv);
+        assert(borrower1AccountPositionBefore.npv < borrower1AccountPositionAfter.npv);
+    });
+
+    it("Case 13: Borrower tries to borrow RWA", async function () {
+        const borrwer1RWABalanceBefore = await tokenBalanceOf(client, "RWA", borrower1Address);
+        const borrower1InPoolBalanceBefore = await inPoolBalanceOf(client, "RWA", borrower1Address);
+        const borrower1AccountPositionBefore = await accountPosition(client, borrower1Keys);
+
+        // Borrower1 tries to borrow 0.1 RWA
+        await expect(borrow(client, borrower1Keys, "RWA", 100_000_000n)).to.eventually.rejected;
+
+        const borrwer1RWABalanceAfter = await tokenBalanceOf(client, "RWA", borrower1Address);
+        const borrower1InPoolBalanceAfter = await inPoolBalanceOf(client, "RWA", borrower1Address);
+        const borrower1AccountPositionAfter = await accountPosition(client, borrower1Keys);
+
+        assert.equal(borrwer1RWABalanceBefore, borrwer1RWABalanceAfter);
+        assert.equal(borrower1InPoolBalanceBefore, borrower1InPoolBalanceAfter);
+        assert.equal(borrower1AccountPositionBefore.npv, borrower1AccountPositionAfter.npv);
+    })
+
+    it("Case 14: Borrower tries to repay RWA", async function () {
+        const borrwer1RWABalanceBefore = await tokenBalanceOf(client, "RWA", borrower1Address);
+        const borrower1InPoolBalanceBefore = await inPoolBalanceOf(client, "RWA", borrower1Address);
+        const borrower1AccountPositionBefore = await accountPosition(client, borrower1Keys);
+
+        // Borrower1 tries to repay 0.1 RWA
+        await expect(repay(client, borrower1Keys, "RWA", 100_000_000n)).to.eventually.rejected;
+
+        const borrwer1RWABalanceAfter = await tokenBalanceOf(client, "RWA", borrower1Address);
+        const borrower1InPoolBalanceAfter = await inPoolBalanceOf(client, "RWA", borrower1Address);
+        const borrower1AccountPositionAfter = await accountPosition(client, borrower1Keys);
+
+        assert.equal(borrwer1RWABalanceBefore, borrwer1RWABalanceAfter);
+        assert.equal(borrower1InPoolBalanceBefore, borrower1InPoolBalanceAfter);
+        assert.equal(borrower1AccountPositionBefore.npv, borrower1AccountPositionAfter.npv);
+    })
+
+    it("Case 15: Borrower witdraws RWA partialy", async function () {
+        const borrower1RWABalanceBefore = await tokenBalanceOf(client, "RWA", borrower1Address);
+        const borrower1InPoolBalanceBefore = await inPoolBalanceOf(client, "RWA", borrower1Address);
+        const borrower1AccountPositionBefore = await accountPosition(client, borrower1Keys);
+        const toWithdraw = borrower1InPoolBalanceBefore / 2n;
+
+        // Borrower1 withdraws 1/2 of RWA deposit
+        await withdraw(client, borrower1Keys, "RWA", toWithdraw);
+
+        const borrwer1RWABalanceAfter = await tokenBalanceOf(client, "RWA", borrower1Address);
+        const borrower1InPoolBalanceAfter = await inPoolBalanceOf(client, "RWA", borrower1Address);
+        const borrower1AccountPositionAfter = await accountPosition(client, borrower1Keys);
+
+        assert.equal(borrwer1RWABalanceAfter - borrower1RWABalanceBefore, toWithdraw);
+        assert.equal(borrower1InPoolBalanceBefore - borrower1InPoolBalanceAfter, toWithdraw);
+        assert(borrower1AccountPositionBefore.npv > borrower1AccountPositionAfter.npv);
+    })
+
+    it("Case 16: Borrower witdraws RWA full", async function () {
+        const borrwer1RWABalanceBefore = await tokenBalanceOf(client, "RWA", borrower1Address);
+        const borrower1InPoolBalanceBefore = await inPoolBalanceOf(client, "RWA", borrower1Address);
+        const borrower1AccountPositionBefore = await accountPosition(client, borrower1Keys);
+        const toWithdraw = borrower1InPoolBalanceBefore;
+
+        // Borrower1 withdraws RWA full deposit
+        await withdraw(client, borrower1Keys, "RWA", toWithdraw);
+
+        const borrwer1RWABalanceAfter = await tokenBalanceOf(client, "RWA", borrower1Address);
+        const borrower1InPoolBalanceAfter = await inPoolBalanceOf(client, "RWA", borrower1Address);
+        const borrower1AccountPositionAfter = await accountPosition(client, borrower1Keys);
+
+        assert.equal(borrwer1RWABalanceAfter - borrwer1RWABalanceBefore, 0n);
+        assert.equal(borrower1InPoolBalanceBefore - borrower1InPoolBalanceAfter, 0n);
+        assert(borrower1AccountPositionBefore.npv > borrower1AccountPositionAfter.npv);
+    })
+
+
+    it("Case 17: Borrower tries to borrow RWA without deposit", async function () {
+        const borrwer1RWABalanceBefore = await tokenBalanceOf(client, "RWA", borrower1Address);
+        const borrower1InPoolBalanceBefore = await inPoolBalanceOf(client, "RWA", borrower1Address);
+        const borrower1AccountPositionBefore = await accountPosition(client, borrower1Keys);
+
+        // Borrower1 tries to borrow 0.1 RWA
+        await expect(borrow(client, borrower1Keys, "RWA", 100_000_000n)).to.eventually.rejected;
+
+        const borrwer1RWABalanceAfter = await tokenBalanceOf(client, "RWA", borrower1Address);
+        const borrower1InPoolBalanceAfter = await inPoolBalanceOf(client, "RWA", borrower1Address);
+        const borrower1AccountPositionAfter = await accountPosition(client, borrower1Keys);
+
+        assert.equal(borrwer1RWABalanceBefore, borrwer1RWABalanceAfter);
+        assert.equal(borrower1InPoolBalanceBefore, borrower1InPoolBalanceAfter);
+        assert.equal(borrower1AccountPositionBefore.npv, borrower1AccountPositionAfter.npv);
+    })
+
+    it("Case 18: Borrower tries to repay RWA without deposit", async function () {
+        const borrwer1RWABalanceBefore = await tokenBalanceOf(client, "RWA", borrower1Address);
+        const borrower1InPoolBalanceBefore = await inPoolBalanceOf(client, "RWA", borrower1Address);
+        const borrower1AccountPositionBefore = await accountPosition(client, borrower1Keys);
+
+        // Borrower1 tries to repay 0.1 RWA
+        await expect(repay(client, borrower1Keys, "RWA", 100_000_000n)).to.eventually.rejected;
+
+        const borrwer1RWABalanceAfter = await tokenBalanceOf(client, "RWA", borrower1Address);
+        const borrower1InPoolBalanceAfter = await inPoolBalanceOf(client, "RWA", borrower1Address);
+        const borrower1AccountPositionAfter = await accountPosition(client, borrower1Keys);
+
+        assert.equal(borrwer1RWABalanceBefore, borrwer1RWABalanceAfter);
+        assert.equal(borrower1InPoolBalanceBefore, borrower1InPoolBalanceAfter);
+        assert.equal(borrower1AccountPositionBefore.npv, borrower1AccountPositionAfter.npv);
+    })
 });

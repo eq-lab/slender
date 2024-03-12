@@ -24,7 +24,7 @@ pub enum DataKey {
 pub fn write_underlying_asset(env: &Env, asset: &Address) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -34,7 +34,7 @@ pub fn write_underlying_asset(env: &Env, asset: &Address) {
 pub fn read_underlying_asset(env: &Env) -> Address {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -87,6 +87,6 @@ pub fn write_allowance(
 
         e.storage()
             .temporary()
-            .bump(&key, new_expiration, new_expiration)
+            .extend_ttl(&key, new_expiration, new_expiration)
     }
 }

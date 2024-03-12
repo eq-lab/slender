@@ -1,11 +1,12 @@
 use common::FixedI128;
-use flash_loan_receiver_interface::{Asset as ReceiverAsset, FlashLoanReceiverClient};
+use flash_loan_receiver_interface::{FlashLoanReceiverClient, LoanAsset as ReceiverAsset};
 use pool_interface::types::error::Error;
 use pool_interface::types::flash_loan_asset::FlashLoanAsset;
 use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, token, vec, Address, Bytes, Env, Vec};
 
 use crate::event;
+use crate::methods::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use crate::storage::{
     read_flash_loan_fee, read_reserve, read_token_balance, read_token_total_supply, read_treasury,
 };
@@ -44,7 +45,9 @@ pub fn flash_loan(
         require_active_reserve(env, &reserve);
         require_borrowing_enabled(env, &reserve);
 
-        let s_token = STokenClient::new(env, &reserve.s_token_address);
+        let (s_token_address, _) = get_fungible_lp_tokens(&reserve)?;
+
+        let s_token = STokenClient::new(env, s_token_address);
         s_token.transfer_underlying_to(receiver, &loan_asset.amount);
 
         reserves.push_back(reserve);
@@ -68,14 +71,14 @@ pub fn flash_loan(
         let loan_asset = loan_assets.get_unchecked(i);
         let received_asset = receiver_assets.get_unchecked(i);
         let reserve = reserves.get_unchecked(i);
-
+        let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
         if !loan_asset.borrow {
             let underlying_asset = token::Client::new(env, &received_asset.asset);
 
             underlying_asset.transfer_from(
                 &env.current_contract_address(),
                 receiver,
-                &reserve.s_token_address,
+                s_token_address,
                 &received_asset.amount,
             );
             underlying_asset.transfer_from(
@@ -85,18 +88,20 @@ pub fn flash_loan(
                 &received_asset.premium,
             );
         } else {
-            let s_token_supply = read_token_total_supply(env, &reserve.s_token_address);
+            let s_token_supply = read_token_total_supply(env, s_token_address);
 
             let debt_token_supply_after = do_borrow(
                 env,
                 who,
                 &received_asset.asset,
                 &reserve,
-                read_token_balance(env, &reserve.s_token_address, who),
-                read_token_balance(env, &reserve.debt_token_address, who),
+                read_token_balance(env, s_token_address, who),
+                read_token_balance(env, debt_token_address, who),
                 s_token_supply,
-                read_token_total_supply(env, &reserve.debt_token_address),
+                read_token_total_supply(env, debt_token_address),
                 received_asset.amount,
+                s_token_address,
+                debt_token_address,
             )?;
 
             recalculate_reserve_data(

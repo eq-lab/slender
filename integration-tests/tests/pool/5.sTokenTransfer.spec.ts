@@ -39,6 +39,10 @@ describe("sToken transfer", function () {
         borrower2Address = borrower2Keys.publicKey();
         lender3Address = lender3Keys.publicKey();
 
+        // uncomment to resume test with existing contracts
+        // require("dotenv").config({ path: contractsFilename });
+        // return;
+
         await Promise.all([
             client.registerAccount(lender1Address),
             client.registerAccount(borrower1Address),

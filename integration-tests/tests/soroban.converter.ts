@@ -1,4 +1,4 @@
-import { Address, xdr } from 'soroban-client';
+import { Address, xdr } from 'stellar-sdk';
 import { Buffer } from "node:buffer";
 import { bufToBigint } from 'bigint-conversion';
 
@@ -26,6 +26,11 @@ export function convertToScvMap(value: object): xdr.ScVal {
     return xdr.ScVal.scvMap(map);
 }
 
+export function convertToScvEnum(key: string, values: xdr.ScVal[] = []): xdr.ScVal {
+    const symbol = xdr.ScVal.scvSymbol(key);
+    return xdr.ScVal.scvVec([symbol, ...values]);
+}
+
 export function convertToScvVec(value: xdr.ScVal[]): xdr.ScVal {
     return xdr.ScVal.scvVec(value);
 }
@@ -46,6 +51,10 @@ export function convertToScvU128(value: bigint): xdr.ScVal {
 
 export function convertToScvU32(value: number): xdr.ScVal {
     return xdr.ScVal.scvU32(value);
+}
+
+export function convertToScvU64(value: number): xdr.ScVal {
+    return xdr.ScVal.scvU64(new xdr.Uint64(value));
 }
 
 export function convertToScvString(value: string): xdr.ScVal {

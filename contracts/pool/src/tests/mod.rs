@@ -1,6 +1,6 @@
 pub mod account_position;
 pub mod borrow;
-// #[cfg(feature = "budget")]
+#[cfg(feature = "budget")]
 pub mod budget;
 pub mod collat_coeff;
 pub mod configure_as_collateral;
@@ -22,13 +22,14 @@ pub mod set_base_asset;
 pub mod set_flash_loan_fee;
 pub mod set_ir_params;
 pub mod set_pause;
-pub mod set_price_feed;
+pub mod set_price_feeds;
 pub mod set_reserve_status;
 pub mod set_reserve_timestamp_window;
 pub mod soroban_map;
 pub mod stoken_underlying_balance;
 mod sut;
 pub mod treasury;
+pub mod twap_median_price;
 pub mod upgrade;
 pub mod user_configuration;
 pub mod withdraw;

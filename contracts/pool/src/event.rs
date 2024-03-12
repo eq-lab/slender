@@ -2,9 +2,17 @@ use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::ir_params::IRParams;
 use soroban_sdk::{symbol_short, Address, Env, Symbol};
 
-pub(crate) fn initialized(e: &Env, admin: &Address, treasury: &Address, ir_params: &IRParams) {
+pub(crate) fn initialized(e: &Env, admin: &Address, treasury: &Address, params: &IRParams) {
     let topics = (Symbol::new(e, "initialize"), admin, treasury);
-    e.events().publish(topics, ir_params.clone());
+    e.events().publish(
+        topics,
+        (
+            params.alpha,
+            params.initial_rate,
+            params.max_rate,
+            params.scaling_coeff,
+        ),
+    );
 }
 
 pub(crate) fn reserve_used_as_collateral_enabled(e: &Env, who: &Address, asset: &Address) {
@@ -42,8 +50,8 @@ pub(crate) fn collat_config_change(e: &Env, asset: &Address, params: &Collateral
     e.events().publish(
         topics,
         (
-            params.liq_bonus,
             params.liq_cap,
+            params.pen_order,
             params.util_cap,
             params.discount,
         ),

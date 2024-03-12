@@ -47,7 +47,8 @@ sleep 10
 
 echo "Admin's account has been funded"
 
-TOKEN_XLM="CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+TOKEN_XLM=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+# TOKEN_XLM="CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
 echo "  XLM contract address: $TOKEN_XLM"
 
 TOKEN_XRP=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
@@ -55,6 +56,9 @@ echo "  XRP contract address: $TOKEN_XRP"
 
 TOKEN_USDC=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
 echo "  USDC contract address: $TOKEN_USDC"
+
+TOKEN_RWA=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+echo "  RWA contract address: $TOKEN_RWA"
 
 DEPLOYER=$(deploy "$ARTIFACTS/deployer.wasm" $ADMIN_SECRET)
 echo "  Deployer contract address: $DEPLOYER"
@@ -77,6 +81,7 @@ contracts="$ARTIFACTS/.contracts"
     echo "SLENDER_TOKEN_XLM=$TOKEN_XLM"
     echo "SLENDER_TOKEN_XRP=$TOKEN_XRP"
     echo "SLENDER_TOKEN_USDC=$TOKEN_USDC"
+    echo "SLENDER_TOKEN_RWA=$TOKEN_RWA"
     echo "SLENDER_S_TOKEN_HASH=$S_TOKEN_HASH"
     echo "SLENDER_DEBT_TOKEN_HASH=$DEBT_TOKEN_HASH"
     echo "SLENDER_DEPLOYER=$DEPLOYER"

@@ -2,17 +2,16 @@
 extern crate std;
 
 use crate::SToken;
+
 use debt_token_interface::DebtTokenClient;
 use s_token_interface::STokenClient;
-use soroban_sdk::{
-    symbol_short,
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
-    token::Client as TokenClient,
-    token::StellarAssetClient as TokenAdminClient,
-    Address, Env, IntoVal, Symbol, Vec,
-};
+use soroban_sdk::testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation};
+use soroban_sdk::token::{Client as TokenClient, StellarAssetClient as TokenAdminClient};
+use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
-use self::pool::{CollateralParamsInput, IRParams, InitReserveInput};
+use self::pool::{
+    CollateralParamsInput, IRParams, OracleAsset, PriceFeed, PriceFeedConfigInput, ReserveType,
+};
 
 mod pool {
     soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/pool.wasm");
@@ -40,14 +39,16 @@ fn create_token<'a>(
     TokenAdminClient,
 ) {
     let pool = pool::Client::new(e, &e.register_contract_wasm(None, pool::WASM));
-    let pool_admin = Address::random(e);
-    let treasury = Address::random(e);
+    let pool_admin = Address::generate(e);
+    let treasury = Address::generate(e);
     let flash_loan_fee = 5;
+    let initial_health = 2_500;
 
     pool.initialize(
         &pool_admin,
         &treasury,
         &flash_loan_fee,
+        &initial_health,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
@@ -64,17 +65,24 @@ fn create_token<'a>(
     e.budget().reset_default();
     let price_feed = oracle::Client::new(e, &e.register_contract_wasm(None, oracle::WASM));
 
-    let feed_inputs = Vec::from_array(
+    let feed_inputs = vec![
         &e,
-        [pool::PriceFeedInput {
+        PriceFeedConfigInput {
             asset: underlying_asset.address.clone(),
-            feed: price_feed.address.clone(),
             asset_decimals: 7,
-            feed_decimals: 14,
-        }],
-    );
+            feeds: vec![
+                &e,
+                PriceFeed {
+                    feed: price_feed.address.clone(),
+                    feed_asset: OracleAsset::Stellar(underlying_asset.address.clone()),
+                    feed_decimals: 14,
+                    twap_records: 10,
+                },
+            ],
+        },
+    ];
 
-    pool.set_price_feed(&feed_inputs);
+    pool.set_price_feeds(&feed_inputs);
 
     s_token.initialize(
         &"name".into_val(e),
@@ -110,35 +118,33 @@ fn test() {
     e.mock_all_auths();
 
     let (s_token, debt_token, pool, underlying, underlying_admin) = create_token(&e);
-    let init_reserve_input = InitReserveInput {
-        s_token_address: s_token.address.clone(),
-        debt_token_address: debt_token.address.clone(),
-    };
+    let init_reserve_input =
+        ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
     pool.init_reserve(&underlying.address, &init_reserve_input);
 
     e.budget().reset_default();
 
     {
         let underlying_decimals = underlying.decimals();
-        let liq_bonus = 11000; //110%
         let liq_cap = 100_000_000 * 10_i128.pow(underlying_decimals); // 100M
         let discount = 6000; //60%
         let util_cap = 9000; //90%
+        let pen_order = 1;
 
         pool.configure_as_collateral(
             &underlying.address,
             &CollateralParamsInput {
-                liq_bonus,
                 liq_cap,
+                pen_order,
                 discount,
                 util_cap,
             },
         );
     }
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
-    let user3 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
+    let user3 = Address::generate(&e);
 
     underlying_admin.mint(&user1, &1000);
 
@@ -287,8 +293,8 @@ fn test_burn() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
     let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
@@ -308,8 +314,8 @@ fn transfer_insufficient_balance() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
     let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
@@ -324,8 +330,8 @@ fn transfer_receive_deauthorized() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
     let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
@@ -341,8 +347,8 @@ fn transfer_spend_deauthorized() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
     let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
@@ -358,9 +364,9 @@ fn transfer_from_insufficient_allowance() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
-    let user3 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
+    let user3 = Address::generate(&e);
     let (token, _, _pool, _, _) = create_token(&e);
 
     token.mint(&user1, &1000);
@@ -380,8 +386,8 @@ fn initialize_already_initialized() {
     e.mock_all_auths();
     let (token, _, _pool, _, _) = create_token(&e);
 
-    let pool = Address::random(&e);
-    let underlying_asset = Address::random(&e);
+    let pool = Address::generate(&e);
+    let underlying_asset = Address::generate(&e);
 
     token.initialize(
         &"name".into_val(&e),

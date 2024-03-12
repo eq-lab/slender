@@ -5,6 +5,7 @@ use crate::tests::sut::{
     create_pool_contract, create_s_token_contract, create_token_contract, init_pool,
 };
 use crate::*;
+use pool_interface::types::reserve_type::ReserveType;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation};
 use soroban_sdk::{IntoVal, Symbol};
 
@@ -13,8 +14,8 @@ fn should_require_admin() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let token_admin = Address::random(&env);
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
 
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
@@ -23,10 +24,8 @@ fn should_require_admin() {
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
-    let init_reserve_input = InitReserveInput {
-        s_token_address: s_token.address.clone(),
-        debt_token_address: debt_token.address.clone(),
-    };
+    let init_reserve_input =
+        ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
 
     pool.init_reserve(
         &underlying_token.address.clone(),
@@ -62,10 +61,10 @@ fn should_fail_when_calling_second_time() {
 
     let sut = init_pool(&env, false);
 
-    let init_reserve_input = InitReserveInput {
-        s_token_address: sut.s_token().address.clone(),
-        debt_token_address: sut.debt_token().address.clone(),
-    };
+    let init_reserve_input = ReserveType::Fungible(
+        sut.s_token().address.clone(),
+        sut.debt_token().address.clone(),
+    );
 
     sut.pool
         .init_reserve(&sut.token().address, &init_reserve_input);
@@ -77,7 +76,7 @@ fn should_fail_when_pool_not_initialized() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let token_admin = Address::random(&env);
+    let token_admin = Address::generate(&env);
 
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
@@ -87,10 +86,8 @@ fn should_fail_when_pool_not_initialized() {
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
-    let init_reserve_input = InitReserveInput {
-        s_token_address: s_token.address.clone(),
-        debt_token_address: debt_token.address.clone(),
-    };
+    let init_reserve_input =
+        ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
 
     pool.init_reserve(&underlying_token.address, &init_reserve_input);
 }
@@ -100,8 +97,8 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let admin = Address::random(&env);
-    let token_admin = Address::random(&env);
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
 
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
@@ -110,10 +107,8 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
-    let init_reserve_input = InitReserveInput {
-        s_token_address: s_token.address.clone(),
-        debt_token_address: debt_token.address.clone(),
-    };
+    let init_reserve_input =
+        ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
 
     pool.init_reserve(
         &underlying_token.address.clone(),
@@ -123,9 +118,5 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
 
     let reserve = pool.get_reserve(&underlying_token.address).unwrap();
 
-    assert_eq!(init_reserve_input.s_token_address, reserve.s_token_address);
-    assert_eq!(
-        init_reserve_input.debt_token_address,
-        reserve.debt_token_address
-    );
+    assert_eq!(reserve.reserve_type, init_reserve_input);
 }

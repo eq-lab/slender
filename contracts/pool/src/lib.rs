@@ -1,24 +1,26 @@
 #![deny(warnings)]
 #![no_std]
 
-use methods::set_base_asset::set_base_asset;
 use methods::{
     account_position::account_position, borrow::borrow, collat_coeff::collat_coeff,
     configure_as_collateral::configure_as_collateral, debt_coeff::debt_coeff, deposit::deposit,
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, finalize_transfer::finalize_transfer,
     flash_loan::flash_loan, init_reserve::init_reserve, initialize::initialize,
     liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral,
-    set_flash_loan_fee::set_flash_loan_fee, set_ir_params::set_ir_params, set_pause::set_pause,
-    set_price_feed::set_price_feed, set_reserve_status::set_reserve_status,
-    set_reserve_timestamp_window::set_reserve_timestamp_window, upgrade::upgrade,
-    upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token, withdraw::withdraw,
+    set_base_asset::set_base_asset, set_flash_loan_fee::set_flash_loan_fee,
+    set_initial_health::set_initial_health, set_ir_params::set_ir_params, set_pause::set_pause,
+    set_price_feeds::set_price_feeds, set_reserve_status::set_reserve_status,
+    set_reserve_timestamp_window::set_reserve_timestamp_window,
+    twap_median_price::twap_median_price, upgrade::upgrade, upgrade_debt_token::upgrade_debt_token,
+    upgrade_s_token::upgrade_s_token, withdraw::withdraw,
 };
-use pool_interface::types::base_asset_config::BaseAssetConfig;
+use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::types::{
-    account_position::AccountPosition, collateral_params_input::CollateralParamsInput,
-    error::Error, flash_loan_asset::FlashLoanAsset, init_reserve_input::InitReserveInput,
-    ir_params::IRParams, price_feed_config::PriceFeedConfig, price_feed_input::PriceFeedInput,
-    reserve_data::ReserveData, user_config::UserConfiguration,
+    account_position::AccountPosition, base_asset_config::BaseAssetConfig,
+    collateral_params_input::CollateralParamsInput, error::Error, flash_loan_asset::FlashLoanAsset,
+    ir_params::IRParams, price_feed_config::PriceFeedConfig,
+    price_feed_config_input::PriceFeedConfigInput, reserve_data::ReserveData,
+    user_config::UserConfiguration,
 };
 use pool_interface::LendingPoolTrait;
 use soroban_sdk::{contract, contractimpl, Address, Bytes, BytesN, Env, Vec};
@@ -42,9 +44,17 @@ impl LendingPoolTrait for LendingPool {
         admin: Address,
         treasury: Address,
         flash_loan_fee: u32,
+        initial_health: u32,
         ir_params: IRParams,
     ) -> Result<(), Error> {
-        initialize(&env, &admin, &treasury, flash_loan_fee, &ir_params)
+        initialize(
+            &env,
+            &admin,
+            &treasury,
+            flash_loan_fee,
+            initial_health,
+            &ir_params,
+        )
     }
 
     fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), Error> {
@@ -67,8 +77,8 @@ impl LendingPoolTrait for LendingPool {
         1
     }
 
-    fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error> {
-        init_reserve(&env, &asset, &input)
+    fn init_reserve(env: Env, asset: Address, reserve_type: ReserveType) -> Result<(), Error> {
+        init_reserve(&env, &asset, reserve_type)
     }
 
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error> {
@@ -123,12 +133,20 @@ impl LendingPoolTrait for LendingPool {
         set_base_asset(&env, &asset, decimals)
     }
 
-    fn set_price_feed(env: Env, inputs: Vec<PriceFeedInput>) -> Result<(), Error> {
-        set_price_feed(&env, &inputs)
+    fn initial_health(env: Env) -> Result<u32, Error> {
+        read_initial_health(&env)
     }
 
-    fn price_feed(env: Env, asset: Address) -> Option<PriceFeedConfig> {
-        read_price_feed(&env, &asset).ok()
+    fn set_initial_health(env: Env, value: u32) -> Result<(), Error> {
+        set_initial_health(&env, value)
+    }
+
+    fn set_price_feeds(env: Env, inputs: Vec<PriceFeedConfigInput>) -> Result<(), Error> {
+        set_price_feeds(&env, &inputs)
+    }
+
+    fn price_feeds(env: Env, asset: Address) -> Option<PriceFeedConfig> {
+        read_price_feeds(&env, &asset).ok()
     }
 
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
@@ -196,10 +214,9 @@ impl LendingPoolTrait for LendingPool {
         env: Env,
         liquidator: Address,
         who: Address,
-        debt_asset: Address,
         receive_stoken: bool,
     ) -> Result<(), Error> {
-        liquidate(&env, &liquidator, &who, debt_asset, receive_stoken)
+        liquidate(&env, &liquidator, &who, receive_stoken)
     }
 
     fn set_as_collateral(
@@ -243,5 +260,13 @@ impl LendingPoolTrait for LendingPool {
         params: Bytes,
     ) -> Result<(), Error> {
         flash_loan(&env, &who, &receiver, &loan_assets, &params)
+    }
+
+    fn twap_median_price(env: Env, asset: Address, amount: i128) -> Result<i128, Error> {
+        twap_median_price(env, asset, amount)
+    }
+
+    fn balance(env: Env, id: Address, asset: Address) -> i128 {
+        read_token_balance(&env, &asset, &id)
     }
 }

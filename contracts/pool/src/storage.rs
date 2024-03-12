@@ -1,9 +1,10 @@
 use pool_interface::types::base_asset_config::BaseAssetConfig;
+use pool_interface::types::error::Error;
 use pool_interface::types::ir_params::IRParams;
-use pool_interface::types::price_feed_input::PriceFeedInput;
+use pool_interface::types::price_feed_config::PriceFeedConfig;
+use pool_interface::types::price_feed_config_input::PriceFeedConfigInput;
 use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::user_config::UserConfiguration;
-use pool_interface::types::{error::Error, price_feed_config::PriceFeedConfig};
 use soroban_sdk::{assert_with_error, contracttype, vec, Address, Env, Vec};
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17_280;
@@ -31,12 +32,13 @@ pub enum DataKey {
     STokenUnderlyingBalance(Address),
     TokenSupply(Address),
     TokenBalance(Address, Address),
+    InitialHealth,
 }
 
 pub fn has_admin(env: &Env) -> bool {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage().instance().has(&DataKey::Admin)
 }
@@ -44,7 +46,7 @@ pub fn has_admin(env: &Env) -> bool {
 pub fn write_admin(env: &Env, admin: &Address) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage().instance().set(&DataKey::Admin, admin);
 }
@@ -52,7 +54,7 @@ pub fn write_admin(env: &Env, admin: &Address) {
 pub fn read_admin(env: &Env) -> Result<Address, Error> {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -63,7 +65,7 @@ pub fn read_admin(env: &Env) -> Result<Address, Error> {
 pub fn write_ir_params(env: &Env, ir_params: &IRParams) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage().instance().set(&DataKey::IRParams, ir_params);
 }
@@ -71,7 +73,7 @@ pub fn write_ir_params(env: &Env, ir_params: &IRParams) {
 pub fn read_ir_params(env: &Env) -> Result<IRParams, Error> {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -82,7 +84,7 @@ pub fn read_ir_params(env: &Env) -> Result<IRParams, Error> {
 pub fn read_reserve(env: &Env, asset: &Address) -> Result<ReserveData, Error> {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -93,7 +95,7 @@ pub fn read_reserve(env: &Env, asset: &Address) -> Result<ReserveData, Error> {
 pub fn write_reserve(env: &Env, asset: &Address, reserve_data: &ReserveData) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     let asset_key: DataKey = DataKey::ReserveAssetKey(asset.clone());
     env.storage().instance().set(&asset_key, reserve_data);
@@ -102,7 +104,7 @@ pub fn write_reserve(env: &Env, asset: &Address, reserve_data: &ReserveData) {
 pub fn has_reserve(env: &Env, asset: &Address) -> bool {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -112,7 +114,7 @@ pub fn has_reserve(env: &Env, asset: &Address) -> bool {
 pub fn read_reserves(env: &Env) -> Vec<Address> {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -123,7 +125,7 @@ pub fn read_reserves(env: &Env) -> Vec<Address> {
 pub fn read_reserve_timestamp_window(env: &Env) -> u64 {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -134,7 +136,7 @@ pub fn read_reserve_timestamp_window(env: &Env) -> u64 {
 pub fn write_reserve_timestamp_window(env: &Env, window: u64) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -144,7 +146,7 @@ pub fn write_reserve_timestamp_window(env: &Env, window: u64) {
 pub fn write_reserves(env: &Env, reserves: &Vec<Address>) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage().instance().set(&DataKey::Reserves, reserves);
 }
@@ -154,7 +156,7 @@ pub fn read_user_config(env: &Env, user: &Address) -> Result<UserConfiguration, 
     let user_config = env.storage().persistent().get(&key);
 
     if user_config.is_some() {
-        env.storage().persistent().bump(
+        env.storage().persistent().extend_ttl(
             &key,
             LOW_USER_DATA_BUMP_LEDGERS,
             HIGH_USER_DATA_BUMP_LEDGERS,
@@ -167,17 +169,17 @@ pub fn read_user_config(env: &Env, user: &Address) -> Result<UserConfiguration, 
 pub fn write_user_config(env: &Env, user: &Address, config: &UserConfiguration) {
     let key = DataKey::UserConfig(user.clone());
     env.storage().persistent().set(&key, config);
-    env.storage().persistent().bump(
+    env.storage().persistent().extend_ttl(
         &key,
         LOW_USER_DATA_BUMP_LEDGERS,
         HIGH_USER_DATA_BUMP_LEDGERS,
     );
 }
 
-pub fn read_price_feed(env: &Env, asset: &Address) -> Result<PriceFeedConfig, Error> {
+pub fn read_price_feeds(env: &Env, asset: &Address) -> Result<PriceFeedConfig, Error> {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     let data_key = DataKey::PriceFeed(asset.clone());
 
@@ -187,24 +189,27 @@ pub fn read_price_feed(env: &Env, asset: &Address) -> Result<PriceFeedConfig, Er
         .ok_or(Error::NoPriceFeed)
 }
 
-pub fn write_price_feed(env: &Env, inputs: &Vec<PriceFeedInput>) {
+pub fn write_price_feeds(env: &Env, inputs: &Vec<PriceFeedConfigInput>) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     for input in inputs.iter() {
         let data_key = DataKey::PriceFeed(input.asset.clone());
 
-        env.storage()
-            .instance()
-            .set(&data_key, &PriceFeedConfig::new(&input));
+        let config = PriceFeedConfig {
+            asset_decimals: input.asset_decimals,
+            feeds: input.feeds,
+        };
+
+        env.storage().instance().set(&data_key, &config);
     }
 }
 
 pub fn write_base_asset(env: &Env, config: &BaseAssetConfig) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     let data_key = DataKey::BaseAsset;
 
@@ -214,7 +219,7 @@ pub fn write_base_asset(env: &Env, config: &BaseAssetConfig) {
 pub fn read_base_asset(env: &Env) -> Result<BaseAssetConfig, Error> {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     let data_key = DataKey::BaseAsset;
 
@@ -224,10 +229,33 @@ pub fn read_base_asset(env: &Env) -> Result<BaseAssetConfig, Error> {
         .ok_or(Error::BaseAssetNotInitialized)
 }
 
+pub fn write_initial_health(env: &Env, value: u32) {
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    let data_key = DataKey::InitialHealth;
+
+    env.storage().instance().set(&data_key, &value);
+}
+
+pub fn read_initial_health(env: &Env) -> Result<u32, Error> {
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    let data_key = DataKey::InitialHealth;
+
+    env.storage()
+        .instance()
+        .get(&data_key)
+        .ok_or(Error::InitialHealthNotInitialized)
+}
+
 pub fn paused(env: &Env) -> bool {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -238,7 +266,7 @@ pub fn paused(env: &Env) -> bool {
 pub fn write_pause(env: &Env, value: bool) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage().instance().set(&DataKey::Pause, &value);
 }
@@ -246,7 +274,7 @@ pub fn write_pause(env: &Env, value: bool) {
 pub fn write_treasury(env: &Env, treasury: &Address) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage().instance().set(&DataKey::Treasury, treasury);
 }
@@ -254,7 +282,7 @@ pub fn write_treasury(env: &Env, treasury: &Address) {
 pub fn read_treasury(env: &Env) -> Address {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage().instance().get(&DataKey::Treasury).unwrap()
 }
@@ -262,7 +290,7 @@ pub fn read_treasury(env: &Env) -> Address {
 pub fn write_flash_loan_fee(env: &Env, fee: u32) {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage().instance().set(&DataKey::FlashLoanFee, &fee);
 }
@@ -270,7 +298,7 @@ pub fn write_flash_loan_fee(env: &Env, fee: u32) {
 pub fn read_flash_loan_fee(env: &Env) -> u32 {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage()
         .instance()
@@ -285,7 +313,7 @@ pub fn write_stoken_underlying_balance(
 ) -> Result<(), Error> {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     assert_with_error!(env, !total_supply.is_negative(), Error::MustBePositive);
 
@@ -298,7 +326,7 @@ pub fn write_stoken_underlying_balance(
 pub fn read_stoken_underlying_balance(env: &Env, s_token_address: &Address) -> i128 {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     let data_key = DataKey::STokenUnderlyingBalance(s_token_address.clone());
     env.storage().instance().get(&data_key).unwrap_or(0i128)
@@ -323,7 +351,7 @@ pub fn add_stoken_underlying_balance(
 pub fn read_token_total_supply(env: &Env, token: &Address) -> i128 {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     let key = DataKey::TokenSupply(token.clone());
     env.storage().instance().get(&key).unwrap_or(0i128)
@@ -336,7 +364,7 @@ pub fn write_token_total_supply(
 ) -> Result<(), Error> {
     env.storage()
         .instance()
-        .bump(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     assert_with_error!(env, !total_supply.is_negative(), Error::MustBePositive);
 
@@ -351,7 +379,7 @@ pub fn read_token_balance(env: &Env, token: &Address, account: &Address) -> i128
     let balance = env.storage().persistent().get(&key);
 
     if balance.is_some() {
-        env.storage().persistent().bump(
+        env.storage().persistent().extend_ttl(
             &key,
             LOW_USER_DATA_BUMP_LEDGERS,
             HIGH_USER_DATA_BUMP_LEDGERS,
@@ -371,7 +399,7 @@ pub fn write_token_balance(
 
     let key = DataKey::TokenBalance(token.clone(), account.clone());
     env.storage().persistent().set(&key, &balance);
-    env.storage().persistent().bump(
+    env.storage().persistent().extend_ttl(
         &key,
         LOW_USER_DATA_BUMP_LEDGERS,
         HIGH_USER_DATA_BUMP_LEDGERS,

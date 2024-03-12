@@ -9,12 +9,14 @@ use soroban_sdk::{symbol_short, Address, Env, IntoVal, String, Symbol};
 use crate::DebtToken;
 
 fn create_token<'a>(e: &Env) -> (DebtTokenClient<'a>, Address) {
-    let pool = Address::random(e);
+    let pool = Address::generate(e);
 
     let token = DebtTokenClient::new(e, &e.register_contract(None, DebtToken {}));
 
-    let underlying_asset =
-        TokenClient::new(&e, &e.register_stellar_asset_contract(Address::random(&e)));
+    let underlying_asset = TokenClient::new(
+        &e,
+        &e.register_stellar_asset_contract(Address::generate(&e)),
+    );
 
     token.initialize(
         &"name".into_val(e),
@@ -30,12 +32,14 @@ fn create_token<'a>(e: &Env) -> (DebtTokenClient<'a>, Address) {
 fn initialize() {
     let e = Env::default();
     e.mock_all_auths();
-    let pool = Address::random(&e);
+    let pool = Address::generate(&e);
 
     let token = DebtTokenClient::new(&e, &e.register_contract(None, DebtToken {}));
 
-    let underlying_asset =
-        TokenClient::new(&e, &e.register_stellar_asset_contract(Address::random(&e)));
+    let underlying_asset = TokenClient::new(
+        &e,
+        &e.register_stellar_asset_contract(Address::generate(&e)),
+    );
 
     token.initialize(
         &"name".into_val(&e),
@@ -45,8 +49,8 @@ fn initialize() {
     );
 
     assert_eq!(token.decimals(), 7);
-    assert_eq!(token.name(), String::from_slice(&e, &"name"));
-    assert_eq!(token.symbol(), String::from_slice(&e, &"symbol"));
+    assert_eq!(token.name(), String::from_str(&e, &"name"));
+    assert_eq!(token.symbol(), String::from_str(&e, &"symbol"));
 }
 
 #[test]
@@ -56,8 +60,8 @@ fn test() {
 
     let (token, pool) = create_token(&e);
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
     let user1_amount = 1000;
     let total_supply = user1_amount;
 
@@ -126,8 +130,8 @@ fn test_burn() {
     let e = Env::default();
     e.mock_all_auths();
 
-    let user1 = Address::random(&e);
-    let user2 = Address::random(&e);
+    let user1 = Address::generate(&e);
+    let user2 = Address::generate(&e);
     let (token, _pool) = create_token(&e);
 
     token.mint(&user1, &1000);
@@ -143,12 +147,12 @@ fn initialize_already_initialized() {
     let e = Env::default();
     let (token, _pool) = create_token(&e);
 
-    let pool = Address::random(&e);
-    let underlying_asset = Address::random(&e);
+    let pool = Address::generate(&e);
+    let underlying_asset = Address::generate(&e);
 
     token.initialize(
-        &String::from_slice(&e, &"name"),
-        &String::from_slice(&e, &"symbol"),
+        &String::from_str(&e, &"name"),
+        &String::from_str(&e, &"symbol"),
         &pool,
         &underlying_asset,
     );

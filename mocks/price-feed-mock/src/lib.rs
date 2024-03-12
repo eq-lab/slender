@@ -4,19 +4,21 @@
 mod storage;
 
 use crate::storage::*;
-use price_feed_interface::{PriceData, PriceFeedTrait};
-use soroban_sdk::{contract, contractimpl, Address, Env, Vec};
+use price_feed_interface::types::asset::Asset;
+use price_feed_interface::types::price_data::PriceData;
+use price_feed_interface::PriceFeedTrait;
+use soroban_sdk::{contract, contractimpl, Env, Vec};
 
 #[contract]
 pub struct PriceFeedMock;
 
 #[contractimpl]
 impl PriceFeedTrait for PriceFeedMock {
-    fn base(_env: Env) -> Address {
+    fn base(_env: Env) -> Asset {
         unimplemented!()
     }
 
-    fn assets(_env: Env) -> Vec<Address> {
+    fn assets(_env: Env) -> Vec<Asset> {
         unimplemented!()
     }
 
@@ -28,22 +30,19 @@ impl PriceFeedTrait for PriceFeedMock {
         unimplemented!()
     }
 
-    fn price(_env: Env, _asset: Address, _timestamp: u64) -> Option<PriceData> {
+    fn price(_env: Env, _asset: Asset, _timestamp: u64) -> Option<PriceData> {
         unimplemented!()
     }
 
-    fn prices(_env: Env, _asset: Address, _records: u32) -> Option<Vec<PriceData>> {
+    fn prices(env: Env, asset: Asset, _records: u32) -> Option<Vec<PriceData>> {
+        read_prices(&env, &asset)
+    }
+
+    fn lastprice(_env: Env, _asset: Asset) -> Option<PriceData> {
         unimplemented!()
     }
 
-    fn lastprice(env: Env, asset: Address) -> Option<PriceData> {
-        Some(PriceData {
-            price: read_asset_price(&env, asset.clone()).unwrap(),
-            timestamp: env.ledger().timestamp(),
-        })
-    }
-
-    fn init(env: Env, asset: Address, price: i128) {
-        write_init_data(&env, asset, price);
+    fn init(env: Env, asset: Asset, prices: Vec<PriceData>) {
+        write_init_data(&env, &asset, prices);
     }
 }

@@ -7,11 +7,11 @@ use types::base_asset_config::BaseAssetConfig;
 use types::collateral_params_input::CollateralParamsInput;
 use types::error::Error;
 use types::flash_loan_asset::FlashLoanAsset;
-use types::init_reserve_input::InitReserveInput;
 use types::ir_params::IRParams;
 use types::price_feed_config::PriceFeedConfig;
-use types::price_feed_input::PriceFeedInput;
+use types::price_feed_config_input::PriceFeedConfigInput;
 use types::reserve_data::ReserveData;
+use types::reserve_type::ReserveType;
 use types::user_config::UserConfiguration;
 
 pub mod types;
@@ -27,6 +27,7 @@ pub trait LendingPoolTrait {
         admin: Address,
         treasury: Address,
         flash_loan_fee: u32,
+        initial_health: u32,
         ir_params: IRParams,
     ) -> Result<(), Error>;
 
@@ -39,7 +40,7 @@ pub trait LendingPoolTrait {
 
     fn version() -> u32;
 
-    fn init_reserve(env: Env, asset: Address, input: InitReserveInput) -> Result<(), Error>;
+    fn init_reserve(env: Env, asset: Address, reserve_type: ReserveType) -> Result<(), Error>;
 
     fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error>;
 
@@ -61,9 +62,13 @@ pub trait LendingPoolTrait {
 
     fn set_base_asset(env: Env, asset: Address, decimals: u32) -> Result<(), Error>;
 
-    fn set_price_feed(env: Env, inputs: Vec<PriceFeedInput>) -> Result<(), Error>;
+    fn initial_health(env: Env) -> Result<u32, Error>;
 
-    fn price_feed(env: Env, asset: Address) -> Option<PriceFeedConfig>;
+    fn set_initial_health(env: Env, value: u32) -> Result<(), Error>;
+
+    fn set_price_feeds(env: Env, inputs: Vec<PriceFeedConfigInput>) -> Result<(), Error>;
+
+    fn price_feeds(env: Env, asset: Address) -> Option<PriceFeedConfig>;
 
     fn set_ir_params(env: Env, input: IRParams) -> Result<(), Error>;
 
@@ -117,7 +122,6 @@ pub trait LendingPoolTrait {
         env: Env,
         liquidator: Address,
         who: Address,
-        asset: Address,
         receive_stoken: bool,
     ) -> Result<(), Error>;
 
@@ -141,4 +145,8 @@ pub trait LendingPoolTrait {
         assets: Vec<FlashLoanAsset>,
         params: Bytes,
     ) -> Result<(), Error>;
+
+    fn twap_median_price(env: Env, asset: Address, amount: i128) -> Result<i128, Error>;
+
+    fn balance(env: Env, id: Address, asset: Address) -> i128;
 }

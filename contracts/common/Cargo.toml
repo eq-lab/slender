@@ -6,4 +6,4 @@ edition = "2021"
 description = "Common units"
 
 [dependencies]
-fixed-point-math = { workspace = true }
+soroban-fixed-point-math = { workspace = true }

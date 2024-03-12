@@ -1,4 +1,4 @@
-use fixed_point_math::FixedPoint;
+use soroban_fixed_point_math::FixedPoint;
 
 use crate::PERCENTAGE_FACTOR;
 
@@ -30,7 +30,7 @@ impl FixedI128 {
     }
 
     /// Construct fixed value as percentage
-    /// percentage expressed as 1% - 100, 100% - 100000
+    /// percentage expressed as 1% - 100, 100% - 10_000
     pub fn from_percentage<T: Into<i128>>(percentage: T) -> Option<FixedI128> {
         Self::from_rational(percentage, PERCENTAGE_FACTOR)
     }
@@ -132,5 +132,29 @@ impl FixedI128 {
     /// Returns true if self is zero
     pub fn is_zero(self) -> bool {
         self.0 == 0
+    }
+
+    /// Returns max value
+    pub fn max(self, other: FixedI128) -> FixedI128 {
+        if self.0.gt(&other.0) {
+            self
+        } else {
+            other
+        }
+    }
+
+    /// Returns min value
+    pub fn min(self, other: FixedI128) -> FixedI128 {
+        if self.0.lt(&other.0) {
+            self
+        } else {
+            other
+        }
+    }
+
+    /// Returns absolute value
+    pub fn abs(mut self) -> FixedI128 {
+        self.0 = self.0.abs();
+        self
     }
 }

@@ -26,10 +26,10 @@ make test
 
 ## Deploy and run integration tests
 
-To run the tests you need to install **soroban-cli** version 0.9.1
+To run the tests you need to install **soroban-cli** version 20.0.2
 
 ```shell
-cargo install --locked --version 20.0.0-rc2 soroban-cli --features opt
+cargo install --locked --version 20.1.1 soroban-cli --features opt
 ```
 
 Run a local standalone (or Futurenet) network with the following command:
@@ -39,7 +39,7 @@ Run a local standalone (or Futurenet) network with the following command:
 docker run --rm -it \
   -p 8000:8000 \
   --name stellar \
-  stellar/quickstart:testing@sha256:1c98f895f8b69cc843eeaa5230d67044dbeb390a5529d51dd7762d8ff685c3f8 \
+  stellar/quickstart:soroban-dev@sha256:bc9aa3653b1f3550eb940c8626d525f58967b73458e51024dce8588204698ddf \
   --standalone \
   --enable-soroban-rpc
 
@@ -47,7 +47,7 @@ docker run --rm -it \
 docker run --rm -it \
    -p 8000:8000 \
    --name stellar \
-   stellar/quickstart:testing@sha256:1c98f895f8b69cc843eeaa5230d67044dbeb390a5529d51dd7762d8ff685c3f8 \
+   stellar/quickstart:soroban-dev@sha256:bc9aa3653b1f3550eb940c8626d525f58967b73458e51024dce8588204698ddf \
    --futurenet \
    --enable-soroban-rpc
 ```

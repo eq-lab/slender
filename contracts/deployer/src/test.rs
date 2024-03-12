@@ -34,14 +34,15 @@ fn deploy_pool_and_s_token() {
         scaling_coeff: 9_000,
     };
     let flash_loan_fee = 5;
+    let initial_health = 2_500;
     let pool_contract_id = {
         // Install the WASM code to be deployed from the deployer contract.
         let pool_wasm_hash = env.deployer().upload_contract_wasm(pool::WASM);
 
         // Deploy contract using deployer, and include an init function to call.
         let salt = BytesN::from_array(&env, &[0; 32]);
-        let pool_admin = Address::random(&env);
-        let treasury = Address::random(&env);
+        let pool_admin = Address::generate(&env);
+        let treasury = Address::generate(&env);
 
         let (contract_id, init_result) = client.deploy_pool(
             &salt,
@@ -49,6 +50,7 @@ fn deploy_pool_and_s_token() {
             &pool_admin,
             &treasury,
             &flash_loan_fee,
+            &initial_health,
             &pool_ir_params,
         );
         assert!(init_result.is_void());
@@ -62,14 +64,14 @@ fn deploy_pool_and_s_token() {
     let pool_client = pool::Client::new(&env, &pool_contract_id);
     let underlying_asset = TokenClient::new(
         &env,
-        &env.register_stellar_asset_contract(Address::random(&env)),
+        &env.register_stellar_asset_contract(Address::generate(&env)),
     );
     // Deploy s-token
     let s_token_contract_id = {
         let s_token_wasm_hash = env.deployer().upload_contract_wasm(s_token::WASM);
 
-        let name = String::from_slice(&env, &"name");
-        let symbol = String::from_slice(&env, &"symbol");
+        let name = String::from_str(&env, &"name");
+        let symbol = String::from_str(&env, &"symbol");
 
         let (contract_id, init_result) = client.deploy_s_token(
             &BytesN::from_array(&env, &[1; 32]),
@@ -92,8 +94,8 @@ fn deploy_pool_and_s_token() {
     let debt_token_contract_id = {
         let debt_token_wasm_hash = env.deployer().upload_contract_wasm(debt_token::WASM);
 
-        let name = String::from_slice(&env, &"name");
-        let symbol = String::from_slice(&env, &"symbol");
+        let name = String::from_str(&env, &"name");
+        let symbol = String::from_str(&env, &"symbol");
 
         let (contract_id, init_result) = client.deploy_debt_token(
             &BytesN::from_array(&env, &[2; 32]),

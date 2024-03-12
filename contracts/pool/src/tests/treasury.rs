@@ -8,14 +8,16 @@ fn should_return_treasury_address() {
 
     let pool = LendingPoolClient::new(&env, &env.register_contract(None, LendingPool));
 
-    let admin = Address::random(&env);
-    let treasury = Address::random(&env);
+    let admin = Address::generate(&env);
+    let treasury = Address::generate(&env);
     let flash_loan_fee = 5;
+    let initial_health = 2_500;
 
     pool.initialize(
         &admin,
         &treasury,
         &flash_loan_fee,
+        &initial_health,
         &IRParams {
             alpha: 143,
             initial_rate: 200,

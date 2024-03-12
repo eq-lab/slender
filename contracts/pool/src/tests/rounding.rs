@@ -13,7 +13,7 @@ fn rounding_deposit_withdraw() {
     let (_, _borrower, debt_config) = fill_pool(&env, &sut, true);
     let token_address = debt_config.token.address.clone();
 
-    let attacker = Address::random(&env);
+    let attacker = Address::generate(&env);
     sut.reserves[1]
         .token_admin
         .mint(&attacker, &100_000_000_000);
@@ -25,13 +25,13 @@ fn rounding_deposit_withdraw() {
         env.budget().reset_unlimited();
 
         let balance_before = sut.reserves[1].token.balance(&attacker);
-        let s_balance_before = sut.reserves[1].s_token.balance(&attacker);
+        let s_balance_before = sut.reserves[1].s_token().balance(&attacker);
 
         sut.pool.deposit(&attacker, &token_address, &i);
 
-        let s_balance_after_deposit = sut.reserves[1].s_token.balance(&attacker);
+        let s_balance_after_deposit = sut.reserves[1].s_token().balance(&attacker);
 
-        let s_token_balance = sut.reserves[1].s_token.balance(&attacker);
+        let s_token_balance = sut.reserves[1].s_token().balance(&attacker);
         if s_token_balance == 0 || s_token_balance >= i {
             std::println!("input {:?}, output {:?}", i, s_token_balance);
             panic!();
@@ -39,7 +39,7 @@ fn rounding_deposit_withdraw() {
 
         sut.pool.withdraw(&attacker, &token_address, &i, &attacker);
 
-        let s_balance_after_withdraw = sut.reserves[1].s_token.balance(&attacker);
+        let s_balance_after_withdraw = sut.reserves[1].s_token().balance(&attacker);
 
         if s_balance_after_deposit <= s_balance_before
             || s_balance_after_withdraw > s_balance_after_deposit
@@ -77,7 +77,7 @@ fn rounding_borrow_repay() {
     let (_, _borrower, _debt_config) = fill_pool(&env, &sut, true);
     let token_address = sut.reserves[1].token.address.clone();
 
-    let attacker = Address::random(&env);
+    let attacker = Address::generate(&env);
     sut.reserves[0]
         .token_admin
         .mint(&attacker, &100_000_000_000);
@@ -91,11 +91,11 @@ fn rounding_borrow_repay() {
         env.budget().reset_unlimited();
 
         let balance_before = sut.reserves[1].token.balance(&attacker);
-        let d_balance_before = sut.reserves[1].debt_token.balance(&attacker);
+        let d_balance_before = sut.reserves[1].debt_token().balance(&attacker);
 
         sut.pool.borrow(&attacker, &token_address, &i);
 
-        let d_balance_after_borrow = sut.reserves[1].debt_token.balance(&attacker);
+        let d_balance_after_borrow = sut.reserves[1].debt_token().balance(&attacker);
 
         if d_balance_after_borrow == 0 {
             std::println!("input {:?}, output {:?}", i, d_balance_after_borrow);
@@ -104,7 +104,7 @@ fn rounding_borrow_repay() {
 
         sut.pool.repay(&attacker, &token_address, &i);
 
-        let d_balance_after_repay = sut.reserves[1].debt_token.balance(&attacker);
+        let d_balance_after_repay = sut.reserves[1].debt_token().balance(&attacker);
 
         if d_balance_after_borrow <= d_balance_before
             || d_balance_after_repay == d_balance_after_borrow

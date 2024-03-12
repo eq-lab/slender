@@ -2,7 +2,7 @@ use crate::tests::sut::init_pool;
 use crate::*;
 
 #[test]
-fn shoould_return_ir_params() {
+fn should_return_ir_params() {
     let env = Env::default();
     env.mock_all_auths();
 
