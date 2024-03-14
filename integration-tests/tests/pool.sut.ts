@@ -60,7 +60,7 @@ export function healthFactor(accountPosition: AccountPosition): number {
     return Number(accountPosition.npv) / Number(accountPosition.discounted_collateral);
 }
 
-export async function init(client: SorobanClient, customXlm = true): Promise<void> {
+export async function init(client: SorobanClient, options = { customXlm: true, rwa: true }): Promise<void> {
     console.log("    Contracts initialization has been started");
 
     require("dotenv").config({ path: contractsFilename });
@@ -73,13 +73,17 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     const xrpDecimals = parseInt(process.env.XRP_DECIMALS, 10) || 9;
     const usdcDecimals = parseInt(process.env.USDC_DECIMALS, 10) || 9;
 
-    if (customXlm) {
+    if (options.customXlm) {
         await initToken(client, "XLM", "Lumens", xlmDecimals);
     }
 
     await initToken(client, "XRP", "Ripple", xrpDecimals);
     await initToken(client, "USDC", "USD Coin", usdcDecimals);
-    await initToken(client, "RWA", "RWA asset", 9);
+
+    if (options.rwa) {
+        await initToken(client, "RWA", "RWA asset", 9);
+        await initPrice(client, "RWA", 10_000_000_000_000_000n, 0);
+    }
 
     await initPool(client, `${generateSalt(++salt)}`);
     // need to create treasury account to be able to receive native XLM token
@@ -112,66 +116,74 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     await initPrice(client, "XLM", 100_000_000_000_000n, 0);
     await initPrice(client, "XRP", 10_000_000_000_000_000n, 0);
     await initPrice(client, "USDC", 10_000_000_000_000_000n, 0);
-    await initPrice(client, "RWA", 10_000_000_000_000_000n, 0);
 
-    await initPoolPriceFeed(client, [
-        {
-            asset: "XLM",
-            asset_decimals: xlmDecimals,
+    const priceFeeds: {
+        asset: SlenderAsset;
+        asset_decimals: number;
+        priceFeedConfig: PriceFeedConfig;
+    }[] = [
+            {
+                asset: "XLM",
+                asset_decimals: xlmDecimals,
+                priceFeedConfig: {
+                    feed_asset: {
+                        asset: "XLM",
+                        type: process.env.XLM_FEED_ASSET_TYPE as FeedAssetType || "Stellar"
+                    },
+                    feed_decimals: parseInt(process.env.XLM_FEED_DECIMALS, 10) || 14,
+                    feed: process.env.XLM_PRICE_FEED || process.env.SLENDER_PRICE_FEED,
+                    twap_records: parseInt(process.env.XLM_PRICE_TWAP_RECORDS, 10) || 1,
+                    timestamp_precision: process.env.XLM_PRICE_TIMESTAMP_PRECISION as TimestampPrecision || "Sec"
+                },
+            },
+            {
+                asset: "XRP",
+                asset_decimals: xrpDecimals,
+                priceFeedConfig: {
+                    feed_asset: {
+                        asset: "XRP",
+                        type: process.env.XRP_FEED_ASSET_TYPE as FeedAssetType || "Stellar"
+                    },
+                    feed_decimals: parseInt(process.env.XRP_FEED_DECIMALS, 10) || 16,
+                    feed: process.env.XRP_PRICE_FEED || process.env.SLENDER_PRICE_FEED,
+                    twap_records: parseInt(process.env.XRP_PRICE_TWAP_RECORDS, 10) || 1,
+                    timestamp_precision: process.env.XRP_PRICE_TIMESTAMP_PRECISION as TimestampPrecision || "Sec"
+                },
+            },
+            {
+                asset: "USDC",
+                asset_decimals: usdcDecimals,
+                priceFeedConfig: {
+                    feed_asset: {
+                        asset: "USDC",
+                        type: process.env.USDC_FEED_ASSET_TYPE as FeedAssetType || "Stellar"
+                    },
+                    feed_decimals: parseInt(process.env.USDC_FEED_DECIMALS, 10) || 16,
+                    feed: process.env.USDC_PRICE_FEED || process.env.SLENDER_PRICE_FEED,
+                    twap_records: parseInt(process.env.USDC_PRICE_TWAP_RECORDS, 10) || 1,
+                    timestamp_precision: process.env.USDC_PRICE_TIMESTAMP_PRECISION as TimestampPrecision || "Sec"
+                },
+            },
+        ];
+
+    if (options.rwa) {
+        priceFeeds.push({
+            asset: "RWA",
+            asset_decimals: 9,
             priceFeedConfig: {
                 feed_asset: {
-                    asset: "XLM",
-                    type: process.env.XLM_FEED_ASSET_TYPE as FeedAssetType || "Stellar"
+                    asset: "RWA",
+                    type: process.env.RWA_FEED_ASSET_TYPE as FeedAssetType || "Stellar"
                 },
-                feed_decimals: parseInt(process.env.XLM_FEED_DECIMALS, 10) || 14,
-                feed: process.env.XLM_PRICE_FEED || process.env.SLENDER_PRICE_FEED,
-                twap_records: parseInt(process.env.XLM_PRICE_TWAP_RECORDS, 10) || 1,
-                timestamp_precision: process.env.XLM_PRICE_TIMESTAMP_PRECISION as TimestampPrecision || "Sec"
+                feed_decimals: 16,
+                feed: process.env.RWA_PRICE_FEED || process.env.SLENDER_PRICE_FEED,
+                twap_records: 1,
+                timestamp_precision: "Sec"
             },
-        },
-        {
-            asset: "XRP",
-            asset_decimals: xrpDecimals,
-            priceFeedConfig: {
-                feed_asset: {
-                    asset: "XRP",
-                    type: process.env.XRP_FEED_ASSET_TYPE as FeedAssetType || "Stellar"
-                },
-                feed_decimals: parseInt(process.env.XRP_FEED_DECIMALS, 10) || 16,
-                feed: process.env.XRP_PRICE_FEED || process.env.SLENDER_PRICE_FEED,
-                twap_records: parseInt(process.env.XRP_PRICE_TWAP_RECORDS, 10) || 1,
-                timestamp_precision: process.env.XRP_PRICE_TIMESTAMP_PRECISION as TimestampPrecision || "Sec"
-            },
-        },
-        {
-            asset: "USDC",
-            asset_decimals: usdcDecimals,
-            priceFeedConfig: {
-                feed_asset: {
-                    asset: "USDC",
-                    type: process.env.USDC_FEED_ASSET_TYPE as FeedAssetType || "Stellar"
-                },
-                feed_decimals: parseInt(process.env.USDC_FEED_DECIMALS, 10) || 16,
-                feed: process.env.USDC_PRICE_FEED || process.env.SLENDER_PRICE_FEED,
-                twap_records: parseInt(process.env.USDC_PRICE_TWAP_RECORDS, 10) || 1,
-                timestamp_precision: process.env.USDC_PRICE_TIMESTAMP_PRECISION as TimestampPrecision || "Sec"
-            },
-        },
-        // {
-        //     asset: "RWA",
-        //     asset_decimals: 9,
-        //     priceFeedConfig: {
-        //         feed_asset: {
-        //             asset: "RWA",
-        //             type: process.env.RWA_FEED_ASSET_TYPE as FeedAssetType || "Stellar"
-        //         },
-        //         feed_decimals: 16,
-        //         feed: process.env.RWA_PRICE_FEED || process.env.SLENDER_PRICE_FEED,
-        //         twap_records: 1,
-        //         timestamp_precision: "Sec"
-        //     },
-        // },
-    ]);
+        });
+    }
+
+    await initPoolPriceFeed(client, priceFeeds);
 
     console.log("    Contracts initialization has been finished");
 }
