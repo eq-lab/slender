@@ -69,13 +69,17 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     const generateSalt = (value: number): string =>
         String(value).padStart(64, "0");
 
+    const xlmDecimals = parseInt(process.env.XLM_DECIMALS, 10) || 7;
+    const xrpDecimals = parseInt(process.env.XRP_DECIMALS, 10) || 9;
+    const usdcDecimals = parseInt(process.env.USDC_DECIMALS, 10) || 9;
+
     if (customXlm) {
-        await initToken(client, "XLM", "Lumens", 7);
+        await initToken(client, "XLM", "Lumens", xlmDecimals);
     }
 
-    await initToken(client, "XRP", "Ripple", 7);
-    await initToken(client, "USDC", "USD Coin", 7);
-    // await initToken(client, "RWA", "RWA asset", 9);
+    await initToken(client, "XRP", "Ripple", xrpDecimals);
+    await initToken(client, "USDC", "USD Coin", usdcDecimals);
+    await initToken(client, "RWA", "RWA asset", 9);
 
     await initPool(client, `${generateSalt(++salt)}`);
     // need to create treasury account to be able to receive native XLM token
@@ -113,7 +117,7 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     await initPoolPriceFeed(client, [
         {
             asset: "XLM",
-            asset_decimals: 7,
+            asset_decimals: xlmDecimals,
             priceFeedConfig: {
                 feed_asset: {
                     asset: "XLM",
@@ -127,7 +131,7 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
         },
         {
             asset: "XRP",
-            asset_decimals: 7,
+            asset_decimals: xrpDecimals,
             priceFeedConfig: {
                 feed_asset: {
                     asset: "XRP",
@@ -141,7 +145,7 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
         },
         {
             asset: "USDC",
-            asset_decimals: 7,
+            asset_decimals: usdcDecimals,
             priceFeedConfig: {
                 feed_asset: {
                     asset: "USDC",
