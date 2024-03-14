@@ -8,3 +8,7 @@ integration-tests/.contracts
 integration-tests/node_modules
 
 .DS_Store
+
+**/.mainnet.env
+**/.prod.env
+**/.production.env

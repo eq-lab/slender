@@ -76,7 +76,7 @@ PRICE_FEED=$(deploy "$ARTIFACTS/price_feed_mock.wasm" $ADMIN_SECRET)
 PRICE_FEED=$(addressFromResult $PRICE_FEED)
 echo "  Price Feed contract address: $PRICE_FEED"
 
-contracts="$ARTIFACTS/.contracts"
+contracts="$ARTIFACTS/.$1.contracts"
 {
     echo "SLENDER_TOKEN_XLM=$TOKEN_XLM"
     echo "SLENDER_TOKEN_XRP=$TOKEN_XRP"
