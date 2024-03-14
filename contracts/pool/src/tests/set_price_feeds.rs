@@ -5,6 +5,7 @@ use crate::tests::sut::{create_pool_contract, create_price_feed_contract};
 use crate::*;
 use pool_interface::types::oracle_asset::OracleAsset;
 use pool_interface::types::price_feed::PriceFeed;
+use pool_interface::types::timestamp_precision::TimestampPrecision;
 use price_feed_interface::PriceFeedClient;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation};
 use soroban_sdk::{symbol_short, vec, IntoVal, Symbol};
@@ -37,6 +38,7 @@ fn should_require_admin() {
                         feed_asset: OracleAsset::Stellar(asset_1),
                         feed_decimals: 14,
                         twap_records: 10,
+                        timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
             },
@@ -50,6 +52,7 @@ fn should_require_admin() {
                         feed_asset: OracleAsset::Stellar(asset_2),
                         feed_decimals: 16,
                         twap_records: 10,
+                        timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
             },
@@ -103,6 +106,7 @@ fn should_set_price_feed() {
                         feed_asset: OracleAsset::Stellar(asset_1.clone()),
                         feed_decimals: 14,
                         twap_records: 10,
+                        timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
             },
@@ -116,6 +120,7 @@ fn should_set_price_feed() {
                         feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                         feed_decimals: 16,
                         twap_records: 9,
+                        timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
             },

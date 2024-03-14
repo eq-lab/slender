@@ -12,4 +12,5 @@ pub mod price_feed_config_input;
 pub mod reserve_configuration;
 pub mod reserve_data;
 pub mod reserve_type;
+pub mod timestamp_precision;
 pub mod user_config;
