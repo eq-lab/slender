@@ -48,7 +48,7 @@ fn should_fail_when_feed_is_missing_for_asset() {
                     feed_asset: OracleAsset::Stellar(asset_1.clone()),
                     feed_decimals: 14,
                     twap_records: 10,
-                    timestamp_precision: TimestampPrecision::Seconds,
+                    timestamp_precision: TimestampPrecision::Sec,
                 },
             ],
         },
@@ -101,7 +101,7 @@ fn should_fail_when_price_is_missing_in_feed() {
                     feed_asset: OracleAsset::Stellar(asset_1.clone()),
                     feed_decimals: 14,
                     twap_records: 10,
-                    timestamp_precision: TimestampPrecision::Seconds,
+                    timestamp_precision: TimestampPrecision::Sec,
                 },
                 // price feed with Other asset
                 PriceFeed {
@@ -109,7 +109,7 @@ fn should_fail_when_price_is_missing_in_feed() {
                     feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                     feed_decimals: 10,
                     twap_records: 10,
-                    timestamp_precision: TimestampPrecision::Seconds,
+                    timestamp_precision: TimestampPrecision::Sec,
                 },
             ],
         },
@@ -182,7 +182,7 @@ fn should_return_twap_median_price() {
                     feed_asset: OracleAsset::Stellar(asset_1.clone()),
                     feed_decimals: 14,
                     twap_records: 10,
-                    timestamp_precision: TimestampPrecision::Seconds,
+                    timestamp_precision: TimestampPrecision::Sec,
                 },
                 // price feed with Other asset
                 PriceFeed {
@@ -190,7 +190,7 @@ fn should_return_twap_median_price() {
                     feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                     feed_decimals: 10,
                     twap_records: 10,
-                    timestamp_precision: TimestampPrecision::Mili,
+                    timestamp_precision: TimestampPrecision::Msec,
                 },
             ],
         },
@@ -230,7 +230,7 @@ fn should_return_twap_median_price() {
                     feed_asset: OracleAsset::Stellar(asset_1.clone()),
                     feed_decimals: 14,
                     twap_records: 10,
-                    timestamp_precision: TimestampPrecision::Seconds,
+                    timestamp_precision: TimestampPrecision::Sec,
                 },
                 // price feed with Other asset
                 PriceFeed {
@@ -238,14 +238,14 @@ fn should_return_twap_median_price() {
                     feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                     feed_decimals: 10,
                     twap_records: 10,
-                    timestamp_precision: TimestampPrecision::Mili,
+                    timestamp_precision: TimestampPrecision::Msec,
                 },
                 PriceFeed {
                     feed: asset_1_feed_3.address.clone(),
                     feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                     feed_decimals: 10,
                     twap_records: 10,
-                    timestamp_precision: TimestampPrecision::Mili,
+                    timestamp_precision: TimestampPrecision::Msec,
                 },
             ],
         },

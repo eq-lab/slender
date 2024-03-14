@@ -194,7 +194,7 @@ impl<'a> PriceProvider<'a> {
 pub(crate) fn precise_timestamp(env: &Env, precision: &TimestampPrecision) -> u64 {
     let secs = env.ledger().timestamp();
     match precision {
-        TimestampPrecision::Mili => secs * 1000,
-        TimestampPrecision::Seconds => secs,
+        TimestampPrecision::Msec => secs * 1000,
+        TimestampPrecision::Sec => secs,
     }
 }
