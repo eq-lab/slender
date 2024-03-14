@@ -3,7 +3,7 @@
 BASEDIR=$(dirname $0)
 ARTIFACTS=$BASEDIR/../artifacts
 
-source $ARTIFACTS/.contracts
+source $ARTIFACTS/.$1.contracts
 source $BASEDIR/.$1.env
 
 soroban contract bindings typescript \

@@ -24,7 +24,7 @@ deploy-contracts:
 	./deploy/scripts/deploy.sh $(env)
 
 init-contracts:
-	yarn --cwd integration-tests init-$(env) $(customXlm)
+	yarn --cwd integration-tests init-$(env) $(customXlm) $(rwa)
 
 create-bindings:
 	./deploy/scripts/create-bindings.sh $(env)

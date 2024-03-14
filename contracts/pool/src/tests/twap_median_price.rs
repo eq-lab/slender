@@ -1,6 +1,7 @@
 use pool_interface::types::oracle_asset::OracleAsset;
 use pool_interface::types::price_feed::PriceFeed;
 use pool_interface::types::price_feed_config_input::PriceFeedConfigInput;
+use pool_interface::types::timestamp_precision::TimestampPrecision;
 use price_feed_interface::types::asset::Asset;
 use price_feed_interface::types::price_data::PriceData;
 use soroban_sdk::testutils::{Address as _, Ledger};
@@ -47,6 +48,7 @@ fn should_fail_when_feed_is_missing_for_asset() {
                     feed_asset: OracleAsset::Stellar(asset_1.clone()),
                     feed_decimals: 14,
                     twap_records: 10,
+                    timestamp_precision: TimestampPrecision::Sec,
                 },
             ],
         },
@@ -99,6 +101,7 @@ fn should_fail_when_price_is_missing_in_feed() {
                     feed_asset: OracleAsset::Stellar(asset_1.clone()),
                     feed_decimals: 14,
                     twap_records: 10,
+                    timestamp_precision: TimestampPrecision::Sec,
                 },
                 // price feed with Other asset
                 PriceFeed {
@@ -106,6 +109,7 @@ fn should_fail_when_price_is_missing_in_feed() {
                     feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                     feed_decimals: 10,
                     twap_records: 10,
+                    timestamp_precision: TimestampPrecision::Sec,
                 },
             ],
         },
@@ -137,19 +141,19 @@ fn should_return_twap_median_price() {
             &env,
             PriceData {
                 price: 120_000_000_000_000_000,
-                timestamp: 1704790200000, // delta = 300_000
+                timestamp: 1704790200, // delta = 300_000
             },
             PriceData {
                 price: 100_000_000_000_000_000,
-                timestamp: 1704789900000, // delta = 300_000
+                timestamp: 1704789900, // delta = 300_000
             },
             PriceData {
                 price: 90_000_000_000_000_000,
-                timestamp: 1704789600000, // delta = 300_000
+                timestamp: 1704789600, // delta = 300_000
             },
             PriceData {
                 price: 100_000_000_000_000_000,
-                timestamp: 1704789300000, // delta = 0
+                timestamp: 1704789300, // delta = 0
             },
         ],
     );
@@ -178,6 +182,7 @@ fn should_return_twap_median_price() {
                     feed_asset: OracleAsset::Stellar(asset_1.clone()),
                     feed_decimals: 14,
                     twap_records: 10,
+                    timestamp_precision: TimestampPrecision::Sec,
                 },
                 // price feed with Other asset
                 PriceFeed {
@@ -185,6 +190,7 @@ fn should_return_twap_median_price() {
                     feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                     feed_decimals: 10,
                     twap_records: 10,
+                    timestamp_precision: TimestampPrecision::Msec,
                 },
             ],
         },
@@ -192,7 +198,8 @@ fn should_return_twap_median_price() {
 
     sut.pool.set_price_feeds(&price_feeds);
 
-    env.ledger().with_mut(|li| li.timestamp = 1704790800000); // delta = 600_000
+    env.ledger().with_mut(|li| li.timestamp = 1704790800); // delta = 600_000
+    extern crate std;
 
     let twap_median_price_1 = sut.pool.twap_median_price(&asset_1, &1_000_000_000);
 
@@ -223,6 +230,7 @@ fn should_return_twap_median_price() {
                     feed_asset: OracleAsset::Stellar(asset_1.clone()),
                     feed_decimals: 14,
                     twap_records: 10,
+                    timestamp_precision: TimestampPrecision::Sec,
                 },
                 // price feed with Other asset
                 PriceFeed {
@@ -230,12 +238,14 @@ fn should_return_twap_median_price() {
                     feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                     feed_decimals: 10,
                     twap_records: 10,
+                    timestamp_precision: TimestampPrecision::Msec,
                 },
                 PriceFeed {
                     feed: asset_1_feed_3.address.clone(),
                     feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                     feed_decimals: 10,
                     twap_records: 10,
+                    timestamp_precision: TimestampPrecision::Msec,
                 },
             ],
         },

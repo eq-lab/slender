@@ -1,4 +1,4 @@
-import { Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc, BASE_FEE } from "stellar-sdk";
+import { Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc, BASE_FEE, Operation } from "stellar-sdk";
 import { promisify } from "util";
 import "./soroban.config";
 import { adminKeys } from "./soroban.config";
