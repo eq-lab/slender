@@ -36,11 +36,19 @@ export interface FlashLoanAsset {
     borrow: boolean;
 }
 
+type TimestampPrecision = "Sec" | "Msec";
+
+type FeedAssetType = "Stellar" | "Other";
+
 interface PriceFeedConfig {
     feed: string;
-    feed_asset: SlenderAsset;
+    feed_asset: {
+        type: FeedAssetType;
+        asset: SlenderAsset
+    };
     feed_decimals: number;
     twap_records: number;
+    timestamp_precision: TimestampPrecision;
 }
 
 interface PriceData {
@@ -65,9 +73,9 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
         await initToken(client, "XLM", "Lumens", 7);
     }
 
-    await initToken(client, "XRP", "Ripple", 9);
-    await initToken(client, "USDC", "USD Coin", 9);
-    await initToken(client, "RWA", "RWA asset", 9);
+    await initToken(client, "XRP", "Ripple", 7);
+    await initToken(client, "USDC", "USD Coin", 7);
+    // await initToken(client, "RWA", "RWA asset", 9);
 
     await initPool(client, `${generateSalt(++salt)}`);
     // need to create treasury account to be able to receive native XLM token
@@ -95,7 +103,7 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     await initPoolBorrowing(client, "XRP");
     await initPoolBorrowing(client, "USDC");
 
-    await initBaseAsset(client, "XLM", 7);
+    await initBaseAsset(client, "USDC", 7);
 
     await initPrice(client, "XLM", 100_000_000_000_000n, 0);
     await initPrice(client, "XRP", 10_000_000_000_000_000n, 0);
@@ -104,45 +112,61 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
 
     await initPoolPriceFeed(client, [
         {
-        asset: "XLM",
-        asset_decimals: 7,
-        priceFeedConfig: {
-            feed_asset: "XLM",
-            feed_decimals: 14,
-            feed: process.env.SLENDER_PRICE_FEED,
-                twap_records: 1,
-            },
-        },
-        {
-        asset: "XRP",
-        asset_decimals: 9,
-        priceFeedConfig: {
-            feed_asset: "XRP",
-            feed_decimals: 16,
-            feed: process.env.SLENDER_PRICE_FEED,
-                twap_records: 1,
-            },
-        },
-        {
-        asset: "USDC",
-        asset_decimals: 9,
-        priceFeedConfig: {
-            feed_asset: "USDC",
-            feed_decimals: 16,
-            feed: process.env.SLENDER_PRICE_FEED,
-                twap_records: 1,
-            },
-        },
-        {
-            asset: "RWA",
-            asset_decimals: 9,
+            asset: "XLM",
+            asset_decimals: 7,
             priceFeedConfig: {
-                feed_asset: "RWA",
-                feed_decimals: 16,
-                feed: process.env.SLENDER_PRICE_FEED,
-                twap_records: 1,
+                feed_asset: {
+                    asset: "XLM",
+                    type: process.env.XLM_FEED_ASSET_TYPE as FeedAssetType || "Stellar"
+                },
+                feed_decimals: parseInt(process.env.XLM_FEED_DECIMALS, 10) || 14,
+                feed: process.env.XLM_PRICE_FEED || process.env.SLENDER_PRICE_FEED,
+                twap_records: parseInt(process.env.XLM_PRICE_TWAP_RECORDS, 10) || 1,
+                timestamp_precision: process.env.XLM_PRICE_TIMESTAMP_PRECISION as TimestampPrecision || "Sec"
             },
         },
+        {
+            asset: "XRP",
+            asset_decimals: 7,
+            priceFeedConfig: {
+                feed_asset: {
+                    asset: "XRP",
+                    type: process.env.XRP_FEED_ASSET_TYPE as FeedAssetType || "Stellar"
+                },
+                feed_decimals: parseInt(process.env.XRP_FEED_DECIMALS, 10) || 16,
+                feed: process.env.XRP_PRICE_FEED || process.env.SLENDER_PRICE_FEED,
+                twap_records: parseInt(process.env.XRP_PRICE_TWAP_RECORDS, 10) || 1,
+                timestamp_precision: process.env.XRP_PRICE_TIMESTAMP_PRECISION as TimestampPrecision || "Sec"
+            },
+        },
+        {
+            asset: "USDC",
+            asset_decimals: 7,
+            priceFeedConfig: {
+                feed_asset: {
+                    asset: "USDC",
+                    type: process.env.USDC_FEED_ASSET_TYPE as FeedAssetType || "Stellar"
+                },
+                feed_decimals: parseInt(process.env.USDC_FEED_DECIMALS, 10) || 16,
+                feed: process.env.USDC_PRICE_FEED || process.env.SLENDER_PRICE_FEED,
+                twap_records: parseInt(process.env.USDC_PRICE_TWAP_RECORDS, 10) || 1,
+                timestamp_precision: process.env.USDC_PRICE_TIMESTAMP_PRECISION as TimestampPrecision || "Sec"
+            },
+        },
+        // {
+        //     asset: "RWA",
+        //     asset_decimals: 9,
+        //     priceFeedConfig: {
+        //         feed_asset: {
+        //             asset: "RWA",
+        //             type: process.env.RWA_FEED_ASSET_TYPE as FeedAssetType || "Stellar"
+        //         },
+        //         feed_decimals: 16,
+        //         feed: process.env.RWA_PRICE_FEED || process.env.SLENDER_PRICE_FEED,
+        //         twap_records: 1,
+        //         timestamp_precision: "Sec"
+        //     },
+        // },
     ]);
 
     console.log("    Contracts initialization has been finished");
@@ -427,7 +451,7 @@ export async function deployReceiverMock(): Promise<string> {
     const flashLoadReceiverMockAddress = (
         (await new Promise((resolve, reject) => {
             exec(
-        `soroban contract deploy \
+                `soroban contract deploy \
         --wasm ../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm \
         --source ${adminKeys.secret()} \
         --rpc-url "${process.env.SOROBAN_RPC_URL}" \
@@ -459,7 +483,7 @@ export async function liquidateCli(
     const liquidateResult = (
         (await new Promise((resolve) => {
             exec(
-        `soroban --very-verbose contract invoke \
+                `soroban --very-verbose contract invoke \
         --id ${process.env.SLENDER_POOL} \
         --source ${liquidatorKeys.secret()} \
         --rpc-url "${process.env.SOROBAN_RPC_URL}" \
@@ -804,12 +828,14 @@ async function initPoolPriceFeed(
                 "feeds": convertToScvVec([
                     convertToScvMap({
                         "feed": convertToScvAddress(input.priceFeedConfig.feed),
-                        "feed_asset": convertToScvVec([
-                            xdr.ScVal.scvSymbol("Stellar"),
-                            convertToScvAddress(process.env[`SLENDER_TOKEN_${input.priceFeedConfig.feed_asset}`])
+                        "feed_asset": convertToScvEnum(input.priceFeedConfig.feed_asset.type, [
+                            input.priceFeedConfig.feed_asset.type === "Stellar" ?
+                                convertToScvAddress(process.env[`SLENDER_TOKEN_${input.priceFeedConfig.feed_asset.asset}`]) :
+                                xdr.ScVal.scvSymbol(input.priceFeedConfig.feed_asset.asset)
                         ]),
                         "feed_decimals": convertToScvU32(input.priceFeedConfig.feed_decimals),
-                        "twap_records": convertToScvU32(input.priceFeedConfig.twap_records)
+                        "timestamp_precision": convertToScvEnum(input.priceFeedConfig.timestamp_precision),
+                        "twap_records": convertToScvU32(input.priceFeedConfig.twap_records),
                     })
                 ]),
             })))
@@ -855,7 +881,7 @@ export async function initPrice(
     price: bigint,
     timestamp: number,
 ): Promise<void> {
-    await client.sendTransaction(
+    await initContract(`${asset}_PRICE_SET`, () => client.sendTransaction(
         process.env.SLENDER_PRICE_FEED,
         "init",
         adminKeys,
@@ -870,7 +896,7 @@ export async function initPrice(
                 "timestamp": convertToScvU64(timestamp)
             })
         ]),
-    );
+    ));
 }
 
 export async function inPoolBalanceOf(
