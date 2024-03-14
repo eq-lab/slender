@@ -25,7 +25,7 @@ install() {
     echo $hash
 }
 
-POOL_HASH=$(install "/Users/maks/Work/slender/target/wasm32-unknown-unknown/release/pool.optimized.wasm" $ADMIN_SECRET)
+POOL_HASH=$(install "../target/wasm32-unknown-unknown/release/pool.optimized.wasm" $ADMIN_SECRET)
 echo "Pool wasm hash: $POOL_HASH"
 echo "$POOL_HASH" >$BASEDIR/../artifacts/pool.wasm.upgrades.hash
 
