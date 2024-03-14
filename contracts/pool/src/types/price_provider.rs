@@ -5,6 +5,7 @@ use pool_interface::types::base_asset_config::BaseAssetConfig;
 use pool_interface::types::error::Error;
 use pool_interface::types::price_feed::PriceFeed;
 use pool_interface::types::price_feed_config::PriceFeedConfig;
+use pool_interface::types::timestamp_precision::TimestampPrecision;
 use price_feed_interface::PriceFeedClient;
 use soroban_sdk::{Address, Env, Map, Vec};
 
@@ -116,7 +117,7 @@ impl<'a> PriceProvider<'a> {
             return Ok(prices.first_unchecked().price);
         }
 
-        let curr_time = self.env.ledger().timestamp();
+        let curr_time = precise_timestamp(self.env, &config.timestamp_precision);
 
         let mut cum_price = {
             let price_curr = prices.get_unchecked(0);
@@ -187,5 +188,13 @@ impl<'a> PriceProvider<'a> {
         };
 
         Ok(median_price)
+    }
+}
+
+pub(crate) fn precise_timestamp(env: &Env, precision: &TimestampPrecision) -> u64 {
+    let secs = env.ledger().timestamp();
+    match precision {
+        TimestampPrecision::Mili => secs * 1000,
+        TimestampPrecision::Seconds => secs,
     }
 }

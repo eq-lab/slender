@@ -10,7 +10,7 @@ use soroban_sdk::token::{Client as TokenClient, StellarAssetClient as TokenAdmin
 use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
 use self::pool::{
-    CollateralParamsInput, IRParams, OracleAsset, PriceFeed, PriceFeedConfigInput, ReserveType,
+    CollateralParamsInput, IRParams, OracleAsset, PriceFeed, PriceFeedConfigInput, ReserveType, TimestampPrecision
 };
 
 mod pool {
@@ -77,6 +77,7 @@ fn create_token<'a>(
                     feed_asset: OracleAsset::Stellar(underlying_asset.address.clone()),
                     feed_decimals: 14,
                     twap_records: 10,
+                    timestamp_precision: TimestampPrecision::Seconds,
                 },
             ],
         },

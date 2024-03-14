@@ -5,6 +5,7 @@ use crate::*;
 use debt_token_interface::DebtTokenClient;
 use flash_loan_receiver_interface::FlashLoanReceiverClient;
 use pool_interface::types::oracle_asset::OracleAsset;
+use pool_interface::types::timestamp_precision::TimestampPrecision;
 use pool_interface::types::price_feed::PriceFeed;
 use price_feed_interface::types::asset::Asset;
 use price_feed_interface::types::price_data::PriceData;
@@ -257,6 +258,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                         feed_asset: OracleAsset::Stellar(reserves[0].token.address.clone()),
                         feed_decimals: 14,
                         twap_records: 10,
+                        timestamp_precision: TimestampPrecision::Seconds,
                     },
                 ],
             },
@@ -270,6 +272,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                         feed_asset: OracleAsset::Stellar(reserves[1].token.address.clone()),
                         feed_decimals: 16,
                         twap_records: 10,
+                        timestamp_precision: TimestampPrecision::Seconds,
                     },
                 ],
             },
@@ -283,6 +286,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                         feed_asset: OracleAsset::Stellar(reserves[2].token.address.clone()),
                         feed_decimals: 16,
                         twap_records: 10,
+                        timestamp_precision: TimestampPrecision::Seconds,
                     },
                 ],
             },
@@ -296,6 +300,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                         feed_asset: OracleAsset::Stellar(reserves[3].token.address.clone()),
                         feed_decimals: 15,
                         twap_records: 10,
+                        timestamp_precision: TimestampPrecision::Seconds,
                     },
                 ],
             },
