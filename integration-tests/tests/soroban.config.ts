@@ -6,7 +6,7 @@ export const contractsFilename = `../deploy/artifacts/.${process.env.NODE_ENV}.c
 require("dotenv").config({ path: `../deploy/scripts/.${process.env.NODE_ENV}.env` });
 
 export const adminKeys = process.env.ADMIN_SECRET ? Keypair.fromSecret(process.env.ADMIN_SECRET) : Keypair.random();
-export const treasuryKeys = process.env.TREASURY_SECRET ? Keypair.fromSecret(process.env.TREASURY_SECRET) : Keypair.random();
+export const treasuryKeys = process.env.TREASURY_SECRET ? Keypair.fromSecret(process.env.TREASURY_SECRET) : process.env.TREASURY_ADDRESS ? Keypair.fromPublicKey(process.env.TREASURY_ADDRESS) : Keypair.random();
 export const lender1Keys = process.env.LENDER_1_SECRET ? Keypair.fromSecret(process.env.LENDER_1_SECRET) : Keypair.random();
 export const lender2Keys = process.env.LENDER_2_SECRET ? Keypair.fromSecret(process.env.LENDER_2_SECRET) : Keypair.random();
 export const lender3Keys = process.env.LENDER_3_SECRET ? Keypair.fromSecret(process.env.LENDER_3_SECRET) : Keypair.random();
