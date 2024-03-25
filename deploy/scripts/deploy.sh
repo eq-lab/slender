@@ -42,23 +42,23 @@ find $ARTIFACTS -name \*.wasm -exec soroban contract optimize --wasm {} --wasm-o
 
 echo "WASM files has been optimized"
 
-curl -s "$FRIENDBOT_URL?addr=$ADMIN_PUBLIC" 1>/dev/null
-sleep 10
+# curl -s "$FRIENDBOT_URL?addr=$ADMIN_PUBLIC" 1>/dev/null
+# sleep 10
 
-echo "Admin's account has been funded"
+# echo "Admin's account has been funded"
 
-TOKEN_XLM=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+# TOKEN_XLM=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
 # TOKEN_XLM="CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
-echo "  XLM contract address: $TOKEN_XLM"
+# echo "  XLM contract address: $TOKEN_XLM"
 
-TOKEN_XRP=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
-echo "  XRP contract address: $TOKEN_XRP"
+# TOKEN_XRP=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+# echo "  XRP contract address: $TOKEN_XRP"
 
-TOKEN_USDC=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
-echo "  USDC contract address: $TOKEN_USDC"
+# TOKEN_USDC=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+# echo "  USDC contract address: $TOKEN_USDC"
 
-TOKEN_RWA=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
-echo "  RWA contract address: $TOKEN_RWA"
+# TOKEN_RWA=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+# echo "  RWA contract address: $TOKEN_RWA"
 
 DEPLOYER=$(deploy "$ARTIFACTS/deployer.wasm" $ADMIN_SECRET)
 echo "  Deployer contract address: $DEPLOYER"
@@ -72,9 +72,9 @@ echo "  DebtToken wasm hash: $DEBT_TOKEN_HASH"
 POOL_HASH=$(install "$ARTIFACTS/pool.wasm" $ADMIN_SECRET)
 echo "  Pool wasm hash: $POOL_HASH"
 
-PRICE_FEED=$(deploy "$ARTIFACTS/price_feed_mock.wasm" $ADMIN_SECRET)
-PRICE_FEED=$(addressFromResult $PRICE_FEED)
-echo "  Price Feed contract address: $PRICE_FEED"
+# PRICE_FEED=$(deploy "$ARTIFACTS/price_feed_mock.wasm" $ADMIN_SECRET)
+# PRICE_FEED=$(addressFromResult $PRICE_FEED)
+# echo "  Price Feed contract address: $PRICE_FEED"
 
 contracts="$ARTIFACTS/.$1.contracts"
 {
