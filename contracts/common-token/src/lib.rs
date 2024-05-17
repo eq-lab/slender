@@ -7,7 +7,7 @@ pub mod balance;
 pub mod storage;
 
 pub fn verify_caller_is_pool(e: &Env) -> Address {
-    let pool = crate::storage::read_pool(e);
+    let pool = crate::storage::read_pool(e); //@audit 1 read
     pool.require_auth();
     pool
 }

@@ -27,8 +27,8 @@ pub fn read_pool(env: &Env) -> Address {
     env.storage()
         .instance()
         .get(&CommonDataKey::Pool)
-        .expect("has pool")
-}
+        .expect("has pool") //@audit why is the error message "has pool" and not "does not have pool"?
+} //@audit 1 read
 
 pub fn write_pool(env: &Env, id: &Address) {
     env.storage()
@@ -36,7 +36,7 @@ pub fn write_pool(env: &Env, id: &Address) {
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage().instance().set(&CommonDataKey::Pool, id);
-}
+} //@audit 1 write
 
 pub fn has_pool(env: &Env) -> bool {
     env.storage()
@@ -73,9 +73,9 @@ pub fn write_balance(env: &Env, addr: Address, amount: i128) {
 
 pub fn is_authorized(env: &Env, addr: Address) -> bool {
     let key = CommonDataKey::State(addr);
-    let is_authorized = env.storage().persistent().get(&key);
+    let is_authorized = env.storage().persistent().get(&key); //@audit 1 read
 
-    if is_authorized.is_some() {
+    if is_authorized.is_some() { 
         env.storage().persistent().extend_ttl(
             &key,
             LOW_USER_DATA_BUMP_LEDGERS,
@@ -84,7 +84,7 @@ pub fn is_authorized(env: &Env, addr: Address) -> bool {
     }
 
     is_authorized.unwrap_or(true)
-}
+} //@audit takes 1 read
 
 pub fn write_authorization(env: &Env, addr: Address, is_authorized: bool) {
     let key = CommonDataKey::State(addr);

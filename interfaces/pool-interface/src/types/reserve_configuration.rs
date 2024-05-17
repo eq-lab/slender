@@ -10,7 +10,7 @@ pub struct ReserveConfiguration {
     pub util_cap: u32,
     /// Specifies what fraction of the underlying asset counts toward
     /// the portfolio collateral value [0%, 100%].
-    pub discount: u32,
+    pub discount: u32, //@audit should there be a sanity check ensuring that it cannot pass 10_000 (=from_percentage(PERCENTAGE_FACTOR) = 100%)?
 }
 
 impl ReserveConfiguration {

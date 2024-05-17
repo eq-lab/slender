@@ -14,11 +14,11 @@ pub fn recalculate_reserve_data(
 ) -> Result<ReserveData, Error> {
     let (current_time, elapsed_time) = get_elapsed_time(env, reserve.last_update_timestamp);
 
-    if elapsed_time == 0 || s_token_supply == 0 {
+    if elapsed_time == 0 || s_token_supply == 0 { //@audit is that a RISKY assumption given the problems with timetags??
         return Ok(reserve.clone());
     }
 
-    let ir_params = read_ir_params(env)?;
+    let ir_params = read_ir_params(env)?; //@audit 1 read
     let accrued_rates = calc_accrued_rates(
         s_token_supply,
         debt_token_supply,
@@ -26,7 +26,7 @@ pub fn recalculate_reserve_data(
         ir_params,
         reserve,
     )
-    .ok_or(Error::AccruedRateMathError)?;
+    .ok_or(Error::AccruedRateMathError)?; //@audit can also fail here due to timetag issues - is this a doorway to manipulation?
 
     let mut reserve = reserve.clone();
     reserve.lender_ar = accrued_rates.lender_ar.into_inner();
@@ -35,7 +35,8 @@ pub fn recalculate_reserve_data(
     reserve.lender_ir = accrued_rates.lender_ir.into_inner();
     reserve.last_update_timestamp = current_time;
 
-    write_reserve(env, asset, &reserve);
+    write_reserve(env, asset, &reserve); //@audit 1 write
 
     Ok(reserve)
 }
+//@audit in total 1 read + 1 write

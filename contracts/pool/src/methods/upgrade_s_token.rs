@@ -11,9 +11,9 @@ pub fn upgrade_s_token(
     asset: &Address,
     new_wasm_hash: &BytesN<32>,
 ) -> Result<(), Error> {
-    require_admin(env).unwrap();
+    require_admin(env).unwrap(); //@audit why did we decide to panic here and not in upgrade where we propagate the error to the user?
 
-    let reserve = read_reserve(env, asset)?;
+    let reserve = read_reserve(env, asset)?; //@audit note to self: we do not check if the reserve is active or if borrowing is enabled. Is that Ok?
     let (s_token_address, _) = get_fungible_lp_tokens(&reserve)?;
     let s_token = STokenClient::new(env, s_token_address);
     s_token.upgrade(new_wasm_hash);

@@ -25,8 +25,8 @@ pub fn read_prices(env: &Env, asset: &Asset) -> Option<Vec<PriceData>> {
     };
 
     if !env.storage().instance().has(&data_key) {
-        return None;
-    }
+        return None; //@audit 0 read
+    } 
 
-    Some(env.storage().instance().get(&data_key).unwrap())
-}
+    Some(env.storage().instance().get(&data_key).unwrap()) //@audit 1 read
+} //@audit 0 or 1 read

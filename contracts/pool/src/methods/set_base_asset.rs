@@ -9,6 +9,6 @@ pub fn set_base_asset(env: &Env, asset: &Address, decimals: u32) -> Result<(), E
     require_admin(env)?;
 
     write_base_asset(env, &BaseAssetConfig::new(asset, decimals));
-
+    //@audit should we emit an event? Pause the protocol? Do something to help users adjust?
     Ok(())
 }

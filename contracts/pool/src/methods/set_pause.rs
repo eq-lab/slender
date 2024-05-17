@@ -10,3 +10,4 @@ pub fn set_pause(env: &Env, value: bool) -> Result<(), Error> {
     write_pause(env, value);
     Ok(())
 }
+//@audit Ok. 

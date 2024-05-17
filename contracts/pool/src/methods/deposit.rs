@@ -89,11 +89,12 @@ fn do_deposit_fungible(
         s_token_supply,
         read_stoken_underlying_balance(env, s_token_address),
         debt_token_supply,
-    )?;
+    )?; 
     let is_first_deposit = who_collat == 0;
     let amount_to_mint = collat_coeff
         .recip_mul_int(amount)
-        .ok_or(Error::MathOverflowError)?;
+        .ok_or(Error::MathOverflowError)?; //@audit amount_to_mint = [s_token_underlying_balance + lender_ar * total_debt_token]/total_stoken * amount => loss of precision!
+    //@audit loss of precision here
     let s_token_supply_after = s_token_supply
         .checked_add(amount_to_mint)
         .ok_or(Error::MathOverflowError)?;
@@ -101,10 +102,10 @@ fn do_deposit_fungible(
         .checked_add(amount_to_mint)
         .ok_or(Error::MathOverflowError)?;
 
-    token::Client::new(env, asset).transfer(who, s_token_address, &amount);
+    token::Client::new(env, asset).transfer(who, s_token_address, &amount); //@audit there is nothing stopping me from inflation attack by simply depositing into the s_token_address
     STokenClient::new(env, s_token_address).mint(who, &amount_to_mint);
 
-    add_stoken_underlying_balance(env, s_token_address, amount)?;
+    add_stoken_underlying_balance(env, s_token_address, amount)?; 
     write_token_total_supply(env, s_token_address, s_token_supply_after)?;
     write_token_balance(env, s_token_address, who, who_collat_after)?;
 

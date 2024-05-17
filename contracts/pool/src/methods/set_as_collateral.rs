@@ -15,7 +15,7 @@ pub fn set_as_collateral(
     asset: &Address,
     use_as_collateral: bool,
 ) -> Result<(), Error> {
-    who.require_auth();
+    who.require_auth(); 
 
     let mut user_configurator = UserConfigurator::new(env, who, false);
     let user_config = user_configurator.user_config()?;

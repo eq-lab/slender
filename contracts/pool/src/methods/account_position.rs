@@ -20,7 +20,7 @@ use super::utils::get_collat_coeff::get_collat_coeff;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 
 pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Error> {
-    let user_config = read_user_config(env, who)?;
+    let user_config = read_user_config(env, who)?; //@audit 1 read
     let account_data = calc_account_data(
         env,
         who,
@@ -49,9 +49,9 @@ pub fn calc_account_data(
     let mut total_debt_in_base: i128 = 0;
     let mut sorted_collat_to_receive = Map::new(env);
     let mut sorted_debt_to_cover = Map::new(env);
-    let reserves = read_reserves(env);
+    let reserves = read_reserves(env); //@audit 1 read
     let reserves_len =
-        u8::try_from(reserves.len()).map_err(|_| Error::ReservesMaxCapacityExceeded)?;
+        u8::try_from(reserves.len()).map_err(|_| Error::ReservesMaxCapacityExceeded)?; //@audit wait, can reserve length be 255??? 
 
     // calc collateral and debt expressed in base token
     for i in 0..reserves_len {
@@ -60,11 +60,11 @@ pub fn calc_account_data(
         }
 
         let asset = reserves.get_unchecked(i.into());
-        let reserve = read_reserve(env, &asset)?;
-
+        let reserve = read_reserve(env, &asset)?; //@audit this reads from storage! wouldn't we hit Steller resource limit of 40 reads here? 
+        //@audit 1 read
         assert_with_error!(
             env,
-            reserve.configuration.is_active || !liquidation,
+            reserve.configuration.is_active || !liquidation, //@audit so the user can be liquidated even if the reserve is not active - but it cannot repay... ??
             Error::NoActiveReserve
         );
 
@@ -86,7 +86,7 @@ pub fn calc_account_data(
                 &mut total_discounted_collat_in_base,
                 &mut total_debt_in_base,
                 &mut sorted_debt_to_cover,
-            )?;
+            )?; //@audit 5+CLIENT_PRICES_READS (liquidation) or 3+CLIENT_PRICES_READS (no liquidation) reads
         } else {
             calculate_rwa(
                 env,
@@ -99,7 +99,7 @@ pub fn calc_account_data(
                 price_provider,
                 &mut sorted_collat_to_receive,
                 &mut total_discounted_collat_in_base,
-            )?;
+            )?; //@audit 2+CLIENT_PRICES_READS reads
         }
     }
 
@@ -157,17 +157,17 @@ fn calculate_fungible(
         let s_token_supply = mb_s_token_supply
             .filter(|x| x.asset == s_token_address)
             .map(|x| x.balance)
-            .unwrap_or_else(|| read_token_total_supply(env, &s_token_address));
+            .unwrap_or_else(|| read_token_total_supply(env, &s_token_address)); //@audit 1 read
 
         let debt_token_supply = mb_debt_token_supply
             .filter(|x| x.asset == debt_token_address)
             .map(|x| x.balance)
-            .unwrap_or_else(|| read_token_total_supply(env, &debt_token_address));
+            .unwrap_or_else(|| read_token_total_supply(env, &debt_token_address)); //@audit 1 read
 
         let s_token_underlying_balance = mb_s_token_underlying_balance
             .filter(|x| x.asset == s_token_address)
             .map(|x| x.balance)
-            .unwrap_or_else(|| read_stoken_underlying_balance(env, &s_token_address));
+            .unwrap_or_else(|| read_stoken_underlying_balance(env, &s_token_address)); //@audit 1 read
 
         let collat_coeff = get_collat_coeff(
             env,
@@ -180,18 +180,18 @@ fn calculate_fungible(
         let who_collat = mb_who_collat
             .filter(|x| x.asset == s_token_address)
             .map(|x| x.balance)
-            .unwrap_or_else(|| read_token_balance(env, &s_token_address, who));
+            .unwrap_or_else(|| read_token_balance(env, &s_token_address, who)); //@audit 1 read
 
         let discount = FixedI128::from_percentage(reserve.configuration.discount)
             .ok_or(Error::CalcAccountDataMathError)?;
 
         let compounded_balance = collat_coeff
             .mul_int(who_collat)
-            .ok_or(Error::CalcAccountDataMathError)?;
-
+            .ok_or(Error::CalcAccountDataMathError)?; //@audit precision lost! 
+        //@audit also this does not appear in the technical specifications! 
         let compounded_balance_in_base =
-            price_provider.convert_to_base(&asset, compounded_balance)?;
-
+            price_provider.convert_to_base(&asset, compounded_balance)?; //@audit can fail due to oracle problems, blocking liquidations!
+         //@audit takes 1+CLIENT_PRICES_READS reads
         let discounted_balance_in_base = discount
             .mul_int(compounded_balance_in_base)
             .ok_or(Error::CalcAccountDataMathError)?;
@@ -209,23 +209,24 @@ fn calculate_fungible(
                     coeff: Some(collat_coeff.into_inner()),
                     lp_balance: Some(who_collat),
                     comp_balance: compounded_balance,
-                },
+                }, 
             );
-        }
+        } //@audit shouldn't the liquidation order correspond to the collateral discount? 
+        //@audit up to here from beginning is 5+CLIENT_PRICES_READS reads
     } else if user_config.is_borrowing(env, reserve_index) {
-        let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?;
+        let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?; //@audit 1 read
 
         let who_debt = mb_who_debt
             .filter(|x| x.asset == debt_token_address)
             .map(|x| x.balance)
-            .unwrap_or_else(|| read_token_balance(env, &debt_token_address, who));
+            .unwrap_or_else(|| read_token_balance(env, &debt_token_address, who)); //@audit 1 read
 
         let compounded_balance = debt_coeff
             .mul_int(who_debt)
-            .ok_or(Error::CalcAccountDataMathError)?;
-
+            .ok_or(Error::CalcAccountDataMathError)?; //@audit liquidation calls this here and therefore collects fees. Good.
+        //@audit bad naming convention - should be compounded_debt and change the name below as well
         let debt_balance_in_base = price_provider.convert_to_base(&asset, compounded_balance)?;
-
+        //@audit takes 1+CLIENT_PRICES_READS reads
         *total_debt_in_base = total_debt_in_base
             .checked_add(debt_balance_in_base)
             .ok_or(Error::CalcAccountDataMathError)?;
@@ -234,16 +235,16 @@ fn calculate_fungible(
             let s_token_supply = mb_s_token_supply
                 .filter(|x| x.asset == s_token_address)
                 .map(|x| x.balance)
-                .unwrap_or_else(|| read_token_total_supply(env, &s_token_address));
+                .unwrap_or_else(|| read_token_total_supply(env, &s_token_address)); //@audit 1 read
 
             let debt_token_supply = mb_debt_token_supply
                 .filter(|x| x.asset == debt_token_address)
                 .map(|x| x.balance)
-                .unwrap_or_else(|| read_token_total_supply(env, &debt_token_address));
+                .unwrap_or_else(|| read_token_total_supply(env, &debt_token_address)); //@audit 1 read
 
             let utilization = FixedI128::from_rational(debt_token_supply, s_token_supply)
                 .ok_or(Error::CalcAccountDataMathError)?
-                .into_inner();
+                .into_inner(); //@audit we are ROUNDING DOWN here
 
             let mut debt_to_cover = sorted_debt_to_cover
                 .get(utilization)
@@ -257,13 +258,14 @@ fn calculate_fungible(
                 comp_balance: compounded_balance,
             });
 
-            sorted_debt_to_cover.set(utilization, debt_to_cover);
-        }
+            sorted_debt_to_cover.set(utilization, debt_to_cover); 
+        } //@audit up to here from else is 5+CLIENT_PRICES_READS (liquidation) or 3+CLIENT_PRICES_READS (no liquidation) reads
     }
 
     Ok(())
 }
 
+//@audit 2+CLIENT_PRICES_READS reads
 #[allow(clippy::too_many_arguments)]
 fn calculate_rwa(
     env: &Env,
@@ -285,9 +287,9 @@ fn calculate_rwa(
         let balance = mb_rwa_balance
             .filter(|x| x.asset == asset)
             .map(|x| x.balance)
-            .unwrap_or_else(|| read_token_balance(env, &asset, who));
+            .unwrap_or_else(|| read_token_balance(env, &asset, who)); //@audit 1 read
 
-        let balance_in_base = price_provider.convert_to_base(&asset, balance)?;
+        let balance_in_base = price_provider.convert_to_base(&asset, balance)?; //@audit takes 1+CLIENT_PRICES_READS
 
         let discounted_balance_in_base = discount
             .mul_int(balance_in_base)

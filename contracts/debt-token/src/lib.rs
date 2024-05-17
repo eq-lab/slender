@@ -138,13 +138,13 @@ impl DebtTokenTrait for DebtToken {
     /// Panics if overflow happens
     ///
     fn burn(env: Env, from: Address, amount: i128) {
-        verify_caller_is_pool(&env);
+        verify_caller_is_pool(&env); //@audit 1 read
 
-        spend_balance(&env, from.clone(), amount);
-        add_total_supply(&env, amount.checked_neg().expect("debt-token: no overflow"));
+        spend_balance(&env, from.clone(), amount); //@audit 2 reads
+        add_total_supply(&env, amount.checked_neg().expect("debt-token: no overflow")); //@audit 1 read + 1 write
 
         event::burn(&env, from, amount);
-    }
+    } //@audit total 4 read + 1 write
 
     fn burn_from(_env: Env, _spender: Address, _from: Address, _amount: i128) {
         unimplemented!();

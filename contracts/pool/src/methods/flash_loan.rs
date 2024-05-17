@@ -39,7 +39,7 @@ pub fn flash_loan(
     for i in 0..loan_asset_len {
         let loan_asset = loan_assets.get_unchecked(i);
 
-        require_positive_amount(env, loan_asset.amount);
+        require_positive_amount(env, loan_asset.amount); //@audit good, this is where we check the quantity is positive
 
         let reserve = read_reserve(env, &loan_asset.asset)?;
         require_active_reserve(env, &reserve);
@@ -48,7 +48,7 @@ pub fn flash_loan(
         let (s_token_address, _) = get_fungible_lp_tokens(&reserve)?;
 
         let s_token = STokenClient::new(env, s_token_address);
-        s_token.transfer_underlying_to(receiver, &loan_asset.amount);
+        s_token.transfer_underlying_to(receiver, &loan_asset.amount); //@audit we do not have to preserve the utility cap here. In fact, we can probably just clean out the reserve...
 
         reserves.push_back(reserve);
         receiver_assets.push_back(ReceiverAsset {
@@ -62,7 +62,8 @@ pub fn flash_loan(
     }
 
     let loan_receiver = FlashLoanReceiverClient::new(env, receiver);
-    let loan_received = loan_receiver.receive(who, &receiver_assets, params);
+    let loan_received = loan_receiver.receive(who, &receiver_assets, params); //@audit call the loan_receiver here and execute arbitrary code
+    //@audit the state here is incoherent - the only thing that's updated is s_token_underlying_balance. But everything else behaves as if the flash loan is not happening...
     assert_with_error!(env, loan_received, Error::FlashLoanReceiverError);
 
     let treasury = read_treasury(env);
@@ -86,7 +87,7 @@ pub fn flash_loan(
                 receiver,
                 &treasury,
                 &received_asset.premium,
-            );
+            ); //@audit so flash loan fees in this case are not included in the underlying balance of the corresponding stoken?
         } else {
             let s_token_supply = read_token_total_supply(env, s_token_address);
 

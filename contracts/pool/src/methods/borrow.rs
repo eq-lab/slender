@@ -52,7 +52,7 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
         debt_token_address,
     )?;
 
-    recalculate_reserve_data(
+    recalculate_reserve_data( //@audit can I get away with no update by manipulating the timestamps??? 
         env,
         asset,
         &reserve,
@@ -102,14 +102,16 @@ pub fn do_borrow(
         false,
     )?;
 
-    require_gte_initial_health(env, &account_data, amount_in_base)?;
+    require_gte_initial_health(env, &account_data, amount_in_base)?; //@audit essential check - otherwise we could borrow enough to bankrupt the protocol 
 
     let debt_coeff = get_actual_borrower_accrued_rate(env, reserve)?;
     let amount_of_debt_token = debt_coeff
         .recip_mul_int_ceil(amount)
-        .ok_or(Error::MathOverflowError)?;
+        .ok_or(Error::MathOverflowError)?; //@audit in principle, there's precision loss happening here. Is it bad?
+    //@audit note that debt_coeff has to be bigger then one. 
+    //@audit we are rounding the result UP which is good. 
 
-    require_util_cap_not_exceeded(
+    require_util_cap_not_exceeded( //@audit cannot borrow more then utility cap
         env,
         s_token_supply,
         debt_token_supply,
@@ -125,7 +127,7 @@ pub fn do_borrow(
         .checked_add(amount_of_debt_token)
         .ok_or(Error::MathOverflowError)?;
 
-    DebtTokenClient::new(env, debt_token_address).mint(who, &amount_of_debt_token);
+    DebtTokenClient::new(env, debt_token_address).mint(who, &amount_of_debt_token); //@audit user can borrow more then they should!
     STokenClient::new(env, s_token_address).transfer_underlying_to(who, &amount);
 
     add_stoken_underlying_balance(env, s_token_address, amount_to_sub)?;

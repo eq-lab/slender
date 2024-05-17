@@ -66,7 +66,8 @@ pub fn write_ir_params(env: &Env, ir_params: &IRParams) {
     env.storage()
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
+    //@audit these do not get validated but I believe they are validated in the setter. Need to understand
+    //why some checks are in setters and some in writing functions. Seems inconsistent. 
     env.storage().instance().set(&DataKey::IRParams, ir_params);
 }
 
@@ -79,7 +80,7 @@ pub fn read_ir_params(env: &Env) -> Result<IRParams, Error> {
         .instance()
         .get(&DataKey::IRParams)
         .ok_or(Error::Uninitialized)
-}
+} //@audit 1 read
 
 pub fn read_reserve(env: &Env, asset: &Address) -> Result<ReserveData, Error> {
     env.storage()
@@ -90,7 +91,7 @@ pub fn read_reserve(env: &Env, asset: &Address) -> Result<ReserveData, Error> {
         .instance()
         .get(&DataKey::ReserveAssetKey(asset.clone()))
         .ok_or(Error::NoReserveExistForAsset)
-}
+} //@audit 1 read
 
 pub fn write_reserve(env: &Env, asset: &Address, reserve_data: &ReserveData) {
     env.storage()
@@ -111,7 +112,7 @@ pub fn has_reserve(env: &Env, asset: &Address) -> bool {
         .has(&DataKey::ReserveAssetKey(asset.clone()))
 }
 
-pub fn read_reserves(env: &Env) -> Vec<Address> {
+pub fn read_reserves(env: &Env) -> Vec<Address> { //@audit 1 read
     env.storage()
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
@@ -122,7 +123,7 @@ pub fn read_reserves(env: &Env) -> Vec<Address> {
         .unwrap_or(vec![env])
 }
 
-pub fn read_reserve_timestamp_window(env: &Env) -> u64 {
+pub fn read_reserve_timestamp_window(env: &Env) -> u64 { //@audit 1 read
     env.storage()
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
@@ -137,8 +138,8 @@ pub fn write_reserve_timestamp_window(env: &Env, window: u64) {
     env.storage()
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage()
+    //@audit should we note validate the value we are writing?
+    env.storage() 
         .instance()
         .set(&DataKey::ReserveTimestampWindow, &window);
 }
@@ -153,7 +154,7 @@ pub fn write_reserves(env: &Env, reserves: &Vec<Address>) {
 
 pub fn read_user_config(env: &Env, user: &Address) -> Result<UserConfiguration, Error> {
     let key = DataKey::UserConfig(user.clone());
-    let user_config = env.storage().persistent().get(&key);
+    let user_config = env.storage().persistent().get(&key); //@audit 1 read
 
     if user_config.is_some() {
         env.storage().persistent().extend_ttl(
@@ -174,7 +175,7 @@ pub fn write_user_config(env: &Env, user: &Address, config: &UserConfiguration) 
         LOW_USER_DATA_BUMP_LEDGERS,
         HIGH_USER_DATA_BUMP_LEDGERS,
     );
-}
+} //@audit 1 write
 
 pub fn read_price_feeds(env: &Env, asset: &Address) -> Result<PriceFeedConfig, Error> {
     env.storage()
@@ -187,7 +188,7 @@ pub fn read_price_feeds(env: &Env, asset: &Address) -> Result<PriceFeedConfig, E
         .instance()
         .get(&data_key)
         .ok_or(Error::NoPriceFeed)
-}
+} //@audit 1 read
 
 pub fn write_price_feeds(env: &Env, inputs: &Vec<PriceFeedConfigInput>) {
     env.storage()
@@ -219,7 +220,7 @@ pub fn write_base_asset(env: &Env, config: &BaseAssetConfig) {
 pub fn read_base_asset(env: &Env) -> Result<BaseAssetConfig, Error> {
     env.storage()
         .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS); 
 
     let data_key = DataKey::BaseAsset;
 
@@ -234,23 +235,23 @@ pub fn write_initial_health(env: &Env, value: u32) {
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
-    let data_key = DataKey::InitialHealth;
+    let data_key = DataKey::InitialHealth; //@audit should we note validate the value here?
 
     env.storage().instance().set(&data_key, &value);
 }
 
-pub fn read_initial_health(env: &Env) -> Result<u32, Error> {
+pub fn read_initial_health(env: &Env) -> Result<u32, Error> { //@audit should be expressed as percentage - should we check sanity values here?
     env.storage()
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
-    let data_key = DataKey::InitialHealth;
+    let data_key = DataKey::InitialHealth; 
 
     env.storage()
         .instance()
         .get(&data_key)
         .ok_or(Error::InitialHealthNotInitialized)
-}
+} //@audit 1 read
 
 pub fn paused(env: &Env) -> bool {
     env.storage()
@@ -290,7 +291,7 @@ pub fn read_treasury(env: &Env) -> Address {
 pub fn write_flash_loan_fee(env: &Env, fee: u32) {
     env.storage()
         .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS); //@audit can this be negative? Why are we not validating?
 
     env.storage().instance().set(&DataKey::FlashLoanFee, &fee);
 }
@@ -305,7 +306,7 @@ pub fn read_flash_loan_fee(env: &Env) -> u32 {
         .get(&DataKey::FlashLoanFee)
         .unwrap()
 }
-
+//@audit should this be in instance storage? Maybe yes since this is the stoken address... 
 pub fn write_stoken_underlying_balance(
     env: &Env,
     s_token_address: &Address,
@@ -315,7 +316,7 @@ pub fn write_stoken_underlying_balance(
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
-    assert_with_error!(env, !total_supply.is_negative(), Error::MustBePositive);
+    assert_with_error!(env, !total_supply.is_negative(), Error::MustBePositive); //@audit MustBePositive should be changed for MustBeNonNegative 
 
     let data_key = DataKey::STokenUnderlyingBalance(s_token_address.clone());
     env.storage().instance().set(&data_key, &total_supply);
@@ -337,17 +338,18 @@ pub fn add_stoken_underlying_balance(
     s_token_address: &Address,
     amount: i128,
 ) -> Result<i128, Error> {
-    let mut total_supply = read_stoken_underlying_balance(env, s_token_address);
+    let mut total_supply = read_stoken_underlying_balance(env, s_token_address); //@audit 1 read
 
     total_supply = total_supply
         .checked_add(amount)
         .ok_or(Error::MathOverflowError)?;
 
-    write_stoken_underlying_balance(env, s_token_address, total_supply)?;
+    write_stoken_underlying_balance(env, s_token_address, total_supply)?; //@audit 1 write
 
     Ok(total_supply)
-}
+} //@audit total is 1 read + 1 write
 
+//@audit should this be in instance storage? Maybe yes since this is the token address
 pub fn read_token_total_supply(env: &Env, token: &Address) -> i128 {
     env.storage()
         .instance()
@@ -355,7 +357,7 @@ pub fn read_token_total_supply(env: &Env, token: &Address) -> i128 {
 
     let key = DataKey::TokenSupply(token.clone());
     env.storage().instance().get(&key).unwrap_or(0i128)
-}
+} //@audit 1 read
 
 pub fn write_token_total_supply(
     env: &Env,
@@ -366,7 +368,7 @@ pub fn write_token_total_supply(
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
-    assert_with_error!(env, !total_supply.is_negative(), Error::MustBePositive);
+    assert_with_error!(env, !total_supply.is_negative(), Error::MustBePositive); //@audit some input validation here!
 
     let data_key = DataKey::TokenSupply(token.clone());
     env.storage().instance().set(&data_key, &total_supply);
@@ -387,7 +389,7 @@ pub fn read_token_balance(env: &Env, token: &Address, account: &Address) -> i128
     }
 
     balance.unwrap_or(0i128)
-}
+} //@audit 1 read
 
 pub fn write_token_balance(
     env: &Env,
@@ -395,10 +397,10 @@ pub fn write_token_balance(
     account: &Address,
     balance: i128,
 ) -> Result<(), Error> {
-    assert_with_error!(env, !balance.is_negative(), Error::MustBePositive);
+    assert_with_error!(env, !balance.is_negative(), Error::MustBePositive); //@audit some input validation here!
 
     let key = DataKey::TokenBalance(token.clone(), account.clone());
-    env.storage().persistent().set(&key, &balance);
+    env.storage().persistent().set(&key, &balance); //@audit 1 write
     env.storage().persistent().extend_ttl(
         &key,
         LOW_USER_DATA_BUMP_LEDGERS,
@@ -406,4 +408,4 @@ pub fn write_token_balance(
     );
 
     Ok(())
-}
+} //@audit takes in total 1 write

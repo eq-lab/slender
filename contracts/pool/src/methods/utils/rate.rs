@@ -15,6 +15,10 @@ use super::get_elapsed_time::get_elapsed_time;
 ///
 /// For (1-U)^alpha calculation use binomial approximation with four terms
 /// (1-U)^a = 1 - alpha * U + alpha/2 * (alpha - 1) * U^2 - alpha/6 * (alpha-1) * (alpha-2) * U^3 + alpha/24 * (alpha-1) *(alpha-2) * (alpha-3) * U^4
+
+//@audit is this comment correct? Why do we make 19+2=21 iterations when alpha>1/2? Otherwise we make three not two...
+//@audit the formula is not precise - we do not allow base_rate / (1 - U)^alpha to become negative. 
+//@audit note to self: 10000 = PERCENTAGE_FACTOR. 100 = ALPHA_DENOMINATOR. Could be helpful to include in the code comments.
 pub fn calc_interest_rate(
     total_collateral: i128,
     total_debt: i128,
@@ -24,9 +28,10 @@ pub fn calc_interest_rate(
         return None;
     }
 
-    let u = FixedI128::from_rational(total_debt, total_collateral)?;
+    let u = FixedI128::from_rational(total_debt, total_collateral)?; //@audit if total_collateral == 0 returns None. 
+    //@audit we are ROUNDING DOWN here. 
 
-    if u.is_zero() {
+    if u.is_zero() { //@audit so zero divided by zero is None and not Some(0)
         return Some(FixedI128::ZERO);
     }
 
@@ -36,20 +41,20 @@ pub fn calc_interest_rate(
         return Some(max_rate); // utilization shouldn't be greater or equal one
     }
 
-    let alpha = FixedI128::from_rational(ir_params.alpha, ALPHA_DENOMINATOR)?;
+    let alpha = FixedI128::from_rational(ir_params.alpha, ALPHA_DENOMINATOR)?;     //@audit we are ROUNDING DOWN here. 
 
     let neg_u = u.mul_inner(-1)?;
-    let first_term = alpha.checked_mul(neg_u)?;
+    let first_term = alpha.checked_mul(neg_u)?; //@audit - alpha * U 
 
-    let num_of_iterations = if u > FixedI128::from_rational(1, 2)? {
-        19
+    let num_of_iterations = if u > FixedI128::from_rational(1, 2)? { //@audit do we need the from_rational here? Couldn't we replace with a fixed value? 
+        19 
     } else {
         3
-    };
+    }; //@audit this should probably be named parameters and not numerical constants embedded in the code 
     let mut prev_term = first_term;
     let mut terms_sum = first_term;
     let mut alpha_mul = alpha;
-    for i in 2..(num_of_iterations + 2) {
+    for i in 2..(num_of_iterations + 2) { //@audit again probably change two to "minimal number of iterations" or something
         alpha_mul = alpha_mul.checked_sub(FixedI128::ONE)?;
         let next_term = prev_term
             .checked_mul(neg_u)?
@@ -59,13 +64,13 @@ pub fn calc_interest_rate(
         prev_term = next_term;
     }
 
-    let denom = FixedI128::ONE.checked_add(terms_sum)?;
+    let denom = FixedI128::ONE.checked_add(terms_sum)?; //@audit here we add the one to form 1 - alpha * U +(...) where ... is computed in the loop
 
-    if denom.is_negative() {
-        return Some(max_rate);
+    if denom.is_negative() { //@audit what if initial_rate is negative? do we check for misconfiguration here?
+        return Some(max_rate); //@audit Note to self: this seems possible only if utilization is >1. This is a possible case, but a bad edge case. Should think about this a little. 
     }
 
-    let initial_rate = FixedI128::from_percentage(ir_params.initial_rate)?;
+    let initial_rate = FixedI128::from_percentage(ir_params.initial_rate)?; 
 
     let ir = initial_rate.checked_div(denom)?;
 
@@ -125,7 +130,7 @@ pub fn calc_accrued_rates(
         lender_ir,
         borrower_ir,
     })
-}
+} //@audit in total, 0 read and 0 writes
 
 /// Returns lender accrued rate corrected for the current time
 pub fn get_actual_lender_accrued_rate(
@@ -142,7 +147,7 @@ pub fn get_actual_lender_accrued_rate(
         calc_next_accrued_rate(prev_ar, lender_ir, elapsed_time)
             .ok_or(Error::CollateralCoeffMathError)
     }
-}
+} //@audit how does this computation works
 
 /// Returns borrower accrued rate corrected for the current time
 pub fn get_actual_borrower_accrued_rate(

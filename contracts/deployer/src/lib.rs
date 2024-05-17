@@ -25,7 +25,7 @@ impl Deployer {
         initial_health: u32,
         ir_params: IRParams,
     ) -> (Address, Val) {
-        let id = env.deployer().with_current_contract(salt).deploy(wasm_hash);
+        let id = env.deployer().with_current_contract(salt).deploy(wasm_hash); //@audit salt is a parameter here and can be front-run! Should derive salt from admin.
         let init_fn = Symbol::new(&env, "initialize");
         let init_args = vec![
             &env,

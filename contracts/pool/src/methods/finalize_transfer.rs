@@ -14,7 +14,7 @@ use super::utils::validation::{
 };
 
 #[allow(clippy::too_many_arguments)]
-pub fn finalize_transfer(
+pub fn finalize_transfer( //@audit does not happen on liquidations. So liquidations happen even while reserve is pauses/inactive...
     env: &Env,
     asset: &Address,
     from: &Address,
@@ -42,7 +42,7 @@ pub fn finalize_transfer(
 
     let mut from_configurator = UserConfigurator::new(env, from, false);
     let from_config = from_configurator.user_config()?;
-
+    //@audit essential check to prevent rollover of loans and moving the collateral from sock puppet to sock puppet
     if from_config.is_borrowing_any() && from_config.is_using_as_collateral(env, reserve.get_id()) {
         let from_account_data = calc_account_data(
             env,

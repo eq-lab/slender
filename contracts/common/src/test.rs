@@ -1,6 +1,6 @@
 use crate::{FixedI128, PERCENTAGE_FACTOR};
 
-mod fixedi128 {
+mod fixed128 {
 
     use super::*;
 

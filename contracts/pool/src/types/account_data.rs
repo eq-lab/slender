@@ -5,7 +5,7 @@ use super::liquidation_asset::LiquidationAsset;
 
 #[derive(Debug, Clone, Default)]
 pub struct AccountData {
-    /// Total collateral expresed in XLM
+    /// Total collateral expresed in XLM //@audit misspelled word expresed = expressed
     pub discounted_collateral: i128,
     /// Total debt expressed in XLM
     pub debt: i128,
@@ -16,6 +16,7 @@ pub struct AccountData {
     /// Liquidation collateral ordered by liquidation_order
     pub liq_collats: Option<Vec<LiquidationAsset>>,
 }
+//@audit Note to self: this struct should always be ordered. In any valid state. Can we break this?
 
 impl AccountData {
     pub fn is_good_position(&self) -> bool {

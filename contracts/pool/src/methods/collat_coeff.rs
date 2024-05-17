@@ -19,5 +19,5 @@ pub fn collat_coeff(env: &Env, asset: &Address) -> Result<i128, Error> {
         read_stoken_underlying_balance(env, s_token_address),
         read_token_total_supply(env, debt_token_address),
     )
-    .map(|fixed| fixed.into_inner())
+    .map(|fixed| fixed.into_inner()) //@audit wouldn't adding two tokens with different decimals lead to a loss of precision?
 }

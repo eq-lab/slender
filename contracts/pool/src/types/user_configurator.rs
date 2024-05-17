@@ -35,7 +35,7 @@ impl<'a> UserConfigurator<'a> {
         }
 
         let env = self.env;
-        let user_config = self.read_user_config()?.user_config.as_mut().unwrap();
+        let user_config = self.read_user_config()?.user_config.as_mut().unwrap(); //@audit 1 read
 
         user_config.set_using_as_collateral(env, reserve_id, false);
         event::reserve_used_as_collateral_disabled(env, self.user, asset);
@@ -43,7 +43,7 @@ impl<'a> UserConfigurator<'a> {
         self.should_write = true;
 
         Ok(self)
-    }
+    } //@audit 1 read
 
     pub fn deposit(
         &mut self,
@@ -56,7 +56,7 @@ impl<'a> UserConfigurator<'a> {
         }
 
         let env = self.env;
-        let user_config = self.read_user_config()?.user_config.as_mut().unwrap();
+        let user_config = self.read_user_config()?.user_config.as_mut().unwrap(); //@audit 1 read
 
         user_config.set_using_as_collateral(env, reserve_id, true);
         event::reserve_used_as_collateral_enabled(env, self.user, asset);
@@ -64,7 +64,7 @@ impl<'a> UserConfigurator<'a> {
         self.should_write = true;
 
         Ok(self)
-    }
+    } //@audit 1 read
 
     pub fn borrow(&mut self, reserve_id: u8, first_borrow: bool) -> Result<&mut Self, Error> {
         if !first_borrow {
@@ -72,14 +72,14 @@ impl<'a> UserConfigurator<'a> {
         }
 
         let env = self.env;
-        let user_config = self.read_user_config()?.user_config.as_mut().unwrap();
+        let user_config = self.read_user_config()?.user_config.as_mut().unwrap(); //@audit 1 read
 
         user_config.set_borrowing(env, reserve_id, true);
 
         self.should_write = true;
 
         Ok(self)
-    }
+    } //@audit 1 read
 
     pub fn repay(&mut self, reserve_id: u8, fully_repayed: bool) -> Result<&mut Self, Error> {
         if !fully_repayed {
@@ -87,13 +87,13 @@ impl<'a> UserConfigurator<'a> {
         }
 
         let env = self.env;
-        let user_config = self.read_user_config()?.user_config.as_mut().unwrap();
+        let user_config = self.read_user_config()?.user_config.as_mut().unwrap(); //@audit 1 read
         user_config.set_borrowing(env, reserve_id, false);
 
         self.should_write = true;
 
         Ok(self)
-    }
+    } //@audit 1 read
 
     pub fn write(&mut self) {
         if self.user_config.is_none() || !self.should_write {
@@ -103,13 +103,13 @@ impl<'a> UserConfigurator<'a> {
         let user_config = self.user_config.as_ref();
 
         write_user_config(self.env, self.user, user_config.unwrap());
-    }
+    } //@audit 1 write
 
     pub fn user_config(&mut self) -> Result<&UserConfiguration, Error> {
         let user_config = self.read_user_config()?.user_config.as_ref().unwrap();
 
         Ok(user_config)
-    }
+    } //@audit 1 read
 
     fn read_user_config(&mut self) -> Result<&mut Self, Error> {
         if self.user_config.is_some() {
@@ -117,9 +117,9 @@ impl<'a> UserConfigurator<'a> {
         }
 
         self.user_config = Some(if self.create_if_none {
-            read_user_config(self.env, self.user).unwrap_or_default()
+            read_user_config(self.env, self.user).unwrap_or_default() //@audit 1 read
         } else {
-            read_user_config(self.env, self.user)?
+            read_user_config(self.env, self.user)? //@audit 1 read
         });
 
         Ok(self)

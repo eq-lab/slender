@@ -55,7 +55,7 @@ impl STokenTrait for SToken {
 
         // it can be optimized by passing decimals as argument
         let token = token::Client::new(&e, &underlying_asset);
-        let decimal = token.decimals();
+        let decimal = token.decimals(); //@audit should we not bound decimals by a u8?
 
         write_metadata(
             &e,
@@ -339,11 +339,11 @@ impl STokenTrait for SToken {
     /// Panics if caller is not associated pool.
     ///
     fn transfer_on_liquidation(e: Env, from: Address, to: Address, amount: i128) {
-        verify_caller_is_pool(&e);
+        verify_caller_is_pool(&e); //@audit 1 read
         require_positive_amount(amount);
 
-        do_transfer(&e, from, to, amount, false);
-    }
+        do_transfer(&e, from, to, amount, false); //@audit 6 read + 2 write
+    } //@audit takes in total 7 read + 2 write
 
     /// Transfers the underlying asset to the specified recipient.
     ///
@@ -387,21 +387,21 @@ impl STokenTrait for SToken {
     /// The address of the associated pool.
     ///
     fn pool(e: Env) -> Address {
-        read_pool(&e)
+        read_pool(&e) //@audit 1 read
     }
 }
 
 fn do_transfer(e: &Env, from: Address, to: Address, amount: i128, validate: bool) {
-    let from_balance_prev = read_balance(e, from.clone());
-    let to_balance_prev = read_balance(e, to.clone());
+    let from_balance_prev = read_balance(e, from.clone()); //@audit 1 read
+    let to_balance_prev = read_balance(e, to.clone()); //@audit 1 read
 
-    spend_balance(e, from.clone(), amount);
-    receive_balance(e, to.clone(), amount);
+    spend_balance(e, from.clone(), amount); //@audit 2 read + 1 write
+    receive_balance(e, to.clone(), amount); //@audit 2 read + 1 write
 
     if validate && cfg!(not(feature = "testutils")) {
-        let underlying_asset = read_underlying_asset(e);
-        let total_supply = read_total_supply(e);
-        let pool_client = LendingPoolClient::new(e, &read_pool(e));
+        let underlying_asset = read_underlying_asset(e); //@audit 1 read
+        let total_supply = read_total_supply(e); //@audit 1 read
+        let pool_client = LendingPoolClient::new(e, &read_pool(e)); //@audit 1 read
         pool_client.finalize_transfer(
             &underlying_asset,
             &from,

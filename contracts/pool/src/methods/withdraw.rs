@@ -38,8 +38,8 @@ pub fn withdraw(
 
     let (withdraw_amount, is_full_withdraw) =
         if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
-            let s_token_supply = read_token_total_supply(env, s_token_address);
-            let debt_token_supply = read_token_total_supply(env, debt_token_address);
+            let s_token_supply = read_token_total_supply(env, s_token_address); //@audit can I have a negative amount of some asset?
+            let debt_token_supply = read_token_total_supply(env, debt_token_address); //@audit can I have a negative amount of some asset?
             let collat_coeff = get_collat_coeff(
                 env,
                 &reserve,
@@ -50,18 +50,20 @@ pub fn withdraw(
 
             let s_token = STokenClient::new(env, s_token_address);
 
-            let collat_balance = read_token_balance(env, s_token_address, who);
+            let collat_balance = read_token_balance(env, s_token_address, who); 
             let underlying_balance = collat_coeff
                 .mul_int(collat_balance)
-                .ok_or(Error::MathOverflowError)?;
-
+                .ok_or(Error::MathOverflowError)?; //@audit possibly unnecessary division in case we want to make a full withdraw 
+            //@audit Note: the fact that this is computed by mul_int as opposed to deriving the opposite quantity by recip_mul_int(_ceil) can be problematic
+            //@audit underlying_balance = collat_coeff * collat_balance = ([s_token_underlying_balance + lender_ar * total_debt_token]/total_stoken) * collat_balance
+            // => but multiplication after division causes precision loss... !
             let (underlying_to_withdraw, s_token_to_burn) = if amount >= underlying_balance {
-                (underlying_balance, collat_balance)
+                (underlying_balance, collat_balance) //@audit Oh no. This will cause terrible problems in flash_loans...
             } else {
                 let s_token_to_burn = collat_coeff
                     .recip_mul_int(amount)
                     .ok_or(Error::MathOverflowError)?;
-                (amount, s_token_to_burn)
+                (amount, s_token_to_burn) //@audit rounded DOWN - dangerous! should be recip_mul_int_ceil... 
             };
 
             assert_with_error!(
@@ -75,10 +77,10 @@ pub fn withdraw(
                 .ok_or(Error::InvalidAmount)?;
             let s_token_supply_after = s_token_supply
                 .checked_sub(s_token_to_burn)
-                .ok_or(Error::InvalidAmount)?;
+                .ok_or(Error::InvalidAmount)?; //@audit this check should be unnecessary if the protocol is functioning correctly
             let s_token_underlying_after = read_stoken_underlying_balance(env, s_token_address)
                 .checked_sub(underlying_to_withdraw)
-                .ok_or(Error::MathOverflowError)?;
+                .ok_or(Error::MathOverflowError)?; //@audit what happens in a flash loan?
 
             if user_config.is_borrowing_any()
                 && user_config.is_using_as_collateral(env, reserve.get_id())
@@ -111,7 +113,7 @@ pub fn withdraw(
                     false,
                 )?;
                 // TODO: do we need to check for initial_health?
-                require_good_position(env, &account_data);
+                require_good_position(env, &account_data); //@audit user can borrow and then withdraw, effectively borrowing at any positive small npv? 
             }
             let amount_to_sub = underlying_to_withdraw
                 .checked_neg()
@@ -138,8 +140,8 @@ pub fn withdraw(
         } else {
             let rwa_balance = read_token_balance(env, asset, who);
 
-            let withdraw_amount = amount.min(rwa_balance);
-            let rwa_balance_after = rwa_balance - withdraw_amount;
+            let withdraw_amount = amount.min(rwa_balance); //@audit if rwa_balance is negative it will return it.
+            let rwa_balance_after = rwa_balance - withdraw_amount; //@audit and in that case here we will have zero!
 
             if user_config.is_borrowing_any()
                 && user_config.is_using_as_collateral(env, reserve.get_id())
@@ -169,7 +171,7 @@ pub fn withdraw(
                 &withdraw_amount,
             );
 
-            write_token_balance(env, asset, who, rwa_balance_after)?;
+            write_token_balance(env, asset, who, rwa_balance_after)?; //@audit we won't write a negative value
 
             (withdraw_amount, rwa_balance_after == 0)
         };

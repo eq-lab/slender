@@ -5,8 +5,8 @@ use crate::storage::read_reserve_timestamp_window;
 /// Returns (current_time, elapsed_time)
 pub fn get_elapsed_time(env: &Env, last_update_timestamp: u64) -> (u64, u64) {
     let current_time = env.ledger().timestamp();
-    let window = read_reserve_timestamp_window(env);
-
+    let window = read_reserve_timestamp_window(env); //@audit does this depend on the accuracy of the timetag? 
+    //@audit 1 read above
     current_time
         .checked_sub(last_update_timestamp)
         .and_then(|el| el.checked_rem(window))

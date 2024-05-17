@@ -62,7 +62,7 @@ pub fn require_lt_percentage_factor(env: &Env, value: u32) {
 pub fn require_gt_percentage_factor(env: &Env, value: u32) {
     assert_with_error!(
         env,
-        value > PERCENTAGE_FACTOR,
+        value > PERCENTAGE_FACTOR, //@audit should check that its <=50000 !! =(500%). This is a bug. 
         Error::MustBeGtPercentageFactor
     );
 }
@@ -165,7 +165,7 @@ pub fn require_not_in_collateral_asset(env: &Env, collat_balance: i128) {
 }
 
 pub fn require_not_paused(env: &Env) {
-    assert_with_error!(env, !paused(env), Error::Paused);
+    assert_with_error!(env, !paused(env), Error::Paused); //@audit paused=1 read
 }
 
 pub fn require_debt(env: &Env, user_config: &UserConfiguration, reserve_id: u8) {

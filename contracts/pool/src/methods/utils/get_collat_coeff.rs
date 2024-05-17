@@ -15,11 +15,12 @@ pub fn get_collat_coeff(
 ) -> Result<FixedI128, Error> {
     if s_token_supply == 0 {
         return Ok(FixedI128::ONE);
-    }
+    } //@audit can s_token_supply be zero while total_debt is not? 
+    //@audit can s_token_supply be negative? 
 
-    let collat_ar = get_actual_lender_accrued_rate(env, reserve)?;
-
-    FixedI128::from_rational(
+    let collat_ar = get_actual_lender_accrued_rate(env, reserve)?; //@audit shouldn't this be named lender_ar? 
+    
+    FixedI128::from_rational( //@audit we are rounding toward zero i.e., ROUNDING DOWN
         s_token_underlying_balance
             .checked_add(
                 collat_ar

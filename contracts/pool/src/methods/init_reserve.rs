@@ -16,7 +16,7 @@ pub fn init_reserve(env: &Env, asset: &Address, reserve_type: ReserveType) -> Re
 
     assert_with_error!(
         env,
-        reserves_len <= u8::MAX as u32,
+        reserves_len <= u8::MAX as u32, 
         Error::ReservesMaxCapacityExceeded
     );
 

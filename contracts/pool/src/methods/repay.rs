@@ -20,13 +20,13 @@ use super::utils::validation::{
 };
 
 pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
-    who.require_auth();
+    who.require_auth(); 
 
     require_not_paused(env);
     require_positive_amount(env, amount);
 
     let reserve = read_reserve(env, asset)?;
-    require_active_reserve(env, &reserve);
+    require_active_reserve(env, &reserve); //@audit if the reserve is not active, we cannot repay - but can we be liquidated?
 
     let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
     let mut user_configurator = UserConfigurator::new(env, who, false);
@@ -90,7 +90,7 @@ pub fn do_repay(
     let who_debt = read_token_balance(env, debt_token_address, who);
     let borrower_actual_debt = debt_coeff
         .mul_int(who_debt)
-        .ok_or(Error::MathOverflowError)?;
+        .ok_or(Error::MathOverflowError)?; //@audit I think this should be rounded UP and not DOWN! though it seems less problematic since we have a time aspect here so it's harder to exploit...
 
     let (borrower_payback_amount, borrower_debt_to_burn, is_repayed) =
         if amount >= borrower_actual_debt {
@@ -98,13 +98,13 @@ pub fn do_repay(
         } else {
             let borrower_debt_to_burn = debt_coeff
                 .recip_mul_int(amount)
-                .ok_or(Error::MathOverflowError)?;
+                .ok_or(Error::MathOverflowError)?; //@audit is rounded DOWN (correctly)
             (amount, borrower_debt_to_burn, false)
         };
 
     let treasury_coeff = debt_coeff
         .checked_sub(collat_coeff)
-        .ok_or(Error::MathOverflowError)?;
+        .ok_or(Error::MathOverflowError)?; //@audit can attacker use this to prevent users from repaying their debts?
     let treasury_part = treasury_coeff
         .mul_int(borrower_payback_amount)
         .ok_or(Error::MathOverflowError)?;
@@ -119,7 +119,7 @@ pub fn do_repay(
         .checked_sub(borrower_debt_to_burn)
         .ok_or(Error::MathOverflowError)?;
 
-    let treasury_address = read_treasury(env);
+    let treasury_address = read_treasury(env); //@audit 1 read
 
     let underlying_asset = token::Client::new(env, asset);
     let debt_token = DebtTokenClient::new(env, debt_token_address);

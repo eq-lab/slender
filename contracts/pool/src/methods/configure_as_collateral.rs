@@ -22,7 +22,7 @@ pub fn configure_as_collateral(
     reserve.update_collateral_config(params);
 
     write_reserve(env, asset, &reserve);
-    event::collat_config_change(env, asset, params);
+    event::collat_config_change(env, asset, params); //@audit should we emit event if nothing changed? 
 
     Ok(())
 }
