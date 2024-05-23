@@ -1,4 +1,5 @@
 use crate::event;
+use crate::methods::utils::validation::require_gte_initial_health;
 use crate::storage::{
     add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
     read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
@@ -16,7 +17,7 @@ use super::account_position::calc_account_data;
 use super::utils::get_collat_coeff::get_collat_coeff;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_good_position, require_not_paused, require_positive_amount,
+    require_active_reserve, require_not_paused, require_positive_amount,
 };
 
 pub fn withdraw(
@@ -110,8 +111,9 @@ pub fn withdraw(
                     &mut PriceProvider::new(env)?,
                     false,
                 )?;
-                // TODO: do we need to check for initial_health?
-                require_good_position(env, &account_data);
+
+                // account data calculation takes into account the decrease of collateral
+                require_gte_initial_health(env, &account_data, 0)?;
             }
             let amount_to_sub = underlying_to_withdraw
                 .checked_neg()
@@ -160,8 +162,8 @@ pub fn withdraw(
                     false,
                 )?;
 
-                // TODO: do we need to check for initial_health?
-                require_good_position(env, &account_data);
+                // account data calculation takes into account the decrease of collateral
+                require_gte_initial_health(env, &account_data, 0)?;
             }
             token::Client::new(env, asset).transfer(
                 &env.current_contract_address(),

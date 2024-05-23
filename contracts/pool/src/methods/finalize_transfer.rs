@@ -10,7 +10,7 @@ use crate::types::user_configurator::UserConfigurator;
 use super::account_position::calc_account_data;
 use super::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use super::utils::validation::{
-    require_active_reserve, require_good_position, require_not_paused, require_zero_debt,
+    require_active_reserve, require_gte_initial_health, require_not_paused, require_zero_debt,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -69,7 +69,8 @@ pub fn finalize_transfer(
             false,
         )?;
 
-        require_good_position(env, &from_account_data);
+        // account data calculation takes into account the decrease of collateral
+        require_gte_initial_health(env, &from_account_data, 0)?;
     }
 
     if from != to {

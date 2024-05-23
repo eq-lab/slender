@@ -154,10 +154,6 @@ pub fn require_gte_initial_health(
     Ok(())
 }
 
-pub fn require_good_position(env: &Env, account_data: &AccountData) {
-    assert_with_error!(env, account_data.is_good_position(), Error::BadPosition);
-}
-
 pub fn require_not_in_collateral_asset(env: &Env, collat_balance: i128) {
     // `is_using_as_collateral` is skipped to avoid case when user:
     // makes deposit => disables `is_using_as_collateral` => borrows the asset
