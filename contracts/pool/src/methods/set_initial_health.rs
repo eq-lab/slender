@@ -10,7 +10,7 @@ pub fn set_initial_health(env: &Env, value: u32) -> Result<(), Error> {
     require_admin(env)?;
 
     // validate initial health
-    if value < 1 || value > PERCENTAGE_FACTOR {
+    if !(1..=PERCENTAGE_FACTOR).contains(&value) {
         panic_with_error!(env, Error::ValidateInitialHealthError);
     }
 
