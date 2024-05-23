@@ -140,6 +140,18 @@ pub fn require_gte_initial_health(
         .npv
         .checked_sub(borrow_amount_in_base)
         .ok_or(Error::MathOverflowError)?;
+
+    if npv_after == 0 && account_data.discounted_collateral == 0 {
+        return Ok(());
+    }
+
+    // more conventional error when discounted_collateral == 0
+    assert_with_error!(
+        env,
+        npv_after >= 0 && account_data.discounted_collateral >= 0,
+        Error::BelowInitialHealth
+    );
+
     let npv_after_percent = FixedI128::from_rational(npv_after, account_data.discounted_collateral)
         .ok_or(Error::MathOverflowError)?;
     let initial_health_percent =

@@ -26,7 +26,7 @@ pub fn finalize_transfer(
 ) -> Result<(), Error> {
     require_not_paused(env);
 
-    let reserve = read_reserve(env, asset)?;
+    let reserve: pool_interface::types::reserve_data::ReserveData = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
     let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
     s_token_address.require_auth();
