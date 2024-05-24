@@ -447,6 +447,7 @@ fn should_change_user_config() {
         borrower_user_config.is_using_as_collateral(&env, reserve_1.get_id());
     let is_borrower_deposited_token_2_before =
         borrower_user_config.is_using_as_collateral(&env, reserve_2.get_id());
+    let borrower_total_assets_before = borrower_user_config.total_assets();
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
@@ -467,6 +468,7 @@ fn should_change_user_config() {
         liquidator_user_config.is_using_as_collateral(&env, reserve_1.get_id());
     let is_liquidator_deposited_token_2_after =
         liquidator_user_config.is_using_as_collateral(&env, reserve_2.get_id());
+    let liquidator_total_assets_after = liquidator_user_config.total_assets();
 
     let is_borrower_borrowed_token_0_after =
         borrower_user_config.is_borrowing(&env, reserve_0.get_id());
@@ -480,6 +482,7 @@ fn should_change_user_config() {
         borrower_user_config.is_using_as_collateral(&env, reserve_1.get_id());
     let is_borrower_deposited_token_2_after =
         borrower_user_config.is_using_as_collateral(&env, reserve_2.get_id());
+    let borrower_total_assets_after = borrower_user_config.total_assets();
 
     assert_eq!(is_borrower_borrowed_token_0_before, false);
     assert_eq!(is_borrower_borrowed_token_1_before, true);
@@ -488,10 +491,13 @@ fn should_change_user_config() {
     assert_eq!(is_borrower_deposited_token_0_before, true);
     assert_eq!(is_borrower_deposited_token_1_before, false);
     assert_eq!(is_borrower_deposited_token_2_before, true);
+    assert_eq!(borrower_total_assets_before, 3);
 
     assert_eq!(is_borrower_borrowed_token_0_after, false);
     assert_eq!(is_borrower_borrowed_token_1_after, true);
     assert_eq!(is_borrower_borrowed_token_2_after, false);
+    assert_eq!(borrower_total_assets_after, 2);
+
     assert_eq!(is_liquidator_borrowed_token_0_after, false);
     assert_eq!(is_liquidator_borrowed_token_1_after, false);
     assert_eq!(is_liquidator_borrowed_token_2_after, false);
@@ -502,6 +508,7 @@ fn should_change_user_config() {
     assert_eq!(is_liquidator_deposited_token_0_after, true);
     assert_eq!(is_liquidator_deposited_token_1_after, false);
     assert_eq!(is_liquidator_deposited_token_2_after, true);
+    assert_eq!(liquidator_total_assets_after, 2);
 }
 
 #[test]
@@ -763,4 +770,47 @@ fn should_liquidate_rwa_collateral() {
     assert_eq!(borrower_rwa_after, 0);
     assert!(liquidator_rwa_after > liquidator_rwa_before);
     assert!(pool_rwa_after < pool_rwa_before);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #205)")]
+fn rwa_fail_when_exceed_assets_limit() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (liquidator, borrower) = fill_pool_six(&env, &sut);
+    let collat_1_token = sut.reserves[0].token.address.clone();
+    let collat_2_token = sut.reserves[2].token.address.clone();
+    let debt_token = sut.reserves[1].token.address.clone();
+
+    env.ledger().with_mut(|li| li.timestamp = 10_000);
+
+    sut.pool
+        .deposit(&borrower, &collat_1_token, &10_000_000_000);
+    sut.pool
+        .deposit(&borrower, &collat_2_token, &1_000_000_000_000);
+    sut.pool.borrow(&borrower, &debt_token, &800_000_000_000);
+
+    sut.price_feed.init(
+        &Asset::Stellar(debt_token),
+        &vec![
+            &env,
+            PriceData {
+                price: (18 * 10i128.pow(15)),
+                timestamp: 0,
+            },
+        ],
+    );
+
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 1,
+    });
+
+    sut.pool.liquidate(&liquidator, &borrower, &true);
 }

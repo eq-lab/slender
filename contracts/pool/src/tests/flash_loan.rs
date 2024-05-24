@@ -1,5 +1,6 @@
 use crate::tests::sut::{fill_pool, init_pool};
 use pool_interface::types::flash_loan_asset::FlashLoanAsset;
+use pool_interface::types::pool_config::PoolConfig;
 use soroban_sdk::testutils::Events;
 use soroban_sdk::{vec, Bytes, Env, IntoVal, Symbol, Val, Vec};
 
@@ -218,5 +219,58 @@ fn should_emit_events() {
                 (1000000i128, 500i128).into_val(&env)
             ),
         ]
+    );
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #205)")]
+fn rwa_fail_when_exceed_assets_limit() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, false);
+
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 0,
+        timestamp_window: 20,
+        user_assets_limit: 1,
+    });
+
+    let _: Val = env.invoke_contract(
+        &sut.flash_loan_receiver.address,
+        &Symbol::new(&env, "initialize"),
+        vec![&env, sut.pool.address.into_val(&env), false.into_val(&env)],
+    );
+
+    let loan_assets = Vec::from_array(
+        &env,
+        [
+            FlashLoanAsset {
+                asset: sut.reserves[0].token.address.clone(),
+                amount: 1000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[1].token.address.clone(),
+                amount: 2000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[2].token.address.clone(),
+                amount: 3000000,
+                borrow: true,
+            },
+        ],
+    );
+
+    sut.pool.flash_loan(
+        &borrower,
+        &sut.flash_loan_receiver.address,
+        &loan_assets,
+        &Bytes::new(&env),
     );
 }

@@ -140,10 +140,12 @@ fn should_change_user_config() {
         user_config_before.is_using_as_collateral(&env, reserve.get_id()),
         true
     );
+    assert_eq!(user_config_before.total_assets(), 1);
     assert_eq!(
         user_config.is_using_as_collateral(&env, reserve.get_id()),
         false
     );
+    assert_eq!(user_config.total_assets(), 0);
 }
 
 #[test]

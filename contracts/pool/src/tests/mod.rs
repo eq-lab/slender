@@ -9,7 +9,6 @@ pub mod deposit;
 pub mod enable_borrowing_on_reserve;
 pub mod finalize_transfer;
 pub mod flash_loan;
-pub mod flash_loan_fee;
 pub mod get_reserve;
 pub mod init_reserve;
 pub mod ir_params;

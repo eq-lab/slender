@@ -90,6 +90,7 @@ fn should_change_user_config() {
     let reserve = sut.pool.get_reserve(&debt_config.token.address).unwrap();
 
     assert_eq!(user_config.is_borrowing(&env, reserve.get_id()), false);
+    assert_eq!(user_config.total_assets(), 1);
 }
 
 #[test]

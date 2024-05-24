@@ -173,6 +173,7 @@ fn should_change_user_config() {
     let is_borrowing_any_before = user_config.is_borrowing_any();
     let is_borrowing_token_1_before = user_config.is_borrowing(&env, reserve_1.get_id());
     let is_borrowing_token_2_before = user_config.is_borrowing(&env, reserve_2.get_id());
+    let user_total_assets_before = user_config.total_assets();
 
     sut.pool.borrow(&borrower, &token_1_address, &10_000_000);
     sut.pool.borrow(&borrower, &token_2_address, &10_000_000);
@@ -181,6 +182,7 @@ fn should_change_user_config() {
     let is_borrowing_any_after_borrow = user_config.is_borrowing_any();
     let is_borrowing_token_1_after_borrow = user_config.is_borrowing(&env, reserve_1.get_id());
     let is_borrowing_token_2_after_borrow = user_config.is_borrowing(&env, reserve_2.get_id());
+    let user_total_assets_after_borrow = user_config.total_assets();
 
     sut.pool.repay(&borrower, &token_1_address, &i128::MAX);
 
@@ -188,6 +190,7 @@ fn should_change_user_config() {
     let is_borrowing_any_after_repay_1 = user_config.is_borrowing_any();
     let is_borrowing_token_1_after_repay_1 = user_config.is_borrowing(&env, reserve_1.get_id());
     let is_borrowing_token_2_after_repay_1 = user_config.is_borrowing(&env, reserve_2.get_id());
+    let user_total_assets_after_repay_1 = user_config.total_assets();
 
     sut.pool.repay(&borrower, &token_2_address, &i128::MAX);
 
@@ -195,22 +198,27 @@ fn should_change_user_config() {
     let is_borrowing_any_after_repay_2 = user_config.is_borrowing_any();
     let is_borrowing_token_1_after_repay_2 = user_config.is_borrowing(&env, reserve_1.get_id());
     let is_borrowing_token_2_after_repay_2 = user_config.is_borrowing(&env, reserve_2.get_id());
+    let user_total_assets_after_repay_2 = user_config.total_assets();
 
     assert_eq!(is_borrowing_any_before, false);
     assert_eq!(is_borrowing_token_1_before, false);
     assert_eq!(is_borrowing_token_2_before, false);
+    assert_eq!(user_total_assets_before, 1);
 
     assert_eq!(is_borrowing_any_after_borrow, true);
     assert_eq!(is_borrowing_token_1_after_borrow, true);
     assert_eq!(is_borrowing_token_2_after_borrow, true);
+    assert_eq!(user_total_assets_after_borrow, 3);
 
     assert_eq!(is_borrowing_any_after_repay_1, true);
     assert_eq!(is_borrowing_token_1_after_repay_1, false);
     assert_eq!(is_borrowing_token_2_after_repay_1, true);
+    assert_eq!(user_total_assets_after_repay_1, 2);
 
     assert_eq!(is_borrowing_any_after_repay_2, false);
     assert_eq!(is_borrowing_token_1_after_repay_2, false);
     assert_eq!(is_borrowing_token_2_after_repay_2, false);
+    assert_eq!(user_total_assets_after_repay_2, 1);
 }
 
 #[test]
@@ -370,4 +378,25 @@ fn should_fail_when_borrow_rwa() {
     let rwa_address = sut.rwa_config().token.address.clone();
 
     sut.pool.borrow(&borrower, &rwa_address, &10_000_000);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #205)")]
+fn rwa_fail_when_exceed_assets_limit() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
+
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 0,
+        timestamp_window: 20,
+        user_assets_limit: 2,
+    });
+
+    sut.pool
+        .borrow(&borrower, &sut.reserves[2].token.address, &1_000);
 }

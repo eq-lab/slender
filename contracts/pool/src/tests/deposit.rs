@@ -107,6 +107,7 @@ fn should_change_user_config() {
         user_config.is_using_as_collateral(&env, reserve.get_id()),
         true
     );
+    assert_eq!(user_config.total_assets(), 1);
 }
 
 #[test]
@@ -316,4 +317,25 @@ fn rwa_should_affect_account_data() {
     assert!(borrower_position_prev.discounted_collateral < borrower_position.discounted_collateral);
     assert!(borrower_position_prev.debt == borrower_position.debt);
     assert!(borrower_position_prev.npv < borrower_position.npv);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #205)")]
+fn rwa_fail_when_exceed_assets_limit() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, true);
+
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 0,
+        timestamp_window: 20,
+        user_assets_limit: 2,
+    });
+
+    sut.pool
+        .deposit(&borrower, &sut.reserves[2].token.address, &1_000_000_000);
 }

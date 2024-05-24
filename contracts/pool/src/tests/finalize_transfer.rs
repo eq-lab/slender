@@ -1,4 +1,5 @@
 use crate::tests::sut::{fill_pool, init_pool};
+use pool_interface::types::pool_config::PoolConfig;
 // use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
 use soroban_sdk::Env;
 
@@ -214,6 +215,39 @@ fn finalize_transfer_should_fail_if_npv_fail_bellow_initial_health() {
         &borrower,
         &lender,
         &(borrower_balance_before - 1),
+        &lender_balance_before,
+        &borrower_balance_before,
+        &s_token_supply,
+    );
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #205)")]
+fn rwa_fail_when_exceed_assets_limit() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let sut = init_pool(&env, false);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 0,
+        timestamp_window: 20,
+        user_assets_limit: 2,
+    });
+
+    let (lender, borrower, _debt_token_reserve) = fill_pool(&env, &sut, true);
+    let token_client = &sut.reserves[2].token;
+    let s_token_client = sut.reserves[2].s_token();
+
+    let lender_balance_before = s_token_client.balance(&lender);
+    let borrower_balance_before = s_token_client.balance(&borrower);
+    let s_token_supply = s_token_client.total_supply();
+    sut.pool.finalize_transfer(
+        &token_client.address,
+        &lender,
+        &borrower,
+        &1,
         &lender_balance_before,
         &borrower_balance_before,
         &s_token_supply,
