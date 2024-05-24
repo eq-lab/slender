@@ -28,6 +28,7 @@ pub enum Error {
     MustHaveDebt = 203,
     MustNotHaveDebt = 204,
     MustNotExceedAssetsLimit = 205,
+    RequireMinBalance = 206,
 
     BorrowingNotEnabled = 300,
     BelowInitialHealth = 301,

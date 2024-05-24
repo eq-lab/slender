@@ -30,6 +30,7 @@ pub enum DataKey {
     PriceFeed(Address),
     Pause,
     FlashLoanFee,
+    MinPositionAmounts,
     STokenUnderlyingBalance(Address),
     TokenSupply(Address),
     TokenBalance(Address, Address),
@@ -272,6 +273,28 @@ pub fn write_user_assets_limit(env: &Env, user_assets_limit: u32) {
     env.storage()
         .instance()
         .set(&DataKey::UserAssetsLimit, &user_assets_limit);
+}
+
+pub fn read_min_position_amounts(env: &Env) -> (i128, i128) {
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    env.storage()
+        .instance()
+        .get(&DataKey::MinPositionAmounts)
+        .unwrap_or((0, 0))
+}
+
+pub fn write_min_position_amounts(env: &Env, min_collat_amount: i128, min_debt_amount: i128) {
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    env.storage().instance().set(
+        &DataKey::MinPositionAmounts,
+        &(min_collat_amount, min_debt_amount),
+    );
 }
 
 pub fn paused(env: &Env) -> bool {

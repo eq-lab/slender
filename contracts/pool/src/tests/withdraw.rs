@@ -533,6 +533,8 @@ fn should_fail_when_bad_position_after_withdraw() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     let lender = Address::generate(&env);

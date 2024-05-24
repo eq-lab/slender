@@ -117,6 +117,9 @@ pub fn calc_account_data(
         result
     };
 
+    // TODO: if discounted_collateral > 0 then discounted_collateral >= min_collat_in_base
+    // TODO: if debt > 0 then debt >= min_debt_in_base
+
     Ok(AccountData {
         discounted_collateral: total_discounted_collat_in_base,
         debt: total_debt_in_base,

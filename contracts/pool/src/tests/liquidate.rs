@@ -21,6 +21,8 @@ fn should_require_authorized_caller() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     sut.pool.liquidate(&liquidator, &borrower, &false);
@@ -127,6 +129,8 @@ fn should_liquidate_reducing_position_to_healthy() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
@@ -263,6 +267,8 @@ fn should_liquidate_receiving_stokens_when_requested() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
@@ -412,6 +418,8 @@ fn should_change_user_config() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
@@ -529,6 +537,8 @@ fn should_affect_account_data() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
@@ -599,6 +609,8 @@ fn should_affect_coeffs() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
@@ -672,6 +684,8 @@ fn should_emit_events() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
@@ -733,6 +747,8 @@ fn should_liquidate_rwa_collateral() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
@@ -810,6 +826,8 @@ fn rwa_fail_when_exceed_assets_limit() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 1,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     sut.pool.liquidate(&liquidator, &borrower, &true);

@@ -31,6 +31,8 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     let debt_token = sut.reserves[1].token.address.clone();

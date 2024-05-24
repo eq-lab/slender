@@ -20,6 +20,8 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     let debt_token = sut.reserves[1].token.address.clone();
@@ -174,6 +176,8 @@ fn should_change_when_elapsed_time_gte_window() {
         initial_health: 0,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     let (_, _, _, debt_config) = fill_pool_three(&env, &sut);

@@ -172,6 +172,8 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     initial_health: 0,
                     timestamp_window: 20,
                     user_assets_limit: 4,
+                    min_collat_amount: 0,
+                    min_debt_amount: 0,
                 });
             }
 

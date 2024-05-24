@@ -21,6 +21,8 @@ fn should_require_admin() {
         initial_health: 2_500,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     };
 
     sut.pool.set_pool_configuration(&pool_config);
@@ -57,6 +59,8 @@ fn should_set_pool_configuration() {
         initial_health: 111,
         timestamp_window: 11,
         user_assets_limit: 1,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     let pool_config_after = sut.pool.pool_configuration();

@@ -9,4 +9,6 @@ pub struct PoolConfig {
     pub timestamp_window: u64,
     pub flash_loan_fee: u32,
     pub user_assets_limit: u32,
+    pub min_collat_amount: i128,
+    pub min_debt_amount: i128,
 }
