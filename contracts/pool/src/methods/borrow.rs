@@ -6,6 +6,7 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{Address, Env};
 
 use crate::event;
+use crate::read_user_assets_limit;
 use crate::storage::{
     add_stoken_underlying_balance, read_reserve, read_token_balance, read_token_total_supply,
     write_token_balance, write_token_total_supply,
@@ -83,7 +84,8 @@ pub fn do_borrow(
     let mut price_provider = PriceProvider::new(env)?;
     let amount_in_base = price_provider.convert_to_base(asset, amount)?;
 
-    let mut user_configurator = UserConfigurator::new(env, who, false);
+    let user_assets_limit = read_user_assets_limit(env);
+    let mut user_configurator = UserConfigurator::new(env, who, false, Some(user_assets_limit));
     let user_config = user_configurator.user_config()?;
 
     let account_data = calc_account_data(

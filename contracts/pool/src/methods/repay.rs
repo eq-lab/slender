@@ -29,7 +29,7 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
     require_active_reserve(env, &reserve);
 
     let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
-    let mut user_configurator = UserConfigurator::new(env, who, false);
+    let mut user_configurator = UserConfigurator::new(env, who, false, None);
     let user_config = user_configurator.user_config()?;
     require_debt(env, user_config, reserve.get_id());
 

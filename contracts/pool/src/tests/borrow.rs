@@ -1,5 +1,6 @@
 use super::sut::DAY;
 use crate::tests::sut::{fill_pool, init_pool};
+use pool_interface::types::pool_config::PoolConfig;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
 use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
@@ -144,7 +145,14 @@ fn should_fail_when_lt_initial_health() {
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
-    sut.pool.set_initial_health(&2_500);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+    });
     sut.pool.borrow(&borrower, &token_address, &50_000_000);
 }
 

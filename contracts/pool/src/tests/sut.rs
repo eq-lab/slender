@@ -165,7 +165,14 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             };
 
             if i == 0 {
-                pool.set_base_asset(&token.address, &decimals)
+                pool.set_pool_configuration(&PoolConfig {
+                    base_asset_address: token.address.clone(),
+                    base_asset_decimals: decimals,
+                    flash_loan_fee: 5,
+                    initial_health: 0,
+                    timestamp_window: 20,
+                    user_assets_limit: 4,
+                });
             }
 
             let liquidity_cap = 100_000_000 * 10_i128.pow(decimals); // 100M
@@ -174,7 +181,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             let discount = 6000; //60%
 
             pool.configure_as_collateral(
-                &token.address,
+                &token.address.clone(),
                 &CollateralParamsInput {
                     liq_cap: liquidity_cap,
                     pen_order: pen_order,

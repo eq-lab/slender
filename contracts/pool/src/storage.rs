@@ -25,6 +25,7 @@ pub enum DataKey {
     ReserveTimestampWindow,
     Treasury,
     IRParams,
+    UserAssetsLimit,
     UserConfig(Address),
     PriceFeed(Address),
     Pause,
@@ -250,6 +251,27 @@ pub fn read_initial_health(env: &Env) -> Result<u32, Error> {
         .instance()
         .get(&data_key)
         .ok_or(Error::InitialHealthNotInitialized)
+}
+
+pub fn read_user_assets_limit(env: &Env) -> u32 {
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    env.storage()
+        .instance()
+        .get(&DataKey::UserAssetsLimit)
+        .unwrap_or(3)
+}
+
+pub fn write_user_assets_limit(env: &Env, user_assets_limit: u32) {
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    env.storage()
+        .instance()
+        .set(&DataKey::UserAssetsLimit, &user_assets_limit);
 }
 
 pub fn paused(env: &Env) -> bool {

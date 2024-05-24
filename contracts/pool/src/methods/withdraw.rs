@@ -33,7 +33,7 @@ pub fn withdraw(
 
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
-    let mut user_configurator = UserConfigurator::new(env, who, false);
+    let mut user_configurator = UserConfigurator::new(env, who, false, None);
     let user_config = user_configurator.user_config()?;
 
     let (withdraw_amount, is_full_withdraw) =

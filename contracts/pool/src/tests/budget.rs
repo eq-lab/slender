@@ -5,6 +5,7 @@ use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::flash_loan_asset::FlashLoanAsset;
 use pool_interface::types::ir_params::IRParams;
 use pool_interface::types::oracle_asset::OracleAsset;
+use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::price_feed::PriceFeed;
 use pool_interface::types::price_feed_config_input::PriceFeedConfigInput;
 use pool_interface::types::reserve_type::ReserveType;
@@ -239,7 +240,14 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
 
     let sut = init_pool(&env, true);
     let (_, borrower, _) = fill_pool_four(&env, &sut);
-    sut.pool.set_initial_health(&100);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 100,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+    });
 
     sut.pool
         .borrow(&borrower, &sut.reserves[2].token.address, &4_990_400_000);
@@ -392,19 +400,6 @@ fn set_as_collateral() {
     measure_budget(&env, function_name!(), || {
         sut.pool
             .set_as_collateral(&borrower, &sut.reserves[0].token.address, &false);
-    });
-}
-
-#[test]
-fn set_base_asset() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let asset = Address::generate(&env);
-    let sut = init_pool(&env, true);
-
-    measure_budget(&env, function_name!(), || {
-        sut.pool.set_base_asset(&asset, &7);
     });
 }
 
@@ -609,26 +604,21 @@ fn withdraw_partial() {
 }
 
 #[test]
-fn flash_loan_fee() {
+fn set_pool_configuration() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.flash_loan_fee();
-    });
-}
-
-#[test]
-fn set_flash_loan_fee() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, true);
-
-    measure_budget(&env, function_name!(), || {
-        sut.pool.set_flash_loan_fee(&15);
+        sut.pool.set_pool_configuration(&PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 2_500,
+            timestamp_window: 20,
+            user_assets_limit: 4,
+        });
     });
 }
 

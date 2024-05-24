@@ -213,3 +213,11 @@ pub fn require_unique_liquidation_order(
 
     Ok(())
 }
+
+pub fn require_not_exceed_assets_limit(env: &Env, assets_total: u32, assets_limit: u32) {
+    assert_with_error!(
+        env,
+        assets_total <= assets_limit,
+        Error::MustNotExceedAssetsLimit
+    );
+}

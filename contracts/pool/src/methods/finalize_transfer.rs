@@ -2,6 +2,7 @@ use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use soroban_sdk::{Address, Env};
 
+use crate::read_user_assets_limit;
 use crate::storage::{read_reserve, read_token_total_supply, write_token_balance};
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
@@ -31,7 +32,8 @@ pub fn finalize_transfer(
     let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
     s_token_address.require_auth();
 
-    let mut to_configurator = UserConfigurator::new(env, to, true);
+    let user_assets_limit = read_user_assets_limit(env);
+    let mut to_configurator = UserConfigurator::new(env, to, true, Some(user_assets_limit));
     let to_config = to_configurator.user_config()?;
 
     require_zero_debt(env, to_config, reserve.get_id());
@@ -40,7 +42,7 @@ pub fn finalize_transfer(
         .checked_sub(amount)
         .ok_or(Error::InvalidAmount)?;
 
-    let mut from_configurator = UserConfigurator::new(env, from, false);
+    let mut from_configurator = UserConfigurator::new(env, from, false, None);
     let from_config = from_configurator.user_config()?;
 
     if from_config.is_borrowing_any() && from_config.is_using_as_collateral(env, reserve.get_id()) {

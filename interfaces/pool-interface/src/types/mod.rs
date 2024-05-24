@@ -6,6 +6,7 @@ pub mod error;
 pub mod flash_loan_asset;
 pub mod ir_params;
 pub mod oracle_asset;
+pub mod pool_config;
 pub mod price_feed;
 pub mod price_feed_config;
 pub mod price_feed_config_input;

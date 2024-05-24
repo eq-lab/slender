@@ -14,7 +14,14 @@ fn should_require_authorized_caller() {
 
     let sut = init_pool(&env, false);
     let (_, borrower, liquidator, _) = fill_pool_three(&env, &sut);
-    sut.pool.set_initial_health(&2_500);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+    });
 
     sut.pool.liquidate(&liquidator, &borrower, &false);
 
@@ -113,7 +120,14 @@ fn should_liquidate_reducing_position_to_healthy() {
     let collat_2_token = sut.reserves[2].token.address.clone();
     let debt_token = sut.reserves[1].token.address.clone();
 
-    sut.pool.set_initial_health(&2_500);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+    });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
 
@@ -242,7 +256,14 @@ fn should_liquidate_receiving_stokens_when_requested() {
     let collat_2_token = sut.reserves[2].token.address.clone();
     let debt_token = sut.reserves[1].token.address.clone();
 
-    sut.pool.set_initial_health(&2_500);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+    });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
 
@@ -384,7 +405,14 @@ fn should_change_user_config() {
         .get_reserve(&sut.reserves[2].token.address)
         .unwrap();
 
-    sut.pool.set_initial_health(&2_500);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+    });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
 
@@ -487,7 +515,14 @@ fn should_affect_account_data() {
     let collat_2_token = sut.reserves[2].token.address.clone();
     let debt_token = sut.reserves[1].token.address.clone();
 
-    sut.pool.set_initial_health(&2_500);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+    });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
 
@@ -550,7 +585,14 @@ fn should_affect_coeffs() {
     let collat_2_token = sut.reserves[2].token.address.clone();
     let debt_token = sut.reserves[1].token.address.clone();
 
-    sut.pool.set_initial_health(&2_500);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+    });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
 
@@ -616,7 +658,14 @@ fn should_emit_events() {
     let collat_2_token = sut.reserves[2].token.address.clone();
     let debt_token = sut.reserves[1].token.address.clone();
 
-    sut.pool.set_initial_health(&2_500);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+    });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
 
@@ -670,7 +719,14 @@ fn should_liquidate_rwa_collateral() {
         .token_admin
         .mint(&borrower, &100_000_000_000);
 
-    sut.pool.set_initial_health(&2_500);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+    });
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
 

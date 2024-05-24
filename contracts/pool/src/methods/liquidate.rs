@@ -1,6 +1,7 @@
 use common::{FixedI128, PERCENTAGE_FACTOR};
 use debt_token_interface::DebtTokenClient;
-use pool_interface::types::{error::Error, reserve_type::ReserveType};
+use pool_interface::types::error::Error;
+use pool_interface::types::reserve_type::ReserveType;
 use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, token, Address, Env};
 
@@ -12,7 +13,7 @@ use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 use crate::{
     add_stoken_underlying_balance, event, read_initial_health, read_token_balance,
-    read_token_total_supply, write_token_balance, write_token_total_supply,
+    read_token_total_supply, read_user_assets_limit, write_token_balance, write_token_total_supply,
 };
 
 use super::account_position::calc_account_data;
@@ -28,7 +29,7 @@ pub fn liquidate(
 
     require_not_paused(env);
 
-    let mut user_configurator = UserConfigurator::new(env, who, false);
+    let mut user_configurator = UserConfigurator::new(env, who, false, None);
     let user_config = user_configurator.user_config()?;
     let mut price_provider = PriceProvider::new(env)?;
 
@@ -71,6 +72,9 @@ fn do_liquidate(
     let mut total_collat_disc_after_in_base = account_data.discounted_collateral;
     let mut total_debt_to_cover_in_base = 0i128;
     let mut total_liq_in_base = 0i128;
+    let user_assets_limit = receive_stoken
+        .then(|| Some(read_user_assets_limit(env)))
+        .unwrap_or(None);
 
     let zero_percent = FixedI128::from_inner(0);
     let initial_health_percent = FixedI128::from_percentage(read_initial_health(env)?).unwrap();
@@ -141,7 +145,8 @@ fn do_liquidate(
             let s_token = STokenClient::new(env, s_token_address);
 
             if receive_stoken {
-                let mut liquidator_configurator = UserConfigurator::new(env, liquidator, true);
+                let mut liquidator_configurator =
+                    UserConfigurator::new(env, liquidator, true, user_assets_limit);
                 let liquidator_config = liquidator_configurator.user_config()?;
 
                 assert_with_error!(

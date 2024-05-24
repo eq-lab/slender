@@ -8,6 +8,7 @@ pub enum Error {
     Uninitialized = 1,
     NoPriceFeed = 2,
     Paused = 3,
+    NoPoolConfig = 4,
 
     NoReserveExistForAsset = 100,
     NoActiveReserve = 101,
@@ -26,6 +27,7 @@ pub enum Error {
     UserConfigNotExists = 202,
     MustHaveDebt = 203,
     MustNotHaveDebt = 204,
+    MustNotExceedAssetsLimit = 205,
 
     BorrowingNotEnabled = 300,
     BelowInitialHealth = 301,

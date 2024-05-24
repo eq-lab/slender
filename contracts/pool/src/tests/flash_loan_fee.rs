@@ -7,5 +7,5 @@ fn should_return_flash_loan_fee() {
 
     let sut = init_pool(&env, false);
 
-    assert_eq!(sut.pool.flash_loan_fee(), 5);
+    assert_eq!(sut.pool.pool_configuration().flash_loan_fee, 5);
 }

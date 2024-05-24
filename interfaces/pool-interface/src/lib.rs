@@ -3,11 +3,11 @@
 
 use soroban_sdk::{contractclient, contractspecfn, Address, Bytes, BytesN, Env, Vec};
 use types::account_position::AccountPosition;
-use types::base_asset_config::BaseAssetConfig;
 use types::collateral_params_input::CollateralParamsInput;
 use types::error::Error;
 use types::flash_loan_asset::FlashLoanAsset;
 use types::ir_params::IRParams;
+use types::pool_config::PoolConfig;
 use types::price_feed_config::PriceFeedConfig;
 use types::price_feed_config_input::PriceFeedConfigInput;
 use types::reserve_data::ReserveData;
@@ -58,23 +58,15 @@ pub trait LendingPoolTrait {
 
     fn debt_coeff(env: Env, asset: Address) -> Result<i128, Error>;
 
-    fn base_asset(env: Env) -> Result<BaseAssetConfig, Error>;
+    fn set_pool_configuration(env: Env, config: PoolConfig) -> Result<(), Error>;
 
-    fn set_base_asset(env: Env, asset: Address, decimals: u32) -> Result<(), Error>;
-
-    fn initial_health(env: Env) -> Result<u32, Error>;
-
-    fn set_initial_health(env: Env, value: u32) -> Result<(), Error>;
+    fn pool_configuration(env: Env) -> Result<PoolConfig, Error>;
 
     fn set_price_feeds(env: Env, inputs: Vec<PriceFeedConfigInput>) -> Result<(), Error>;
 
     fn price_feeds(env: Env, asset: Address) -> Option<PriceFeedConfig>;
 
     fn set_ir_params(env: Env, input: IRParams) -> Result<(), Error>;
-
-    fn reserve_timestamp_window(env: Env) -> u64;
-
-    fn set_reserve_timestamp_window(env: Env, window: u64) -> Result<(), Error>;
 
     fn ir_params(env: Env) -> Option<IRParams>;
 
@@ -133,10 +125,6 @@ pub trait LendingPoolTrait {
     ) -> Result<(), Error>;
 
     fn user_configuration(env: Env, who: Address) -> Result<UserConfiguration, Error>;
-
-    fn set_flash_loan_fee(env: Env, fee: u32) -> Result<(), Error>;
-
-    fn flash_loan_fee(env: Env) -> u32;
 
     fn flash_loan(
         env: Env,

@@ -1,9 +1,11 @@
+use pool_interface::types::error::Error;
+use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::reserve_type::ReserveType;
-use pool_interface::types::{error::Error, reserve_data::ReserveData};
 use s_token_interface::STokenClient;
 use soroban_sdk::{token, Address, Env};
 
 use crate::event;
+use crate::read_user_assets_limit;
 use crate::storage::{
     add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
     read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
@@ -26,7 +28,8 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
 
-    let mut user_configurator = UserConfigurator::new(env, who, true);
+    let user_assets_limit = read_user_assets_limit(env);
+    let mut user_configurator = UserConfigurator::new(env, who, true, Some(user_assets_limit));
     let user_config = user_configurator.user_config()?;
     require_zero_debt(env, user_config, reserve.get_id());
 

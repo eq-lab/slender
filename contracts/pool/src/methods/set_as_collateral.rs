@@ -2,6 +2,7 @@ use pool_interface::types::error::Error;
 use soroban_sdk::{assert_with_error, Address, Env};
 
 use crate::methods::account_position::calc_account_data;
+use crate::read_user_assets_limit;
 use crate::storage::read_reserve;
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
@@ -17,7 +18,8 @@ pub fn set_as_collateral(
 ) -> Result<(), Error> {
     who.require_auth();
 
-    let mut user_configurator = UserConfigurator::new(env, who, false);
+    let user_assets_limit = read_user_assets_limit(env);
+    let mut user_configurator = UserConfigurator::new(env, who, false, Some(user_assets_limit));
     let user_config = user_configurator.user_config()?;
     let reserve_id = read_reserve(env, asset)?.get_id();
 
