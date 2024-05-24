@@ -195,3 +195,29 @@ fn should_fail_when_repay_rwa() {
 
     sut.pool.repay(&borrower, &rwa_address, &10_000_000);
 }
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #208)")]
+fn should_fail_when_debt_lt_min_position_amount() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
+    let debt_token = &debt_config.token.address;
+
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 0,
+        timestamp_window: 20,
+        user_assets_limit: 2,
+        min_collat_amount: 0,
+        min_debt_amount: 300_000,
+    });
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
+    sut.pool.repay(&borrower, &debt_token, &20_000_000i128);
+}

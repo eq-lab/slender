@@ -143,6 +143,59 @@ fn should_emit_events() {
     );
 }
 
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #205)")]
+fn rwa_fail_when_exceed_assets_limit() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (sut, user, (_, _), (_, _)) = init_with_debt(&env);
+    deposit(&sut.pool, &sut.reserves[0].token_admin, &user);
+    deposit(&sut.pool, &sut.reserves[2].token_admin, &user);
+
+    assert_eq!(
+        sut.pool
+            .set_as_collateral(&user, &&sut.reserves[0].token.address, &false),
+        ()
+    );
+
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 0,
+        timestamp_window: 20,
+        user_assets_limit: 2,
+        min_collat_amount: 0,
+        min_debt_amount: 300_000,
+    });
+
+    sut.pool
+        .set_as_collateral(&user, &&sut.reserves[0].token.address, &true);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #207)")]
+fn should_fail_when_collat_lt_min_position_amount() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (sut, user, (_, _), (collat_token, _)) = init_with_debt(&env);
+    deposit(&sut.pool, &sut.reserves[0].token_admin, &user);
+    deposit(&sut.pool, &sut.reserves[2].token_admin, &user);
+
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 0,
+        timestamp_window: 20,
+        user_assets_limit: 2,
+        min_collat_amount: 7_000_000,
+        min_debt_amount: 0,
+    });
+
+    assert_eq!(sut.pool.set_as_collateral(&user, &collat_token, &false), ());
+}
+
 /// Init for set_as_collateral tests.
 /// Returns Sut, user address, reserve index and token address
 fn init(env: &Env) -> (Sut, Address, u8, Address) {

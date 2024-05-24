@@ -11,7 +11,8 @@ use crate::types::user_configurator::UserConfigurator;
 use super::account_position::calc_account_data;
 use super::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use super::utils::validation::{
-    require_active_reserve, require_gte_initial_health, require_not_paused, require_zero_debt,
+    require_active_reserve, require_gte_initial_health, require_min_position_amounts,
+    require_not_paused, require_zero_debt,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -28,6 +29,7 @@ pub fn finalize_transfer(
     require_not_paused(env);
 
     let reserve: pool_interface::types::reserve_data::ReserveData = read_reserve(env, asset)?;
+    let reserve_id = reserve.get_id();
     require_active_reserve(env, &reserve);
     let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
     s_token_address.require_auth();
@@ -43,9 +45,14 @@ pub fn finalize_transfer(
         .ok_or(Error::InvalidAmount)?;
 
     let mut from_configurator = UserConfigurator::new(env, from, false, None);
-    let from_config = from_configurator.user_config()?;
+    let is_using_as_collateral = from_configurator
+        .user_config()?
+        .is_using_as_collateral(env, reserve.get_id());
+    let is_borrowing_any = from_configurator.user_config()?.is_borrowing_any();
 
-    if from_config.is_borrowing_any() && from_config.is_using_as_collateral(env, reserve.get_id()) {
+    if is_borrowing_any && is_using_as_collateral {
+        from_configurator.withdraw(reserve_id, asset, balance_from_after == 0)?;
+
         let from_account_data = calc_account_data(
             env,
             from,
@@ -66,13 +73,14 @@ pub fn finalize_transfer(
                 mb_s_token_underlying_balance: None,
                 mb_rwa_balance: None,
             },
-            from_config,
+            from_configurator.user_config()?,
             &mut PriceProvider::new(env)?,
             false,
         )?;
 
+        require_min_position_amounts(env, &from_account_data)?;
         // account data calculation takes into account the decrease of collateral
-        require_gte_initial_health(env, &from_account_data, 0)?;
+        require_gte_initial_health(env, &from_account_data)?;
     }
 
     if from != to {
@@ -83,7 +91,6 @@ pub fn finalize_transfer(
         write_token_balance(env, s_token_address, from, balance_from_after)?;
         write_token_balance(env, s_token_address, to, balance_to_after)?;
 
-        let reserve_id = reserve.get_id();
         let is_to_deposit = balance_to_before == 0 && amount != 0;
 
         from_configurator

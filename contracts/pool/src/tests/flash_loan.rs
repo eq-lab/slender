@@ -276,3 +276,58 @@ fn rwa_fail_when_exceed_assets_limit() {
         &Bytes::new(&env),
     );
 }
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #208)")]
+fn should_fail_when_debt_lt_min_position_amount() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, false);
+
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 0,
+        timestamp_window: 20,
+        user_assets_limit: 2,
+        min_collat_amount: 0,
+        min_debt_amount: 4_000_000,
+    });
+
+    let _: Val = env.invoke_contract(
+        &sut.flash_loan_receiver.address,
+        &Symbol::new(&env, "initialize"),
+        vec![&env, sut.pool.address.into_val(&env), false.into_val(&env)],
+    );
+
+    let loan_assets = Vec::from_array(
+        &env,
+        [
+            FlashLoanAsset {
+                asset: sut.reserves[0].token.address.clone(),
+                amount: 1000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[1].token.address.clone(),
+                amount: 2000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[2].token.address.clone(),
+                amount: 3000000,
+                borrow: true,
+            },
+        ],
+    );
+
+    sut.pool.flash_loan(
+        &borrower,
+        &sut.flash_loan_receiver.address,
+        &loan_assets,
+        &Bytes::new(&env),
+    );
+}

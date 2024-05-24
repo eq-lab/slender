@@ -9,7 +9,7 @@ use soroban_sdk::{assert_with_error, panic_with_error, Address, Env};
 
 use crate::storage::{has_admin, has_reserve, paused, read_admin, read_initial_health};
 use crate::types::account_data::AccountData;
-use crate::{read_reserve, read_reserves};
+use crate::{read_min_position_amounts, read_reserve, read_reserves};
 
 pub fn require_admin_not_exist(env: &Env) {
     if has_admin(env) {
@@ -69,6 +69,10 @@ pub fn require_gt_percentage_factor(env: &Env, value: u32) {
 
 pub fn require_positive(env: &Env, value: i128) {
     assert_with_error!(env, value > 0, Error::MustBePositive);
+}
+
+pub fn require_non_negative(env: &Env, value: i128) {
+    assert_with_error!(env, value >= 0, Error::MustBeNonNegative);
 }
 
 pub fn require_positive_amount(env: &Env, amount: i128) {
@@ -131,29 +135,21 @@ pub fn require_util_cap_not_exceeded(
     Ok(())
 }
 
-pub fn require_gte_initial_health(
-    env: &Env,
-    account_data: &AccountData,
-    borrow_amount_in_base: i128,
-) -> Result<(), Error> {
-    let npv_after = account_data
-        .npv
-        .checked_sub(borrow_amount_in_base)
-        .ok_or(Error::MathOverflowError)?;
-
-    if npv_after == 0 && account_data.discounted_collateral == 0 {
+pub fn require_gte_initial_health(env: &Env, account_data: &AccountData) -> Result<(), Error> {
+    if account_data.npv == 0 && account_data.discounted_collateral == 0 {
         return Ok(());
     }
 
     // more conventional error when discounted_collateral == 0
     assert_with_error!(
         env,
-        npv_after >= 0 && account_data.discounted_collateral >= 0,
+        account_data.npv >= 0 && account_data.discounted_collateral >= 0,
         Error::BelowInitialHealth
     );
 
-    let npv_after_percent = FixedI128::from_rational(npv_after, account_data.discounted_collateral)
-        .ok_or(Error::MathOverflowError)?;
+    let npv_after_percent =
+        FixedI128::from_rational(account_data.npv, account_data.discounted_collateral)
+            .ok_or(Error::MathOverflowError)?;
     let initial_health_percent =
         FixedI128::from_percentage(read_initial_health(env)?).ok_or(Error::MathOverflowError)?;
 
@@ -228,4 +224,21 @@ pub fn require_not_exceed_assets_limit(env: &Env, assets_total: u32, assets_limi
         assets_total <= assets_limit,
         Error::MustNotExceedAssetsLimit
     );
+}
+
+pub fn require_min_position_amounts(env: &Env, account_data: &AccountData) -> Result<(), Error> {
+    let (min_collat, min_debt) = read_min_position_amounts(env);
+
+    if account_data.debt == 0 {
+        return Ok(());
+    }
+
+    assert_with_error!(
+        env,
+        account_data.discounted_collateral >= min_collat,
+        Error::CollateralIsTooSmall
+    );
+    assert_with_error!(env, account_data.debt >= min_debt, Error::DebtIsTooSmall);
+
+    Ok(())
 }

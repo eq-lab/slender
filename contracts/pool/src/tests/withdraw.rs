@@ -368,7 +368,7 @@ fn should_emit_events() {
         ]
     );
 
-    let event = events.pop_back_unchecked();
+    let event = events.get(23).unwrap();
 
     assert_eq!(
         vec![&env, event],
@@ -558,6 +558,50 @@ fn should_fail_when_bad_position_after_withdraw() {
         &borrower,
         &sut.reserves[1].token.address,
         &14_000_000_000,
+        &borrower,
+    );
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #207)")]
+fn should_fail_when_collat_lt_min_position_amount() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+        min_collat_amount: 115_000_000,
+        min_debt_amount: 0,
+    });
+
+    let lender = Address::generate(&env);
+    let borrower = Address::generate(&env);
+    sut.reserves[0].token_admin.mint(&lender, &1_000_000_000);
+    sut.reserves[1]
+        .token_admin
+        .mint(&borrower, &100_000_000_000);
+
+    sut.pool
+        .deposit(&lender, &sut.reserves[0].token.address, &500_000_000);
+    sut.pool
+        .deposit(&borrower, &sut.reserves[1].token.address, &20_000_000_000);
+
+    sut.pool
+        .borrow(&borrower, &sut.reserves[0].token.address, &50_000_000);
+    sut.pool
+        .borrow(&borrower, &sut.reserves[0].token.address, &39_000_000);
+
+    sut.pool.withdraw(
+        &borrower,
+        &sut.reserves[1].token.address,
+        &1_000_000_000,
         &borrower,
     );
 }

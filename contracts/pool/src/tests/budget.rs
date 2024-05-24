@@ -247,6 +247,8 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
         initial_health: 100,
         timestamp_window: 20,
         user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
     });
 
     sut.pool
@@ -618,6 +620,8 @@ fn set_pool_configuration() {
             initial_health: 2_500,
             timestamp_window: 20,
             user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
         });
     });
 }

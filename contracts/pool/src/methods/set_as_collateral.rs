@@ -3,6 +3,7 @@ use soroban_sdk::{assert_with_error, Address, Env};
 
 use crate::methods::account_position::calc_account_data;
 use crate::methods::utils::validation::require_gte_initial_health;
+use crate::methods::utils::validation::require_min_position_amounts;
 use crate::read_user_assets_limit;
 use crate::storage::read_reserve;
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
@@ -33,18 +34,18 @@ pub fn set_as_collateral(
         && user_config.is_using_as_collateral(env, reserve_id)
     {
         user_configurator.withdraw(reserve_id, asset, true)?;
-        let user_config = user_configurator.user_config()?;
 
         let account_data = calc_account_data(
             env,
             who,
             &CalcAccountDataCache::none(),
-            user_config,
+            user_configurator.user_config()?,
             &mut PriceProvider::new(env)?,
             false,
         )?;
 
-        require_gte_initial_health(env, &account_data, 0)?;
+        require_min_position_amounts(env, &account_data)?;
+        require_gte_initial_health(env, &account_data)?;
 
         user_configurator.write();
 

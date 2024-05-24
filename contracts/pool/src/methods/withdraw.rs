@@ -17,7 +17,8 @@ use super::account_position::calc_account_data;
 use super::utils::get_collat_coeff::get_collat_coeff;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_not_paused, require_positive_amount,
+    require_active_reserve, require_min_position_amounts, require_not_paused,
+    require_positive_amount,
 };
 
 pub fn withdraw(
@@ -35,9 +36,8 @@ pub fn withdraw(
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
     let mut user_configurator = UserConfigurator::new(env, who, false, None);
-    let user_config = user_configurator.user_config()?;
 
-    let (withdraw_amount, is_full_withdraw) =
+    let withdraw_amount =
         if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
             let s_token_supply = read_token_total_supply(env, s_token_address);
             let debt_token_supply = read_token_total_supply(env, debt_token_address);
@@ -81,9 +81,18 @@ pub fn withdraw(
                 .checked_sub(underlying_to_withdraw)
                 .ok_or(Error::MathOverflowError)?;
 
-            if user_config.is_borrowing_any()
-                && user_config.is_using_as_collateral(env, reserve.get_id())
-            {
+            let is_using_as_collateral = user_configurator
+                .user_config()?
+                .is_using_as_collateral(env, reserve.get_id());
+            let is_borrowing_any = user_configurator.user_config()?.is_borrowing_any();
+
+            user_configurator.withdraw(
+                reserve.get_id(),
+                asset,
+                underlying_to_withdraw == underlying_balance,
+            )?;
+
+            if is_borrowing_any && is_using_as_collateral {
                 let account_data = calc_account_data(
                     env,
                     who,
@@ -107,14 +116,16 @@ pub fn withdraw(
                         )),
                         mb_rwa_balance: None,
                     },
-                    user_config,
+                    user_configurator.user_config()?,
                     &mut PriceProvider::new(env)?,
                     false,
                 )?;
 
+                require_min_position_amounts(env, &account_data)?;
                 // account data calculation takes into account the decrease of collateral
-                require_gte_initial_health(env, &account_data, 0)?;
+                require_gte_initial_health(env, &account_data)?;
             }
+
             let amount_to_sub = underlying_to_withdraw
                 .checked_neg()
                 .ok_or(Error::MathOverflowError)?;
@@ -133,19 +144,21 @@ pub fn withdraw(
                 debt_token_supply,
             )?;
 
-            (
-                underlying_to_withdraw,
-                underlying_to_withdraw == underlying_balance,
-            )
+            underlying_to_withdraw
         } else {
             let rwa_balance = read_token_balance(env, asset, who);
 
             let withdraw_amount = amount.min(rwa_balance);
             let rwa_balance_after = rwa_balance - withdraw_amount;
 
-            if user_config.is_borrowing_any()
-                && user_config.is_using_as_collateral(env, reserve.get_id())
-            {
+            let is_using_as_collateral = user_configurator
+                .user_config()?
+                .is_using_as_collateral(env, reserve.get_id());
+            let is_borrowing_any = user_configurator.user_config()?.is_borrowing_any();
+
+            user_configurator.withdraw(reserve.get_id(), asset, rwa_balance_after == 0)?;
+
+            if is_borrowing_any && is_using_as_collateral {
                 let account_data = calc_account_data(
                     env,
                     who,
@@ -157,14 +170,16 @@ pub fn withdraw(
                         mb_s_token_underlying_balance: None,
                         mb_rwa_balance: Some(&AssetBalance::new(asset.clone(), rwa_balance_after)),
                     },
-                    user_config,
+                    user_configurator.user_config()?,
                     &mut PriceProvider::new(env)?,
                     false,
                 )?;
 
+                require_min_position_amounts(env, &account_data)?;
                 // account data calculation takes into account the decrease of collateral
-                require_gte_initial_health(env, &account_data, 0)?;
+                require_gte_initial_health(env, &account_data)?;
             }
+
             token::Client::new(env, asset).transfer(
                 &env.current_contract_address(),
                 who,
@@ -173,12 +188,10 @@ pub fn withdraw(
 
             write_token_balance(env, asset, who, rwa_balance_after)?;
 
-            (withdraw_amount, rwa_balance_after == 0)
+            withdraw_amount
         };
 
-    user_configurator
-        .withdraw(reserve.get_id(), asset, is_full_withdraw)?
-        .write();
+    user_configurator.write();
 
     event::withdraw(env, who, asset, to, withdraw_amount);
 

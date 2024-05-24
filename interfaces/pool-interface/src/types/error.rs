@@ -29,6 +29,8 @@ pub enum Error {
     MustNotHaveDebt = 204,
     MustNotExceedAssetsLimit = 205,
     RequireMinBalance = 206,
+    CollateralIsTooSmall = 207,
+    DebtIsTooSmall = 208,
 
     BorrowingNotEnabled = 300,
     BelowInitialHealth = 301,
@@ -47,6 +49,7 @@ pub enum Error {
     MustBeLtPercentageFactor = 402,
     MustBeGtPercentageFactor = 403,
     MustBePositive = 404,
+    MustBeNonNegative = 405,
 
     AccruedRateMathError = 500,
     CollateralCoeffMathError = 501,
