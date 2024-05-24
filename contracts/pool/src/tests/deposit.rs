@@ -40,7 +40,7 @@ fn should_fail_when_pool_paused() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #304)")]
+#[should_panic(expected = "HostError: Error(Contract, #303)")]
 fn should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -67,7 +67,7 @@ fn should_fail_when_reserve_deactivated() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #312)")]
+#[should_panic(expected = "HostError: Error(Contract, #309)")]
 fn should_fail_when_liquidity_cap_exceeded() {
     let env = Env::default();
     env.mock_all_auths();
