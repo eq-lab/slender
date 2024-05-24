@@ -63,7 +63,7 @@ fn should_fail_when_reserve_deactivated() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #303)")]
+#[should_panic(expected = "HostError: Error(Contract, #302)")]
 fn should_fail_when_good_position() {
     let env = Env::default();
     env.mock_all_auths();

@@ -53,7 +53,7 @@ fn should_fail_when_pool_paused() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #304)")]
+#[should_panic(expected = "HostError: Error(Contract, #303)")]
 fn should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -85,8 +85,8 @@ fn should_fail_when_reserve_deactivated() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #302)")]
-fn should_fail_when_bad_position() {
+#[should_panic(expected = "HostError: Error(Contract, #301)")]
+fn should_fail_when_bellow_initial_health() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -517,12 +517,14 @@ fn rwa_should_affect_account_data() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #302)")]
+#[should_panic(expected = "HostError: Error(Contract, #301)")]
 fn should_fail_when_bad_position_after_withdraw() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
+
+    sut.pool.set_initial_health(&2_500);
 
     let lender = Address::generate(&env);
     let borrower = Address::generate(&env);

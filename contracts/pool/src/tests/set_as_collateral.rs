@@ -77,12 +77,14 @@ fn should_fail_when_has_debt() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #302)")]
-fn should_fail_when_bad_position() {
+#[should_panic(expected = "HostError: Error(Contract, #301)")]
+fn should_fail_when_npv_fails_bellow_initial_health() {
     let env = Env::default();
     env.mock_all_auths();
 
     let (sut, user, (collat_reserve_index, _), (collat_token, _)) = init_with_debt(&env);
+
+    sut.pool.set_initial_health(&2_500);
 
     sut.pool
         .set_as_collateral(&user, &collat_token.clone(), &false);

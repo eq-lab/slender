@@ -4,7 +4,7 @@ use soroban_sdk::testutils::Events;
 use soroban_sdk::{vec, Bytes, Env, IntoVal, Symbol, Val, Vec};
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #313)")]
+#[should_panic(expected = "HostError: Error(Contract, #310)")]
 fn should_fail_when_receiver_receive_returns_false() {
     let env = Env::default();
     env.mock_all_auths();

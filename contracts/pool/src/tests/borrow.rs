@@ -40,7 +40,7 @@ fn should_fail_when_pool_paused() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #304)")]
+#[should_panic(expected = "HostError: Error(Contract, #303)")]
 fn should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -81,7 +81,7 @@ fn should_fail_when_borrowing_disabled() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #310)")]
+#[should_panic(expected = "HostError: Error(Contract, #307)")]
 fn should_fail_when_borrowing_collat_asset() {
     let env = Env::default();
     env.mock_all_auths();
@@ -95,7 +95,7 @@ fn should_fail_when_borrowing_collat_asset() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #311)")]
+#[should_panic(expected = "HostError: Error(Contract, #308)")]
 fn should_fail_when_util_cap_exceeded() {
     let env = Env::default();
     env.mock_all_auths();
