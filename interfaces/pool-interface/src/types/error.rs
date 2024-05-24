@@ -40,7 +40,6 @@ pub enum Error {
     UtilizationCapExceeded = 308,
     LiqCapExceeded = 309,
     FlashLoanReceiverError = 310,
-    ValidateInitialHealthError = 311,
 
     MathOverflowError = 400,
     MustBeLtePercentageFactor = 401,

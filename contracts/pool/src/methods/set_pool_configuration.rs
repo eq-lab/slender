@@ -10,9 +10,13 @@ use crate::write_reserve_timestamp_window;
 use crate::write_user_assets_limit;
 
 use super::utils::validation::require_admin;
+use super::utils::validation::require_lte_percentage_factor;
 
 pub fn set_pool_configuration(env: &Env, config: &PoolConfig) -> Result<(), Error> {
     require_admin(env)?;
+
+    require_lte_percentage_factor(env, config.initial_health);
+    require_lte_percentage_factor(env, config.flash_loan_fee);
 
     let base_asset = &BaseAssetConfig::new(&config.base_asset_address, config.base_asset_decimals);
 

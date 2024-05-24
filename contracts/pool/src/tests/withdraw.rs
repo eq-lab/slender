@@ -524,7 +524,14 @@ fn should_fail_when_bad_position_after_withdraw() {
 
     let sut = init_pool(&env, false);
 
-    sut.pool.set_initial_health(&2_500);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+    });
 
     let lender = Address::generate(&env);
     let borrower = Address::generate(&env);
