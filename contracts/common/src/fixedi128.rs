@@ -82,6 +82,25 @@ impl FixedI128 {
             .checked_div(Self::DENOMINATOR)
     }
 
+    pub fn mul_int_ceil<T: Into<i128>>(self, other: T) -> Option<i128> {
+        let other = other.into();
+        if other == 0 {
+            return Some(0);
+        }
+
+        let mb_res = self.0.checked_mul(other)?.checked_div(Self::DENOMINATOR);
+
+        mb_res.map(|res| {
+            if res == 0 {
+                1
+            } else if res % Self::DENOMINATOR == 0 {
+                res
+            } else {
+                res + 1
+            }
+        })
+    }
+
     /// Calculates division of non fixed int value and fixed value, e.g.  other / self.
     /// Result is int value
     pub fn recip_mul_int<T: Into<i128>>(self, other: T) -> Option<i128> {
