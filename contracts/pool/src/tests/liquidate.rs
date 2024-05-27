@@ -227,20 +227,20 @@ fn should_liquidate_reducing_position_to_healthy() {
     assert_eq!(borrower_token_2_after, 0);
     assert_eq!(borrower_stoken_0_after, 0);
     assert_eq!(borrower_stoken_1_after, 0);
-    assert_eq!(borrower_stoken_2_after, 456_547_338_651);
+    assert_eq!(borrower_stoken_2_after, 456_547_338_936);
     assert_eq!(borrower_dtoken_0_after, 0);
     assert_eq!(borrower_dtoken_1_after, 114_129_609_027);
     assert_eq!(borrower_dtoken_2_after, 0);
-    assert_eq!(borrower_account_position_after.npv, 684_821_005);
+    assert_eq!(borrower_account_position_after.npv, 684_821_007);
     assert_eq!(
         borrower_account_position_after.discounted_collateral,
-        2_739_284_031
+        2_739_284_033
     );
     assert_eq!(borrower_account_position_after.debt, 2_054_463_026);
 
     assert_eq!(liquidator_token_0_after, 20_000_000_000);
     assert_eq!(liquidator_token_1_after, 314_086_185_200);
-    assert_eq!(liquidator_token_2_after, 1_543_452_661_349);
+    assert_eq!(liquidator_token_2_after, 1_543_452_661_064);
     assert_eq!(liquidator_stoken_0_after, 0);
     assert_eq!(liquidator_stoken_1_after, 0);
     assert_eq!(liquidator_stoken_2_after, 0);
@@ -365,14 +365,14 @@ fn should_liquidate_receiving_stokens_when_requested() {
     assert_eq!(borrower_token_2_after, 0);
     assert_eq!(borrower_stoken_0_after, 0);
     assert_eq!(borrower_stoken_1_after, 0);
-    assert_eq!(borrower_stoken_2_after, 456_547_338_651);
+    assert_eq!(borrower_stoken_2_after, 456_547_338_936);
     assert_eq!(borrower_dtoken_0_after, 0);
     assert_eq!(borrower_dtoken_1_after, 114_129_609_027);
     assert_eq!(borrower_dtoken_2_after, 0);
-    assert_eq!(borrower_account_position_after.npv, 684_821_005);
+    assert_eq!(borrower_account_position_after.npv, 684_821_007);
     assert_eq!(
         borrower_account_position_after.discounted_collateral,
-        2_739_284_031
+        2_739_284_033
     );
     assert_eq!(borrower_account_position_after.debt, 2_054_463_026);
 
@@ -381,7 +381,7 @@ fn should_liquidate_receiving_stokens_when_requested() {
     assert_eq!(liquidator_token_2_after, 1_000_000_000_000);
     assert_eq!(liquidator_stoken_0_after, 10_000_000_000);
     assert_eq!(liquidator_stoken_1_after, 0);
-    assert_eq!(liquidator_stoken_2_after, 543_452_661_349);
+    assert_eq!(liquidator_stoken_2_after, 543_452_661_064);
     assert_eq!(liquidator_dtoken_0_after, 0);
     assert_eq!(liquidator_dtoken_1_after, 0);
     assert_eq!(liquidator_dtoken_2_after, 0);
@@ -578,17 +578,17 @@ fn should_affect_account_data() {
 
     assert_eq!(
         liquidator_account_position_after.discounted_collateral,
-        9_319_109_725
+        9_319_109_724
     );
     assert_eq!(liquidator_account_position_after.debt, 0);
-    assert_eq!(liquidator_account_position_after.npv, 9_319_109_725);
+    assert_eq!(liquidator_account_position_after.npv, 9_319_109_724);
 
     assert_eq!(
         borrower_account_position_after.discounted_collateral,
-        2_680_890_273
+        2_680_890_275
     );
     assert_eq!(borrower_account_position_after.debt, 2_008_842_827);
-    assert_eq!(borrower_account_position_after.npv, 672_047_446);
+    assert_eq!(borrower_account_position_after.npv, 672_047_448);
 }
 
 #[test]
@@ -719,7 +719,7 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "liquidation"), borrower.clone()).into_val(&env),
-                (12_346_448_668i128, 15_434_526_613i128).into_val(&env)
+                (12_346_448_666i128, 15_434_526_610i128).into_val(&env)
             ),
         ]
     );
@@ -831,4 +831,126 @@ fn rwa_fail_when_exceed_assets_limit() {
     });
 
     sut.pool.liquidate(&liquidator, &borrower, &true);
+}
+
+#[test]
+fn should_not_panic_on_zero_collateral_transfer() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (liquidator, borrower) = fill_pool_six(&env, &sut);
+    let high_priority_collat = &sut.reserves[0].token.address;
+    let low_priority_collat = &sut.reserves[1].token.address;
+    let debt_token = &sut.reserves[2].token.address;
+
+    // deposit collat with high priority with price ~1 and amount 1e-9
+    sut.pool.deposit(&borrower, high_priority_collat, &1);
+    // deposit another collat
+    sut.pool
+        .deposit(&borrower, low_priority_collat, &1_000_000_000);
+    sut.pool.borrow(&borrower, debt_token, &500_000_000);
+    sut.price_feed.init(
+        &Asset::Stellar(debt_token.clone()),
+        &vec![
+            &env,
+            PriceData {
+                price: 12_000_000_000_000_000,
+                timestamp: 0,
+            },
+        ],
+    );
+    let _pos_before = sut.pool.account_position(&borrower);
+    sut.pool.liquidate(&liquidator, &borrower, &true);
+    let _pos_after = sut.pool.account_position(&borrower);
+
+    assert!(_pos_before.npv < _pos_after.npv);
+}
+
+#[test]
+fn should_round_debt_correctly() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
+    });
+    let (liquidator, borrower) = fill_pool_six(&env, &sut);
+    let high_priority_collat = &sut.reserves[0].token.address;
+    let low_priority_collat = &sut.reserves[1].token.address;
+    let debt_token = &sut.reserves[2].token.address;
+
+    // deposit collat with high priority with price ~1 and amount 1e-9
+    sut.pool.deposit(&borrower, high_priority_collat, &1);
+    // deposit another collat
+    sut.pool
+        .deposit(&borrower, low_priority_collat, &1_000_000_000);
+    sut.pool.borrow(&borrower, debt_token, &400_000_000);
+    sut.price_feed.init(
+        &Asset::Stellar(debt_token.clone()),
+        &vec![
+            &env,
+            PriceData {
+                price: 16_000_000_000_000_000,
+                timestamp: 0,
+            },
+        ],
+    );
+    let _pos_before = sut.pool.account_position(&borrower);
+    sut.pool.liquidate(&liquidator, &borrower, &true);
+    let _pos_after = sut.pool.account_position(&borrower);
+
+    assert!(_pos_before.npv < _pos_after.npv);
+}
+
+#[test]
+fn should_round_correctly_with_low_collateral() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
+    });
+    let (liquidator, borrower) = fill_pool_six(&env, &sut);
+    let high_priority_collat = &sut.reserves[0].token.address;
+    let low_priority_collat = &sut.reserves[1].token.address;
+    let debt_token = &sut.reserves[2].token.address;
+
+    // deposit collat with high priority with price ~1 and amount 1e-9
+    sut.pool.deposit(&borrower, high_priority_collat, &1);
+    // deposit another collat
+    sut.pool
+        .deposit(&borrower, low_priority_collat, &1_000_000_000);
+    sut.pool.borrow(&borrower, debt_token, &400_000_000);
+    sut.price_feed.init(
+        &Asset::Stellar(debt_token.clone()),
+        &vec![
+            &env,
+            PriceData {
+                price: 20_000_000_000_000_000,
+                timestamp: 0,
+            },
+        ],
+    );
+    let _pos_before = sut.pool.account_position(&borrower);
+    sut.pool.liquidate(&liquidator, &borrower, &true);
+    let _pos_after = sut.pool.account_position(&borrower);
+
+    assert!(_pos_before.npv < _pos_after.npv);
 }
