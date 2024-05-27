@@ -60,6 +60,24 @@ impl<'a> PriceProvider<'a> {
             .ok_or(Error::InvalidAssetPrice)
     }
 
+    pub fn convert_from_base_with_ceil(
+        &mut self,
+        asset: &Address,
+        amount: i128,
+    ) -> Result<i128, Error> {
+        if self.base_asset.address == *asset {
+            return Ok(amount);
+        }
+
+        let config = self.config(asset)?;
+        let median_twap_price = self.price(asset, &config)?;
+        median_twap_price
+            .recip_mul_int_ceil(amount)
+            .and_then(|a| FixedI128::from_rational(a, 10i128.pow(self.base_asset.decimals)))
+            .and_then(|a| a.to_precision(config.asset_decimals))
+            .ok_or(Error::InvalidAssetPrice)
+    }
+
     fn config(&mut self, asset: &Address) -> Result<PriceFeedConfig, Error> {
         match self.configs.get(asset.clone()) {
             Some(config) => Ok(config),
