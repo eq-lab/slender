@@ -181,7 +181,9 @@ fn do_liquidate(
                     .checked_sub(liq_lp_amount)
                     .ok_or(Error::LiquidateMathError)?;
 
-                s_token.burn(who, &liq_lp_amount, &liq_comp_amount, liquidator);
+                if liq_lp_amount > 0 && liq_comp_amount > 0 {
+                    s_token.burn(who, &liq_lp_amount, &liq_comp_amount, liquidator);
+                }
                 add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
             }
 
