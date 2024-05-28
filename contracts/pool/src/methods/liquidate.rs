@@ -115,7 +115,7 @@ fn do_liquidate(
             price_provider.convert_to_base(&collat.asset, total_sub_comp_amount)?;
 
         let debt_comp_amount = total_debt_liq_bonus_percent
-            .mul_int(liq_comp_amount)
+            .mul_int_ceil(liq_comp_amount)
             .ok_or(Error::LiquidateMathError)?;
 
         let debt_in_base = price_provider.convert_to_base(&collat.asset, debt_comp_amount)?;
@@ -162,7 +162,10 @@ fn do_liquidate(
                     .checked_add(liq_lp_amount)
                     .ok_or(Error::LiquidateMathError)?;
 
-                s_token.transfer_on_liquidation(who, liquidator, &liq_lp_amount);
+                // to avoid panic in s_token transfer
+                if liq_lp_amount > 0 {
+                    s_token.transfer_on_liquidation(who, liquidator, &liq_lp_amount);
+                }
                 write_token_balance(env, &s_token.address, liquidator, liquidator_collat_after)?;
 
                 let use_as_collat = liquidator_collat_before == 0;
@@ -178,7 +181,9 @@ fn do_liquidate(
                     .checked_sub(liq_lp_amount)
                     .ok_or(Error::LiquidateMathError)?;
 
-                s_token.burn(who, &liq_lp_amount, &liq_comp_amount, liquidator);
+                if liq_lp_amount > 0 && liq_comp_amount > 0 {
+                    s_token.burn(who, &liq_lp_amount, &liq_comp_amount, liquidator);
+                }
                 add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
             }
 
@@ -249,7 +254,7 @@ fn do_liquidate(
                     (debt.lp_balance.unwrap(), debt.comp_balance)
                 } else {
                     let debt_comp_amount = price_provider
-                        .convert_from_base(&debt.asset, total_debt_to_cover_in_base)?;
+                        .convert_from_base_with_ceil(&debt.asset, total_debt_to_cover_in_base)?; // ceil (convert_from_base_with_ceil)
 
                     let debt_lp_amount = FixedI128::from_inner(debt.coeff.unwrap())
                         .recip_mul_int(debt_comp_amount)
@@ -263,9 +268,13 @@ fn do_liquidate(
             let underlying_asset = token::Client::new(env, &debt.asset);
             let debt_token = DebtTokenClient::new(env, debt_token_address);
 
-            underlying_asset.transfer(liquidator, s_token_address, &debt_comp_to_transfer);
+            if debt_comp_to_transfer > 0 {
+                underlying_asset.transfer(liquidator, s_token_address, &debt_comp_to_transfer);
+            }
 
-            debt_token.burn(who, &debt_lp_to_burn);
+            if debt_lp_to_burn > 0 {
+                debt_token.burn(who, &debt_lp_to_burn);
+            }
 
             let mut debt_token_supply = read_token_total_supply(env, debt_token_address);
             let s_token_supply = read_token_total_supply(env, s_token_address);
@@ -334,7 +343,7 @@ fn calc_liq_amount(
         .recip_mul_int(liq_comp_amount)
         .ok_or(Error::LiquidateMathError)?;
 
-    Ok(if liq_comp_amount.is_negative() {
+    Ok(if liq_comp_amount.is_negative() || liq_comp_amount == 0 {
         collat.comp_balance
     } else {
         collat.comp_balance.min(liq_comp_amount)
