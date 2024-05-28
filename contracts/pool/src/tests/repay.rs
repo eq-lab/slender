@@ -221,3 +221,19 @@ fn should_fail_when_debt_lt_min_position_amount() {
 
     sut.pool.repay(&borrower, &debt_token, &20_000_000i128);
 }
+
+#[test]
+fn should_allow_to_repay_debt_for_inactive_asset() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
+    let debt_token = &debt_config.token.address;
+
+    sut.pool.set_reserve_status(debt_token, &false);
+
+    let _ap = sut.pool.account_position(&borrower);
+
+    sut.pool.repay(&borrower, &debt_token.clone(), &i128::MAX);
+}

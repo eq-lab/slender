@@ -20,8 +20,7 @@ use super::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_debt, require_min_position_amounts, require_not_paused,
-    require_positive_amount,
+    require_debt, require_min_position_amounts, require_not_paused, require_positive_amount,
 };
 
 pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
@@ -31,7 +30,6 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
     require_positive_amount(env, amount);
 
     let reserve = read_reserve(env, asset)?;
-    require_active_reserve(env, &reserve);
 
     let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
     let s_token_supply = read_token_total_supply(env, s_token_address);
