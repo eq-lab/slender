@@ -133,7 +133,8 @@ fn should_liquidate_reducing_position_to_healthy() {
         min_debt_amount: 0,
     });
 
-    env.ledger().with_mut(|li| li.timestamp = 10_000);
+    env.ledger()
+        .with_mut(|li| li.timestamp = li.timestamp + 10_000);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -271,7 +272,8 @@ fn should_liquidate_receiving_stokens_when_requested() {
         min_debt_amount: 0,
     });
 
-    env.ledger().with_mut(|li| li.timestamp = 10_000);
+    env.ledger()
+        .with_mut(|li| li.timestamp = li.timestamp + 10_000);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -409,7 +411,8 @@ fn should_fully_liquidate_when_gte_max_penalty() {
         min_debt_amount: 0,
     });
 
-    env.ledger().with_mut(|li| li.timestamp = 10_000);
+    env.ledger()
+        .with_mut(|li| li.timestamp = li.timestamp + 10_000);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -544,7 +547,8 @@ fn should_fully_liquidate_receiving_stokens_when_requested_and_gte_penalty() {
         min_debt_amount: 0,
     });
 
-    env.ledger().with_mut(|li| li.timestamp = 10_000);
+    env.ledger()
+        .with_mut(|li| li.timestamp = li.timestamp + 10_000);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -811,7 +815,8 @@ fn should_affect_account_data() {
         min_debt_amount: 0,
     });
 
-    env.ledger().with_mut(|li| li.timestamp = 10_000);
+    env.ledger()
+        .with_mut(|li| li.timestamp = li.timestamp + 10_000);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -832,7 +837,7 @@ fn should_affect_account_data() {
 
     let borrower_account_position_before = sut.pool.account_position(&borrower);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY + 1); // initial timestamp = grace period = 1
 
     sut.pool.liquidate(&liquidator, &borrower, &true);
 
@@ -989,7 +994,7 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "liquidation"), borrower.clone()).into_val(&env),
-                (12_346_448_666i128, 15_434_526_610i128).into_val(&env)
+                (12_346_441_522i128, 15_434_514_766i128).into_val(&env)
             ),
         ]
     );

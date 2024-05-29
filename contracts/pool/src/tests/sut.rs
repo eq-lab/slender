@@ -71,7 +71,10 @@ pub(crate) fn create_pool_contract<'a>(
     let treasury = Address::generate(e);
     let flash_loan_fee = 5;
     let initial_health = 0;
-    let grace_period = 60 * 60 * 24;
+    let grace_period = 1;
+
+    e.ledger()
+        .with_mut(|li| li.timestamp = li.timestamp + grace_period);
 
     client.initialize(
         &admin,

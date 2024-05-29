@@ -100,14 +100,15 @@ fn should_change_over_time() {
     let collat_coeff_1 = sut.pool.collat_coeff(&debt_token);
 
     env.ledger().with_mut(|l| l.timestamp = 4 * DAY);
+
     let collat_coeff_2 = sut.pool.collat_coeff(&debt_token);
 
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
     let collat_coeff_3 = sut.pool.collat_coeff(&debt_token);
 
-    assert_eq!(collat_coeff_1, 1_000_328_900);
-    assert_eq!(collat_coeff_2, 1_000_438_560);
-    assert_eq!(collat_coeff_3, 1_000_548_220);
+    assert_eq!(collat_coeff_1, 1_000_328_880);
+    assert_eq!(collat_coeff_2, 1_000_438_540);
+    assert_eq!(collat_coeff_3, 1_000_548_200);
 }
 
 #[test]

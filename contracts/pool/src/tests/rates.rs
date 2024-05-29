@@ -219,7 +219,9 @@ fn should_update_rates_over_time() {
     }
 
     // shift time to
-    env.ledger().with_mut(|li| li.timestamp = DAY);
+    let elapsed_time = DAY;
+    env.ledger()
+        .with_mut(|li| li.timestamp = li.timestamp + elapsed_time);
 
     //second deposit by lender of debt asset
     sut.pool.deposit(&lender, &debt_asset_1, &100_000_000);
@@ -230,8 +232,6 @@ fn should_update_rates_over_time() {
     let lender_ir = debt_ir
         .checked_mul(FixedI128::from_percentage(ir_params.scaling_coeff).unwrap())
         .unwrap();
-
-    let elapsed_time = env.ledger().timestamp();
 
     let coll_ar = calc_next_accrued_rate(FixedI128::ONE, lender_ir, elapsed_time)
         .unwrap()
