@@ -341,3 +341,31 @@ fn rwa_fail_when_exceed_assets_limit() {
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &1_000_000_000);
 }
+
+#[test]
+fn should_not_fail_in_grace_period() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let user = Address::generate(&env);
+    let sut = init_pool(&env, false);
+    let token_address = sut.token().address.clone();
+
+    sut.token_admin().mint(&user, &10_000_000_000);
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
+    sut.pool.deposit(&user, &token_address, &3_000_000_000);
+
+    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&false);
+
+    sut.pool.deposit(&user, &token_address, &3_000_000_000);
+
+    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&sut.s_token().address);
+    let user_balance = sut.token().balance(&user);
+    let user_stoken_balance = sut.s_token().balance(&user);
+
+    assert_eq!(stoken_underlying_balance, 6_000_000_000);
+    assert_eq!(user_balance, 4_000_000_000);
+    assert_eq!(user_stoken_balance, 6_000_000_000);
+}

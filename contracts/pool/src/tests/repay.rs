@@ -221,3 +221,42 @@ fn should_fail_when_debt_lt_min_position_amount() {
 
     sut.pool.repay(&borrower, &debt_token, &20_000_000i128);
 }
+
+#[test]
+fn should_not_fail_in_grace_period() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
+    let debt_token = &debt_config.token.address;
+    let stoken_token = &debt_config.s_token().address;
+
+    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    let treasury_address = sut.pool.treasury().clone();
+
+    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
+    let user_balance = debt_config.token.balance(&borrower);
+    let treasury_balance = debt_config.token.balance(&treasury_address);
+    let user_debt_balance = debt_config.debt_token().balance(&borrower);
+
+    assert_eq!(stoken_underlying_balance, 60_000_000);
+    assert_eq!(user_balance, 1_040_000_000);
+    assert_eq!(treasury_balance, 0);
+    assert_eq!(user_debt_balance, 40_000_001);
+
+    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&false);
+
+    sut.pool.repay(&borrower, &debt_token, &i128::MAX);
+
+    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
+    let user_balance = debt_config.token.balance(&borrower);
+    let treasury_balance = debt_config.token.balance(&treasury_address);
+    let user_debt_balance = debt_config.debt_token().balance(&borrower);
+
+    assert_eq!(stoken_underlying_balance, 100_003_275);
+    assert_eq!(user_balance, 999_990_902);
+    assert_eq!(treasury_balance, 5_823);
+    assert_eq!(user_debt_balance, 0);
+}

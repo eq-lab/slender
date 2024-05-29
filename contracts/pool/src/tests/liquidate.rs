@@ -954,3 +954,42 @@ fn should_round_correctly_with_low_collateral() {
 
     assert!(_pos_before.npv < _pos_after.npv);
 }
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #6)")]
+fn should_fail_in_grace_period() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, liquidator, _) = fill_pool_three(&env, &sut);
+
+    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&false);
+    sut.pool.liquidate(&liquidator, &borrower, &false);
+}
+
+#[test]
+fn should_not_fail_after_grace_period() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let pause_info = sut.pool.pause_info();
+    let start = env.ledger().timestamp();
+    let gap = 500;
+    let (_, borrower, liquidator, _) = fill_pool_three(&env, &sut);
+    let borrower_pos_before = sut.pool.account_position(&borrower);
+
+    sut.pool.set_pause(&true);
+    env.ledger().with_mut(|li| li.timestamp = start + gap);
+    sut.pool.set_pause(&false);
+    env.ledger()
+        .with_mut(|li| li.timestamp = start + gap + pause_info.grace_period_secs);
+
+    sut.pool.liquidate(&liquidator, &borrower, &false);
+
+    let borrower_npv_after = sut.pool.account_position(&borrower);
+
+    assert!(borrower_npv_after.npv > borrower_pos_before.npv);
+}
