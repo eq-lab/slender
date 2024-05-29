@@ -24,6 +24,7 @@ impl Deployer {
         flash_loan_fee: u32,
         initial_health: u32,
         ir_params: IRParams,
+        grace_period: u64,
     ) -> (Address, Val) {
         let id = env.deployer().with_current_contract(salt).deploy(wasm_hash);
         let init_fn = Symbol::new(&env, "initialize");
@@ -34,6 +35,7 @@ impl Deployer {
             flash_loan_fee.into_val(&env),
             initial_health.into_val(&env),
             ir_params.into_val(&env),
+            grace_period.into_val(&env),
         ];
         let res: Val = env.invoke_contract(&id, &init_fn, init_args);
         (id, res)

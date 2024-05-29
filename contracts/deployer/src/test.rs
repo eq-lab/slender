@@ -35,6 +35,7 @@ fn deploy_pool_and_s_token() {
     };
     let flash_loan_fee = 5;
     let initial_health = 2_500;
+    let grace_period = 60 * 60 * 24;
     let pool_contract_id = {
         // Install the WASM code to be deployed from the deployer contract.
         let pool_wasm_hash = env.deployer().upload_contract_wasm(pool::WASM);
@@ -52,6 +53,7 @@ fn deploy_pool_and_s_token() {
             &flash_loan_fee,
             &initial_health,
             &pool_ir_params,
+            &grace_period,
         );
         assert!(init_result.is_void());
 

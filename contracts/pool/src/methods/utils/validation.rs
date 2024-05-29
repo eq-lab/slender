@@ -175,7 +175,11 @@ pub fn require_not_paused(env: &Env, pause_info: &PauseInfo) {
 
 pub fn require_not_in_grace_period(env: &Env, pause_info: &PauseInfo) {
     let now = env.ledger().timestamp();
-    assert_with_error!(env, now >= pause_info.grace_period_ends_at(), Error::GracePeriod);
+    assert_with_error!(
+        env,
+        now >= pause_info.grace_period_ends_at(),
+        Error::GracePeriod
+    );
 }
 
 pub fn require_debt(env: &Env, user_config: &UserConfiguration, reserve_id: u8) {

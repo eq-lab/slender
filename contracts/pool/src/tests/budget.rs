@@ -337,14 +337,14 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
 }
 
 #[test]
-fn paused() {
+fn pause_info() {
     let env = Env::default();
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.paused();
+        sut.pool.pause_info();
     });
 }
 
@@ -540,6 +540,7 @@ fn treasury() {
 
     let pool = LendingPoolClient::new(&env, &env.register_contract(None, LendingPool));
     let flash_loan_fee = 5;
+    let grace_period = 1;
 
     pool.initialize(
         &Address::generate(&env),
@@ -552,6 +553,7 @@ fn treasury() {
             max_rate: 50_000,
             scaling_coeff: 9_000,
         },
+        &grace_period,
     );
 
     measure_budget(&env, function_name!(), || {

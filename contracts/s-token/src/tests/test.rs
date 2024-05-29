@@ -44,6 +44,7 @@ fn create_token<'a>(
     let treasury = Address::generate(e);
     let flash_loan_fee = 5;
     let initial_health = 2_500;
+    let grace_period = 60 * 60 * 24;
 
     pool.initialize(
         &pool_admin,
@@ -56,6 +57,7 @@ fn create_token<'a>(
             max_rate: 50_000,
             scaling_coeff: 9_000,
         },
+        &grace_period,
     );
 
     let s_token = STokenClient::new(e, &e.register_contract(None, SToken {}));

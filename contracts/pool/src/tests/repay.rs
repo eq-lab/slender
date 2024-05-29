@@ -33,9 +33,9 @@ fn should_partially_repay() {
     let treasury_balance = debt_config.token.balance(&treasury_address);
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
-    assert_eq!(stoken_underlying_balance, 79_997_089);
+    assert_eq!(stoken_underlying_balance, 79_997_090);
     assert_eq!(user_balance, 1_020_000_000);
-    assert_eq!(treasury_balance, 2_911);
+    assert_eq!(treasury_balance, 2_910);
     assert_eq!(user_debt_balance, 20_004_549);
 }
 
@@ -70,8 +70,8 @@ fn should_fully_repay() {
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 100_003_275);
-    assert_eq!(user_balance, 999_990_902);
-    assert_eq!(treasury_balance, 5_823);
+    assert_eq!(user_balance, 999_990_903);
+    assert_eq!(treasury_balance, 5_822);
     assert_eq!(user_debt_balance, 0);
 }
 
@@ -177,7 +177,7 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "repay"), borrower.clone()).into_val(&env),
-                (debt_token, 40_009_098i128).into_val(&env)
+                (debt_token, 40_009_097i128).into_val(&env)
             ),
         ]
     );
@@ -256,7 +256,7 @@ fn should_not_fail_in_grace_period() {
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 100_003_275);
-    assert_eq!(user_balance, 999_990_902);
-    assert_eq!(treasury_balance, 5_823);
+    assert_eq!(user_balance, 999_990_903);
+    assert_eq!(treasury_balance, 5_822);
     assert_eq!(user_debt_balance, 0);
 }
