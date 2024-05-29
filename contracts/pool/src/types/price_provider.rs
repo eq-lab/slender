@@ -137,34 +137,42 @@ impl<'a> PriceProvider<'a> {
 
         let curr_time = precise_timestamp(self.env, &config.timestamp_precision);
 
+        let mut sorted_prices = Map::new(self.env);
+
+        for price in prices {
+            sorted_prices.set(price.timestamp, price.price);
+        }
+
+        let prices = sorted_prices.values();
+        let timestamps = sorted_prices.keys();
+
         let mut cum_price = {
-            let price_curr = prices.get_unchecked(0);
+            let price_curr = prices.last_unchecked();
+            let timestamp_curr = timestamps.last_unchecked();
 
             let time_delta = curr_time
-                .checked_sub(price_curr.timestamp)
+                .checked_sub(timestamp_curr)
                 .ok_or(Error::MathOverflowError)?;
 
             if time_delta.eq(&0) {
-                price_curr.price
+                price_curr
             } else {
                 price_curr
-                    .price
                     .checked_mul(time_delta.into())
                     .ok_or(Error::MathOverflowError)?
             }
         };
 
-        for i in 1..prices_len {
-            let price_prev = prices.get_unchecked(i - 1);
-            let price_curr = prices.get_unchecked(i);
+        for i in (1..prices_len).rev() {
+            let price_curr = prices.get_unchecked(i - 1);
+            let timestamp_curr = timestamps.get_unchecked(i - 1);
+            let timestamp_prev = timestamps.get_unchecked(i);
 
-            let time_delta = price_prev
-                .timestamp
-                .checked_sub(price_curr.timestamp)
+            let time_delta = timestamp_prev
+                .checked_sub(timestamp_curr)
                 .ok_or(Error::MathOverflowError)?;
 
             let tw_price = price_curr
-                .price
                 .checked_mul(time_delta.into())
                 .ok_or(Error::MathOverflowError)?;
 
@@ -174,7 +182,7 @@ impl<'a> PriceProvider<'a> {
         }
 
         let twap_time = curr_time
-            .checked_sub(prices.last_unchecked().timestamp)
+            .checked_sub(timestamps.first_unchecked())
             .ok_or(Error::MathOverflowError)?;
 
         let twap_price = cum_price
