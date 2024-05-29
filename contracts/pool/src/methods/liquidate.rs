@@ -75,9 +75,11 @@ fn do_liquidate(
     let mut total_collat_disc_after_in_base = account_data.discounted_collateral;
     let mut total_debt_to_cover_in_base = 0i128;
     let mut total_liq_in_base = 0i128;
+    let mut debt_covered_in_base = 0i128;
     let user_assets_limit = receive_stoken
         .then(|| Some(read_user_assets_limit(env)))
         .unwrap_or(None);
+    let total_collat_in_base = account_data.collat.ok_or(Error::LiquidateMathError)?;
 
     let zero_percent = FixedI128::from_inner(0);
     let initial_health_percent = FixedI128::from_percentage(read_initial_health(env)?).unwrap();
@@ -86,50 +88,71 @@ fn do_liquidate(
         .ok_or(Error::LiquidateMathError)?;
 
     let liq_bonus_percent = npv_percent.min(zero_percent).abs().min(hundred_percent);
+    let max_liq_bonus_percent = FixedI128::from_rational(
+        total_collat_in_base
+            .checked_sub(account_data.debt)
+            .ok_or(Error::LiquidateMathError)?,
+        total_collat_in_base,
+    )
+    .ok_or(Error::LiquidateMathError)?;
 
-    let total_debt_liq_bonus_percent = hundred_percent
-        .checked_sub(liq_bonus_percent)
-        .ok_or(Error::LiquidateMathError)?;
+    let full_liquidation = max_liq_bonus_percent <= liq_bonus_percent;
 
-    let safe_collat_percent = hundred_percent.checked_sub(initial_health_percent).unwrap();
+    let (total_debt_liq_bonus_percent, safe_collat_percent) = if !full_liquidation {
+        let total_debt_liq_bonus_percent = hundred_percent
+            .checked_sub(liq_bonus_percent)
+            .ok_or(Error::LiquidateMathError)?;
+
+        let safe_collat_percent = hundred_percent.checked_sub(initial_health_percent).unwrap();
+
+        (total_debt_liq_bonus_percent, safe_collat_percent)
+    } else {
+        (FixedI128::ZERO, FixedI128::ZERO)
+    };
 
     for collat in account_data.liq_collats.ok_or(Error::LiquidateMathError)? {
-        let discount_percent =
-            FixedI128::from_percentage(collat.reserve.configuration.discount).unwrap();
+        let (liq_comp_amount, debt_in_base) = if !full_liquidation {
+            let discount_percent =
+                FixedI128::from_percentage(collat.reserve.configuration.discount).unwrap();
 
-        // the same for token-based RWA
-        let liq_comp_amount = calc_liq_amount(
-            price_provider,
-            &collat,
-            hundred_percent,
-            discount_percent,
-            liq_bonus_percent,
-            safe_collat_percent,
-            initial_health_percent,
-            total_collat_disc_after_in_base,
-            total_debt_after_in_base,
-        )?;
+            // the same for token-based RWA
+            let liq_comp_amount = calc_liq_amount(
+                price_provider,
+                &collat,
+                hundred_percent,
+                discount_percent,
+                liq_bonus_percent,
+                safe_collat_percent,
+                initial_health_percent,
+                total_collat_disc_after_in_base,
+                total_debt_after_in_base,
+            )?;
 
-        let total_sub_comp_amount = discount_percent
-            .mul_int(liq_comp_amount)
-            .ok_or(Error::LiquidateMathError)?;
+            let total_sub_comp_amount = discount_percent
+                .mul_int(liq_comp_amount)
+                .ok_or(Error::LiquidateMathError)?;
 
-        let total_sub_amount_in_base =
-            price_provider.convert_to_base(&collat.asset, total_sub_comp_amount)?;
+            let total_sub_amount_in_base =
+                price_provider.convert_to_base(&collat.asset, total_sub_comp_amount)?;
 
-        let debt_comp_amount = total_debt_liq_bonus_percent
-            .mul_int_ceil(liq_comp_amount)
-            .ok_or(Error::LiquidateMathError)?;
+            let debt_comp_amount = total_debt_liq_bonus_percent
+                .mul_int_ceil(liq_comp_amount)
+                .ok_or(Error::LiquidateMathError)?;
 
-        let debt_in_base = price_provider.convert_to_base(&collat.asset, debt_comp_amount)?;
+            let debt_in_base = price_provider.convert_to_base(&collat.asset, debt_comp_amount)?;
 
-        total_debt_after_in_base = total_debt_after_in_base
-            .checked_sub(debt_in_base)
-            .ok_or(Error::LiquidateMathError)?;
+            total_debt_after_in_base = total_debt_after_in_base
+                .checked_sub(debt_in_base)
+                .ok_or(Error::LiquidateMathError)?;
 
-        total_collat_disc_after_in_base = total_collat_disc_after_in_base
-            .checked_sub(total_sub_amount_in_base)
-            .ok_or(Error::LiquidateMathError)?;
+            total_collat_disc_after_in_base = total_collat_disc_after_in_base
+                .checked_sub(total_sub_amount_in_base)
+                .ok_or(Error::LiquidateMathError)?;
+
+            (liq_comp_amount, debt_in_base)
+        } else {
+            (collat.comp_balance, 0)
+        };
 
         total_liq_in_base = total_liq_in_base
             .checked_add(price_provider.convert_to_base(&collat.asset, liq_comp_amount)?)
@@ -141,9 +164,13 @@ fn do_liquidate(
             let mut s_token_supply = read_token_total_supply(env, s_token_address);
             let debt_token_supply = read_token_total_supply(env, debt_token_address);
 
-            let liq_lp_amount = FixedI128::from_inner(collat.coeff.unwrap())
-                .recip_mul_int(liq_comp_amount)
-                .ok_or(Error::LiquidateMathError)?;
+            let liq_lp_amount = if !full_liquidation && liq_comp_amount < collat.comp_balance {
+                FixedI128::from_inner(collat.coeff.unwrap())
+                    .recip_mul_int(liq_comp_amount)
+                    .ok_or(Error::LiquidateMathError)?
+            } else {
+                collat.lp_balance.unwrap()
+            };
 
             let s_token = STokenClient::new(env, s_token_address);
 
@@ -177,7 +204,7 @@ fn do_liquidate(
                     .deposit(collat.reserve.get_id(), &collat.asset, use_as_collat)?
                     .write();
             } else {
-                let amount_to_sub = liq_lp_amount
+                let amount_to_sub = liq_comp_amount
                     .checked_neg()
                     .ok_or(Error::LiquidateMathError)?;
                 s_token_supply = s_token_supply
@@ -224,6 +251,10 @@ fn do_liquidate(
             collat.comp_balance == liq_comp_amount,
         )?;
 
+        if full_liquidation {
+            continue;
+        }
+
         total_debt_to_cover_in_base += debt_in_base;
 
         let npv_after = total_collat_disc_after_in_base
@@ -235,10 +266,8 @@ fn do_liquidate(
         }
     }
 
-    let debt_covered_in_base = total_debt_to_cover_in_base;
-
     for debt in account_data.liq_debts.ok_or(Error::LiquidateMathError)? {
-        if total_debt_to_cover_in_base.eq(&0) {
+        if !full_liquidation && total_debt_to_cover_in_base.eq(&0) {
             break;
         }
 
@@ -249,8 +278,9 @@ fn do_liquidate(
                 price_provider.convert_to_base(&debt.asset, debt.comp_balance)?;
 
             let (debt_lp_to_burn, debt_comp_to_transfer) =
-                if total_debt_to_cover_in_base >= debt_comp_in_base {
+                if full_liquidation || total_debt_to_cover_in_base >= debt_comp_in_base {
                     total_debt_to_cover_in_base -= debt_comp_in_base;
+                    debt_covered_in_base += debt_comp_in_base;
 
                     user_configurator.repay(debt.reserve.get_id(), true)?;
 
@@ -263,6 +293,7 @@ fn do_liquidate(
                         .recip_mul_int(debt_comp_amount)
                         .ok_or(Error::LiquidateMathError)?;
 
+                    debt_covered_in_base += total_debt_to_cover_in_base;
                     total_debt_to_cover_in_base = 0;
 
                     (debt_lp_amount, debt_comp_amount)

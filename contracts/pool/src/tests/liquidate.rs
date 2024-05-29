@@ -388,6 +388,276 @@ fn should_liquidate_receiving_stokens_when_requested() {
 }
 
 #[test]
+fn should_fully_liquidate_when_gte_max_penalty() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (liquidator, borrower) = fill_pool_six(&env, &sut);
+    let collat_1_token = sut.reserves[0].token.address.clone();
+    let collat_2_token = sut.reserves[2].token.address.clone();
+    let debt_token = sut.reserves[1].token.address.clone();
+
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
+    });
+
+    env.ledger().with_mut(|li| li.timestamp = 10_000);
+
+    sut.pool
+        .deposit(&borrower, &collat_1_token, &10_000_000_000);
+    sut.pool
+        .deposit(&borrower, &collat_2_token, &1_000_000_000_000);
+    sut.pool.borrow(&borrower, &debt_token, &800_000_000_000);
+
+    let borrower_token_0_before = sut.reserves[0].token.balance(&borrower);
+    let borrower_token_1_before = sut.reserves[1].token.balance(&borrower);
+    let borrower_token_2_before = sut.reserves[2].token.balance(&borrower);
+    let borrower_stoken_0_before = sut.reserves[0].s_token().balance(&borrower);
+    let borrower_stoken_1_before = sut.reserves[1].s_token().balance(&borrower);
+    let borrower_stoken_2_before = sut.reserves[2].s_token().balance(&borrower);
+    let borrower_dtoken_0_before = sut.reserves[0].debt_token().balance(&borrower);
+    let borrower_dtoken_1_before = sut.reserves[1].debt_token().balance(&borrower);
+    let borrower_dtoken_2_before = sut.reserves[2].debt_token().balance(&borrower);
+    let borrower_account_position_before = sut.pool.account_position(&borrower);
+
+    let liquidator_token_0_before = sut.reserves[0].token.balance(&liquidator);
+    let liquidator_token_1_before = sut.reserves[1].token.balance(&liquidator);
+    let liquidator_token_2_before = sut.reserves[2].token.balance(&liquidator);
+    let liquidator_stoken_0_before = sut.reserves[0].s_token().balance(&liquidator);
+    let liquidator_stoken_1_before = sut.reserves[1].s_token().balance(&liquidator);
+    let liquidator_stoken_2_before = sut.reserves[2].s_token().balance(&liquidator);
+    let liquidator_dtoken_0_before = sut.reserves[0].debt_token().balance(&liquidator);
+    let liquidator_dtoken_1_before = sut.reserves[1].debt_token().balance(&liquidator);
+    let liquidator_dtoken_2_before = sut.reserves[2].debt_token().balance(&liquidator);
+
+    sut.price_feed.init(
+        &Asset::Stellar(debt_token),
+        &vec![
+            &env,
+            PriceData {
+                price: (2 * 10i128.pow(16)),
+                timestamp: 0,
+            },
+        ],
+    );
+
+    sut.pool.liquidate(&liquidator, &borrower, &false);
+
+    let borrower_token_0_after = sut.reserves[0].token.balance(&borrower);
+    let borrower_token_1_after = sut.reserves[1].token.balance(&borrower);
+    let borrower_token_2_after = sut.reserves[2].token.balance(&borrower);
+    let borrower_stoken_0_after = sut.reserves[0].s_token().balance(&borrower);
+    let borrower_stoken_1_after = sut.reserves[1].s_token().balance(&borrower);
+    let borrower_stoken_2_after = sut.reserves[2].s_token().balance(&borrower);
+    let borrower_dtoken_0_after = sut.reserves[0].debt_token().balance(&borrower);
+    let borrower_dtoken_1_after = sut.reserves[1].debt_token().balance(&borrower);
+    let borrower_dtoken_2_after = sut.reserves[2].debt_token().balance(&borrower);
+    let borrower_account_position_after = sut.pool.account_position(&borrower);
+
+    let liquidator_token_0_after = sut.reserves[0].token.balance(&liquidator);
+    let liquidator_token_1_after = sut.reserves[1].token.balance(&liquidator);
+    let liquidator_token_2_after = sut.reserves[2].token.balance(&liquidator);
+    let liquidator_stoken_0_after = sut.reserves[0].s_token().balance(&liquidator);
+    let liquidator_stoken_1_after = sut.reserves[1].s_token().balance(&liquidator);
+    let liquidator_stoken_2_after = sut.reserves[2].s_token().balance(&liquidator);
+    let liquidator_dtoken_0_after = sut.reserves[0].debt_token().balance(&liquidator);
+    let liquidator_dtoken_1_after = sut.reserves[1].debt_token().balance(&liquidator);
+    let liquidator_dtoken_2_after = sut.reserves[2].debt_token().balance(&liquidator);
+
+    assert_eq!(borrower_token_0_before, 0);
+    assert_eq!(borrower_token_1_before, 1_800_000_000_000);
+    assert_eq!(borrower_token_2_before, 0);
+    assert_eq!(borrower_stoken_0_before, 10_000_000_000);
+    assert_eq!(borrower_stoken_1_before, 0);
+    assert_eq!(borrower_stoken_2_before, 1_000_000_000_000);
+    assert_eq!(borrower_dtoken_0_before, 0);
+    assert_eq!(borrower_dtoken_1_before, 800_000_000_000);
+    assert_eq!(borrower_dtoken_2_before, 0);
+    assert_eq!(borrower_account_position_before.npv, 3_999_493_504);
+    assert_eq!(
+        borrower_account_position_before.discounted_collateral,
+        12_000_000_000
+    );
+    assert_eq!(borrower_account_position_before.debt, 8_000_506_496);
+
+    assert_eq!(liquidator_token_0_before, 10_000_000_000);
+    assert_eq!(liquidator_token_1_before, 1_000_000_000_000);
+    assert_eq!(liquidator_token_2_before, 1_000_000_000_000);
+    assert_eq!(liquidator_stoken_0_before, 0);
+    assert_eq!(liquidator_stoken_1_before, 0);
+    assert_eq!(liquidator_stoken_2_before, 0);
+    assert_eq!(liquidator_dtoken_0_before, 0);
+    assert_eq!(liquidator_dtoken_1_before, 0);
+    assert_eq!(liquidator_dtoken_2_before, 0);
+
+    assert_eq!(borrower_token_0_after, 0);
+    assert_eq!(borrower_token_1_after, 1_800_000_000_000);
+    assert_eq!(borrower_token_2_after, 0);
+    assert_eq!(borrower_stoken_0_after, 0);
+    assert_eq!(borrower_stoken_1_after, 0);
+    assert_eq!(borrower_stoken_2_after, 0);
+    assert_eq!(borrower_dtoken_0_after, 0);
+    assert_eq!(borrower_dtoken_1_after, 0);
+    assert_eq!(borrower_dtoken_2_after, 0);
+    assert_eq!(borrower_account_position_after.npv, 0);
+    assert_eq!(borrower_account_position_after.discounted_collateral, 0);
+    assert_eq!(borrower_account_position_after.debt, 0);
+
+    assert_eq!(liquidator_token_0_after, 20_000_000_000);
+    assert_eq!(liquidator_token_1_after, 199_949_350_400);
+    assert_eq!(liquidator_token_2_after, 2_000_000_000_000);
+    assert_eq!(liquidator_stoken_0_after, 0);
+    assert_eq!(liquidator_stoken_1_after, 0);
+    assert_eq!(liquidator_stoken_2_after, 0);
+    assert_eq!(liquidator_dtoken_0_after, 0);
+    assert_eq!(liquidator_dtoken_1_after, 0);
+    assert_eq!(liquidator_dtoken_2_after, 0);
+}
+
+#[test]
+fn should_fully_liquidate_receiving_stokens_when_requested_and_gte_penalty() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (liquidator, borrower) = fill_pool_six(&env, &sut);
+    let collat_1_token = sut.reserves[0].token.address.clone();
+    let collat_2_token = sut.reserves[2].token.address.clone();
+    let debt_token = sut.reserves[1].token.address.clone();
+
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
+    });
+
+    env.ledger().with_mut(|li| li.timestamp = 10_000);
+
+    sut.pool
+        .deposit(&borrower, &collat_1_token, &10_000_000_000);
+    sut.pool
+        .deposit(&borrower, &collat_2_token, &1_000_000_000_000);
+    sut.pool.borrow(&borrower, &debt_token, &800_000_000_000);
+
+    let borrower_token_0_before = sut.reserves[0].token.balance(&borrower);
+    let borrower_token_1_before = sut.reserves[1].token.balance(&borrower);
+    let borrower_token_2_before = sut.reserves[2].token.balance(&borrower);
+    let borrower_stoken_0_before = sut.reserves[0].s_token().balance(&borrower);
+    let borrower_stoken_1_before = sut.reserves[1].s_token().balance(&borrower);
+    let borrower_stoken_2_before = sut.reserves[2].s_token().balance(&borrower);
+    let borrower_dtoken_0_before = sut.reserves[0].debt_token().balance(&borrower);
+    let borrower_dtoken_1_before = sut.reserves[1].debt_token().balance(&borrower);
+    let borrower_dtoken_2_before = sut.reserves[2].debt_token().balance(&borrower);
+    let borrower_account_position_before = sut.pool.account_position(&borrower);
+
+    let liquidator_token_0_before = sut.reserves[0].token.balance(&liquidator);
+    let liquidator_token_1_before = sut.reserves[1].token.balance(&liquidator);
+    let liquidator_token_2_before = sut.reserves[2].token.balance(&liquidator);
+    let liquidator_stoken_0_before = sut.reserves[0].s_token().balance(&liquidator);
+    let liquidator_stoken_1_before = sut.reserves[1].s_token().balance(&liquidator);
+    let liquidator_stoken_2_before = sut.reserves[2].s_token().balance(&liquidator);
+    let liquidator_dtoken_0_before = sut.reserves[0].debt_token().balance(&liquidator);
+    let liquidator_dtoken_1_before = sut.reserves[1].debt_token().balance(&liquidator);
+    let liquidator_dtoken_2_before = sut.reserves[2].debt_token().balance(&liquidator);
+
+    sut.price_feed.init(
+        &Asset::Stellar(debt_token),
+        &vec![
+            &env,
+            PriceData {
+                price: (2 * 10i128.pow(16)),
+                timestamp: 0,
+            },
+        ],
+    );
+
+    sut.pool.liquidate(&liquidator, &borrower, &true);
+
+    let borrower_token_0_after = sut.reserves[0].token.balance(&borrower);
+    let borrower_token_1_after = sut.reserves[1].token.balance(&borrower);
+    let borrower_token_2_after = sut.reserves[2].token.balance(&borrower);
+    let borrower_stoken_0_after = sut.reserves[0].s_token().balance(&borrower);
+    let borrower_stoken_1_after = sut.reserves[1].s_token().balance(&borrower);
+    let borrower_stoken_2_after = sut.reserves[2].s_token().balance(&borrower);
+    let borrower_dtoken_0_after = sut.reserves[0].debt_token().balance(&borrower);
+    let borrower_dtoken_1_after = sut.reserves[1].debt_token().balance(&borrower);
+    let borrower_dtoken_2_after = sut.reserves[2].debt_token().balance(&borrower);
+    let borrower_account_position_after = sut.pool.account_position(&borrower);
+
+    let liquidator_token_0_after = sut.reserves[0].token.balance(&liquidator);
+    let liquidator_token_1_after = sut.reserves[1].token.balance(&liquidator);
+    let liquidator_token_2_after = sut.reserves[2].token.balance(&liquidator);
+    let liquidator_stoken_0_after = sut.reserves[0].s_token().balance(&liquidator);
+    let liquidator_stoken_1_after = sut.reserves[1].s_token().balance(&liquidator);
+    let liquidator_stoken_2_after = sut.reserves[2].s_token().balance(&liquidator);
+    let liquidator_dtoken_0_after = sut.reserves[0].debt_token().balance(&liquidator);
+    let liquidator_dtoken_1_after = sut.reserves[1].debt_token().balance(&liquidator);
+    let liquidator_dtoken_2_after = sut.reserves[2].debt_token().balance(&liquidator);
+
+    assert_eq!(borrower_token_0_before, 0);
+    assert_eq!(borrower_token_1_before, 1_800_000_000_000);
+    assert_eq!(borrower_token_2_before, 0);
+    assert_eq!(borrower_stoken_0_before, 10_000_000_000);
+    assert_eq!(borrower_stoken_1_before, 0);
+    assert_eq!(borrower_stoken_2_before, 1_000_000_000_000);
+    assert_eq!(borrower_dtoken_0_before, 0);
+    assert_eq!(borrower_dtoken_1_before, 800_000_000_000);
+    assert_eq!(borrower_dtoken_2_before, 0);
+    assert_eq!(borrower_account_position_before.npv, 3_999_493_504);
+    assert_eq!(
+        borrower_account_position_before.discounted_collateral,
+        12_000_000_000
+    );
+    assert_eq!(borrower_account_position_before.debt, 8_000_506_496);
+
+    assert_eq!(liquidator_token_0_before, 10_000_000_000);
+    assert_eq!(liquidator_token_1_before, 1_000_000_000_000);
+    assert_eq!(liquidator_token_2_before, 1_000_000_000_000);
+    assert_eq!(liquidator_stoken_0_before, 0);
+    assert_eq!(liquidator_stoken_1_before, 0);
+    assert_eq!(liquidator_stoken_2_before, 0);
+    assert_eq!(liquidator_dtoken_0_before, 0);
+    assert_eq!(liquidator_dtoken_1_before, 0);
+    assert_eq!(liquidator_dtoken_2_before, 0);
+
+    assert_eq!(borrower_token_0_after, 0);
+    assert_eq!(borrower_token_1_after, 1_800_000_000_000);
+    assert_eq!(borrower_token_2_after, 0);
+    assert_eq!(borrower_stoken_0_after, 0);
+    assert_eq!(borrower_stoken_1_after, 0);
+    assert_eq!(borrower_stoken_2_after, 0);
+    assert_eq!(borrower_dtoken_0_after, 0);
+    assert_eq!(borrower_dtoken_1_after, 0);
+    assert_eq!(borrower_dtoken_2_after, 0);
+    assert_eq!(borrower_account_position_after.npv, 0);
+    assert_eq!(borrower_account_position_after.discounted_collateral, 0);
+    assert_eq!(borrower_account_position_after.debt, 0);
+
+    assert_eq!(liquidator_token_0_after, 10_000_000_000);
+    assert_eq!(liquidator_token_1_after, 199_949_350_400);
+    assert_eq!(liquidator_token_2_after, 1_000_000_000_000);
+    assert_eq!(liquidator_stoken_0_after, 10_000_000_000);
+    assert_eq!(liquidator_stoken_1_after, 0);
+    assert_eq!(liquidator_stoken_2_after, 1_000_000_000_000);
+    assert_eq!(liquidator_dtoken_0_after, 0);
+    assert_eq!(liquidator_dtoken_1_after, 0);
+    assert_eq!(liquidator_dtoken_2_after, 0);
+}
+
+#[test]
 fn should_change_user_config() {
     let env = Env::default();
     env.mock_all_auths();

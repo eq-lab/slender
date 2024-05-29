@@ -5,12 +5,14 @@ use super::liquidation_asset::LiquidationAsset;
 
 #[derive(Debug, Clone, Default)]
 pub struct AccountData {
-    /// Total collateral expresed in XLM
+    /// Total collateral expresed in base asset
     pub discounted_collateral: i128,
-    /// Total debt expressed in XLM
+    /// Total debt expressed in base asset
     pub debt: i128,
-    /// Net position value in XLM
+    /// Net position value in base asset
     pub npv: i128,
+    /// Total collateral in base asset to use in liquidation
+    pub collat: Option<i128>,
     /// Liquidation debt ordered by max utilization
     pub liq_debts: Option<Vec<LiquidationAsset>>,
     /// Liquidation collateral ordered by liquidation_order

@@ -46,6 +46,7 @@ pub fn calc_account_data(
     }
 
     let mut total_discounted_collat_in_base: i128 = 0;
+    let mut total_collat_in_base: i128 = 0;
     let mut total_debt_in_base: i128 = 0;
     let mut sorted_collat_to_receive = Map::new(env);
     let mut sorted_debt_to_cover = Map::new(env);
@@ -83,6 +84,7 @@ pub fn calc_account_data(
                 liquidation,
                 price_provider,
                 &mut sorted_collat_to_receive,
+                &mut total_collat_in_base,
                 &mut total_discounted_collat_in_base,
                 &mut total_debt_in_base,
                 &mut sorted_debt_to_cover,
@@ -98,6 +100,7 @@ pub fn calc_account_data(
                 liquidation,
                 price_provider,
                 &mut sorted_collat_to_receive,
+                &mut total_collat_in_base,
                 &mut total_discounted_collat_in_base,
             )?;
         }
@@ -123,6 +126,7 @@ pub fn calc_account_data(
     Ok(AccountData {
         discounted_collateral: total_discounted_collat_in_base,
         debt: total_debt_in_base,
+        collat: liquidation.then_some(total_collat_in_base),
         liq_debts: liquidation.then_some(sorted_debt_to_pay()),
         liq_collats: liquidation.then_some(sorted_collat_to_receive.values()),
         npv,
@@ -142,6 +146,7 @@ fn calculate_fungible(
     liquidation: bool,
     price_provider: &mut PriceProvider,
     sorted_collat_to_receive: &mut Map<u32, LiquidationAsset>,
+    total_collat_in_base: &mut i128,
     total_discounted_collat_in_base: &mut i128,
     total_debt_in_base: &mut i128,
     sorted_debt_to_cover: &mut Map<i128, Vec<LiquidationAsset>>,
@@ -204,6 +209,10 @@ fn calculate_fungible(
             .ok_or(Error::CalcAccountDataMathError)?;
 
         if liquidation {
+            *total_collat_in_base = total_collat_in_base
+                .checked_add(compounded_balance_in_base)
+                .ok_or(Error::CalcAccountDataMathError)?;
+
             sorted_collat_to_receive.set(
                 reserve.configuration.pen_order,
                 LiquidationAsset {
@@ -278,6 +287,7 @@ fn calculate_rwa(
     liquidation: bool,
     price_provider: &mut PriceProvider,
     sorted_collateral_to_receive: &mut Map<u32, LiquidationAsset>,
+    total_collat_in_base: &mut i128,
     total_discounted_collat_in_base: &mut i128,
 ) -> Result<(), Error> {
     let reserve_index = reserve.get_id();
@@ -301,6 +311,10 @@ fn calculate_rwa(
             .ok_or(Error::CalcAccountDataMathError)?;
 
         if liquidation {
+            *total_collat_in_base = total_collat_in_base
+                .checked_add(balance_in_base)
+                .ok_or(Error::CalcAccountDataMathError)?;
+
             sorted_collateral_to_receive.set(
                 reserve.configuration.pen_order,
                 LiquidationAsset {
