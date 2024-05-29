@@ -4,7 +4,6 @@ use pool_interface::types::error::Error;
 use pool_interface::types::reserve_data::ReserveData;
 use soroban_sdk::{token, Address, Env};
 
-use crate::event;
 use crate::storage::{
     add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
     read_token_balance, read_token_total_supply, read_treasury, write_token_balance,
@@ -13,6 +12,7 @@ use crate::storage::{
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
+use crate::{event, read_pause_info};
 
 use super::account_position::calc_account_data;
 use super::utils::get_collat_coeff::get_collat_coeff;
@@ -27,7 +27,9 @@ use super::utils::validation::{
 pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
     who.require_auth();
 
-    require_not_paused(env);
+    let pause_info = read_pause_info(env)?;
+    require_not_paused(env, &pause_info);
+
     require_positive_amount(env, amount);
 
     let reserve = read_reserve(env, asset)?;

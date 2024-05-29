@@ -439,3 +439,46 @@ fn should_fail_when_collat_lt_min_position_amount() {
     sut.pool
         .borrow(&borrower, &sut.reserves[0].token.address, &50_000_000);
 }
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #6)")]
+fn should_fail_in_grace_period() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, debt_reserve) = fill_pool(&env, &sut, true);
+    sut.pool.borrow(&borrower, &debt_reserve.token.address, &1);
+
+    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&false);
+    sut.pool.borrow(&borrower, &debt_reserve.token.address, &1);
+}
+
+#[test]
+fn should_not_fail_after_grace_period() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, debt_reserve) = fill_pool(&env, &sut, true);
+    let pause_info = sut.pool.pause_info();
+    let start = env.ledger().timestamp();
+    let gap = 500;
+
+    let debt_token_before = debt_reserve.debt_token().balance(&borrower);
+    sut.pool.borrow(&borrower, &debt_reserve.token.address, &1);
+    let debt_token_after = debt_reserve.debt_token().balance(&borrower);
+    assert!(debt_token_after > debt_token_before);
+
+    sut.pool.set_pause(&true);
+    env.ledger().with_mut(|li| li.timestamp = start + gap);
+    sut.pool.set_pause(&false);
+    env.ledger()
+        .with_mut(|li| li.timestamp = start + gap + pause_info.grace_period_secs);
+
+    let debt_token_before = debt_reserve.debt_token().balance(&borrower);
+    sut.pool.borrow(&borrower, &debt_reserve.token.address, &1);
+    let debt_token_after = debt_reserve.debt_token().balance(&borrower);
+    assert!(debt_token_after > debt_token_before);
+}

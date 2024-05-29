@@ -9,6 +9,8 @@ pub enum Error {
     NoPriceFeed = 2,
     Paused = 3,
     NoPoolConfig = 4,
+    ZeroGracePeriod = 5,
+    GracePeriod = 6,
 
     NoReserveExistForAsset = 100,
     NoActiveReserve = 101,

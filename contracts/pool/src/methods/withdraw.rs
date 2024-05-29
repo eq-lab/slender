@@ -1,4 +1,3 @@
-use crate::event;
 use crate::methods::utils::validation::require_gte_initial_health;
 use crate::storage::{
     add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
@@ -7,6 +6,7 @@ use crate::storage::{
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
+use crate::{event, read_pause_info};
 use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use pool_interface::types::reserve_type::ReserveType;
@@ -17,8 +17,8 @@ use super::account_position::calc_account_data;
 use super::utils::get_collat_coeff::get_collat_coeff;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_min_position_amounts, require_not_paused,
-    require_positive_amount,
+    require_active_reserve, require_min_position_amounts, require_not_in_grace_period,
+    require_not_paused, require_positive_amount,
 };
 
 pub fn withdraw(
@@ -30,7 +30,10 @@ pub fn withdraw(
 ) -> Result<(), Error> {
     who.require_auth();
 
-    require_not_paused(env);
+    let pause_info = read_pause_info(env)?;
+    require_not_paused(env, &pause_info);
+    require_not_in_grace_period(env, &pause_info);
+
     require_positive_amount(env, amount);
 
     let reserve = read_reserve(env, asset)?;

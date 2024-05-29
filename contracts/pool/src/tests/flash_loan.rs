@@ -331,3 +331,96 @@ fn should_fail_when_debt_lt_min_position_amount() {
         &Bytes::new(&env),
     );
 }
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #6)")]
+fn should_fail_if_borrow_in_grace_period() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, false);
+
+    let _: Val = env.invoke_contract(
+        &sut.flash_loan_receiver.address,
+        &Symbol::new(&env, "initialize"),
+        vec![&env, sut.pool.address.into_val(&env), false.into_val(&env)],
+    );
+
+    let loan_assets = Vec::from_array(
+        &env,
+        [
+            FlashLoanAsset {
+                asset: sut.reserves[0].token.address.clone(),
+                amount: 1000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[1].token.address.clone(),
+                amount: 2000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[2].token.address.clone(),
+                amount: 3000000,
+                borrow: true,
+            },
+        ],
+    );
+
+    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&false);
+
+    sut.pool.flash_loan(
+        &borrower,
+        &sut.flash_loan_receiver.address,
+        &loan_assets,
+        &Bytes::new(&env),
+    );
+}
+
+#[test]
+fn should_not_fail_in_grace_period() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, _) = fill_pool(&env, &sut, false);
+
+    let _: Val = env.invoke_contract(
+        &sut.flash_loan_receiver.address,
+        &Symbol::new(&env, "initialize"),
+        vec![&env, sut.pool.address.into_val(&env), false.into_val(&env)],
+    );
+
+    let loan_assets = Vec::from_array(
+        &env,
+        [
+            FlashLoanAsset {
+                asset: sut.reserves[0].token.address.clone(),
+                amount: 1000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[1].token.address.clone(),
+                amount: 2000000,
+                borrow: false,
+            },
+            FlashLoanAsset {
+                asset: sut.reserves[2].token.address.clone(),
+                amount: 3000000,
+                borrow: false,
+            },
+        ],
+    );
+
+    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&false);
+
+    sut.pool.flash_loan(
+        &borrower,
+        &sut.flash_loan_receiver.address,
+        &loan_assets,
+        &Bytes::new(&env),
+    );
+}

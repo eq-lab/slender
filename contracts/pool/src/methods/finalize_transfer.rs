@@ -2,17 +2,17 @@ use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use soroban_sdk::{Address, Env};
 
-use crate::read_user_assets_limit;
 use crate::storage::{read_reserve, read_token_total_supply, write_token_balance};
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
+use crate::{read_pause_info, read_user_assets_limit};
 
 use super::account_position::calc_account_data;
 use super::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use super::utils::validation::{
     require_active_reserve, require_gte_initial_health, require_min_position_amounts,
-    require_not_paused, require_zero_debt,
+    require_not_in_grace_period, require_not_paused, require_zero_debt,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -26,7 +26,9 @@ pub fn finalize_transfer(
     balance_to_before: i128,
     s_token_supply: i128,
 ) -> Result<(), Error> {
-    require_not_paused(env);
+    let pause_info = read_pause_info(env)?;
+    require_not_paused(env, &pause_info);
+    require_not_in_grace_period(env, &pause_info);
 
     let reserve: pool_interface::types::reserve_data::ReserveData = read_reserve(env, asset)?;
     let reserve_id = reserve.get_id();

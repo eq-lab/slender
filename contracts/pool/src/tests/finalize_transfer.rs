@@ -1,6 +1,6 @@
 use crate::tests::sut::{fill_pool, init_pool};
 use pool_interface::types::pool_config::PoolConfig;
-// use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
+use soroban_sdk::testutils::Ledger;
 use soroban_sdk::Env;
 
 use super::sut::{create_s_token_contract, create_token_contract};
@@ -289,4 +289,114 @@ fn should_fail_when_collat_lt_min_position_amount() {
         &lender_balance_before,
         &s_token_supply,
     );
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #6)")]
+fn should_fail_in_grace_period() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (lender, borrower, _) = fill_pool(&env, &sut, false);
+
+    let token_client = &sut.reserves[0].token;
+    let s_token_client = sut.reserves[0].s_token();
+
+    let lender_balance_before = s_token_client.balance(&lender);
+    let borrower_balance_before = s_token_client.balance(&borrower);
+    let lender_in_pool_before = sut.pool.balance(&lender, &s_token_client.address);
+    let borrower_in_pool_before = sut.pool.balance(&borrower, &s_token_client.address);
+    let s_token_supply = s_token_client.total_supply();
+    sut.pool.finalize_transfer(
+        &token_client.address,
+        &lender,
+        &borrower,
+        &1,
+        &lender_balance_before,
+        &borrower_balance_before,
+        &s_token_supply,
+    );
+
+    let lender_in_pool_after = sut.pool.balance(&lender, &s_token_client.address);
+    let borrower_in_pool_after = sut.pool.balance(&borrower, &s_token_client.address);
+
+    assert_eq!(lender_in_pool_before - lender_in_pool_after, 1);
+    assert_eq!(borrower_in_pool_after - borrower_in_pool_before, 1);
+
+    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&false);
+    sut.pool.finalize_transfer(
+        &token_client.address,
+        &lender,
+        &borrower,
+        &1,
+        &lender_balance_before,
+        &borrower_balance_before,
+        &s_token_supply,
+    );
+}
+
+#[test]
+fn should_not_fail_after_grace_period() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (lender, borrower, _) = fill_pool(&env, &sut, false);
+
+    let pause_info = sut.pool.pause_info();
+    let start = env.ledger().timestamp();
+    let gap = 500;
+
+    let token_client = &sut.reserves[0].token;
+    let s_token_client = sut.reserves[0].s_token();
+
+    let lender_balance_before = s_token_client.balance(&lender);
+    let borrower_balance_before = s_token_client.balance(&borrower);
+    let lender_in_pool_before = sut.pool.balance(&lender, &s_token_client.address);
+    let borrower_in_pool_before = sut.pool.balance(&borrower, &s_token_client.address);
+    let s_token_supply = s_token_client.total_supply();
+    sut.pool.finalize_transfer(
+        &token_client.address,
+        &lender,
+        &borrower,
+        &1,
+        &lender_balance_before,
+        &borrower_balance_before,
+        &s_token_supply,
+    );
+
+    let lender_in_pool_after = sut.pool.balance(&lender, &s_token_client.address);
+    let borrower_in_pool_after = sut.pool.balance(&borrower, &s_token_client.address);
+
+    assert_eq!(lender_in_pool_before - lender_in_pool_after, 1);
+    assert_eq!(borrower_in_pool_after - borrower_in_pool_before, 1);
+
+    sut.pool.set_pause(&true);
+    env.ledger().with_mut(|li| li.timestamp = start + gap);
+    sut.pool.set_pause(&false);
+    env.ledger()
+        .with_mut(|li| li.timestamp = start + gap + pause_info.grace_period_secs);
+
+    let lender_balance_before = lender_balance_before - 1;
+    let borrower_balance_before = borrower_balance_before + 1;
+    let lender_in_pool_before = sut.pool.balance(&lender, &s_token_client.address);
+    let borrower_in_pool_before = sut.pool.balance(&borrower, &s_token_client.address);
+    let s_token_supply = s_token_client.total_supply();
+    sut.pool.finalize_transfer(
+        &token_client.address,
+        &lender,
+        &borrower,
+        &1,
+        &lender_balance_before,
+        &borrower_balance_before,
+        &s_token_supply,
+    );
+
+    let lender_in_pool_after = sut.pool.balance(&lender, &s_token_client.address);
+    let borrower_in_pool_after = sut.pool.balance(&borrower, &s_token_client.address);
+
+    assert_eq!(lender_in_pool_before - lender_in_pool_after, 1);
+    assert_eq!(borrower_in_pool_after - borrower_in_pool_before, 1);
 }

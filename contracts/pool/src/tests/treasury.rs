@@ -12,6 +12,7 @@ fn should_return_treasury_address() {
     let treasury = Address::generate(&env);
     let flash_loan_fee = 5;
     let initial_health = 2_500;
+    let grace_period = 60 * 60 * 24;
 
     pool.initialize(
         &admin,
@@ -24,6 +25,7 @@ fn should_return_treasury_address() {
             max_rate: 50_000,
             scaling_coeff: 9_000,
         },
+        &grace_period,
     );
 
     assert_eq!(pool.treasury(), treasury);

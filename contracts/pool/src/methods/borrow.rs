@@ -6,6 +6,7 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{Address, Env};
 
 use crate::event;
+use crate::read_pause_info;
 use crate::read_stoken_underlying_balance;
 use crate::read_user_assets_limit;
 use crate::storage::{
@@ -21,6 +22,7 @@ use super::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::require_min_position_amounts;
+use super::utils::validation::require_not_in_grace_period;
 use super::utils::validation::{
     require_active_reserve, require_borrowing_enabled, require_gte_initial_health,
     require_not_in_collateral_asset, require_not_paused, require_positive_amount,
@@ -30,7 +32,10 @@ use super::utils::validation::{
 pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
     who.require_auth();
 
-    require_not_paused(env);
+    let pause_info = read_pause_info(env)?;
+    require_not_paused(env, &pause_info);
+    require_not_in_grace_period(env, &pause_info);
+
     require_positive_amount(env, amount);
 
     let reserve = read_reserve(env, asset)?;
