@@ -21,6 +21,6 @@ pub fn pool_configuration(env: &Env) -> Result<PoolConfig, Error> {
         user_assets_limit: read_user_assets_limit(env),
         timestamp_window: read_reserve_timestamp_window(env),
         min_collat_amount: min_position_amounts.0,
-        min_debt_amount: min_position_amounts.1,
+        min_debt_amount: min_position_amounts.1
     })
 }

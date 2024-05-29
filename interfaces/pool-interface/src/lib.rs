@@ -7,6 +7,7 @@ use types::collateral_params_input::CollateralParamsInput;
 use types::error::Error;
 use types::flash_loan_asset::FlashLoanAsset;
 use types::ir_params::IRParams;
+use types::pause_info::PauseInfo;
 use types::pool_config::PoolConfig;
 use types::price_feed_config::PriceFeedConfig;
 use types::price_feed_config_input::PriceFeedConfigInput;
@@ -29,6 +30,7 @@ pub trait LendingPoolTrait {
         flash_loan_fee: u32,
         initial_health: u32,
         ir_params: IRParams,
+        grace_period: u64,
     ) -> Result<(), Error>;
 
     fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), Error>;
@@ -104,7 +106,9 @@ pub trait LendingPoolTrait {
 
     fn set_pause(env: Env, value: bool) -> Result<(), Error>;
 
-    fn paused(env: Env) -> bool;
+    fn set_grace_period(env: Env, grace_period: u64) -> Result<(), Error>;
+
+    fn pause_info(env: Env) -> Result<PauseInfo, Error>;
 
     fn treasury(e: Env) -> Address;
 

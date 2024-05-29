@@ -1,10 +1,10 @@
-use pool_interface::types::base_asset_config::BaseAssetConfig;
 use pool_interface::types::error::Error;
 use pool_interface::types::ir_params::IRParams;
 use pool_interface::types::price_feed_config::PriceFeedConfig;
 use pool_interface::types::price_feed_config_input::PriceFeedConfigInput;
 use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::user_config::UserConfiguration;
+use pool_interface::types::{base_asset_config::BaseAssetConfig, pause_info::PauseInfo};
 use soroban_sdk::{assert_with_error, contracttype, vec, Address, Env, Vec};
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17_280;
@@ -297,7 +297,7 @@ pub fn write_min_position_amounts(env: &Env, min_collat_amount: i128, min_debt_a
     );
 }
 
-pub fn paused(env: &Env) -> bool {
+pub fn read_pause_info(env: &Env) -> Result<PauseInfo, Error> {
     env.storage()
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
@@ -305,10 +305,10 @@ pub fn paused(env: &Env) -> bool {
     env.storage()
         .instance()
         .get(&DataKey::Pause)
-        .unwrap_or(false)
+        .ok_or(Error::Uninitialized)
 }
 
-pub fn write_pause(env: &Env, value: bool) {
+pub fn write_pause_info(env: &Env, value: PauseInfo) {
     env.storage()
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);

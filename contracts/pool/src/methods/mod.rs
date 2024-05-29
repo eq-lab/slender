@@ -13,6 +13,7 @@ pub mod liquidate;
 pub mod pool_configuration;
 pub mod repay;
 pub mod set_as_collateral;
+pub mod set_grace_period;
 pub mod set_ir_params;
 pub mod set_pause;
 pub mod set_pool_configuration;

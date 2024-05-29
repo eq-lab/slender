@@ -5,6 +5,7 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{token, Address, Env};
 
 use crate::event;
+use crate::read_pause_info;
 use crate::read_user_assets_limit;
 use crate::storage::{
     add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
@@ -22,7 +23,9 @@ use super::utils::validation::{
 pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
     who.require_auth();
 
-    require_not_paused(env);
+    let pause_info = read_pause_info(env)?;
+    require_not_paused(env, &pause_info);
+
     require_positive_amount(env, amount);
 
     let reserve = read_reserve(env, asset)?;

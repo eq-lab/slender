@@ -9,10 +9,12 @@ use methods::{
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, finalize_transfer::finalize_transfer,
     flash_loan::flash_loan, init_reserve::init_reserve, initialize::initialize,
     liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral,
-    set_ir_params::set_ir_params, set_pause::set_pause, set_price_feeds::set_price_feeds,
-    set_reserve_status::set_reserve_status, twap_median_price::twap_median_price, upgrade::upgrade,
-    upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token, withdraw::withdraw,
+    set_grace_period::set_grace_period, set_ir_params::set_ir_params, set_pause::set_pause,
+    set_price_feeds::set_price_feeds, set_reserve_status::set_reserve_status,
+    twap_median_price::twap_median_price, upgrade::upgrade, upgrade_debt_token::upgrade_debt_token,
+    upgrade_s_token::upgrade_s_token, withdraw::withdraw,
 };
+use pool_interface::types::pause_info::PauseInfo;
 use pool_interface::types::{
     account_position::AccountPosition, collateral_params_input::CollateralParamsInput,
     error::Error, flash_loan_asset::FlashLoanAsset, ir_params::IRParams, pool_config::PoolConfig,
@@ -43,6 +45,7 @@ impl LendingPoolTrait for LendingPool {
         flash_loan_fee: u32,
         initial_health: u32,
         ir_params: IRParams,
+        grace_period: u64,
     ) -> Result<(), Error> {
         initialize(
             &env,
@@ -51,6 +54,7 @@ impl LendingPoolTrait for LendingPool {
             flash_loan_fee,
             initial_health,
             &ir_params,
+            grace_period,
         )
     }
 
@@ -175,12 +179,16 @@ impl LendingPoolTrait for LendingPool {
         borrow(&env, &who, &asset, amount)
     }
 
+    fn set_grace_period(env: Env, grace_period: u64) -> Result<(), Error> {
+        set_grace_period(env, grace_period)
+    }
+
     fn set_pause(env: Env, value: bool) -> Result<(), Error> {
         set_pause(&env, value)
     }
 
-    fn paused(env: Env) -> bool {
-        paused(&env)
+    fn pause_info(env: Env) -> Result<PauseInfo, Error> {
+        read_pause_info(&env)
     }
 
     fn treasury(e: Env) -> Address {

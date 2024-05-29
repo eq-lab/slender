@@ -6,13 +6,14 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, token, Address, Env};
 
 use crate::methods::utils::recalculate_reserve_data::recalculate_reserve_data;
+use crate::methods::utils::validation::require_not_in_grace_period;
 use crate::types::account_data::AccountData;
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_asset::LiquidationAsset;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 use crate::{
-    add_stoken_underlying_balance, event, read_initial_health, read_token_balance,
+    add_stoken_underlying_balance, event, read_initial_health, read_pause_info, read_token_balance,
     read_token_total_supply, read_user_assets_limit, write_token_balance, write_token_total_supply,
 };
 
@@ -27,7 +28,9 @@ pub fn liquidate(
 ) -> Result<(), Error> {
     liquidator.require_auth();
 
-    require_not_paused(env);
+    let pause_info = read_pause_info(env)?;
+    require_not_paused(env, &pause_info);
+    require_not_in_grace_period(env, &pause_info);
 
     let mut user_configurator = UserConfigurator::new(env, who, false, None);
     let user_config = user_configurator.user_config()?;

@@ -5,11 +5,12 @@ use pool_interface::types::flash_loan_asset::FlashLoanAsset;
 use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, token, vec, Address, Bytes, Env, Vec};
 
-use crate::event;
 use crate::methods::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
+use crate::methods::utils::validation::require_not_in_grace_period;
 use crate::storage::{
     read_flash_loan_fee, read_reserve, read_token_balance, read_token_total_supply, read_treasury,
 };
+use crate::{event, read_pause_info};
 
 use super::borrow::do_borrow;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
@@ -25,7 +26,8 @@ pub fn flash_loan(
     params: &Bytes,
 ) -> Result<(), Error> {
     who.require_auth();
-    require_not_paused(env);
+    let pause_info = read_pause_info(env)?;
+    require_not_paused(env, &pause_info);
 
     let fee =
         FixedI128::from_percentage(read_flash_loan_fee(env)).ok_or(Error::MathOverflowError)?;
@@ -44,6 +46,10 @@ pub fn flash_loan(
         let reserve = read_reserve(env, &loan_asset.asset)?;
         require_active_reserve(env, &reserve);
         require_borrowing_enabled(env, &reserve);
+
+        if loan_asset.borrow {
+            require_not_in_grace_period(env, &pause_info);
+        }
 
         let (s_token_address, _) = get_fungible_lp_tokens(&reserve)?;
 

@@ -2,12 +2,13 @@ use common::{FixedI128, PERCENTAGE_FACTOR};
 use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::error::Error;
 use pool_interface::types::ir_params::IRParams;
+use pool_interface::types::pause_info::PauseInfo;
 use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::types::user_config::UserConfiguration;
 use soroban_sdk::{assert_with_error, panic_with_error, Address, Env};
 
-use crate::storage::{has_admin, has_reserve, paused, read_admin, read_initial_health};
+use crate::storage::{has_admin, has_reserve, read_admin, read_initial_health};
 use crate::types::account_data::AccountData;
 use crate::{read_min_position_amounts, read_reserve, read_reserves};
 
@@ -168,8 +169,13 @@ pub fn require_not_in_collateral_asset(env: &Env, collat_balance: i128) {
     assert_with_error!(env, collat_balance == 0, Error::MustNotBeInCollateralAsset);
 }
 
-pub fn require_not_paused(env: &Env) {
-    assert_with_error!(env, !paused(env), Error::Paused);
+pub fn require_not_paused(env: &Env, pause_info: &PauseInfo) {
+    assert_with_error!(env, !pause_info.paused, Error::Paused);
+}
+
+pub fn require_not_in_grace_period(env: &Env, pause_info: &PauseInfo) {
+    let now = env.ledger().timestamp();
+    assert_with_error!(env, now >= pause_info.grace_period_ends_at(), Error::GracePeriod);
 }
 
 pub fn require_debt(env: &Env, user_config: &UserConfiguration, reserve_id: u8) {
@@ -241,4 +247,8 @@ pub fn require_min_position_amounts(env: &Env, account_data: &AccountData) -> Re
     assert_with_error!(env, account_data.debt >= min_debt, Error::DebtIsTooSmall);
 
     Ok(())
+}
+
+pub fn require_non_zero_grace_period(env: &Env, grace_period: u64) {
+    assert_with_error!(env, grace_period != 0, Error::ZeroGracePeriod);
 }
