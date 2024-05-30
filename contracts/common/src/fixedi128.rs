@@ -91,9 +91,11 @@ impl FixedI128 {
         let mb_res = self.0.checked_mul(other)?.checked_div(Self::DENOMINATOR);
 
         mb_res.map(|res| {
-            if res == 0 {
+            let res_1 = res.abs();
+
+            if res_1 == 0 {
                 1
-            } else if res % Self::DENOMINATOR == 0 {
+            } else if res_1 % Self::DENOMINATOR == 0 {
                 res
             } else {
                 res + 1
@@ -118,9 +120,13 @@ impl FixedI128 {
         }
         let mb_res = Self::DENOMINATOR.checked_mul(other)?.checked_div(self.0);
         mb_res.map(|res| {
-            if res == 0 {
+            let res_1 = res.abs();
+            let other_1 = other.abs();
+            let self_1 = self.0.abs();
+
+            if res_1 == 0 {
                 1
-            } else if other >= self.0 && other % self.0 == 0 {
+            } else if other_1 % self_1 == 0 {
                 res
             } else {
                 res + 1
