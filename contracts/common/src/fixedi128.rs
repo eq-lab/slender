@@ -42,14 +42,6 @@ impl FixedI128 {
             .map(FixedI128)
     }
 
-    pub fn to_precision(self, precision: u32) -> Option<i128> {
-        let prec_denom = 10i128.checked_pow(precision)?;
-
-        self.0
-            .checked_mul(prec_denom)?
-            .checked_div(Self::DENOMINATOR)
-    }
-
     /// Multiplication of two fixed values
     pub fn checked_mul(self, value: FixedI128) -> Option<FixedI128> {
         self.0
