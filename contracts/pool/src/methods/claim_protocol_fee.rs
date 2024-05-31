@@ -2,7 +2,7 @@ use pool_interface::types::{error::Error, reserve_type::ReserveType};
 use s_token_interface::STokenClient;
 use soroban_sdk::{token, Address, Env};
 
-use crate::{read_protocol_fee_vault, read_reserve};
+use crate::{read_protocol_fee_vault, read_reserve, write_protocol_fee_vault};
 
 use super::utils::validation::require_admin;
 
@@ -20,6 +20,8 @@ pub fn claim_protocol_fee(env: &Env, asset: &Address, recipient: &Address) -> Re
             amount,
         ),
     }
+
+    write_protocol_fee_vault(env, asset, 0);
 
     Ok(())
 }

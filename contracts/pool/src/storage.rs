@@ -479,7 +479,7 @@ pub fn read_protocol_fee_vault(env: &Env, asset: &Address) -> i128 {
     value.unwrap_or(0)
 }
 
-fn write_protocol_fee_vault(env: &Env, asset: &Address, balance: i128) {
+pub fn write_protocol_fee_vault(env: &Env, asset: &Address, balance: i128) {
     assert_with_error!(env, !balance.is_negative(), Error::MustBePositive);
     let key = DataKey::ProtocolFeeVault(asset.clone());
 
