@@ -20,7 +20,6 @@ impl Deployer {
         salt: BytesN<32>,
         wasm_hash: BytesN<32>,
         admin: Address,
-        treasury: Address,
         flash_loan_fee: u32,
         initial_health: u32,
         ir_params: IRParams,
@@ -31,7 +30,6 @@ impl Deployer {
         let init_args = vec![
             &env,
             admin.into_val(&env),
-            treasury.into_val(&env),
             flash_loan_fee.into_val(&env),
             initial_health.into_val(&env),
             ir_params.into_val(&env),

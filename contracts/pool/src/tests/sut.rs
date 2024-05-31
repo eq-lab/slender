@@ -68,7 +68,6 @@ pub(crate) fn create_pool_contract<'a>(
         LendingPoolClient::new(e, &e.register_contract(None, LendingPool))
     };
 
-    let treasury = Address::generate(e);
     let flash_loan_fee = 5;
     let initial_health = 0;
     let grace_period = 1;
@@ -78,7 +77,6 @@ pub(crate) fn create_pool_contract<'a>(
 
     client.initialize(
         &admin,
-        &treasury,
         &flash_loan_fee,
         &initial_health,
         &IRParams {
@@ -179,6 +177,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     user_assets_limit: 4,
                     min_collat_amount: 0,
                     min_debt_amount: 0,
+                    liquidation_protocol_fee: 0,
                 });
             }
 

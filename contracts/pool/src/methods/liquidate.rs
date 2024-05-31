@@ -13,21 +13,16 @@ use crate::types::liquidation_asset::LiquidationAsset;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 use crate::{
-    add_stoken_underlying_balance, event, read_initial_health, read_pause_info,
-    read_stoken_underlying_balance, read_token_balance, read_token_total_supply,
-    read_user_assets_limit, write_token_balance, write_token_total_supply,
+    add_protocol_fee_vault, add_stoken_underlying_balance, event, read_initial_health,
+    read_liquidation_protocol_fee, read_pause_info, read_stoken_underlying_balance,
+    read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
 };
 
 use super::account_position::calc_account_data;
 use super::utils::get_collat_coeff::get_lp_amount;
 use super::utils::validation::require_not_paused;
 
-pub fn liquidate(
-    env: &Env,
-    liquidator: &Address,
-    who: &Address,
-    receive_stoken: bool,
-) -> Result<(), Error> {
+pub fn liquidate(env: &Env, liquidator: &Address, who: &Address) -> Result<(), Error> {
     liquidator.require_auth();
 
     let pause_info = read_pause_info(env)?;
@@ -55,7 +50,6 @@ pub fn liquidate(
         who,
         account_data,
         &mut user_configurator,
-        receive_stoken,
         &mut price_provider,
     )?;
 
@@ -70,7 +64,6 @@ fn do_liquidate(
     who: &Address,
     account_data: AccountData,
     user_configurator: &mut UserConfigurator,
-    receive_stoken: bool,
     price_provider: &mut PriceProvider,
 ) -> Result<(i128, i128), Error> {
     let mut total_debt_after_in_base = account_data.debt;
@@ -78,9 +71,6 @@ fn do_liquidate(
     let mut total_debt_to_cover_in_base = 0i128;
     let mut total_liq_in_base = 0i128;
     let mut debt_covered_in_base = 0i128;
-    let user_assets_limit = receive_stoken
-        .then(|| Some(read_user_assets_limit(env)))
-        .unwrap_or(None);
     let total_collat_in_base = account_data.collat.ok_or(Error::LiquidateMathError)?;
 
     let zero_percent = FixedI128::ZERO;
@@ -111,6 +101,9 @@ fn do_liquidate(
     } else {
         (FixedI128::ZERO, FixedI128::ZERO)
     };
+
+    let liquidation_protocol_fee = FixedI128::from_percentage(read_liquidation_protocol_fee(env))
+        .ok_or(Error::MathOverflowError)?;
 
     for collat in account_data.liq_collats.ok_or(Error::LiquidateMathError)? {
         let (liq_comp_amount, debt_in_base) = if !full_liquidation {
@@ -160,6 +153,12 @@ fn do_liquidate(
             .checked_add(price_provider.convert_to_base(&collat.asset, liq_comp_amount)?)
             .ok_or(Error::LiquidateMathError)?;
 
+        let protocol_part_underlying = liquidation_protocol_fee
+            .mul_int(liq_comp_amount)
+            .ok_or(Error::MathOverflowError)?;
+
+        let liquidator_part_underlying = liq_comp_amount - protocol_part_underlying;
+
         if let ReserveType::Fungible(s_token_address, debt_token_address) =
             &collat.reserve.reserve_type
         {
@@ -181,48 +180,18 @@ fn do_liquidate(
 
             let s_token = STokenClient::new(env, s_token_address);
 
-            if receive_stoken {
-                let mut liquidator_configurator =
-                    UserConfigurator::new(env, liquidator, true, user_assets_limit);
-                let liquidator_config = liquidator_configurator.user_config()?;
+            let amount_to_sub = liq_comp_amount
+                .checked_neg()
+                .ok_or(Error::LiquidateMathError)?;
+            s_token_supply = s_token_supply
+                .checked_sub(liq_lp_amount)
+                .ok_or(Error::LiquidateMathError)?;
 
-                assert_with_error!(
-                    env,
-                    !liquidator_config.is_borrowing(env, collat.reserve.get_id()),
-                    Error::MustNotHaveDebt
-                );
-
-                let liquidator_collat_before =
-                    read_token_balance(env, &s_token.address, liquidator);
-
-                let liquidator_collat_after = liquidator_collat_before
-                    .checked_add(liq_lp_amount)
-                    .ok_or(Error::LiquidateMathError)?;
-
-                // to avoid panic in s_token transfer
-                if liq_lp_amount > 0 {
-                    s_token.transfer_on_liquidation(who, liquidator, &liq_lp_amount);
-                }
-                write_token_balance(env, &s_token.address, liquidator, liquidator_collat_after)?;
-
-                let use_as_collat = liquidator_collat_before == 0;
-
-                liquidator_configurator
-                    .deposit(collat.reserve.get_id(), &collat.asset, use_as_collat)?
-                    .write();
-            } else {
-                let amount_to_sub = liq_comp_amount
-                    .checked_neg()
-                    .ok_or(Error::LiquidateMathError)?;
-                s_token_supply = s_token_supply
-                    .checked_sub(liq_lp_amount)
-                    .ok_or(Error::LiquidateMathError)?;
-
-                if liq_lp_amount > 0 && liq_comp_amount > 0 {
-                    s_token.burn(who, &liq_lp_amount, &liq_comp_amount, liquidator);
-                }
-                add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
+            if liq_lp_amount > 0 && liquidator_part_underlying > 0 {
+                s_token.burn(who, &liq_lp_amount, &liquidator_part_underlying, liquidator);
             }
+
+            add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
 
             write_token_total_supply(env, s_token_address, s_token_supply)?;
             write_token_balance(
@@ -247,9 +216,14 @@ fn do_liquidate(
             token::Client::new(env, &collat.asset).transfer(
                 &env.current_contract_address(),
                 liquidator,
-                &liq_comp_amount,
+                &liquidator_part_underlying,
             );
+
             write_token_balance(env, &collat.asset, who, who_rwa_balance_after)?;
+        }
+
+        if protocol_part_underlying > 0 {
+            add_protocol_fee_vault(env, &collat.asset, protocol_part_underlying)?;
         }
 
         user_configurator.withdraw(

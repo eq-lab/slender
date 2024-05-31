@@ -336,6 +336,7 @@ fn rwa_fail_when_exceed_assets_limit() {
         user_assets_limit: 2,
         min_collat_amount: 0,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     });
 
     sut.pool

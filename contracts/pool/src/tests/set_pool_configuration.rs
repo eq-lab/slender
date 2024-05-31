@@ -23,6 +23,7 @@ fn should_require_admin() {
         user_assets_limit: 4,
         min_collat_amount: 0,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     };
 
     sut.pool.set_pool_configuration(&pool_config);
@@ -61,6 +62,7 @@ fn should_set_pool_configuration() {
         user_assets_limit: 1,
         min_collat_amount: 0,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     });
 
     let pool_config_after = sut.pool.pool_configuration();

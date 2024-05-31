@@ -43,13 +43,11 @@ fn deploy_pool_and_s_token() {
         // Deploy contract using deployer, and include an init function to call.
         let salt = BytesN::from_array(&env, &[0; 32]);
         let pool_admin = Address::generate(&env);
-        let treasury = Address::generate(&env);
 
         let (contract_id, init_result) = client.deploy_pool(
             &salt,
             &pool_wasm_hash,
             &pool_admin,
-            &treasury,
             &flash_loan_fee,
             &initial_health,
             &pool_ir_params,

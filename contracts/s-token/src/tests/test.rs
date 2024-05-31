@@ -41,14 +41,12 @@ fn create_token<'a>(
 ) {
     let pool = pool::Client::new(e, &e.register_contract_wasm(None, pool::WASM));
     let pool_admin = Address::generate(e);
-    let treasury = Address::generate(e);
     let flash_loan_fee = 5;
     let initial_health = 2_500;
     let grace_period = 60 * 60 * 24;
 
     pool.initialize(
         &pool_admin,
-        &treasury,
         &flash_loan_fee,
         &initial_health,
         &IRParams {

@@ -1,5 +1,6 @@
 pub mod account_position;
 pub mod borrow;
+pub mod claim_protocol_fee;
 pub mod collat_coeff;
 pub mod configure_as_collateral;
 pub mod debt_coeff;

@@ -5,6 +5,7 @@ use soroban_sdk::Env;
 use crate::read_base_asset;
 use crate::read_flash_loan_fee;
 use crate::read_initial_health;
+use crate::read_liquidation_protocol_fee;
 use crate::read_min_position_amounts;
 use crate::read_reserve_timestamp_window;
 use crate::read_user_assets_limit;
@@ -22,5 +23,6 @@ pub fn pool_configuration(env: &Env) -> Result<PoolConfig, Error> {
         timestamp_window: read_reserve_timestamp_window(env),
         min_collat_amount: min_position_amounts.0,
         min_debt_amount: min_position_amounts.1,
+        liquidation_protocol_fee: read_liquidation_protocol_fee(env),
     })
 }

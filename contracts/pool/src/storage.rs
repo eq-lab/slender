@@ -23,7 +23,6 @@ pub enum DataKey {
     Reserves,
     ReserveAssetKey(Address),
     ReserveTimestampWindow,
-    Treasury,
     IRParams,
     UserAssetsLimit,
     UserConfig(Address),
@@ -35,6 +34,8 @@ pub enum DataKey {
     TokenSupply(Address),
     TokenBalance(Address, Address),
     InitialHealth,
+    LiquidationProtocolFee,
+    ProtocolFeeVault(Address),
 }
 
 pub fn has_admin(env: &Env) -> bool {
@@ -316,22 +317,6 @@ pub fn write_pause_info(env: &Env, value: PauseInfo) {
     env.storage().instance().set(&DataKey::Pause, &value);
 }
 
-pub fn write_treasury(env: &Env, treasury: &Address) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage().instance().set(&DataKey::Treasury, treasury);
-}
-
-pub fn read_treasury(env: &Env) -> Address {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage().instance().get(&DataKey::Treasury).unwrap()
-}
-
 pub fn write_flash_loan_fee(env: &Env, fee: u32) {
     env.storage()
         .instance()
@@ -351,7 +336,7 @@ pub fn read_flash_loan_fee(env: &Env) -> u32 {
         .unwrap()
 }
 
-pub fn write_stoken_underlying_balance(
+fn write_stoken_underlying_balance(
     env: &Env,
     s_token_address: &Address,
     total_supply: i128,
@@ -449,6 +434,70 @@ pub fn write_token_balance(
         LOW_USER_DATA_BUMP_LEDGERS,
         HIGH_USER_DATA_BUMP_LEDGERS,
     );
+
+    Ok(())
+}
+
+pub fn read_liquidation_protocol_fee(env: &Env) -> u32 {
+    let key = DataKey::LiquidationProtocolFee;
+    let value = env.storage().persistent().get(&key);
+
+    if value.is_some() {
+        env.storage().persistent().extend_ttl(
+            &key,
+            LOW_USER_DATA_BUMP_LEDGERS,
+            HIGH_USER_DATA_BUMP_LEDGERS,
+        );
+    }
+
+    value.unwrap_or(0)
+}
+
+pub fn write_liquidation_protocol_fee(env: &Env, value: u32) {
+    let key = DataKey::LiquidationProtocolFee;
+
+    env.storage().persistent().set(&key, &value);
+    env.storage().persistent().extend_ttl(
+        &key,
+        LOW_USER_DATA_BUMP_LEDGERS,
+        HIGH_USER_DATA_BUMP_LEDGERS,
+    );
+}
+
+pub fn read_protocol_fee_vault(env: &Env, asset: &Address) -> i128 {
+    let key = DataKey::ProtocolFeeVault(asset.clone());
+    let value = env.storage().persistent().get(&key);
+
+    if value.is_some() {
+        env.storage().persistent().extend_ttl(
+            &key,
+            LOW_USER_DATA_BUMP_LEDGERS,
+            HIGH_USER_DATA_BUMP_LEDGERS,
+        );
+    }
+
+    value.unwrap_or(0)
+}
+
+pub fn write_protocol_fee_vault(env: &Env, asset: &Address, balance: i128) {
+    assert_with_error!(env, !balance.is_negative(), Error::MustBePositive);
+    let key = DataKey::ProtocolFeeVault(asset.clone());
+
+    env.storage().persistent().set(&key, &balance);
+    env.storage().persistent().extend_ttl(
+        &key,
+        LOW_USER_DATA_BUMP_LEDGERS,
+        HIGH_USER_DATA_BUMP_LEDGERS,
+    );
+}
+
+pub fn add_protocol_fee_vault(env: &Env, asset: &Address, amount: i128) -> Result<(), Error> {
+    let mut balance = read_protocol_fee_vault(env, asset);
+    balance = balance
+        .checked_add(amount)
+        .ok_or(Error::MathOverflowError)?;
+
+    write_protocol_fee_vault(env, asset, balance);
 
     Ok(())
 }
