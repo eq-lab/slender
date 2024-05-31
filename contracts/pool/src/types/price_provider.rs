@@ -36,12 +36,10 @@ impl<'a> PriceProvider<'a> {
         }
 
         let config = self.config(asset)?;
-        let median_twap_price = self.price(asset, &config)?;
+        let median_twap_price = self.price_in_base(asset, &config)?;
 
         median_twap_price
             .mul_int(amount)
-            .and_then(|a| FixedI128::from_rational(a, 10i128.pow(config.asset_decimals)))
-            .and_then(|a| a.to_precision(self.base_asset.decimals))
             .ok_or(Error::InvalidAssetPrice)
     }
 
@@ -56,25 +54,17 @@ impl<'a> PriceProvider<'a> {
         }
 
         let config = self.config(asset)?;
-        let median_twap_price = self.price(asset, &config)?;
+        let median_twap_price = self.price_in_base(asset, &config)?;
 
-        let price = median_twap_price
-            .mul_int(10i128.pow(self.base_asset.decimals))
-            .ok_or(Error::InvalidAssetPrice)?;
-
-        let price = if round_ceil {
-            FixedI128::from_rational(amount, price).ok_or(Error::InvalidAssetPrice)?
+        if round_ceil {
+            median_twap_price
+                .recip_mul_int(amount)
+                .ok_or(Error::InvalidAssetPrice)
         } else {
-            let ceiled = FixedI128::from_inner(price)
+            median_twap_price
                 .recip_mul_int_ceil(amount)
-                .ok_or(Error::InvalidAssetPrice)?;
-
-            FixedI128::from_inner(ceiled)
-        };
-
-        price
-            .to_precision(config.asset_decimals)
-            .ok_or(Error::InvalidAssetPrice)
+                .ok_or(Error::InvalidAssetPrice)
+        }
     }
 
     fn config(&mut self, asset: &Address) -> Result<PriceFeedConfig, Error> {
@@ -89,7 +79,11 @@ impl<'a> PriceProvider<'a> {
         }
     }
 
-    fn price(&mut self, asset: &Address, config: &PriceFeedConfig) -> Result<FixedI128, Error> {
+    fn price_in_base(
+        &mut self,
+        asset: &Address,
+        config: &PriceFeedConfig,
+    ) -> Result<FixedI128, Error> {
         let price = self.prices.get(asset.clone());
 
         let price = match price {
@@ -98,10 +92,20 @@ impl<'a> PriceProvider<'a> {
                 let mut sorted_twap_prices = Map::new(self.env);
 
                 for feed in config.feeds.iter() {
-                    let twap_price =
-                        FixedI128::from_rational(self.twap(&feed)?, 10i128.pow(feed.feed_decimals))
-                            .ok_or(Error::MathOverflowError)?
-                            .into_inner();
+                    let base_precision = 10i128
+                        .checked_pow(self.base_asset.decimals)
+                        .ok_or(Error::MathOverflowError)?;
+
+                    let feed_precision = 10i128
+                        .checked_pow(feed.feed_decimals)
+                        .ok_or(Error::MathOverflowError)?;
+
+                    let twap_price = self
+                        .twap(&feed)?
+                        .checked_mul(base_precision)
+                        .ok_or(Error::MathOverflowError)?
+                        .checked_div(feed_precision)
+                        .ok_or(Error::MathOverflowError)?;
 
                     sorted_twap_prices.set(twap_price, twap_price);
                 }
