@@ -1,5 +1,6 @@
 use crate::tests::sut::{fill_pool, fill_pool_three, init_pool, DAY};
 use crate::*;
+use common::FixedI128;
 use price_feed_interface::types::asset::Asset;
 use price_feed_interface::types::price_data::PriceData;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
@@ -986,4 +987,108 @@ fn should_not_fail_after_grace_period() {
     let borrower_npv_after = sut.pool.account_position(&borrower);
 
     assert!(borrower_npv_after.npv > borrower_pos_before.npv);
+}
+
+#[test]
+fn should_pay_protocol_fee() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    struct LiquidatorProtocolBonus {
+        liquidator: (i128, i128),
+        protocol: (i128, i128),
+    }
+
+    let liquidate = |liquidation_protocol_fee| {
+        let sut = init_pool(&env, false);
+        let (liquidator, borrower) = fill_pool_six(&env, &sut);
+        let collat_1_token = sut.reserves[0].token.address.clone();
+        let collat_2_token = sut.reserves[2].token.address.clone();
+        let debt_token = sut.reserves[1].token.address.clone();
+
+        sut.pool.set_pool_configuration(&PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 2_500,
+            timestamp_window: 20,
+            user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee,
+        });
+
+        let liquidator_balance_before_1 = sut.reserves[0].token.balance(&liquidator);
+        let liquidator_balance_before_2 = sut.reserves[2].token.balance(&liquidator);
+        let protocol_fee_before_1 = sut.pool.protocol_fee(&sut.reserves[0].token.address);
+        let protocol_fee_before_2 = sut.pool.protocol_fee(&sut.reserves[2].token.address);
+
+        env.ledger()
+            .with_mut(|li| li.timestamp = li.timestamp + 10_000);
+
+        sut.pool
+            .deposit(&borrower, &collat_1_token, &10_000_000_000);
+        sut.pool
+            .deposit(&borrower, &collat_2_token, &1_000_000_000_000);
+        sut.pool.borrow(&borrower, &debt_token, &800_000_000_000);
+
+        sut.price_feed.init(
+            &Asset::Stellar(debt_token),
+            &vec![
+                &env,
+                PriceData {
+                    price: (18 * 10i128.pow(15)),
+                    timestamp: 0,
+                },
+            ],
+        );
+
+        sut.pool.liquidate(&liquidator, &borrower);
+
+        let liquidator_balance_after_1 = sut.reserves[0].token.balance(&liquidator);
+        let liquidator_balance_after_2 = sut.reserves[2].token.balance(&liquidator);
+
+        let liquidator_bonus_1 = liquidator_balance_after_1 - liquidator_balance_before_1;
+        let liquidator_bonus_2 = liquidator_balance_after_2 - liquidator_balance_before_2;
+
+        let protocol_fee_after_1 = sut.pool.protocol_fee(&sut.reserves[0].token.address);
+        let protocol_fee_after_2 = sut.pool.protocol_fee(&sut.reserves[2].token.address);
+
+        let protocol_bonus_1 = protocol_fee_after_1 - protocol_fee_before_1;
+        let protocol_bonus_2 = protocol_fee_after_2 - protocol_fee_before_2;
+
+        LiquidatorProtocolBonus {
+            liquidator: (liquidator_bonus_1, liquidator_bonus_2),
+            protocol: (protocol_bonus_1, protocol_bonus_2),
+        }
+    };
+
+    let bonus_without_protocol_fee = liquidate(0);
+
+    for fee in [1, 10, 100, 1000, 5000, 9000, 10000] {
+        let bonus_with_protocol_fee = liquidate(fee);
+
+        let expected_protocol_fee_1 =
+            bonus_without_protocol_fee.liquidator.0 - bonus_with_protocol_fee.liquidator.0;
+        let expected_protocol_fee_2 =
+            bonus_without_protocol_fee.liquidator.1 - bonus_with_protocol_fee.liquidator.1;
+
+        assert_eq!(
+            bonus_without_protocol_fee.liquidator.0 - bonus_with_protocol_fee.liquidator.0,
+            FixedI128::from_percentage(fee)
+                .unwrap()
+                .mul_int(bonus_without_protocol_fee.liquidator.0)
+                .unwrap()
+        );
+        assert_eq!(
+            bonus_without_protocol_fee.liquidator.1 - bonus_with_protocol_fee.liquidator.1,
+            FixedI128::from_percentage(fee)
+                .unwrap()
+                .mul_int(bonus_without_protocol_fee.liquidator.1)
+                .unwrap()
+        );
+
+        assert_eq!(expected_protocol_fee_1, bonus_with_protocol_fee.protocol.0);
+        assert_eq!(expected_protocol_fee_2, bonus_with_protocol_fee.protocol.1);
+    }
 }

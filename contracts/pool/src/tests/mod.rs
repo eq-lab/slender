@@ -14,6 +14,7 @@ pub mod init_reserve;
 pub mod ir_params;
 pub mod liquidate;
 pub mod paused;
+pub mod protocol_fee;
 pub mod rates;
 pub mod repay;
 pub mod rounding;
