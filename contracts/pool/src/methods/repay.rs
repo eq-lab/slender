@@ -119,7 +119,7 @@ pub fn do_repay(
         .checked_sub(borrower_debt_to_burn)
         .ok_or(Error::MathOverflowError)?;
     let s_token_underlying_after = read_stoken_underlying_balance(env, s_token_address)
-        .checked_sub(lender_part)
+        .checked_add(lender_part)
         .ok_or(Error::MathOverflowError)?;
 
     user_configurator.repay(reserve.get_id(), is_repayed)?;
