@@ -10,7 +10,6 @@ use pool_interface::types::price_feed::PriceFeed;
 use pool_interface::types::price_feed_config_input::PriceFeedConfigInput;
 use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::types::timestamp_precision::TimestampPrecision;
-use pool_interface::LendingPoolClient;
 use price_feed_interface::types::asset::Asset;
 use price_feed_interface::types::price_data::PriceData;
 use price_feed_interface::PriceFeedClient;
@@ -18,8 +17,6 @@ use soroban_sdk::testutils::{Address as _, Ledger};
 use soroban_sdk::{vec, Address, Bytes, Env, IntoVal, Symbol, Val, Vec};
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-
-use crate::LendingPool;
 
 use super::sut::{
     create_pool_contract, create_price_feed_contract, create_s_token_contract,
@@ -195,45 +192,6 @@ fn ir_params() {
 }
 
 #[test]
-fn liquidate_receive_stoken_when_borrower_has_two_debts() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, true);
-    let (_, _, borrower) = fill_pool_four(&env, &sut);
-
-    env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
-
-    let liquidator = Address::generate(&env);
-
-    for reserve in &sut.reserves {
-        reserve.token_admin.mint(&liquidator, &100_000_000_000);
-    }
-
-    sut.pool
-        .deposit(&liquidator, &sut.reserves[0].token.address, &100_000_000);
-    sut.pool
-        .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
-
-    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
-
-    sut.price_feed.init(
-        &Asset::Stellar(sut.reserves[0].token.address.clone()),
-        &vec![
-            &env,
-            PriceData {
-                price: 110_000_000_000_000,
-                timestamp: 0,
-            },
-        ],
-    );
-
-    measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(&liquidator, &borrower, &true);
-    });
-}
-
-#[test]
 fn liquidate_receive_underlying_when_borrower_has_one_debt() {
     let env = Env::default();
     env.mock_all_auths();
@@ -249,6 +207,7 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
         user_assets_limit: 4,
         min_collat_amount: 0,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     });
 
     sut.pool
@@ -287,7 +246,7 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
     );
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(&liquidator, &borrower, &false);
+        sut.pool.liquidate(&liquidator, &borrower);
     });
 }
 
@@ -332,7 +291,7 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
     );
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.liquidate(&liquidator, &borrower, &false);
+        sut.pool.liquidate(&liquidator, &borrower);
     });
 }
 
@@ -534,34 +493,6 @@ fn stoken_underlying_balance() {
 }
 
 #[test]
-fn treasury() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let pool = LendingPoolClient::new(&env, &env.register_contract(None, LendingPool));
-    let flash_loan_fee = 5;
-    let grace_period = 1;
-
-    pool.initialize(
-        &Address::generate(&env),
-        &Address::generate(&env),
-        &flash_loan_fee,
-        &2_500,
-        &IRParams {
-            alpha: 143,
-            initial_rate: 200,
-            max_rate: 50_000,
-            scaling_coeff: 9_000,
-        },
-        &grace_period,
-    );
-
-    measure_budget(&env, function_name!(), || {
-        pool.treasury();
-    });
-}
-
-#[test]
 fn user_configuration() {
     let env = Env::default();
     env.mock_all_auths();
@@ -624,6 +555,7 @@ fn set_pool_configuration() {
             user_assets_limit: 4,
             min_collat_amount: 0,
             min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
         });
     });
 }

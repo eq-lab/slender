@@ -22,6 +22,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
         user_assets_limit: 4,
         min_collat_amount: 0,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     });
 
     let debt_token = sut.reserves[1].token.address.clone();
@@ -78,7 +79,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
     let debt_coeff_after_price_change = sut.pool.debt_coeff(&debt_token);
 
-    sut.pool.liquidate(&lender, &borrower, &false);
+    sut.pool.liquidate(&lender, &borrower);
 
     env.ledger().with_mut(|l| l.timestamp = 6 * DAY);
     let debt_coeff_after_liquidate = sut.pool.debt_coeff(&debt_token);
@@ -178,6 +179,7 @@ fn should_change_when_elapsed_time_gte_window() {
         user_assets_limit: 4,
         min_collat_amount: 0,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     });
 
     let (_, _, _, debt_config) = fill_pool_three(&env, &sut);

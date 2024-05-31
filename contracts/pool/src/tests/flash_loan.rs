@@ -71,9 +71,9 @@ fn should_require_borrower_to_pay_fee() {
         ],
     );
 
-    let treasury_asset_0_before = sut.reserves[0].token.balance(&sut.pool.treasury());
-    let treasury_asset_1_before = sut.reserves[1].token.balance(&sut.pool.treasury());
-    let treasury_asset_2_before = sut.reserves[2].token.balance(&sut.pool.treasury());
+    let treasury_asset_0_before = sut.pool.protocol_fee(&sut.reserves[0].token.address);
+    let treasury_asset_1_before = sut.pool.protocol_fee(&sut.reserves[1].token.address);
+    let treasury_asset_2_before = sut.pool.protocol_fee(&sut.reserves[2].token.address);
 
     let s_token_undetlying_asset_0_before = sut.reserves[0]
         .token
@@ -92,9 +92,9 @@ fn should_require_borrower_to_pay_fee() {
         &Bytes::new(&env),
     );
 
-    let treasury_asset_0_after = sut.reserves[0].token.balance(&sut.pool.treasury());
-    let treasury_asset_1_after = sut.reserves[1].token.balance(&sut.pool.treasury());
-    let treasury_asset_2_after = sut.reserves[2].token.balance(&sut.pool.treasury());
+    let treasury_asset_0_after = sut.pool.protocol_fee(&sut.reserves[0].token.address);
+    let treasury_asset_1_after = sut.pool.protocol_fee(&sut.reserves[1].token.address);
+    let treasury_asset_2_after = sut.pool.protocol_fee(&sut.reserves[2].token.address);
 
     let s_token_undetlying_asset_0_after = sut.reserves[0]
         .token
@@ -240,6 +240,7 @@ fn rwa_fail_when_exceed_assets_limit() {
         user_assets_limit: 1,
         min_collat_amount: 0,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     });
 
     let _: Val = env.invoke_contract(
@@ -295,6 +296,7 @@ fn should_fail_when_debt_lt_min_position_amount() {
         user_assets_limit: 2,
         min_collat_amount: 0,
         min_debt_amount: 4_000_000,
+        liquidation_protocol_fee: 0,
     });
 
     let _: Val = env.invoke_contract(

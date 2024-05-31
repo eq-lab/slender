@@ -531,6 +531,7 @@ fn should_fail_when_bad_position_after_withdraw() {
         user_assets_limit: 4,
         min_collat_amount: 0,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     });
 
     let lender = Address::generate(&env);
@@ -575,6 +576,7 @@ fn should_fail_when_collat_lt_min_position_amount() {
         user_assets_limit: 4,
         min_collat_amount: 115_000_000,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     });
 
     let lender = Address::generate(&env);

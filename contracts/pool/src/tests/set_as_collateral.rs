@@ -93,6 +93,7 @@ fn should_fail_when_npv_fails_bellow_initial_health() {
         user_assets_limit: 4,
         min_collat_amount: 0,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     });
 
     sut.pool
@@ -167,6 +168,7 @@ fn rwa_fail_when_exceed_assets_limit() {
         user_assets_limit: 2,
         min_collat_amount: 0,
         min_debt_amount: 300_000,
+        liquidation_protocol_fee: 0,
     });
 
     sut.pool
@@ -191,6 +193,7 @@ fn should_fail_when_collat_lt_min_position_amount() {
         user_assets_limit: 2,
         min_collat_amount: 7_000_000,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     });
 
     assert_eq!(sut.pool.set_as_collateral(&user, &collat_token, &false), ());

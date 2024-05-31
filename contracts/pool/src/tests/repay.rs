@@ -14,11 +14,11 @@ fn should_partially_repay() {
     let stoken_token = &debt_config.s_token().address;
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
-    let treasury_address = sut.pool.treasury().clone();
+    // let treasury_address = sut.pool.treasury().clone();
 
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
-    let treasury_balance = debt_config.token.balance(&treasury_address);
+    let treasury_balance = sut.pool.protocol_fee(&debt_config.token.address);
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 60_000_000);
@@ -30,7 +30,7 @@ fn should_partially_repay() {
 
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
-    let treasury_balance = debt_config.token.balance(&treasury_address);
+    let treasury_balance = sut.pool.protocol_fee(&debt_config.token.address);
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 79_997_090);
@@ -50,11 +50,11 @@ fn should_fully_repay() {
     let stoken_token = &debt_config.s_token().address;
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
-    let treasury_address = sut.pool.treasury().clone();
+    // let treasury_address = sut.pool.treasury().clone();
 
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
-    let treasury_balance = debt_config.token.balance(&treasury_address);
+    let treasury_balance = sut.pool.protocol_fee(&debt_config.token.address);
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 60_000_000);
@@ -66,7 +66,7 @@ fn should_fully_repay() {
 
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
-    let treasury_balance = debt_config.token.balance(&treasury_address);
+    let treasury_balance = sut.pool.protocol_fee(&debt_config.token.address);
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 100_003_275);
@@ -215,6 +215,7 @@ fn should_fail_when_debt_lt_min_position_amount() {
         user_assets_limit: 2,
         min_collat_amount: 0,
         min_debt_amount: 300_000,
+        liquidation_protocol_fee: 0,
     });
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
@@ -233,11 +234,11 @@ fn should_not_fail_in_grace_period() {
     let stoken_token = &debt_config.s_token().address;
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
-    let treasury_address = sut.pool.treasury().clone();
+    // let treasury_address = sut.pool.treasury().clone();
 
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
-    let treasury_balance = debt_config.token.balance(&treasury_address);
+    let treasury_balance = sut.pool.protocol_fee(&debt_config.token.address);
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 60_000_000);
@@ -252,7 +253,7 @@ fn should_not_fail_in_grace_period() {
 
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
-    let treasury_balance = debt_config.token.balance(&treasury_address);
+    let treasury_balance = sut.pool.protocol_fee(&debt_config.token.address);
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 100_003_275);

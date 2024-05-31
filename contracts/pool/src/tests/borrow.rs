@@ -154,6 +154,7 @@ fn should_fail_when_lt_initial_health() {
         user_assets_limit: 4,
         min_collat_amount: 0,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     });
     sut.pool.borrow(&borrower, &token_address, &50_000_000);
 }
@@ -289,12 +290,12 @@ fn should_change_balances_when_borrow_and_repay() {
     let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
-    let treasury = sut.pool.treasury();
+    // let treasury = sut.pool.treasury();
 
     env.ledger()
         .with_mut(|li| li.timestamp = li.timestamp + 2 * DAY);
 
-    let treasury_before = debt_config.token.balance(&treasury);
+    let treasury_before = sut.pool.protocol_fee(&debt_config.token.address);
     let debt_balance_before = debt_config.debt_token().balance(&borrower);
     let debt_total_before = debt_config.debt_token().total_supply();
     let borrower_balance_before = debt_config.token.balance(&borrower);
@@ -304,7 +305,7 @@ fn should_change_balances_when_borrow_and_repay() {
 
     sut.pool.borrow(&borrower, &token_address, &20_000_000);
 
-    let treasury_after_borrow = debt_config.token.balance(&treasury);
+    let treasury_after_borrow = sut.pool.protocol_fee(&debt_config.token.address);
     let debt_balance_after_borrow = debt_config.debt_token().balance(&borrower);
     let debt_total_after_borrow = debt_config.debt_token().total_supply();
     let borrower_balance_after_borrow = debt_config.token.balance(&borrower);
@@ -316,7 +317,7 @@ fn should_change_balances_when_borrow_and_repay() {
 
     sut.pool.repay(&borrower, &token_address, &i128::MAX);
 
-    let treasury_after_repay = debt_config.token.balance(&treasury);
+    let treasury_after_repay = sut.pool.protocol_fee(&debt_config.token.address);
     let debt_balance_after_repay = debt_config.debt_token().balance(&borrower);
     let debt_total_after_repay = debt_config.debt_token().total_supply();
     let borrower_balance_after_repay = debt_config.token.balance(&borrower);
@@ -400,6 +401,7 @@ fn rwa_fail_when_exceed_assets_limit() {
         user_assets_limit: 2,
         min_collat_amount: 0,
         min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
     });
 
     sut.pool
@@ -423,6 +425,7 @@ fn should_fail_when_collat_lt_min_position_amount() {
         user_assets_limit: 4,
         min_collat_amount: 0,
         min_debt_amount: 60_000_000,
+        liquidation_protocol_fee: 0,
     });
 
     let lender = Address::generate(&env);
