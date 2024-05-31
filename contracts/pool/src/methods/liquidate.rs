@@ -83,7 +83,7 @@ fn do_liquidate(
         .unwrap_or(None);
     let total_collat_in_base = account_data.collat.ok_or(Error::LiquidateMathError)?;
 
-    let zero_percent = FixedI128::from_inner(0);
+    let zero_percent = FixedI128::ZERO;
     let initial_health_percent = FixedI128::from_percentage(read_initial_health(env)?).unwrap();
     let hundred_percent = FixedI128::from_percentage(PERCENTAGE_FACTOR).unwrap();
     let npv_percent = FixedI128::from_rational(account_data.npv, total_collat_disc_after_in_base)

@@ -1,6 +1,5 @@
 use core::ops::Div;
 
-use common::FixedI128;
 use pool_interface::types::base_asset_config::BaseAssetConfig;
 use pool_interface::types::error::Error;
 use pool_interface::types::price_feed::PriceFeed;
@@ -38,8 +37,14 @@ impl<'a> PriceProvider<'a> {
         let config = self.config(asset)?;
         let median_twap_price = self.price_in_base(asset, &config)?;
 
+        let precision = 10i128
+            .checked_pow(config.asset_decimals)
+            .ok_or(Error::MathOverflowError)?;
+
         median_twap_price
-            .mul_int(amount)
+            .checked_mul(amount)
+            .ok_or(Error::InvalidAssetPrice)?
+            .checked_div(precision)
             .ok_or(Error::InvalidAssetPrice)
     }
 
@@ -56,13 +61,34 @@ impl<'a> PriceProvider<'a> {
         let config = self.config(asset)?;
         let median_twap_price = self.price_in_base(asset, &config)?;
 
+        let precision = 10i128
+            .checked_pow(config.asset_decimals)
+            .ok_or(Error::MathOverflowError)?;
+
         if round_ceil {
-            median_twap_price
-                .recip_mul_int(amount)
+            amount
+                .checked_mul(precision)
+                .ok_or(Error::InvalidAssetPrice)?
+                .checked_div(median_twap_price)
                 .ok_or(Error::InvalidAssetPrice)
         } else {
-            median_twap_price
-                .recip_mul_int_ceil(amount)
+            amount
+                .checked_mul(precision)
+                .ok_or(Error::InvalidAssetPrice)?
+                .checked_div(median_twap_price)
+                .map(|res| {
+                    let res_1 = res.abs();
+                    let other_1 = amount.abs();
+                    let self_1 = median_twap_price.abs();
+
+                    if res_1 == 0 {
+                        1
+                    } else if other_1 % self_1 == 0 {
+                        res
+                    } else {
+                        res + 1
+                    }
+                })
                 .ok_or(Error::InvalidAssetPrice)
         }
     }
@@ -79,15 +105,11 @@ impl<'a> PriceProvider<'a> {
         }
     }
 
-    fn price_in_base(
-        &mut self,
-        asset: &Address,
-        config: &PriceFeedConfig,
-    ) -> Result<FixedI128, Error> {
+    fn price_in_base(&mut self, asset: &Address, config: &PriceFeedConfig) -> Result<i128, Error> {
         let price = self.prices.get(asset.clone());
 
-        let price = match price {
-            Some(price) => price,
+        match price {
+            Some(price) => Ok(price),
             None => {
                 let mut sorted_twap_prices = Map::new(self.env);
 
@@ -114,11 +136,9 @@ impl<'a> PriceProvider<'a> {
 
                 self.prices.set(asset.clone(), median_twap_price);
 
-                median_twap_price
+                Ok(median_twap_price)
             }
-        };
-
-        Ok(FixedI128::from_inner(price))
+        }
     }
 
     fn twap(&mut self, config: &PriceFeed) -> Result<i128, Error> {
