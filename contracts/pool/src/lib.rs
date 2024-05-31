@@ -1,25 +1,25 @@
 #![deny(warnings)]
 #![no_std]
 
-use methods::pool_configuration::pool_configuration;
-use methods::set_pool_configuration::set_pool_configuration;
 use methods::{
-    account_position::account_position, borrow::borrow, collat_coeff::collat_coeff,
-    configure_as_collateral::configure_as_collateral, debt_coeff::debt_coeff, deposit::deposit,
+    account_position::account_position, borrow::borrow, claim_protocol_fee::claim_protocol_fee,
+    collat_coeff::collat_coeff, configure_as_collateral::configure_as_collateral,
+    debt_coeff::debt_coeff, deposit::deposit,
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, finalize_transfer::finalize_transfer,
     flash_loan::flash_loan, init_reserve::init_reserve, initialize::initialize,
-    liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral,
-    set_grace_period::set_grace_period, set_ir_params::set_ir_params, set_pause::set_pause,
-    set_price_feeds::set_price_feeds, set_reserve_status::set_reserve_status,
-    twap_median_price::twap_median_price, upgrade::upgrade, upgrade_debt_token::upgrade_debt_token,
-    upgrade_s_token::upgrade_s_token, withdraw::withdraw,
+    liquidate::liquidate, pool_configuration::pool_configuration, repay::repay,
+    set_as_collateral::set_as_collateral, set_grace_period::set_grace_period,
+    set_ir_params::set_ir_params, set_pause::set_pause,
+    set_pool_configuration::set_pool_configuration, set_price_feeds::set_price_feeds,
+    set_reserve_status::set_reserve_status, twap_median_price::twap_median_price, upgrade::upgrade,
+    upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token, withdraw::withdraw,
 };
-use pool_interface::types::pause_info::PauseInfo;
 use pool_interface::types::{
     account_position::AccountPosition, collateral_params_input::CollateralParamsInput,
-    error::Error, flash_loan_asset::FlashLoanAsset, ir_params::IRParams, pool_config::PoolConfig,
-    price_feed_config::PriceFeedConfig, price_feed_config_input::PriceFeedConfigInput,
-    reserve_data::ReserveData, reserve_type::ReserveType, user_config::UserConfiguration,
+    error::Error, flash_loan_asset::FlashLoanAsset, ir_params::IRParams, pause_info::PauseInfo,
+    pool_config::PoolConfig, price_feed_config::PriceFeedConfig,
+    price_feed_config_input::PriceFeedConfigInput, reserve_data::ReserveData,
+    reserve_type::ReserveType, user_config::UserConfiguration,
 };
 use pool_interface::LendingPoolTrait;
 use soroban_sdk::{contract, contractimpl, Address, Bytes, BytesN, Env, Vec};
@@ -41,7 +41,6 @@ impl LendingPoolTrait for LendingPool {
     fn initialize(
         env: Env,
         admin: Address,
-        treasury: Address,
         flash_loan_fee: u32,
         initial_health: u32,
         ir_params: IRParams,
@@ -50,7 +49,6 @@ impl LendingPoolTrait for LendingPool {
         initialize(
             &env,
             &admin,
-            &treasury,
             flash_loan_fee,
             initial_health,
             &ir_params,
@@ -191,21 +189,12 @@ impl LendingPoolTrait for LendingPool {
         read_pause_info(&env)
     }
 
-    fn treasury(e: Env) -> Address {
-        read_treasury(&e)
-    }
-
     fn account_position(env: Env, who: Address) -> Result<AccountPosition, Error> {
         account_position(&env, &who)
     }
 
-    fn liquidate(
-        env: Env,
-        liquidator: Address,
-        who: Address,
-        receive_stoken: bool,
-    ) -> Result<(), Error> {
-        liquidate(&env, &liquidator, &who, receive_stoken)
+    fn liquidate(env: Env, liquidator: Address, who: Address) -> Result<(), Error> {
+        liquidate(&env, &liquidator, &who)
     }
 
     fn set_as_collateral(
@@ -249,5 +238,13 @@ impl LendingPoolTrait for LendingPool {
 
     fn balance(env: Env, id: Address, asset: Address) -> i128 {
         read_token_balance(&env, &asset, &id)
+    }
+
+    fn protocol_fee(env: Env, asset: Address) -> i128 {
+        read_protocol_fee_vault(&env, &asset)
+    }
+
+    fn claim_protocol_fee(env: Env, asset: Address, recipient: Address) -> Result<(), Error> {
+        claim_protocol_fee(&env, &asset, &recipient)
     }
 }

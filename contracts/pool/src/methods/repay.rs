@@ -6,13 +6,12 @@ use soroban_sdk::{token, Address, Env};
 
 use crate::storage::{
     add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
-    read_token_balance, read_token_total_supply, read_treasury, write_token_balance,
-    write_token_total_supply,
+    read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
-use crate::{event, read_pause_info};
+use crate::{add_protocol_fee_vault, event, read_pause_info};
 
 use super::account_position::calc_account_data;
 use super::utils::get_collat_coeff::get_collat_coeff;
@@ -63,7 +62,6 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
 }
 
 /// Returns
-/// bool: the flag indicating the debt is fully repayed
 /// i128: total debt after repayment
 #[allow(clippy::too_many_arguments)]
 pub fn do_repay(
@@ -153,13 +151,11 @@ pub fn do_repay(
 
     require_min_position_amounts(env, &account_data)?;
 
-    let treasury_address = read_treasury(env);
-
     let underlying_asset = token::Client::new(env, asset);
     let debt_token = DebtTokenClient::new(env, debt_token_address);
 
-    underlying_asset.transfer(who, s_token_address, &lender_part);
-    underlying_asset.transfer(who, &treasury_address, &treasury_part);
+    underlying_asset.transfer(who, s_token_address, &borrower_payback_amount);
+    add_protocol_fee_vault(env, asset, treasury_part)?;
     debt_token.burn(who, &borrower_debt_to_burn);
 
     add_stoken_underlying_balance(env, s_token_address, lender_part)?;

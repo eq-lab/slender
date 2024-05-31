@@ -26,7 +26,6 @@ pub trait LendingPoolTrait {
     fn initialize(
         env: Env,
         admin: Address,
-        treasury: Address,
         flash_loan_fee: u32,
         initial_health: u32,
         ir_params: IRParams,
@@ -110,16 +109,9 @@ pub trait LendingPoolTrait {
 
     fn pause_info(env: Env) -> Result<PauseInfo, Error>;
 
-    fn treasury(e: Env) -> Address;
-
     fn account_position(env: Env, who: Address) -> Result<AccountPosition, Error>;
 
-    fn liquidate(
-        env: Env,
-        liquidator: Address,
-        who: Address,
-        receive_stoken: bool,
-    ) -> Result<(), Error>;
+    fn liquidate(env: Env, liquidator: Address, who: Address) -> Result<(), Error>;
 
     fn set_as_collateral(
         env: Env,
@@ -141,4 +133,8 @@ pub trait LendingPoolTrait {
     fn twap_median_price(env: Env, asset: Address, amount: i128) -> Result<i128, Error>;
 
     fn balance(env: Env, id: Address, asset: Address) -> i128;
+
+    fn protocol_fee(env: Env, asset: Address) -> i128;
+
+    fn claim_protocol_fee(env: Env, asset: Address, recipient: Address) -> Result<(), Error>;
 }

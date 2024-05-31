@@ -2,9 +2,7 @@ use pool_interface::types::pause_info::PauseInfo;
 use pool_interface::types::{error::Error, ir_params::IRParams};
 use soroban_sdk::{Address, Env};
 
-use crate::storage::{
-    write_admin, write_flash_loan_fee, write_initial_health, write_ir_params, write_treasury,
-};
+use crate::storage::{write_admin, write_flash_loan_fee, write_initial_health, write_ir_params};
 use crate::{event, write_pause_info};
 
 use super::utils::validation::{
@@ -14,7 +12,6 @@ use super::utils::validation::{
 pub fn initialize(
     env: &Env,
     admin: &Address,
-    treasury: &Address,
     flash_loan_fee: u32,
     initial_health: u32,
     ir_params: &IRParams,
@@ -25,7 +22,6 @@ pub fn initialize(
     require_non_zero_grace_period(env, grace_period);
 
     write_admin(env, admin);
-    write_treasury(env, treasury);
     write_ir_params(env, ir_params);
     write_flash_loan_fee(env, flash_loan_fee);
     write_initial_health(env, initial_health);
@@ -38,7 +34,7 @@ pub fn initialize(
         },
     );
 
-    event::initialized(env, admin, treasury, ir_params);
+    event::initialized(env, admin, ir_params);
 
     Ok(())
 }

@@ -8,9 +8,9 @@ use soroban_sdk::{assert_with_error, token, vec, Address, Bytes, Env, Vec};
 use crate::methods::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use crate::methods::utils::validation::require_not_in_grace_period;
 use crate::storage::{
-    read_flash_loan_fee, read_reserve, read_token_balance, read_token_total_supply, read_treasury,
+    read_flash_loan_fee, read_reserve, read_token_balance, read_token_total_supply,
 };
-use crate::{event, read_pause_info};
+use crate::{add_protocol_fee_vault, event, read_pause_info};
 
 use super::borrow::do_borrow;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
@@ -71,8 +71,6 @@ pub fn flash_loan(
     let loan_received = loan_receiver.receive(who, &receiver_assets, params);
     assert_with_error!(env, loan_received, Error::FlashLoanReceiverError);
 
-    let treasury = read_treasury(env);
-
     for i in 0..loan_asset_len {
         let loan_asset = loan_assets.get_unchecked(i);
         let received_asset = receiver_assets.get_unchecked(i);
@@ -87,12 +85,8 @@ pub fn flash_loan(
                 s_token_address,
                 &received_asset.amount,
             );
-            underlying_asset.transfer_from(
-                &env.current_contract_address(),
-                receiver,
-                &treasury,
-                &received_asset.premium,
-            );
+
+            add_protocol_fee_vault(env, &received_asset.asset, received_asset.premium)?;
         } else {
             let s_token_supply = read_token_total_supply(env, s_token_address);
 
