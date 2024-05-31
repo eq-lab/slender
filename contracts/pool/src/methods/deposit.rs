@@ -13,7 +13,7 @@ use crate::storage::{
 };
 use crate::types::user_configurator::UserConfigurator;
 
-use super::utils::get_collat_coeff::get_collat_coeff;
+use super::utils::get_collat_coeff::get_lp_amount;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
     require_active_reserve, require_liquidity_cap_not_exceeded, require_not_paused,
@@ -86,20 +86,24 @@ fn do_deposit_fungible(
     amount: i128,
     s_token_address: &Address,
 ) -> Result<(bool, i128), Error> {
-    let balance = read_stoken_underlying_balance(env, s_token_address);
-    require_liquidity_cap_not_exceeded(env, reserve, debt_token_supply, balance, amount)?;
+    let s_token_underlying_balance = read_stoken_underlying_balance(env, s_token_address);
+    require_liquidity_cap_not_exceeded(
+        env,
+        reserve,
+        debt_token_supply,
+        s_token_underlying_balance,
+        amount,
+    )?;
 
-    let collat_coeff = get_collat_coeff(
+    let is_first_deposit = who_collat == 0;
+    let amount_to_mint = get_lp_amount(
         env,
         reserve,
         s_token_supply,
-        read_stoken_underlying_balance(env, s_token_address),
+        s_token_underlying_balance,
         debt_token_supply,
+        amount,
     )?;
-    let is_first_deposit = who_collat == 0;
-    let amount_to_mint = collat_coeff
-        .recip_mul_int(amount)
-        .ok_or(Error::MathOverflowError)?;
     let s_token_supply_after = s_token_supply
         .checked_add(amount_to_mint)
         .ok_or(Error::MathOverflowError)?;

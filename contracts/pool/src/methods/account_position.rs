@@ -16,7 +16,7 @@ use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::liquidation_asset::LiquidationAsset;
 use crate::types::price_provider::PriceProvider;
 
-use super::utils::get_collat_coeff::get_collat_coeff;
+use super::utils::get_collat_coeff::get_compounded_amount;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 
 pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Error> {
@@ -120,9 +120,6 @@ pub fn calc_account_data(
         result
     };
 
-    // TODO: if discounted_collateral > 0 then discounted_collateral >= min_collat_in_base
-    // TODO: if debt > 0 then debt >= min_debt_in_base
-
     Ok(AccountData {
         discounted_collateral: total_discounted_collat_in_base,
         debt: total_debt_in_base,
@@ -177,14 +174,6 @@ fn calculate_fungible(
             .map(|x| x.balance)
             .unwrap_or_else(|| read_stoken_underlying_balance(env, &s_token_address));
 
-        let collat_coeff = get_collat_coeff(
-            env,
-            &reserve,
-            s_token_supply,
-            s_token_underlying_balance,
-            debt_token_supply,
-        )?;
-
         let who_collat = mb_who_collat
             .filter(|x| x.asset == s_token_address)
             .map(|x| x.balance)
@@ -193,9 +182,14 @@ fn calculate_fungible(
         let discount = FixedI128::from_percentage(reserve.configuration.discount)
             .ok_or(Error::CalcAccountDataMathError)?;
 
-        let compounded_balance = collat_coeff
-            .mul_int(who_collat)
-            .ok_or(Error::CalcAccountDataMathError)?;
+        let compounded_balance = get_compounded_amount(
+            env,
+            &reserve,
+            s_token_supply,
+            s_token_underlying_balance,
+            debt_token_supply,
+            who_collat,
+        )?;
 
         let compounded_balance_in_base =
             price_provider.convert_to_base(&asset, compounded_balance)?;
@@ -218,7 +212,7 @@ fn calculate_fungible(
                 LiquidationAsset {
                     asset,
                     reserve,
-                    coeff: Some(collat_coeff.into_inner()),
+                    coeff: None,
                     lp_balance: Some(who_collat),
                     comp_balance: compounded_balance,
                 },

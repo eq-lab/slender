@@ -1,3 +1,5 @@
+use crate::methods::utils::get_collat_coeff::get_compounded_amount;
+use crate::methods::utils::get_collat_coeff::get_lp_amount;
 use crate::methods::utils::validation::require_gte_initial_health;
 use crate::storage::{
     add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
@@ -14,7 +16,6 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, token, Address, Env};
 
 use super::account_position::calc_account_data;
-use super::utils::get_collat_coeff::get_collat_coeff;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
     require_active_reserve, require_min_position_amounts, require_not_in_grace_period,
@@ -44,27 +45,33 @@ pub fn withdraw(
         if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
             let s_token_supply = read_token_total_supply(env, s_token_address);
             let debt_token_supply = read_token_total_supply(env, debt_token_address);
-            let collat_coeff = get_collat_coeff(
-                env,
-                &reserve,
-                s_token_supply,
-                read_stoken_underlying_balance(env, s_token_address),
-                debt_token_supply,
-            )?;
 
             let s_token = STokenClient::new(env, s_token_address);
 
             let collat_balance = read_token_balance(env, s_token_address, who);
-            let underlying_balance = collat_coeff
-                .mul_int(collat_balance)
-                .ok_or(Error::MathOverflowError)?;
+            let stoken_underlying_balance = read_stoken_underlying_balance(env, s_token_address);
+
+            let underlying_balance = get_compounded_amount(
+                env,
+                &reserve,
+                s_token_supply,
+                stoken_underlying_balance,
+                debt_token_supply,
+                collat_balance,
+            )?;
 
             let (underlying_to_withdraw, s_token_to_burn) = if amount >= underlying_balance {
                 (underlying_balance, collat_balance)
             } else {
-                let s_token_to_burn = collat_coeff
-                    .recip_mul_int(amount)
-                    .ok_or(Error::MathOverflowError)?;
+                let s_token_to_burn = get_lp_amount(
+                    env,
+                    &reserve,
+                    s_token_supply,
+                    stoken_underlying_balance,
+                    debt_token_supply,
+                    amount,
+                )?;
+
                 (amount, s_token_to_burn)
             };
 
@@ -80,22 +87,15 @@ pub fn withdraw(
             let s_token_supply_after = s_token_supply
                 .checked_sub(s_token_to_burn)
                 .ok_or(Error::InvalidAmount)?;
-            let s_token_underlying_after = read_stoken_underlying_balance(env, s_token_address)
+            let s_token_underlying_after = stoken_underlying_balance
                 .checked_sub(underlying_to_withdraw)
                 .ok_or(Error::MathOverflowError)?;
 
-            let is_using_as_collateral = user_configurator
-                .user_config()?
-                .is_using_as_collateral(env, reserve.get_id());
+            user_configurator.withdraw(reserve.get_id(), asset, collat_balance_after == 0)?;
+
             let is_borrowing_any = user_configurator.user_config()?.is_borrowing_any();
 
-            user_configurator.withdraw(
-                reserve.get_id(),
-                asset,
-                underlying_to_withdraw == underlying_balance,
-            )?;
-
-            if is_borrowing_any && is_using_as_collateral {
+            if is_borrowing_any {
                 let account_data = calc_account_data(
                     env,
                     who,
@@ -154,14 +154,11 @@ pub fn withdraw(
             let withdraw_amount = amount.min(rwa_balance);
             let rwa_balance_after = rwa_balance - withdraw_amount;
 
-            let is_using_as_collateral = user_configurator
-                .user_config()?
-                .is_using_as_collateral(env, reserve.get_id());
-            let is_borrowing_any = user_configurator.user_config()?.is_borrowing_any();
-
             user_configurator.withdraw(reserve.get_id(), asset, rwa_balance_after == 0)?;
 
-            if is_borrowing_any && is_using_as_collateral {
+            let is_borrowing_any = user_configurator.user_config()?.is_borrowing_any();
+
+            if is_borrowing_any {
                 let account_data = calc_account_data(
                     env,
                     who,

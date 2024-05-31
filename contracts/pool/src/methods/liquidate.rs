@@ -14,11 +14,12 @@ use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 use crate::{
     add_protocol_fee_vault, add_stoken_underlying_balance, event, read_initial_health,
-    read_liquidation_protocol_fee, read_pause_info, read_token_balance, read_token_total_supply,
-    write_token_balance, write_token_total_supply,
+    read_liquidation_protocol_fee, read_pause_info, read_stoken_underlying_balance,
+    read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
 };
 
 use super::account_position::calc_account_data;
+use super::utils::get_collat_coeff::get_lp_amount;
 use super::utils::validation::require_not_paused;
 
 pub fn liquidate(env: &Env, liquidator: &Address, who: &Address) -> Result<(), Error> {
@@ -165,9 +166,14 @@ fn do_liquidate(
             let debt_token_supply = read_token_total_supply(env, debt_token_address);
 
             let liq_lp_amount = if !full_liquidation && liq_comp_amount < collat.comp_balance {
-                FixedI128::from_inner(collat.coeff.unwrap())
-                    .recip_mul_int(liq_comp_amount)
-                    .ok_or(Error::LiquidateMathError)?
+                get_lp_amount(
+                    env,
+                    &collat.reserve,
+                    s_token_supply,
+                    read_stoken_underlying_balance(env, s_token_address),
+                    debt_token_supply,
+                    liq_comp_amount,
+                )?
             } else {
                 collat.lp_balance.unwrap()
             };
@@ -261,8 +267,11 @@ fn do_liquidate(
 
                     (debt.lp_balance.unwrap(), debt.comp_balance)
                 } else {
-                    let debt_comp_amount = price_provider
-                        .convert_from_base_with_ceil(&debt.asset, total_debt_to_cover_in_base)?; // ceil (convert_from_base_with_ceil)
+                    let debt_comp_amount = price_provider.convert_from_base(
+                        &debt.asset,
+                        total_debt_to_cover_in_base,
+                        true,
+                    )?; // ceil (convert_from_base_with_ceil)
 
                     let debt_lp_amount = FixedI128::from_inner(debt.coeff.unwrap())
                         .recip_mul_int(debt_comp_amount)
@@ -346,7 +355,8 @@ fn calc_liq_amount(
         .checked_sub(safe_discount_percent)
         .ok_or(Error::LiquidateMathError)?;
 
-    let liq_comp_amount = price_provider.convert_from_base(&collat.asset, safe_collat_in_base)?;
+    let liq_comp_amount =
+        price_provider.convert_from_base(&collat.asset, safe_collat_in_base, false)?;
 
     let liq_comp_amount = safe_discount_percent
         .recip_mul_int(liq_comp_amount)

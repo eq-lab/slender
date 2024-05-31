@@ -45,25 +45,11 @@ impl<'a> PriceProvider<'a> {
             .ok_or(Error::InvalidAssetPrice)
     }
 
-    pub fn convert_from_base(&mut self, asset: &Address, amount: i128) -> Result<i128, Error> {
-        if self.base_asset.address == *asset {
-            return Ok(amount);
-        }
-
-        let config = self.config(asset)?;
-        let median_twap_price = self.price(asset, &config)?;
-
-        median_twap_price
-            .recip_mul_int(amount)
-            .and_then(|a| FixedI128::from_rational(a, 10i128.pow(self.base_asset.decimals)))
-            .and_then(|a| a.to_precision(config.asset_decimals))
-            .ok_or(Error::InvalidAssetPrice)
-    }
-
-    pub fn convert_from_base_with_ceil(
+    pub fn convert_from_base(
         &mut self,
         asset: &Address,
         amount: i128,
+        round_ceil: bool,
     ) -> Result<i128, Error> {
         if self.base_asset.address == *asset {
             return Ok(amount);
@@ -71,10 +57,23 @@ impl<'a> PriceProvider<'a> {
 
         let config = self.config(asset)?;
         let median_twap_price = self.price(asset, &config)?;
-        median_twap_price
-            .recip_mul_int_ceil(amount)
-            .and_then(|a| FixedI128::from_rational(a, 10i128.pow(self.base_asset.decimals)))
-            .and_then(|a| a.to_precision(config.asset_decimals))
+
+        let price = median_twap_price
+            .mul_int(10i128.pow(self.base_asset.decimals))
+            .ok_or(Error::InvalidAssetPrice)?;
+
+        let price = if round_ceil {
+            FixedI128::from_rational(amount, price).ok_or(Error::InvalidAssetPrice)?
+        } else {
+            let ceiled = FixedI128::from_inner(price)
+                .recip_mul_int_ceil(amount)
+                .ok_or(Error::InvalidAssetPrice)?;
+
+            FixedI128::from_inner(ceiled)
+        };
+
+        price
+            .to_precision(config.asset_decimals)
             .ok_or(Error::InvalidAssetPrice)
     }
 

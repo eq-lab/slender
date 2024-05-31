@@ -99,6 +99,6 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
     assert_eq!(position_after_change_price.npv, -20_000);
 
     assert_eq!(position_after_liquidate.discounted_collateral, 358_700);
-    assert_eq!(position_after_liquidate.debt, 269_024);
-    assert_eq!(position_after_liquidate.npv, 89_676);
+    assert_eq!(position_after_liquidate.debt, 269_025);
+    assert_eq!(position_after_liquidate.npv, 89_675);
 }
