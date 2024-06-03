@@ -1,6 +1,5 @@
-use crate::tests::sut::{fill_pool, init_pool};
+use crate::tests::sut::{fill_pool, init_pool, set_time};
 use pool_interface::types::pool_config::PoolConfig;
-use soroban_sdk::testutils::Ledger;
 use soroban_sdk::Env;
 
 use super::sut::{create_s_token_contract, create_token_contract};
@@ -376,10 +375,14 @@ fn should_not_fail_after_grace_period() {
     assert_eq!(borrower_in_pool_after - borrower_in_pool_before, 1);
 
     sut.pool.set_pause(&true);
-    env.ledger().with_mut(|li| li.timestamp = start + gap);
+    set_time(&env, &sut, start + gap, false);
     sut.pool.set_pause(&false);
-    env.ledger()
-        .with_mut(|li| li.timestamp = start + gap + pause_info.grace_period_secs);
+    set_time(
+        &env,
+        &sut,
+        start + gap + pause_info.grace_period_secs,
+        false,
+    );
 
     let lender_balance_before = lender_balance_before - 1;
     let borrower_balance_before = borrower_balance_before + 1;

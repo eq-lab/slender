@@ -10,5 +10,6 @@ pub struct PriceFeed {
     pub feed_asset: OracleAsset,
     pub feed_decimals: u32,
     pub twap_records: u32,
+    pub min_timestamp_delta: u64,
     pub timestamp_precision: TimestampPrecision,
 }

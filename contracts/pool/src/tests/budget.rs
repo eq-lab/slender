@@ -13,14 +13,14 @@ use pool_interface::types::timestamp_precision::TimestampPrecision;
 use price_feed_interface::types::asset::Asset;
 use price_feed_interface::types::price_data::PriceData;
 use price_feed_interface::PriceFeedClient;
-use soroban_sdk::testutils::{Address as _, Ledger};
+use soroban_sdk::testutils::Address as _;
 use soroban_sdk::{vec, Address, Bytes, Env, IntoVal, Symbol, Val, Vec};
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 
 use super::sut::{
     create_pool_contract, create_price_feed_contract, create_s_token_contract,
-    create_token_contract, fill_pool, fill_pool_four, init_pool, DAY,
+    create_token_contract, fill_pool, fill_pool_four, init_pool, set_time, DAY,
 };
 use super::upgrade::{debt_token_v2, pool_v2, s_token_v2};
 
@@ -213,7 +213,7 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
     sut.pool
         .borrow(&borrower, &sut.reserves[2].token.address, &4_990_400_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
+    set_time(&env, &sut, 4 * DAY, false);
 
     let liquidator = Address::generate(&env);
 
@@ -232,7 +232,7 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
     sut.pool
         .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
 
-    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
+    set_time(&env, &sut, 5 * DAY, false);
 
     sut.price_feed.init(
         &Asset::Stellar(sut.reserves[2].token.address.clone()),
@@ -240,7 +240,7 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
             &env,
             PriceData {
                 price: 12_000_000_000_000_000,
-                timestamp: 0,
+                timestamp: 5 * DAY,
             },
         ],
     );
@@ -258,7 +258,7 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
     let sut = init_pool(&env, true);
     let (_, _, borrower) = fill_pool_four(&env, &sut);
 
-    env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
+    set_time(&env, &sut, 4 * DAY, false);
 
     let liquidator = Address::generate(&env);
 
@@ -277,7 +277,7 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
     sut.pool
         .borrow(&liquidator, &sut.reserves[1].token.address, &1_000_000_000);
 
-    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
+    set_time(&env, &sut, 5 * DAY, false);
 
     sut.price_feed.init(
         &Asset::Stellar(sut.reserves[0].token.address.clone()),
@@ -285,7 +285,7 @@ fn liquidate_receive_underlying_when_borrower_has_two_debts() {
             &env,
             PriceData {
                 price: 100_100_000_000_000,
-                timestamp: 0,
+                timestamp: 5 * DAY,
             },
         ],
     );
@@ -421,6 +421,7 @@ fn set_price_feed() {
                         feed_asset: OracleAsset::Stellar(asset_1),
                         feed_decimals: 14,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -435,6 +436,7 @@ fn set_price_feed() {
                         feed_asset: OracleAsset::Stellar(asset_2),
                         feed_decimals: 16,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -449,6 +451,7 @@ fn set_price_feed() {
                         feed_asset: OracleAsset::Stellar(asset_3),
                         feed_decimals: 16,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],

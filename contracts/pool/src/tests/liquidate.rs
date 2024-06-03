@@ -3,8 +3,9 @@ use crate::*;
 use common::FixedI128;
 use price_feed_interface::types::asset::Asset;
 use price_feed_interface::types::price_data::PriceData;
-use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
+use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events};
 use soroban_sdk::{symbol_short, vec, IntoVal, Symbol};
+use tests::sut::set_time;
 
 use super::sut::fill_pool_six;
 
@@ -119,8 +120,7 @@ fn should_liquidate_reducing_position_to_healthy() {
         liquidation_protocol_fee: 0,
     });
 
-    env.ledger()
-        .with_mut(|li| li.timestamp = li.timestamp + 10_000);
+    set_time(&env, &sut, 10_000, true);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -155,7 +155,7 @@ fn should_liquidate_reducing_position_to_healthy() {
             &env,
             PriceData {
                 price: (18 * 10i128.pow(15)),
-                timestamp: 0,
+                timestamp: 10_000,
             },
         ],
     );
@@ -259,8 +259,7 @@ fn should_fully_liquidate_when_gte_max_penalty() {
         liquidation_protocol_fee: 0,
     });
 
-    env.ledger()
-        .with_mut(|li| li.timestamp = li.timestamp + 10_000);
+    set_time(&env, &sut, 10_000, true);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -295,7 +294,7 @@ fn should_fully_liquidate_when_gte_max_penalty() {
             &env,
             PriceData {
                 price: (2 * 10i128.pow(16)),
-                timestamp: 0,
+                timestamp: 10_000,
             },
         ],
     );
@@ -410,7 +409,7 @@ fn should_change_user_config() {
         liquidation_protocol_fee: 0,
     });
 
-    env.ledger().with_mut(|li| li.timestamp = 10_000);
+    set_time(&env, &sut, 10_000, false);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -424,7 +423,7 @@ fn should_change_user_config() {
             &env,
             PriceData {
                 price: (18 * 10i128.pow(15)),
-                timestamp: 0,
+                timestamp: 10_000,
             },
         ],
     );
@@ -460,7 +459,21 @@ fn should_change_user_config() {
         liquidator_user_config.is_using_as_collateral(&env, reserve_2.get_id());
     let liquidator_total_assets_before = liquidator_user_config.total_assets();
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    let is_liquidator_borrowed_token_0_before =
+        liquidator_user_config.is_borrowing(&env, reserve_0.get_id());
+    let is_liquidator_borrowed_token_1_before =
+        liquidator_user_config.is_borrowing(&env, reserve_1.get_id());
+    let is_liquidator_borrowed_token_2_before =
+        liquidator_user_config.is_borrowing(&env, reserve_2.get_id());
+    let is_liquidator_deposited_token_0_before =
+        liquidator_user_config.is_using_as_collateral(&env, reserve_0.get_id());
+    let is_liquidator_deposited_token_1_before =
+        liquidator_user_config.is_using_as_collateral(&env, reserve_1.get_id());
+    let is_liquidator_deposited_token_2_before =
+        liquidator_user_config.is_using_as_collateral(&env, reserve_2.get_id());
+    let liquidator_total_assets_before = liquidator_user_config.total_assets();
+
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool.liquidate(&liquidator, &borrower);
 
@@ -568,8 +581,9 @@ fn should_affect_borrower_account_data() {
 
     sut.pool.deposit(&liquidator, &collat_1_token, &1);
 
-    env.ledger()
-        .with_mut(|li| li.timestamp = li.timestamp + 10_000);
+    sut.pool.deposit(&liquidator, &collat_1_token, &1);
+
+    set_time(&env, &sut, 10_000, true);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -583,7 +597,7 @@ fn should_affect_borrower_account_data() {
             &env,
             PriceData {
                 price: (18 * 10i128.pow(15)),
-                timestamp: 0,
+                timestamp: 10_000,
             },
         ],
     );
@@ -591,7 +605,7 @@ fn should_affect_borrower_account_data() {
     let liquidator_account_position_before = sut.pool.account_position(&liquidator);
     let borrower_account_position_before = sut.pool.account_position(&borrower);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY + 1); // initial timestamp = grace period = 1
+    set_time(&env, &sut, 2 * DAY + 1, false); // initial timestamp = grace period = 1
 
     sut.pool.liquidate(&liquidator, &borrower);
 
@@ -649,7 +663,7 @@ fn should_affect_coeffs() {
         liquidation_protocol_fee: 0,
     });
 
-    env.ledger().with_mut(|li| li.timestamp = 10_000);
+    set_time(&env, &sut, 10_000, false);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -663,12 +677,12 @@ fn should_affect_coeffs() {
             &env,
             PriceData {
                 price: (18 * 10i128.pow(15)),
-                timestamp: 0,
+                timestamp: 10_000,
             },
         ],
     );
 
-    env.ledger().with_mut(|li| li.timestamp = 4 * DAY);
+    set_time(&env, &sut, 4 * DAY, false);
 
     let asset_1 = sut.reserves[0].token.address.clone();
     let asset_2 = sut.reserves[1].token.address.clone();
@@ -681,11 +695,11 @@ fn should_affect_coeffs() {
     let asset_3_collat_coeff_before = sut.pool.collat_coeff(&asset_3);
     let asset_3_debt_coeff_before = sut.pool.debt_coeff(&asset_3);
 
-    env.ledger().with_mut(|li| li.timestamp = 5 * DAY);
+    set_time(&env, &sut, 5 * DAY, false);
 
     sut.pool.liquidate(&liquidator, &borrower);
 
-    env.ledger().with_mut(|li| li.timestamp = 6 * DAY);
+    set_time(&env, &sut, 6 * DAY, false);
 
     let asset_1_collat_coeff_after = sut.pool.collat_coeff(&asset_1);
     let asset_1_debt_coeff_after = sut.pool.debt_coeff(&asset_1);
@@ -725,7 +739,7 @@ fn should_emit_events() {
         liquidation_protocol_fee: 0,
     });
 
-    env.ledger().with_mut(|li| li.timestamp = 10_000);
+    set_time(&env, &sut, 10_000, false);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -739,7 +753,7 @@ fn should_emit_events() {
             &env,
             PriceData {
                 price: (18 * 10i128.pow(15)),
-                timestamp: 0,
+                timestamp: 10_000,
             },
         ],
     );
@@ -789,7 +803,7 @@ fn should_liquidate_rwa_collateral() {
         liquidation_protocol_fee: 0,
     });
 
-    env.ledger().with_mut(|li| li.timestamp = 10_000);
+    set_time(&env, &sut, 10_000, false);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -806,7 +820,7 @@ fn should_liquidate_rwa_collateral() {
             &env,
             PriceData {
                 price: (18 * 10i128.pow(15)),
-                timestamp: 0,
+                timestamp: 10_000,
             },
         ],
     );
@@ -977,10 +991,14 @@ fn should_not_fail_after_grace_period() {
     let borrower_pos_before = sut.pool.account_position(&borrower);
 
     sut.pool.set_pause(&true);
-    env.ledger().with_mut(|li| li.timestamp = start + gap);
+    set_time(&env, &sut, start + gap, false);
     sut.pool.set_pause(&false);
-    env.ledger()
-        .with_mut(|li| li.timestamp = start + gap + pause_info.grace_period_secs);
+    set_time(
+        &env,
+        &sut,
+        start + gap + pause_info.grace_period_secs,
+        false,
+    );
 
     sut.pool.liquidate(&liquidator, &borrower);
 

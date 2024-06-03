@@ -1,10 +1,10 @@
 use crate::methods::utils::rate::{calc_accrued_rates, calc_interest_rate, calc_next_accrued_rate};
-use crate::tests::sut::{init_pool, DAY};
+use crate::tests::sut::{init_pool, set_time, DAY};
 use common::FixedI128;
-use pool_interface::types::{
-    ir_params::IRParams, reserve_data::ReserveData, reserve_type::ReserveType,
-};
-use soroban_sdk::testutils::{Address as _, Ledger};
+use pool_interface::types::ir_params::IRParams;
+use pool_interface::types::reserve_data::ReserveData;
+use pool_interface::types::reserve_type::ReserveType;
+use soroban_sdk::testutils::Address as _;
 use soroban_sdk::{Address, Env};
 
 pub fn get_default_ir_params() -> IRParams {
@@ -220,8 +220,7 @@ fn should_update_rates_over_time() {
 
     // shift time to
     let elapsed_time = DAY;
-    env.ledger()
-        .with_mut(|li| li.timestamp = li.timestamp + elapsed_time);
+    set_time(&env, &sut, elapsed_time, true);
 
     //second deposit by lender of debt asset
     sut.pool.deposit(&lender, &debt_asset_1, &100_000_000);

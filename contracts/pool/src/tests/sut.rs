@@ -212,7 +212,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                         &env,
                         PriceData {
                             price: 100_000_000_000_000,
-                            timestamp: 1704790200000,
+                            timestamp: 0,
                         },
                     ],
                 ),
@@ -222,7 +222,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                         &env,
                         PriceData {
                             price: 10_000_000_000_000_000,
-                            timestamp: 1704790200000,
+                            timestamp: 0,
                         },
                     ],
                 ),
@@ -232,7 +232,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                         &env,
                         PriceData {
                             price: 10_000_000_000_000_000,
-                            timestamp: 1704790200000,
+                            timestamp: 0,
                         },
                     ],
                 ),
@@ -242,7 +242,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                         &env,
                         PriceData {
                             price: 10_000_000_000_000_000,
-                            timestamp: 1704790200000,
+                            timestamp: 0,
                         },
                     ],
                 ),
@@ -271,6 +271,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                         feed_asset: OracleAsset::Stellar(reserves[0].token.address.clone()),
                         feed_decimals: 14,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -285,6 +286,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                         feed_asset: OracleAsset::Stellar(reserves[1].token.address.clone()),
                         feed_decimals: 16,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -299,6 +301,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                         feed_asset: OracleAsset::Stellar(reserves[2].token.address.clone()),
                         feed_decimals: 16,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -313,6 +316,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                         feed_asset: OracleAsset::Stellar(reserves[3].token.address.clone()),
                         feed_decimals: 15,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -370,7 +374,7 @@ pub(crate) fn fill_pool<'a, 'b>(
         );
     }
 
-    env.ledger().with_mut(|li| li.timestamp = DAY);
+    set_time(&env, &sut, DAY, false);
 
     //borrower deposit first token and borrow second token
     sut.pool
@@ -383,6 +387,34 @@ pub(crate) fn fill_pool<'a, 'b>(
     }
 
     (lender, borrower, &sut.reserves[1])
+}
+
+pub(crate) fn set_time<'a, 'b>(env: &'b Env, sut: &'a Sut, time: u64, append: bool) {
+    let new_time = append
+        .then(|| env.ledger().timestamp() + time)
+        .unwrap_or(time);
+
+    for i in 0..4 {
+        let token = sut.reserves[i].token.address.clone();
+
+        let prices = sut
+            .price_feed
+            .prices(&Asset::Stellar(token.clone()), &1000)
+            .unwrap();
+
+        let mut new_prices = Vec::new(env);
+
+        for price in prices.iter() {
+            new_prices.push_back(PriceData {
+                price: price.price,
+                timestamp: new_time,
+            });
+        }
+
+        sut.price_feed.init(&Asset::Stellar(token), &new_prices);
+    }
+
+    env.ledger().with_mut(|li| li.timestamp = new_time);
 }
 
 /// Fill lending pool with two lenders and one borrower
@@ -400,7 +432,7 @@ pub(crate) fn fill_pool_two<'a, 'b>(
         assert_eq!(sut.reserves[i].token.balance(&lender_2), amount);
     }
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     //lender deposit all tokens
     for i in 0..3 {
@@ -430,12 +462,12 @@ pub(crate) fn fill_pool_three<'a, 'b>(
 
     let liquidator = Address::generate(&env);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     debt_config.token_admin.mint(&liquidator, &1_000_000_000);
     sut.pool.borrow(&borrower, &debt_token, &60_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
+    set_time(&env, &sut, 3 * DAY, false);
 
     (lender, borrower, liquidator, debt_config)
 }
@@ -459,7 +491,7 @@ pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Ad
             .deposit(&lender, &sut.reserves[i].token.address, &amount);
     }
 
-    env.ledger().with_mut(|li| li.timestamp = 1 * DAY);
+    set_time(&env, &sut, 1 * DAY, false);
 
     sut.pool
         .deposit(&borrower1, &sut.reserves[0].token.address, &100_000_000);
@@ -475,7 +507,7 @@ pub(crate) fn fill_pool_four<'a, 'b>(env: &'b Env, sut: &'a Sut) -> (Address, Ad
     sut.pool
         .borrow(&borrower2, &sut.reserves[1].token.address, &5_999_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     (lender, borrower1, borrower2)
 }
