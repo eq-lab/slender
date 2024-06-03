@@ -459,20 +459,6 @@ fn should_change_user_config() {
         liquidator_user_config.is_using_as_collateral(&env, reserve_2.get_id());
     let liquidator_total_assets_before = liquidator_user_config.total_assets();
 
-    let is_liquidator_borrowed_token_0_before =
-        liquidator_user_config.is_borrowing(&env, reserve_0.get_id());
-    let is_liquidator_borrowed_token_1_before =
-        liquidator_user_config.is_borrowing(&env, reserve_1.get_id());
-    let is_liquidator_borrowed_token_2_before =
-        liquidator_user_config.is_borrowing(&env, reserve_2.get_id());
-    let is_liquidator_deposited_token_0_before =
-        liquidator_user_config.is_using_as_collateral(&env, reserve_0.get_id());
-    let is_liquidator_deposited_token_1_before =
-        liquidator_user_config.is_using_as_collateral(&env, reserve_1.get_id());
-    let is_liquidator_deposited_token_2_before =
-        liquidator_user_config.is_using_as_collateral(&env, reserve_2.get_id());
-    let liquidator_total_assets_before = liquidator_user_config.total_assets();
-
     set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool.liquidate(&liquidator, &borrower);
@@ -1041,8 +1027,8 @@ fn should_pay_protocol_fee() {
         let protocol_fee_before_1 = sut.pool.protocol_fee(&sut.reserves[0].token.address);
         let protocol_fee_before_2 = sut.pool.protocol_fee(&sut.reserves[2].token.address);
 
-        env.ledger()
-            .with_mut(|li| li.timestamp = li.timestamp + 10_000);
+        let timestamp = env.ledger().timestamp() + 10_000;
+        set_time(&env, &sut, timestamp, false);
 
         sut.pool
             .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -1056,7 +1042,7 @@ fn should_pay_protocol_fee() {
                 &env,
                 PriceData {
                     price: (18 * 10i128.pow(15)),
-                    timestamp: 0,
+                    timestamp: timestamp,
                 },
             ],
         );

@@ -268,7 +268,8 @@ fn repay_should_pay_protocol_fee() {
     let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+
+    set_time(&env, &sut, 2 * DAY, false);
 
     let protocol_fee_before = sut.pool.protocol_fee(debt_token);
 
