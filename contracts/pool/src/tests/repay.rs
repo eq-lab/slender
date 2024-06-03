@@ -1,7 +1,8 @@
 use crate::tests::sut::{fill_pool, init_pool, DAY};
 use crate::*;
-use soroban_sdk::testutils::{Events, Ledger};
+use soroban_sdk::testutils::Events;
 use soroban_sdk::{vec, IntoVal, Symbol};
+use tests::sut::set_time;
 
 #[test]
 fn should_partially_repay() {
@@ -13,7 +14,7 @@ fn should_partially_repay() {
     let debt_token = &debt_config.token.address;
     let stoken_token = &debt_config.s_token().address;
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
     let treasury_address = sut.pool.treasury().clone();
 
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
@@ -49,7 +50,7 @@ fn should_fully_repay() {
     let debt_token = &debt_config.token.address;
     let stoken_token = &debt_config.s_token().address;
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
     let treasury_address = sut.pool.treasury().clone();
 
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
@@ -101,7 +102,7 @@ fn should_affect_coeffs() {
     let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     let collat_coeff_prev = sut.pool.collat_coeff(&debt_config.token.address);
     let debt_coeff_prev = sut.pool.debt_coeff(&debt_config.token.address);
@@ -109,7 +110,7 @@ fn should_affect_coeffs() {
     sut.pool
         .repay(&borrower, &debt_config.token.address, &20_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
+    set_time(&env, &sut, 3 * DAY, false);
 
     let collat_coeff = sut.pool.collat_coeff(&debt_config.token.address);
     let debt_coeff = sut.pool.debt_coeff(&debt_config.token.address);
@@ -128,12 +129,12 @@ fn should_affect_account_data() {
 
     let account_position_prev = sut.pool.account_position(&borrower);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool
         .repay(&borrower, &debt_config.token.address, &10_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
+    set_time(&env, &sut, 3 * DAY, false);
 
     let account_position = sut.pool.account_position(&borrower);
 
@@ -164,7 +165,7 @@ fn should_emit_events() {
     let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool.repay(&borrower, &debt_token.clone(), &i128::MAX);
 
@@ -217,7 +218,7 @@ fn should_fail_when_debt_lt_min_position_amount() {
         min_debt_amount: 300_000,
     });
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool.repay(&borrower, &debt_token, &20_000_000i128);
 }
@@ -232,7 +233,7 @@ fn should_not_fail_in_grace_period() {
     let debt_token = &debt_config.token.address;
     let stoken_token = &debt_config.s_token().address;
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
     let treasury_address = sut.pool.treasury().clone();
 
     let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);

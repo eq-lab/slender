@@ -6,7 +6,7 @@ use pool_interface::types::price_feed::PriceFeed;
 use pool_interface::types::price_feed_config::PriceFeedConfig;
 use pool_interface::types::timestamp_precision::TimestampPrecision;
 use price_feed_interface::PriceFeedClient;
-use soroban_sdk::{Address, Env, Map, Vec};
+use soroban_sdk::{assert_with_error, Address, Env, Map, Vec};
 
 use crate::storage::{read_base_asset, read_price_feeds};
 
@@ -114,6 +114,12 @@ impl<'a> PriceProvider<'a> {
                 let mut sorted_twap_prices = Map::new(self.env);
 
                 for feed in config.feeds.iter() {
+                    let twap = self.twap(&feed);
+
+                    if twap.is_err() {
+                        continue;
+                    }
+
                     let base_precision = 10i128
                         .checked_pow(self.base_asset.decimals)
                         .ok_or(Error::MathOverflowError)?;
@@ -122,8 +128,7 @@ impl<'a> PriceProvider<'a> {
                         .checked_pow(feed.feed_decimals)
                         .ok_or(Error::MathOverflowError)?;
 
-                    let twap_price = self
-                        .twap(&feed)?
+                    let twap_price = twap?
                         .checked_mul(base_precision)
                         .ok_or(Error::MathOverflowError)?
                         .checked_div(feed_precision)
@@ -131,6 +136,12 @@ impl<'a> PriceProvider<'a> {
 
                     sorted_twap_prices.set(twap_price, twap_price);
                 }
+
+                assert_with_error!(
+                    self.env,
+                    !sorted_twap_prices.is_empty(),
+                    Error::NoPriceForAsset
+                );
 
                 let median_twap_price = self.median(&sorted_twap_prices.keys())?;
 
@@ -154,10 +165,6 @@ impl<'a> PriceProvider<'a> {
 
         let prices_len = prices.len();
 
-        if prices_len == 1 {
-            return Ok(prices.first_unchecked().price);
-        }
-
         let curr_time = precise_timestamp(self.env, &config.timestamp_precision);
 
         let mut sorted_prices = Map::new(self.env);
@@ -168,6 +175,18 @@ impl<'a> PriceProvider<'a> {
 
         let prices = sorted_prices.values();
         let timestamps = sorted_prices.keys();
+
+        let timestamp_delta = curr_time
+            .checked_sub(timestamps.last_unchecked())
+            .ok_or(Error::MathOverflowError)?;
+
+        if timestamp_delta > config.min_timestamp_delta {
+            return Err(Error::NoPriceForAsset);
+        }
+
+        if prices_len == 1 {
+            return Ok(sorted_prices.values().first_unchecked());
+        }
 
         let mut cum_price = {
             let price_curr = prices.last_unchecked();

@@ -1,12 +1,11 @@
 #![cfg(test)]
 extern crate std;
 
-use crate::{tests::sut::init_pool, *};
-use soroban_sdk::{
-    testutils::{AuthorizedFunction, AuthorizedInvocation, Ledger as _},
-    vec, IntoVal, Symbol,
-};
-use tests::sut::DAY;
+use crate::tests::sut::init_pool;
+use crate::*;
+use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
+use soroban_sdk::{vec, IntoVal, Symbol};
+use tests::sut::{set_time, DAY};
 
 #[test]
 fn should_require_admin() {
@@ -51,7 +50,7 @@ fn should_set_pause() {
     assert_eq!(prev_pause_info.unpaused_at, pause_info.unpaused_at);
 
     // change current time and check unpaused_at
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
     let expected_unpaused_at = env.ledger().timestamp();
     sut.pool.set_pause(&false);
     let pause_info = sut.pool.pause_info();

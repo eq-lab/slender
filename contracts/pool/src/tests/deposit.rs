@@ -1,7 +1,8 @@
 use crate::tests::sut::{fill_pool, init_pool, DAY};
 use crate::*;
-use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
+use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events};
 use soroban_sdk::{symbol_short, vec, IntoVal, Symbol};
+use tests::sut::set_time;
 
 #[test]
 fn should_require_authorized_caller() {
@@ -120,7 +121,7 @@ fn should_change_balances() {
     let token_address = sut.token().address.clone();
 
     sut.token_admin().mint(&user, &10_000_000_000);
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool.deposit(&user, &token_address, &3_000_000_000);
 
@@ -142,7 +143,7 @@ fn should_affect_coeffs() {
     let (lender, _, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     let collat_coeff_prev = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_prev = sut.pool.debt_coeff(&debt_token);
@@ -150,7 +151,7 @@ fn should_affect_coeffs() {
     sut.pool
         .deposit(&lender, &sut.reserves[1].token.address, &100_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
+    set_time(&env, &sut, 3 * DAY, false);
 
     let collat_coeff = sut.pool.collat_coeff(&debt_token);
     let debt_coeff = sut.pool.debt_coeff(&debt_token);
@@ -280,7 +281,7 @@ fn rwa_should_not_affect_coeffs() {
     rwa_reserve_config.token_admin.mint(&lender, &1_000_000_000);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     let collat_coeff_prev = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_prev = sut.pool.debt_coeff(&debt_token);
@@ -352,7 +353,7 @@ fn should_not_fail_in_grace_period() {
     let token_address = sut.token().address.clone();
 
     sut.token_admin().mint(&user, &10_000_000_000);
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool.deposit(&user, &token_address, &3_000_000_000);
 

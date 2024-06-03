@@ -2,8 +2,9 @@ use crate::tests::sut::{fill_pool_three, init_pool, DAY};
 use crate::*;
 use price_feed_interface::types::asset::Asset;
 use price_feed_interface::types::price_data::PriceData;
-use soroban_sdk::testutils::{Address as _, Ledger};
+use soroban_sdk::testutils::Address as _;
 use soroban_sdk::vec;
+use tests::sut::set_time;
 
 #[test]
 fn should_update_when_deposit_borrow_withdraw_liquidate() {
@@ -35,7 +36,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
         sut.reserves[i].token_admin.mint(&borrower, &amount);
     }
 
-    env.ledger().with_mut(|l| l.timestamp = DAY);
+    set_time(&env, &sut, DAY, false);
 
     for i in 0..3 {
         let amount = (i == 0).then(|| 1_000_000).unwrap_or(100_000_000);
@@ -47,19 +48,19 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     sut.pool.deposit(&borrower, &deposit_token, &1_000_000);
     sut.pool.borrow(&borrower, &debt_token, &40_000_000);
 
-    env.ledger().with_mut(|l| l.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     let collat_coeff_initial = sut.pool.collat_coeff(&debt_token);
 
     sut.pool
         .withdraw(&borrower, &deposit_token, &100_000, &lender);
 
-    env.ledger().with_mut(|l| l.timestamp = 3 * DAY);
+    set_time(&env, &sut, 3 * DAY, false);
     let collat_coeff_after_withdraw = sut.pool.collat_coeff(&debt_token);
 
     sut.pool.borrow(&borrower, &debt_token, &400_000);
 
-    env.ledger().with_mut(|l| l.timestamp = 4 * DAY);
+    set_time(&env, &sut, 4 * DAY, false);
     let collat_coeff_after_borrow = sut.pool.collat_coeff(&debt_token);
 
     sut.price_feed.init(
@@ -68,17 +69,17 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
             &env,
             PriceData {
                 price: 14_000_000_000_000_000,
-                timestamp: 0,
+                timestamp: 5 * DAY,
             },
         ],
     );
 
-    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
+    set_time(&env, &sut, 5 * DAY, false);
     let collat_coeff_after_price_change = sut.pool.collat_coeff(&debt_token);
 
     sut.pool.liquidate(&lender, &borrower, &false);
 
-    env.ledger().with_mut(|l| l.timestamp = 6 * DAY);
+    set_time(&env, &sut, 6 * DAY, false);
     let collat_coeff_after_liquidate = sut.pool.collat_coeff(&debt_token);
 
     assert_eq!(collat_coeff_initial, 1_000_000_010);
@@ -99,11 +100,11 @@ fn should_change_over_time() {
 
     let collat_coeff_1 = sut.pool.collat_coeff(&debt_token);
 
-    env.ledger().with_mut(|l| l.timestamp = 4 * DAY);
+    set_time(&env, &sut, 4 * DAY, false);
 
     let collat_coeff_2 = sut.pool.collat_coeff(&debt_token);
 
-    env.ledger().with_mut(|l| l.timestamp = 5 * DAY);
+    set_time(&env, &sut, 5 * DAY, false);
     let collat_coeff_3 = sut.pool.collat_coeff(&debt_token);
 
     assert_eq!(collat_coeff_1, 1_000_328_880);
@@ -133,23 +134,23 @@ fn should_change_when_elapsed_time_gte_window() {
 
     let collat_coeff_1 = sut.pool.collat_coeff(&debt_token);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY + 19);
+    set_time(&env, &sut, 3 * DAY + 19, false);
 
     let collat_coeff_2 = sut.pool.collat_coeff(&debt_token);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY + 26);
+    set_time(&env, &sut, 3 * DAY + 26, false);
 
     let collat_coeff_3 = sut.pool.collat_coeff(&debt_token);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY + 51);
+    set_time(&env, &sut, 3 * DAY + 51, false);
 
     let collat_coeff_4 = sut.pool.collat_coeff(&debt_token);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY + 55);
+    set_time(&env, &sut, 3 * DAY + 55, false);
 
     let collat_coeff_5 = sut.pool.collat_coeff(&debt_token);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY + 61);
+    set_time(&env, &sut, 3 * DAY + 61, false);
 
     let collat_coeff_6 = sut.pool.collat_coeff(&debt_token);
 
