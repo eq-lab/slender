@@ -15,7 +15,7 @@ fn should_require_admin() {
 
     let sut = init_pool(&env, false);
 
-    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&sut.pool_admin, &true);
 
     assert_eq!(
         env.auths(),
@@ -41,7 +41,7 @@ fn should_set_pause() {
     let sut = init_pool(&env, false);
     let prev_pause_info = sut.pool.pause_info();
 
-    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&sut.pool_admin, &true);
     let pause_info = sut.pool.pause_info();
     assert!(pause_info.paused);
     assert_eq!(
@@ -53,7 +53,7 @@ fn should_set_pause() {
     // change current time and check unpaused_at
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
     let expected_unpaused_at = env.ledger().timestamp();
-    sut.pool.set_pause(&false);
+    sut.pool.set_pause(&sut.pool_admin, &false);
     let pause_info = sut.pool.pause_info();
     assert!(!pause_info.paused);
     assert_eq!(

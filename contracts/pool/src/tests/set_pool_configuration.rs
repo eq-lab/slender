@@ -26,7 +26,8 @@ fn should_require_admin() {
         liquidation_protocol_fee: 0,
     };
 
-    sut.pool.set_pool_configuration(&pool_config);
+    sut.pool
+        .set_pool_configuration(&sut.pool_admin, &pool_config);
 
     assert_eq!(
         env.auths(),
@@ -53,17 +54,20 @@ fn should_set_pool_configuration() {
 
     let pool_config_before = sut.pool.pool_configuration();
 
-    sut.pool.set_pool_configuration(&PoolConfig {
-        base_asset_address: sut.reserves[1].token.address.clone(),
-        base_asset_decimals: sut.reserves[1].token.decimals(),
-        flash_loan_fee: 12,
-        initial_health: 111,
-        timestamp_window: 11,
-        user_assets_limit: 1,
-        min_collat_amount: 0,
-        min_debt_amount: 0,
-        liquidation_protocol_fee: 0,
-    });
+    sut.pool.set_pool_configuration(
+        &sut.pool_admin,
+        &PoolConfig {
+            base_asset_address: sut.reserves[1].token.address.clone(),
+            base_asset_decimals: sut.reserves[1].token.decimals(),
+            flash_loan_fee: 12,
+            initial_health: 111,
+            timestamp_window: 11,
+            user_assets_limit: 1,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
+    );
 
     let pool_config_after = sut.pool.pool_configuration();
 

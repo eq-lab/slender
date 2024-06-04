@@ -20,7 +20,8 @@ fn should_require_admin() {
         scaling_coeff: 9_001,
     };
 
-    sut.pool.set_ir_params(&ir_params_input.clone());
+    sut.pool
+        .set_ir_params(&sut.pool_admin, &ir_params_input.clone());
 
     assert_eq!(
         env.auths(),
@@ -53,7 +54,8 @@ fn should_fail_when_invalid_initial_rate() {
         scaling_coeff: 9_001,
     };
 
-    sut.pool.set_ir_params(&ir_params_input.clone());
+    sut.pool
+        .set_ir_params(&sut.pool_admin, &ir_params_input.clone());
 }
 
 #[test]
@@ -71,7 +73,8 @@ fn should_fail_when_invalid_max_rate() {
         scaling_coeff: 9_001,
     };
 
-    sut.pool.set_ir_params(&ir_params_input.clone());
+    sut.pool
+        .set_ir_params(&sut.pool_admin, &ir_params_input.clone());
 }
 
 #[test]
@@ -89,7 +92,8 @@ fn should_fail_when_invalid_scaling_coeff() {
         scaling_coeff: 10_000,
     };
 
-    sut.pool.set_ir_params(&ir_params_input.clone());
+    sut.pool
+        .set_ir_params(&sut.pool_admin, &ir_params_input.clone());
 }
 
 #[test]
@@ -106,7 +110,7 @@ fn should_set_ir_params() {
         scaling_coeff: 9_001,
     };
 
-    sut.pool.set_ir_params(&ir_params_input);
+    sut.pool.set_ir_params(&sut.pool_admin, &ir_params_input);
 
     let ir_params = sut.pool.ir_params().unwrap();
 

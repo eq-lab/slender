@@ -16,7 +16,7 @@ fn should_require_admin() {
     let asset_address = sut.token().address.clone();
 
     sut.pool
-        .enable_borrowing_on_reserve(&asset_address.clone(), &true);
+        .enable_borrowing_on_reserve(&sut.pool_admin, &asset_address.clone(), &true);
 
     assert_eq!(
         env.auths(),
@@ -43,13 +43,13 @@ fn should_set_borrowing_status() {
     let asset_address = sut.token().address.clone();
 
     sut.pool
-        .enable_borrowing_on_reserve(&asset_address.clone(), &false);
+        .enable_borrowing_on_reserve(&sut.pool_admin, &asset_address.clone(), &false);
     let reserve = sut.pool.get_reserve(&asset_address).unwrap();
 
     assert_eq!(reserve.configuration.borrowing_enabled, false);
 
     sut.pool
-        .enable_borrowing_on_reserve(&asset_address.clone(), &true);
+        .enable_borrowing_on_reserve(&sut.pool_admin, &asset_address.clone(), &true);
     let reserve = sut.pool.get_reserve(&asset_address).unwrap();
 
     assert_eq!(reserve.configuration.borrowing_enabled, true);
@@ -74,7 +74,11 @@ fn should_emit_events() {
     let sut = init_pool(&env, false);
     let asset = sut.token().address.clone();
 
-    assert_eq!(sut.pool.enable_borrowing_on_reserve(&asset, &true), ());
+    assert_eq!(
+        sut.pool
+            .enable_borrowing_on_reserve(&sut.pool_admin, &asset, &true),
+        ()
+    );
 
     let events = env.events().all().pop_back_unchecked();
 
@@ -90,7 +94,11 @@ fn should_emit_events() {
         ]
     );
 
-    assert_eq!(sut.pool.enable_borrowing_on_reserve(&asset, &false), ());
+    assert_eq!(
+        sut.pool
+            .enable_borrowing_on_reserve(&sut.pool_admin, &asset, &false),
+        ()
+    );
 
     let events = env.events().all().pop_back_unchecked();
 
@@ -117,11 +125,11 @@ fn should_fail_when_enable_rwa() {
     let rwa_address = sut.rwa_config().token.address.clone();
 
     sut.pool
-        .enable_borrowing_on_reserve(&rwa_address.clone(), &false);
+        .enable_borrowing_on_reserve(&sut.pool_admin, &rwa_address.clone(), &false);
     let reserve = sut.pool.get_reserve(&rwa_address).unwrap();
 
     assert_eq!(reserve.configuration.borrowing_enabled, false);
 
     sut.pool
-        .enable_borrowing_on_reserve(&rwa_address.clone(), &true);
+        .enable_borrowing_on_reserve(&sut.pool_admin, &rwa_address.clone(), &true);
 }

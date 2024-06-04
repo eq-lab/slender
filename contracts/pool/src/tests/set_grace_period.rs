@@ -16,7 +16,7 @@ fn should_require_admin() {
     let sut = init_pool(&env, false);
 
     let grace_period = 1;
-    sut.pool.set_grace_period(&grace_period);
+    sut.pool.set_grace_period(&sut.pool_admin, &grace_period);
 
     assert_eq!(
         env.auths(),
@@ -43,7 +43,7 @@ fn should_require_non_zero() {
     let sut = init_pool(&env, false);
 
     let grace_period = 0;
-    sut.pool.set_grace_period(&grace_period);
+    sut.pool.set_grace_period(&sut.pool_admin, &grace_period);
 }
 
 #[test]
@@ -55,7 +55,7 @@ fn should_set_grace_period() {
     let prev_pause_info = sut.pool.pause_info();
 
     let grace_period = 1;
-    sut.pool.set_grace_period(&grace_period);
+    sut.pool.set_grace_period(&sut.pool_admin, &grace_period);
     let pause_info = sut.pool.pause_info();
 
     assert_eq!(grace_period, pause_info.grace_period_secs);

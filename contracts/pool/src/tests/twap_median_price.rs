@@ -54,7 +54,7 @@ fn should_fail_when_feed_is_missing_for_asset() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     env.ledger().with_mut(|li| li.timestamp = 1704790800000); // delta = 600_000
 
@@ -115,7 +115,7 @@ fn should_fail_when_price_is_missing_in_feed() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     env.ledger().with_mut(|li| li.timestamp = 1704790800000); // delta = 600_000
 
@@ -196,7 +196,7 @@ fn should_return_twap_median_price() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     env.ledger().with_mut(|li| li.timestamp = 1704790800); // delta = 600_000
     extern crate std;
@@ -251,7 +251,7 @@ fn should_return_twap_median_price() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     let twap_median_price_2 = sut.pool.twap_median_price(&asset_1, &1_000_000_000);
 
@@ -332,7 +332,7 @@ fn should_return_twap_median_price_when_unsorted_prices() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     env.ledger().with_mut(|li| li.timestamp = 1704790800); // delta = 600_000
     extern crate std;

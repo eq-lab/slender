@@ -36,6 +36,7 @@ fn should_return_reserve() {
         ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
 
     pool.init_reserve(
+        &admin,
         &underlying_token.address.clone(),
         &init_reserve_input.clone(),
     );

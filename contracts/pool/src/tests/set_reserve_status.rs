@@ -15,7 +15,8 @@ fn should_require_admin() {
     let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
 
-    sut.pool.set_reserve_status(&asset_address.clone(), &true);
+    sut.pool
+        .set_reserve_status(&sut.pool_admin, &asset_address.clone(), &true);
 
     assert_eq!(
         env.auths(),
@@ -41,12 +42,14 @@ fn should_set_reserve_status() {
     let sut = init_pool(&env, false);
     let asset_address = sut.token().address.clone();
 
-    sut.pool.set_reserve_status(&asset_address.clone(), &false);
+    sut.pool
+        .set_reserve_status(&sut.pool_admin, &asset_address.clone(), &false);
     let reserve = sut.pool.get_reserve(&asset_address).unwrap();
 
     assert_eq!(reserve.configuration.is_active, false);
 
-    sut.pool.set_reserve_status(&asset_address.clone(), &true);
+    sut.pool
+        .set_reserve_status(&sut.pool_admin, &asset_address.clone(), &true);
     let reserve = sut.pool.get_reserve(&asset_address).unwrap();
 
     assert_eq!(reserve.configuration.is_active, true);
@@ -71,7 +74,10 @@ fn should_emit_events() {
     let sut = init_pool(&env, false);
     let asset = sut.token().address.clone();
 
-    assert_eq!(sut.pool.set_reserve_status(&asset, &true), ());
+    assert_eq!(
+        sut.pool.set_reserve_status(&sut.pool_admin, &asset, &true),
+        ()
+    );
 
     let events = env.events().all().pop_back_unchecked();
 
@@ -87,7 +93,10 @@ fn should_emit_events() {
         ]
     );
 
-    assert_eq!(sut.pool.set_reserve_status(&asset, &false), ());
+    assert_eq!(
+        sut.pool.set_reserve_status(&sut.pool_admin, &asset, &false),
+        ()
+    );
 
     let events = env.events().all().pop_back_unchecked();
 

@@ -47,7 +47,7 @@ fn should_fail_when_pool_paused() {
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
-    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&sut.pool_admin, &true);
     sut.pool
         .withdraw(&borrower, &token_address, &1_000_000, &borrower);
 }
@@ -79,7 +79,8 @@ fn should_fail_when_reserve_deactivated() {
 
     env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
 
-    sut.pool.set_reserve_status(&token_address, &false);
+    sut.pool
+        .set_reserve_status(&sut.pool_admin, &token_address, &false);
     sut.pool
         .withdraw(&borrower, &token_address, &1_000_000, &borrower);
 }
@@ -522,17 +523,20 @@ fn should_fail_when_bad_position_after_withdraw() {
 
     let sut = init_pool(&env, false);
 
-    sut.pool.set_pool_configuration(&PoolConfig {
-        base_asset_address: sut.reserves[0].token.address.clone(),
-        base_asset_decimals: sut.reserves[0].token.decimals(),
-        flash_loan_fee: 5,
-        initial_health: 2_500,
-        timestamp_window: 20,
-        user_assets_limit: 4,
-        min_collat_amount: 0,
-        min_debt_amount: 0,
-        liquidation_protocol_fee: 0,
-    });
+    sut.pool.set_pool_configuration(
+        &sut.pool_admin,
+        &PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 2_500,
+            timestamp_window: 20,
+            user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
+    );
 
     let lender = Address::generate(&env);
     let borrower = Address::generate(&env);
@@ -567,17 +571,20 @@ fn should_fail_when_collat_lt_min_position_amount() {
 
     let sut = init_pool(&env, false);
 
-    sut.pool.set_pool_configuration(&PoolConfig {
-        base_asset_address: sut.reserves[0].token.address.clone(),
-        base_asset_decimals: sut.reserves[0].token.decimals(),
-        flash_loan_fee: 5,
-        initial_health: 2_500,
-        timestamp_window: 20,
-        user_assets_limit: 4,
-        min_collat_amount: 115_000_000,
-        min_debt_amount: 0,
-        liquidation_protocol_fee: 0,
-    });
+    sut.pool.set_pool_configuration(
+        &sut.pool_admin,
+        &PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 2_500,
+            timestamp_window: 20,
+            user_assets_limit: 4,
+            min_collat_amount: 115_000_000,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
+    );
 
     let lender = Address::generate(&env);
     let borrower = Address::generate(&env);
@@ -615,8 +622,8 @@ fn should_fail_in_grace_period() {
     let collat_address = sut.reserves[0].token.address.clone();
     sut.pool.withdraw(&borrower, &collat_address, &1, &borrower);
 
-    sut.pool.set_pause(&true);
-    sut.pool.set_pause(&false);
+    sut.pool.set_pause(&sut.pool_admin, &true);
+    sut.pool.set_pause(&sut.pool_admin, &false);
     sut.pool.withdraw(&borrower, &collat_address, &1, &borrower);
 }
 
@@ -637,9 +644,9 @@ fn should_not_fail_after_grace_period() {
     let s_token_after = sut.reserves[0].debt_token().balance(&borrower);
     assert!(s_token_after < s_token_before);
 
-    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&sut.pool_admin, &true);
     env.ledger().with_mut(|li| li.timestamp = start + gap);
-    sut.pool.set_pause(&false);
+    sut.pool.set_pause(&sut.pool_admin, &false);
     env.ledger()
         .with_mut(|li| li.timestamp = start + gap + pause_info.grace_period_secs);
 

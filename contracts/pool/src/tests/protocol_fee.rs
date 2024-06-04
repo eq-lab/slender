@@ -47,7 +47,7 @@ fn should_require_admin() {
     let recipient = Address::generate(&env);
 
     sut.pool
-        .claim_protocol_fee(&debt_config.token.address, &recipient);
+        .claim_protocol_fee(&sut.pool_admin, &debt_config.token.address, &recipient);
 
     assert_eq!(
         env.auths(),
@@ -81,7 +81,8 @@ fn should_fail_if_reserve_not_exists() {
     let recipient = Address::generate(&env);
     let (token, _) = create_token_contract(&env, &sut.pool_admin);
 
-    sut.pool.claim_protocol_fee(&token.address, &recipient);
+    sut.pool
+        .claim_protocol_fee(&sut.pool_admin, &token.address, &recipient);
 }
 
 #[test]
@@ -105,7 +106,7 @@ fn should_claim_fee() {
     let fee_before = sut.pool.protocol_fee(&debt_config.token.address);
 
     sut.pool
-        .claim_protocol_fee(&debt_config.token.address, &recipient);
+        .claim_protocol_fee(&sut.pool_admin, &debt_config.token.address, &recipient);
 
     let recipient_balance_after = debt_config.token.balance(&recipient);
     let recipient_stoken_balance_after = debt_config.s_token().balance(&recipient);
@@ -155,17 +156,20 @@ fn should_claim_fee_rwa() {
         .token_admin
         .mint(&borrower, &100_000_000_000);
 
-    sut.pool.set_pool_configuration(&PoolConfig {
-        base_asset_address: sut.reserves[0].token.address.clone(),
-        base_asset_decimals: sut.reserves[0].token.decimals(),
-        flash_loan_fee: 5,
-        initial_health: 2_500,
-        timestamp_window: 20,
-        user_assets_limit: 4,
-        min_collat_amount: 0,
-        min_debt_amount: 0,
-        liquidation_protocol_fee: 100,
-    });
+    sut.pool.set_pool_configuration(
+        &sut.pool_admin,
+        &PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 2_500,
+            timestamp_window: 20,
+            user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 100,
+        },
+    );
 
     env.ledger().with_mut(|li| li.timestamp = 10_000);
 
@@ -191,7 +195,8 @@ fn should_claim_fee_rwa() {
     let pool_rwa_before = sut.rwa_config().token.balance(&sut.pool.address);
     let fee_before = sut.pool.protocol_fee(&rwa_token);
 
-    sut.pool.claim_protocol_fee(&rwa_token, &recipient);
+    sut.pool
+        .claim_protocol_fee(&sut.pool_admin, &rwa_token, &recipient);
 
     let recipient_rwa_after = sut.rwa_config().token.balance(&recipient);
     let pool_rwa_after = sut.rwa_config().token.balance(&sut.pool.address);

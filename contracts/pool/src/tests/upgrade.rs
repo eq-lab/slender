@@ -1,7 +1,7 @@
 #![cfg(test)]
 extern crate std;
 
-use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
+use soroban_sdk::testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation};
 use soroban_sdk::{symbol_short, vec, IntoVal};
 
 use crate::tests::sut::init_pool;
@@ -27,7 +27,8 @@ fn should_require_admin() {
     let sut = init_pool(&env, true);
     let pool_v2_wasm = env.deployer().upload_contract_wasm(pool_v2::WASM);
 
-    sut.pool.upgrade(&pool_v2_wasm);
+    let random_address = Address::generate(&env);
+    sut.pool.upgrade(&random_address, &pool_v2_wasm);
 
     assert_eq!(
         env.auths(),
@@ -61,9 +62,11 @@ fn should_upgrade_contracts() {
     let s_token_version_before = sut.s_token().version();
     let debt_token_version_before = sut.debt_token().version();
 
-    sut.pool.upgrade_s_token(&asset, &s_token_v2_wasm);
-    sut.pool.upgrade_debt_token(&asset, &debt_token_v2_wasm);
-    sut.pool.upgrade(&pool_v2_wasm);
+    sut.pool
+        .upgrade_s_token(&sut.pool_admin, &asset, &s_token_v2_wasm);
+    sut.pool
+        .upgrade_debt_token(&sut.pool_admin, &asset, &debt_token_v2_wasm);
+    sut.pool.upgrade(&sut.pool_admin, &pool_v2_wasm);
 
     let pool_version_after = sut.pool.version();
     let s_token_version_after = sut.s_token().version();

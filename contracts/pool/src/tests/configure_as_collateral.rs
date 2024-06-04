@@ -23,7 +23,7 @@ fn should_require_admin() {
     };
 
     sut.pool
-        .configure_as_collateral(&asset_address.clone(), &params.clone());
+        .configure_as_collateral(&sut.pool_admin, &asset_address.clone(), &params.clone());
 
     assert_eq!(
         env.auths(),
@@ -58,7 +58,7 @@ fn should_fail_when_invalid_discount() {
     };
 
     sut.pool
-        .configure_as_collateral(&asset_address.clone(), &params.clone());
+        .configure_as_collateral(&sut.pool_admin, &asset_address.clone(), &params.clone());
 }
 
 #[test]
@@ -78,7 +78,7 @@ fn should_fail_when_invalid_util_cap() {
     };
 
     sut.pool
-        .configure_as_collateral(&asset_address.clone(), &params.clone());
+        .configure_as_collateral(&sut.pool_admin, &asset_address.clone(), &params.clone());
 }
 
 #[test]
@@ -97,7 +97,7 @@ fn should_fail_when_invalid_liquidity_cap() {
     };
 
     sut.pool
-        .configure_as_collateral(&asset_address.clone(), &params.clone());
+        .configure_as_collateral(&sut.pool_admin, &asset_address.clone(), &params.clone());
 }
 
 #[test]
@@ -116,7 +116,7 @@ fn should_set_collateral_config() {
     };
 
     sut.pool
-        .configure_as_collateral(&asset_address.clone(), &params.clone());
+        .configure_as_collateral(&sut.pool_admin, &asset_address.clone(), &params.clone());
 
     let reserve = sut.pool.get_reserve(&asset_address).unwrap();
 
@@ -144,7 +144,7 @@ fn should_emit_events() {
 
     assert_eq!(
         sut.pool
-            .configure_as_collateral(&asset_address.clone(), &params.clone()),
+            .configure_as_collateral(&sut.pool_admin, &asset_address.clone(), &params.clone()),
         ()
     );
 

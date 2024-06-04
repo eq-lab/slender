@@ -28,6 +28,7 @@ fn should_require_admin() {
         ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
 
     pool.init_reserve(
+        &admin,
         &underlying_token.address.clone(),
         &init_reserve_input.clone(),
     );
@@ -67,7 +68,7 @@ fn should_fail_when_calling_second_time() {
     );
 
     sut.pool
-        .init_reserve(&sut.token().address, &init_reserve_input);
+        .init_reserve(&sut.pool_admin, &sut.token().address, &init_reserve_input);
 }
 
 #[test]
@@ -89,7 +90,7 @@ fn should_fail_when_pool_not_initialized() {
     let init_reserve_input =
         ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
 
-    pool.init_reserve(&underlying_token.address, &init_reserve_input);
+    pool.init_reserve(&token_admin, &underlying_token.address, &init_reserve_input);
 }
 
 #[test]
@@ -111,6 +112,7 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
         ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
 
     pool.init_reserve(
+        &admin,
         &underlying_token.address.clone(),
         &init_reserve_input.clone(),
     );

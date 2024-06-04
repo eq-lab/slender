@@ -11,17 +11,20 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
-    sut.pool.set_pool_configuration(&PoolConfig {
-        base_asset_address: sut.reserves[0].token.address.clone(),
-        base_asset_decimals: sut.reserves[0].token.decimals(),
-        flash_loan_fee: 5,
-        initial_health: 2_500,
-        timestamp_window: 20,
-        user_assets_limit: 4,
-        min_collat_amount: 0,
-        min_debt_amount: 0,
-        liquidation_protocol_fee: 0,
-    });
+    sut.pool.set_pool_configuration(
+        &sut.pool_admin,
+        &PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 2_500,
+            timestamp_window: 20,
+            user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
+    );
 
     let debt_token = sut.reserves[1].token.address.clone();
     let deposit_token = sut.reserves[0].token.address.clone();
@@ -118,17 +121,20 @@ fn should_change_when_elapsed_time_gte_window() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
-    sut.pool.set_pool_configuration(&PoolConfig {
-        base_asset_address: sut.reserves[0].token.address.clone(),
-        base_asset_decimals: sut.reserves[0].token.decimals(),
-        flash_loan_fee: 5,
-        initial_health: 0,
-        timestamp_window: 20,
-        user_assets_limit: 4,
-        min_collat_amount: 0,
-        min_debt_amount: 0,
-        liquidation_protocol_fee: 0,
-    });
+    sut.pool.set_pool_configuration(
+        &sut.pool_admin,
+        &PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 0,
+            timestamp_window: 20,
+            user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
+    );
 
     let (_, _, _, debt_config) = fill_pool_three(&env, &sut);
     let debt_token = debt_config.token.address.clone();

@@ -59,7 +59,8 @@ fn should_require_admin() {
         ],
     );
 
-    pool.set_price_feeds(&feed_inputs);
+    let random_address = Address::generate(&env);
+    pool.set_price_feeds(&random_address, &feed_inputs);
 
     assert_eq!(
         env.auths(),
@@ -127,7 +128,8 @@ fn should_set_price_feed() {
         ],
     );
 
-    pool.set_price_feeds(&feed_inputs);
+    let random_address = Address::generate(&env);
+    pool.set_price_feeds(&random_address, &feed_inputs);
 
     let feed_1 = pool.price_feeds(&asset_1).unwrap();
     let feed_2 = pool.price_feeds(&asset_2).unwrap();
