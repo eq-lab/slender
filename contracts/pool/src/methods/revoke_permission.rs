@@ -15,12 +15,9 @@ pub fn revoke_permission(
 
     let mut permission_owners = read_permission_owners(env, permission);
 
-    match permission_owners.binary_search(owner) {
-        Ok(idx) => {
-            permission_owners.remove(idx);
-            write_permission_owners(env, &permission_owners, permission);
-        }
-        Err(_) => (),
+    if let Ok(idx) = permission_owners.binary_search(owner) {
+        permission_owners.remove(idx);
+        write_permission_owners(env, &permission_owners, permission);
     }
 
     Ok(())

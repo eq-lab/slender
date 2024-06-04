@@ -42,6 +42,7 @@ fn should_require_admin() {
                     pool.address.clone(),
                     Symbol::new(&env, "init_reserve"),
                     (
+                        admin,
                         underlying_token.address.clone(),
                         // false,
                         init_reserve_input.clone()
@@ -72,7 +73,7 @@ fn should_fail_when_calling_second_time() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #1)")]
+#[should_panic(expected = "HostError: Error(Contract, #7)")]
 fn should_fail_when_pool_not_initialized() {
     let env = Env::default();
     env.mock_all_auths();
@@ -84,6 +85,7 @@ fn should_fail_when_pool_not_initialized() {
 
     let pool: LendingPoolClient<'_> =
         LendingPoolClient::new(&env, &env.register_contract(None, LendingPool));
+
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 

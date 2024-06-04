@@ -21,12 +21,12 @@ fn should_require_admin() {
     assert_eq!(
         env.auths(),
         [(
-            sut.pool_admin,
+            sut.pool_admin.clone(),
             AuthorizedInvocation {
                 function: AuthorizedFunction::Contract((
                     sut.pool.address.clone(),
                     Symbol::new(&env, "set_reserve_status"),
-                    (asset_address.clone(), true).into_val(&env)
+                    (sut.pool_admin, asset_address.clone(), true).into_val(&env)
                 )),
                 sub_invocations: std::vec![]
             }

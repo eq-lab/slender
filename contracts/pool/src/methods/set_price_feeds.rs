@@ -11,7 +11,7 @@ pub fn set_price_feeds(
     who: &Address,
     inputs: &Vec<PriceFeedConfigInput>,
 ) -> Result<(), Error> {
-    require_permission(&env, who, &Permission::SetPriceFeeds)?;
+    require_permission(env, who, &Permission::SetPriceFeeds)?;
 
     write_price_feeds(env, inputs);
 

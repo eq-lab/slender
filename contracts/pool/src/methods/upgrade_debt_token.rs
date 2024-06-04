@@ -14,7 +14,7 @@ pub fn upgrade_debt_token(
     asset: &Address,
     new_wasm_hash: &BytesN<32>,
 ) -> Result<(), Error> {
-    require_permission(&env, who, &Permission::UpgradeLPTokens).unwrap();
+    require_permission(env, who, &Permission::UpgradeLPTokens).unwrap();
 
     let reserve = read_reserve(env, asset)?;
     let (_, debt_token_address) = get_fungible_lp_tokens(&reserve)?;

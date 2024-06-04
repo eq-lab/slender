@@ -59,6 +59,7 @@ fn should_require_admin() {
                     Symbol::new(&env, "claim_protocol_fee"),
                     vec![
                         &env,
+                        sut.pool_admin.into_val(&env),
                         debt_config.token.address.into_val(&env),
                         recipient.into_val(&env)
                     ]

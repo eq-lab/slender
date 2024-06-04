@@ -59,8 +59,7 @@ fn should_require_admin() {
         ],
     );
 
-    let random_address = Address::generate(&env);
-    pool.set_price_feeds(&random_address, &feed_inputs);
+    pool.set_price_feeds(&admin, &feed_inputs);
 
     assert_eq!(
         env.auths(),
@@ -70,7 +69,7 @@ fn should_require_admin() {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     Symbol::new(&env, "set_price_feeds"),
-                    vec![&env, feed_inputs.into_val(&env)]
+                    vec![&env, admin.into_val(&env), feed_inputs.into_val(&env)]
                 )),
                 sub_invocations: std::vec![]
             }
@@ -128,8 +127,7 @@ fn should_set_price_feed() {
         ],
     );
 
-    let random_address = Address::generate(&env);
-    pool.set_price_feeds(&random_address, &feed_inputs);
+    pool.set_price_feeds(&admin, &feed_inputs);
 
     let feed_1 = pool.price_feeds(&asset_1).unwrap();
     let feed_2 = pool.price_feeds(&asset_2).unwrap();

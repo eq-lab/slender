@@ -13,7 +13,7 @@ pub fn set_reserve_status(
     asset: &Address,
     is_active: bool,
 ) -> Result<(), Error> {
-    require_permission(&env, who, &Permission::SetReserveStatus)?;
+    require_permission(env, who, &Permission::SetReserveStatus)?;
 
     let mut reserve = read_reserve(env, asset)?;
 

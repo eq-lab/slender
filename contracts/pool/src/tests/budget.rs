@@ -95,7 +95,7 @@ fn configure_as_collateral() {
 
     measure_budget(&env, function_name!(), || {
         sut.pool
-            .configure_as_collateral(&asset_address.clone(), &params.clone());
+            .configure_as_collateral(&sut.pool_admin, &asset_address.clone(), &params.clone());
     });
 }
 
@@ -173,6 +173,7 @@ fn init_reserve() {
 
     measure_budget(&env, function_name!(), || {
         pool.init_reserve(
+            &admin,
             &underlying_token.address.clone(),
             &init_reserve_input.clone(),
         );
@@ -461,7 +462,7 @@ fn set_price_feed() {
     );
 
     measure_budget(&env, function_name!(), || {
-        pool.set_price_feeds(&feed_inputs);
+        pool.set_price_feeds(&admin, &feed_inputs);
     });
 }
 
@@ -666,7 +667,7 @@ fn upgrade() {
     let pool_v2_wasm = env.deployer().upload_contract_wasm(pool_v2::WASM);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.upgrade(&pool_v2_wasm);
+        sut.pool.upgrade(&sut.pool_admin, &pool_v2_wasm);
     });
 }
 
@@ -681,7 +682,8 @@ fn upgrade_s_token() {
     let s_token_v2_wasm = env.deployer().upload_contract_wasm(s_token_v2::WASM);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.upgrade_s_token(&asset, &s_token_v2_wasm);
+        sut.pool
+            .upgrade_s_token(&sut.pool_admin, &asset, &s_token_v2_wasm);
     });
 }
 
@@ -695,7 +697,8 @@ fn upgrade_debt_token() {
     let asset = sut.reserves[0].token.address.clone();
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.upgrade_debt_token(&asset, &debt_token_v2_wasm);
+        sut.pool
+            .upgrade_debt_token(&sut.pool_admin, &asset, &debt_token_v2_wasm);
     });
 }
 

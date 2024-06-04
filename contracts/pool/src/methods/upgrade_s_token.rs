@@ -14,7 +14,7 @@ pub fn upgrade_s_token(
     asset: &Address,
     new_wasm_hash: &BytesN<32>,
 ) -> Result<(), Error> {
-    require_permission(&env, who, &Permission::UpgradeLPTokens).unwrap();
+    require_permission(env, who, &Permission::UpgradeLPTokens).unwrap();
 
     let reserve = read_reserve(env, asset)?;
     let (s_token_address, _) = get_fungible_lp_tokens(&reserve)?;

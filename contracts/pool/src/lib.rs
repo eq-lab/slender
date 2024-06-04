@@ -7,10 +7,9 @@ use methods::{
     debt_coeff::debt_coeff, deposit::deposit,
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, finalize_transfer::finalize_transfer,
     flash_loan::flash_loan, grant_permission::grant_permission, init_reserve::init_reserve,
-    initialize::initialize, liquidate::liquidate, permissioned::permissioned,
-    pool_configuration::pool_configuration, repay::repay, revoke_permission::revoke_permission,
-    set_as_collateral::set_as_collateral, set_grace_period::set_grace_period,
-    set_ir_params::set_ir_params, set_pause::set_pause,
+    initialize::initialize, liquidate::liquidate, pool_configuration::pool_configuration,
+    repay::repay, revoke_permission::revoke_permission, set_as_collateral::set_as_collateral,
+    set_grace_period::set_grace_period, set_ir_params::set_ir_params, set_pause::set_pause,
     set_pool_configuration::set_pool_configuration, set_price_feeds::set_price_feeds,
     set_reserve_status::set_reserve_status, twap_median_price::twap_median_price, upgrade::upgrade,
     upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token, withdraw::withdraw,
@@ -299,7 +298,7 @@ impl LendingPoolTrait for LendingPool {
         revoke_permission(&env, &who, &owner, &permission)
     }
 
-    fn permissioned(env: Env, who: Address, permission: Permission) -> bool {
-        permissioned(&env, &who, &permission)
+    fn permissioned(env: Env, permission: Permission) -> Vec<Address> {
+        read_permission_owners(&env, &permission)
     }
 }

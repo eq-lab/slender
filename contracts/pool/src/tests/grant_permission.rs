@@ -21,7 +21,7 @@ fn t() {
         &1,
     );
 
-    let permissioned = pool.permissioned(&pool_admin, &Permission::Permisssion);
+    let permissioned = pool.permissioned(&Permission::Permisssion);
 
     extern crate std;
 

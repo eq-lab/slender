@@ -187,5 +187,5 @@ pub trait LendingPoolTrait {
         permission: Permission,
     ) -> Result<(), Error>;
 
-    fn permissioned(env: Env, who: Address, permission: Permission) -> bool;
+    fn permissioned(env: Env, permission: Permission) -> Vec<Address>;
 }

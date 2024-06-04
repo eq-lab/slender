@@ -18,7 +18,7 @@ use super::utils::validation::require_non_negative;
 use super::utils::validation::require_permission;
 
 pub fn set_pool_configuration(env: &Env, who: &Address, config: &PoolConfig) -> Result<(), Error> {
-    require_permission(&env, who, &Permission::SetPoolConfiguration)?;
+    require_permission(env, who, &Permission::SetPoolConfiguration)?;
 
     require_lte_percentage_factor(env, config.initial_health);
     require_lte_percentage_factor(env, config.flash_loan_fee);

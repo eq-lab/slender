@@ -40,17 +40,6 @@ pub enum DataKey {
     Owners(Permission),
 }
 
-pub fn read_admin(env: &Env) -> Result<Address, Error> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage()
-        .instance()
-        .get(&DataKey::Admin)
-        .ok_or(Error::Uninitialized)
-}
-
 pub fn write_ir_params(env: &Env, ir_params: &IRParams) {
     env.storage()
         .instance()
@@ -508,7 +497,5 @@ pub fn read_permission_owners(env: &Env, permission: &Permission) -> Vec<Address
         );
     }
 
-    let res = mb_vec.unwrap_or(vec![env]);
-
-    return res;
+    mb_vec.unwrap_or(vec![env])
 }

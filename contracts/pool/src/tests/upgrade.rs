@@ -1,7 +1,7 @@
 #![cfg(test)]
 extern crate std;
 
-use soroban_sdk::testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation};
+use soroban_sdk::testutils::{AuthorizedFunction, AuthorizedInvocation};
 use soroban_sdk::{symbol_short, vec, IntoVal};
 
 use crate::tests::sut::init_pool;
@@ -27,18 +27,21 @@ fn should_require_admin() {
     let sut = init_pool(&env, true);
     let pool_v2_wasm = env.deployer().upload_contract_wasm(pool_v2::WASM);
 
-    let random_address = Address::generate(&env);
-    sut.pool.upgrade(&random_address, &pool_v2_wasm);
+    sut.pool.upgrade(&sut.pool_admin, &pool_v2_wasm);
 
     assert_eq!(
         env.auths(),
         [(
-            sut.pool_admin,
+            sut.pool_admin.clone(),
             AuthorizedInvocation {
                 function: AuthorizedFunction::Contract((
                     sut.pool.address.clone(),
                     symbol_short!("upgrade"),
-                    vec![&env, pool_v2_wasm.into_val(&env)]
+                    vec![
+                        &env,
+                        sut.pool_admin.into_val(&env),
+                        pool_v2_wasm.into_val(&env)
+                    ]
                 )),
                 sub_invocations: std::vec![]
             }

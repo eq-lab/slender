@@ -13,7 +13,7 @@ pub fn enable_borrowing_on_reserve(
     asset: &Address,
     enabled: bool,
 ) -> Result<(), Error> {
-    require_permission(env, &who, &Permission::SetReserveBorrowing)?;
+    require_permission(env, who, &Permission::SetReserveBorrowing)?;
 
     let mut reserve = read_reserve(env, asset)?;
 

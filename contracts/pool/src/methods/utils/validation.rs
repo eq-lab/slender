@@ -7,29 +7,25 @@ use pool_interface::types::permission::Permission;
 use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::types::user_config::UserConfiguration;
-use soroban_sdk::{assert_with_error, panic_with_error, Address, Env};
+use soroban_sdk::{assert_with_error, Address, Env};
 
 use crate::methods::permissioned::permissioned;
-use crate::storage::{has_reserve, read_admin, read_initial_health};
+use crate::storage::{has_reserve, read_initial_health};
 use crate::types::account_data::AccountData;
 use crate::{read_min_position_amounts, read_permission_owners, read_reserve, read_reserves};
 
 pub fn require_permissions_owner_not_exist(env: &Env) {
-    if read_permission_owners(env, &Permission::Permisssion).len() != 0 {
-        panic_with_error!(env, Error::AlreadyInitialized);
-    }
-}
-
-pub fn require_admin(env: &Env) -> Result<(), Error> {
-    let admin: Address = read_admin(env)?;
-    admin.require_auth();
-    Ok(())
+    assert_with_error!(
+        env,
+        read_permission_owners(env, &Permission::Permisssion).is_empty(),
+        Error::AlreadyInitialized
+    );
 }
 
 pub fn require_permission(env: &Env, who: &Address, permission: &Permission) -> Result<(), Error> {
     assert_with_error!(
         env,
-        permissioned(env, who, permission),
+        permissioned(env, who, permission)?,
         Error::NoPermissioned
     );
     who.require_auth();
