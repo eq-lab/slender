@@ -134,6 +134,11 @@ impl<'a> PriceProvider<'a> {
                         .checked_div(feed_precision)
                         .ok_or(Error::MathOverflowError)?;
 
+                    let is_sanity_price = twap_price >= config.min_sanity_price_in_base
+                        && twap_price <= config.max_sanity_price_in_base;
+
+                    assert_with_error!(self.env, is_sanity_price, Error::InvalidAssetPrice);
+
                     sorted_twap_prices.set(twap_price, twap_price);
                 }
 

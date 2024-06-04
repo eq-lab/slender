@@ -31,6 +31,8 @@ fn should_require_admin() {
             PriceFeedConfigInput {
                 asset: asset_1.clone(),
                 asset_decimals: 7,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -46,6 +48,8 @@ fn should_require_admin() {
             PriceFeedConfigInput {
                 asset: asset_2.clone(),
                 asset_decimals: 9,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -101,6 +105,8 @@ fn should_set_price_feed() {
             PriceFeedConfigInput {
                 asset: asset_1.clone(),
                 asset_decimals: 7,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -116,6 +122,8 @@ fn should_set_price_feed() {
             PriceFeedConfigInput {
                 asset: asset_2.clone(),
                 asset_decimals: 9,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {

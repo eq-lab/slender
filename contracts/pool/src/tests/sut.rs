@@ -264,6 +264,8 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             PriceFeedConfigInput {
                 asset: reserves[0].token.address.clone(),
                 asset_decimals: 7,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -279,6 +281,8 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             PriceFeedConfigInput {
                 asset: reserves[1].token.address.clone(),
                 asset_decimals: 9,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -294,6 +298,8 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             PriceFeedConfigInput {
                 asset: reserves[2].token.address.clone(),
                 asset_decimals: 9,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -309,6 +315,8 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             PriceFeedConfigInput {
                 asset: reserves[3].token.address.clone(),
                 asset_decimals: 9,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {

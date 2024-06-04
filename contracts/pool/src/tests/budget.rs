@@ -414,6 +414,8 @@ fn set_price_feed() {
             PriceFeedConfigInput {
                 asset: asset_1.clone(),
                 asset_decimals: 7,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 50_000_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -429,6 +431,8 @@ fn set_price_feed() {
             PriceFeedConfigInput {
                 asset: asset_2.clone(),
                 asset_decimals: 9,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 50_000_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -444,6 +448,8 @@ fn set_price_feed() {
             PriceFeedConfigInput {
                 asset: asset_3.clone(),
                 asset_decimals: 9,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 50_000_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {

@@ -71,6 +71,8 @@ fn create_token<'a>(
         PriceFeedConfigInput {
             asset: underlying_asset.address.clone(),
             asset_decimals: 7,
+            min_sanity_price_in_base: 5_000_000,
+            max_sanity_price_in_base: 100_000_000,
             feeds: vec![
                 &e,
                 PriceFeed {

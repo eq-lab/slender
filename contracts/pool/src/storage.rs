@@ -202,6 +202,8 @@ pub fn write_price_feeds(env: &Env, inputs: &Vec<PriceFeedConfigInput>) {
 
         let config = PriceFeedConfig {
             asset_decimals: input.asset_decimals,
+            min_sanity_price_in_base: input.min_sanity_price_in_base,
+            max_sanity_price_in_base: input.max_sanity_price_in_base,
             feeds: input.feeds,
         };
 
