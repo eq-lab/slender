@@ -1,13 +1,15 @@
-use pool_interface::types::error::Error;
-use soroban_sdk::Env;
+use pool_interface::types::{error::Error, permission::Permission};
+use soroban_sdk::{Address, Env};
 
 use crate::{
-    methods::utils::validation::{require_admin, require_non_zero_grace_period},
-    read_pause_info, write_pause_info,
+    methods::utils::validation::require_non_zero_grace_period, read_pause_info, write_pause_info,
 };
 
-pub fn set_grace_period(env: Env, grace_period: u64) -> Result<(), Error> {
-    require_admin(&env)?;
+use super::utils::validation::require_permission;
+
+pub fn set_grace_period(env: Env, who: &Address, grace_period: u64) -> Result<(), Error> {
+    require_permission(&env, who, &Permission::SetGracePeriod)?;
+
     require_non_zero_grace_period(&env, grace_period);
 
     let mut pause_info = read_pause_info(&env)?;

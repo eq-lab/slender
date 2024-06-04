@@ -1,11 +1,12 @@
-use pool_interface::types::error::Error;
-use soroban_sdk::Env;
+use pool_interface::types::{error::Error, permission::Permission};
+use soroban_sdk::{Address, Env};
 
 use crate::{read_pause_info, storage::write_pause_info};
 
-use super::utils::validation::require_admin;
+use super::utils::validation::{require_admin, require_permission};
 
-pub fn set_pause(env: &Env, value: bool) -> Result<(), Error> {
+pub fn set_pause(env: &Env, who: &Address, value: bool) -> Result<(), Error> {
+    require_permission(&env, who, &Permission::SetPause)?;
     require_admin(env)?;
     let mut pause_info = read_pause_info(env)?;
 

@@ -1,6 +1,8 @@
 use pool_interface::types::base_asset_config::BaseAssetConfig;
 use pool_interface::types::error::Error;
+use pool_interface::types::permission::Permission;
 use pool_interface::types::pool_config::PoolConfig;
+use soroban_sdk::Address;
 use soroban_sdk::Env;
 
 use crate::write_base_asset;
@@ -11,12 +13,12 @@ use crate::write_min_position_amounts;
 use crate::write_reserve_timestamp_window;
 use crate::write_user_assets_limit;
 
-use super::utils::validation::require_admin;
 use super::utils::validation::require_lte_percentage_factor;
 use super::utils::validation::require_non_negative;
+use super::utils::validation::require_permission;
 
-pub fn set_pool_configuration(env: &Env, config: &PoolConfig) -> Result<(), Error> {
-    require_admin(env)?;
+pub fn set_pool_configuration(env: &Env, who: &Address, config: &PoolConfig) -> Result<(), Error> {
+    require_permission(&env, who, &Permission::SetPoolConfiguration)?;
 
     require_lte_percentage_factor(env, config.initial_health);
     require_lte_percentage_factor(env, config.flash_loan_fee);

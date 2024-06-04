@@ -11,6 +11,7 @@ pub enum Error {
     NoPoolConfig = 4,
     ZeroGracePeriod = 5,
     GracePeriod = 6,
+    NoPermissioned = 7,
 
     NoReserveExistForAsset = 100,
     NoActiveReserve = 101,

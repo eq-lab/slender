@@ -2,8 +2,8 @@ use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::ir_params::IRParams;
 use soroban_sdk::{symbol_short, Address, Env, Symbol};
 
-pub(crate) fn initialized(e: &Env, admin: &Address, params: &IRParams) {
-    let topics = (Symbol::new(e, "initialize"), admin);
+pub(crate) fn initialized(e: &Env, permission_owner: &Address, params: &IRParams) {
+    let topics = (Symbol::new(e, "initialize"), permission_owner);
     e.events().publish(
         topics,
         (

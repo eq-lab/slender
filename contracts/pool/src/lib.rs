@@ -6,14 +6,16 @@ use methods::{
     collat_coeff::collat_coeff, configure_as_collateral::configure_as_collateral,
     debt_coeff::debt_coeff, deposit::deposit,
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, finalize_transfer::finalize_transfer,
-    flash_loan::flash_loan, init_reserve::init_reserve, initialize::initialize,
-    liquidate::liquidate, pool_configuration::pool_configuration, repay::repay,
+    flash_loan::flash_loan, grant_permission::grant_permission, init_reserve::init_reserve,
+    initialize::initialize, liquidate::liquidate, permissioned::permissioned,
+    pool_configuration::pool_configuration, repay::repay, revoke_permission::revoke_permission,
     set_as_collateral::set_as_collateral, set_grace_period::set_grace_period,
     set_ir_params::set_ir_params, set_pause::set_pause,
     set_pool_configuration::set_pool_configuration, set_price_feeds::set_price_feeds,
     set_reserve_status::set_reserve_status, twap_median_price::twap_median_price, upgrade::upgrade,
     upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token, withdraw::withdraw,
 };
+use pool_interface::types::permission::Permission;
 use pool_interface::types::{
     account_position::AccountPosition, collateral_params_input::CollateralParamsInput,
     error::Error, flash_loan_asset::FlashLoanAsset, ir_params::IRParams, pause_info::PauseInfo,
@@ -40,7 +42,7 @@ pub struct LendingPool;
 impl LendingPoolTrait for LendingPool {
     fn initialize(
         env: Env,
-        admin: Address,
+        permisssions_owner: Address,
         flash_loan_fee: u32,
         initial_health: u32,
         ir_params: IRParams,
@@ -48,7 +50,7 @@ impl LendingPoolTrait for LendingPool {
     ) -> Result<(), Error> {
         initialize(
             &env,
-            &admin,
+            &permisssions_owner,
             flash_loan_fee,
             initial_health,
             &ir_params,
@@ -56,52 +58,74 @@ impl LendingPoolTrait for LendingPool {
         )
     }
 
-    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), Error> {
-        upgrade(&env, &new_wasm_hash)
+    fn upgrade(env: Env, who: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error> {
+        upgrade(&env, &who, &new_wasm_hash)
     }
 
-    fn upgrade_s_token(env: Env, asset: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error> {
-        upgrade_s_token(&env, &asset, &new_wasm_hash)
+    fn upgrade_s_token(
+        env: Env,
+        who: Address,
+        asset: Address,
+        new_wasm_hash: BytesN<32>,
+    ) -> Result<(), Error> {
+        upgrade_s_token(&env, &who, &asset, &new_wasm_hash)
     }
 
     fn upgrade_debt_token(
         env: Env,
+        who: Address,
         asset: Address,
         new_wasm_hash: BytesN<32>,
     ) -> Result<(), Error> {
-        upgrade_debt_token(&env, &asset, &new_wasm_hash)
+        upgrade_debt_token(&env, &who, &asset, &new_wasm_hash)
     }
 
     fn version() -> u32 {
         1
     }
 
-    fn init_reserve(env: Env, asset: Address, reserve_type: ReserveType) -> Result<(), Error> {
-        init_reserve(&env, &asset, reserve_type)
+    fn init_reserve(
+        env: Env,
+        who: Address,
+        asset: Address,
+        reserve_type: ReserveType,
+    ) -> Result<(), Error> {
+        init_reserve(&env, &who, &asset, reserve_type)
     }
 
-    fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error> {
-        set_reserve_status(&env, &asset, is_active)
+    fn set_reserve_status(
+        env: Env,
+        who: Address,
+        asset: Address,
+        is_active: bool,
+    ) -> Result<(), Error> {
+        set_reserve_status(&env, &who, &asset, is_active)
     }
 
-    fn set_ir_params(env: Env, input: IRParams) -> Result<(), Error> {
-        set_ir_params(&env, &input)
+    fn set_ir_params(env: Env, who: Address, input: IRParams) -> Result<(), Error> {
+        set_ir_params(&env, &who, &input)
     }
 
     fn ir_params(env: Env) -> Option<IRParams> {
         read_ir_params(&env).ok()
     }
 
-    fn enable_borrowing_on_reserve(env: Env, asset: Address, enabled: bool) -> Result<(), Error> {
-        enable_borrowing_on_reserve(&env, &asset, enabled)
+    fn enable_borrowing_on_reserve(
+        env: Env,
+        who: Address,
+        asset: Address,
+        enabled: bool,
+    ) -> Result<(), Error> {
+        enable_borrowing_on_reserve(&env, &who, &asset, enabled)
     }
 
     fn configure_as_collateral(
         env: Env,
+        who: Address,
         asset: Address,
         params: CollateralParamsInput,
     ) -> Result<(), Error> {
-        configure_as_collateral(&env, &asset, &params)
+        configure_as_collateral(&env, &who, &asset, &params)
     }
 
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData> {
@@ -116,16 +140,20 @@ impl LendingPoolTrait for LendingPool {
         debt_coeff(&env, &asset)
     }
 
-    fn set_pool_configuration(env: Env, config: PoolConfig) -> Result<(), Error> {
-        set_pool_configuration(&env, &config)
+    fn set_pool_configuration(env: Env, who: Address, config: PoolConfig) -> Result<(), Error> {
+        set_pool_configuration(&env, &who, &config)
     }
 
     fn pool_configuration(env: Env) -> Result<PoolConfig, Error> {
         pool_configuration(&env)
     }
 
-    fn set_price_feeds(env: Env, inputs: Vec<PriceFeedConfigInput>) -> Result<(), Error> {
-        set_price_feeds(&env, &inputs)
+    fn set_price_feeds(
+        env: Env,
+        who: Address,
+        inputs: Vec<PriceFeedConfigInput>,
+    ) -> Result<(), Error> {
+        set_price_feeds(&env, &who, &inputs)
     }
 
     fn price_feeds(env: Env, asset: Address) -> Option<PriceFeedConfig> {
@@ -177,12 +205,12 @@ impl LendingPoolTrait for LendingPool {
         borrow(&env, &who, &asset, amount)
     }
 
-    fn set_grace_period(env: Env, grace_period: u64) -> Result<(), Error> {
-        set_grace_period(env, grace_period)
+    fn set_grace_period(env: Env, who: Address, grace_period: u64) -> Result<(), Error> {
+        set_grace_period(env, &who, grace_period)
     }
 
-    fn set_pause(env: Env, value: bool) -> Result<(), Error> {
-        set_pause(&env, value)
+    fn set_pause(env: Env, who: Address, value: bool) -> Result<(), Error> {
+        set_pause(&env, &who, value)
     }
 
     fn pause_info(env: Env) -> Result<PauseInfo, Error> {
@@ -244,7 +272,34 @@ impl LendingPoolTrait for LendingPool {
         read_protocol_fee_vault(&env, &asset)
     }
 
-    fn claim_protocol_fee(env: Env, asset: Address, recipient: Address) -> Result<(), Error> {
-        claim_protocol_fee(&env, &asset, &recipient)
+    fn claim_protocol_fee(
+        env: Env,
+        who: Address,
+        asset: Address,
+        recipient: Address,
+    ) -> Result<(), Error> {
+        claim_protocol_fee(&env, &who, &asset, &recipient)
+    }
+
+    fn grant_permission(
+        env: Env,
+        who: Address,
+        receiver: Address,
+        permission: Permission,
+    ) -> Result<(), Error> {
+        grant_permission(&env, &who, &receiver, &permission)
+    }
+
+    fn revoke_permission(
+        env: Env,
+        who: Address,
+        owner: Address,
+        permission: Permission,
+    ) -> Result<(), Error> {
+        revoke_permission(&env, &who, &owner, &permission)
+    }
+
+    fn permissioned(env: Env, who: Address, permission: Permission) -> bool {
+        permissioned(&env, &who, &permission)
     }
 }
