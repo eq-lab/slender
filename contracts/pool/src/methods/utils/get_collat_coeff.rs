@@ -71,6 +71,7 @@ pub fn get_lp_amount(
     s_token_underlying_balance: i128,
     debt_token_supply: i128,
     amount: i128,
+    round_ceil: bool,
 ) -> Result<i128, Error> {
     if s_token_supply == 0 {
         return Ok(amount);
@@ -90,6 +91,19 @@ pub fn get_lp_amount(
         .checked_add(x1)
         .ok_or(Error::CollateralCoeffMathError)?;
 
-    nom.checked_div(denom)
-        .ok_or(Error::CollateralCoeffMathError)
+    let result = nom
+        .checked_div(denom)
+        .ok_or(Error::CollateralCoeffMathError)?;
+
+    if !round_ceil {
+        return Ok(result);
+    }
+
+    Ok(if result == 0 {
+        1
+    } else if nom % denom == 0 {
+        result
+    } else {
+        result + 1
+    })
 }

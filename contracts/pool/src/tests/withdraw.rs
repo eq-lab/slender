@@ -182,9 +182,9 @@ fn should_partially_withdraw() {
     assert_eq!(s_token_supply_before, 199_991_812);
     assert_eq!(s_token_underlying_supply_before, 160_000_000);
 
-    assert_eq!(lender_stoken_balance, 50_043_048);
+    assert_eq!(lender_stoken_balance, 50_043_047);
     assert_eq!(lender_underlying_balance, 950_000_000);
-    assert_eq!(s_token_supply, 150_034_860);
+    assert_eq!(s_token_supply, 150_034_859);
     assert_eq!(s_token_underlying_supply, 110_000_000);
 }
 
@@ -327,9 +327,9 @@ fn should_allow_withdraw_to_other_address() {
     assert_eq!(s_token_underlying_supply_before, 160_000_000);
 
     assert_eq!(borrower_underlying_balance, 950000000);
-    assert_eq!(lender_stoken_balance, 50_043_048);
+    assert_eq!(lender_stoken_balance, 50_043_047);
     assert_eq!(lender_underlying_balance, 900_000_000);
-    assert_eq!(s_token_supply, 150_034_860);
+    assert_eq!(s_token_supply, 150_034_859);
     assert_eq!(s_token_underlying_supply, 110_000_000);
 }
 

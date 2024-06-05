@@ -103,6 +103,7 @@ fn do_deposit_fungible(
         s_token_underlying_balance,
         debt_token_supply,
         amount,
+        false,
     )?;
     let s_token_supply_after = s_token_supply
         .checked_add(amount_to_mint)
