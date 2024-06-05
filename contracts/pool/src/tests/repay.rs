@@ -211,6 +211,7 @@ fn should_fail_when_debt_lt_min_position_amount() {
         flash_loan_fee: 5,
         initial_health: 0,
         timestamp_window: 20,
+        grace_period: 1,
         user_assets_limit: 2,
         min_collat_amount: 0,
         min_debt_amount: 300_000,

@@ -29,6 +29,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
         base_asset_decimals: sut.reserves[0].token.decimals(),
         flash_loan_fee: 5,
         initial_health: 2_500,
+        grace_period: 1,
         timestamp_window: 20,
         user_assets_limit: 4,
         min_collat_amount: 0,

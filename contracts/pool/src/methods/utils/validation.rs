@@ -1,8 +1,11 @@
-use common::{FixedI128, PERCENTAGE_FACTOR};
+use common::FixedI128;
+use common::ONE_DAY;
+use common::PERCENTAGE_FACTOR;
 use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::error::Error;
 use pool_interface::types::ir_params::IRParams;
 use pool_interface::types::pause_info::PauseInfo;
+use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::types::user_config::UserConfiguration;
@@ -28,6 +31,13 @@ pub fn require_valid_ir_params(env: &Env, params: &IRParams) {
     require_lte_percentage_factor(env, params.initial_rate);
     require_gt_percentage_factor(env, params.max_rate);
     require_lt_percentage_factor(env, params.scaling_coeff);
+
+    assert_with_error!(env, params.scaling_coeff > 0, Error::MustBePositive);
+    assert_with_error!(
+        env,
+        params.initial_rate <= params.max_rate,
+        Error::InitialRateGtMaxRate
+    );
 }
 
 pub fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
@@ -255,4 +265,26 @@ pub fn require_min_position_amounts(env: &Env, account_data: &AccountData) -> Re
 
 pub fn require_non_zero_grace_period(env: &Env, grace_period: u64) {
     assert_with_error!(env, grace_period != 0, Error::ZeroGracePeriod);
+}
+
+pub fn require_not_exceeded_max_decimals(env: &Env, decimals: u32) {
+    assert_with_error!(env, decimals <= 38, Error::ExceededMaxDecimals);
+}
+
+pub fn require_valid_pool_config(env: &Env, config: &PoolConfig) {
+    require_not_exceeded_max_decimals(env, config.base_asset_decimals);
+    require_non_zero_grace_period(env, config.grace_period);
+    require_lte_percentage_factor(env, config.initial_health);
+    require_lte_percentage_factor(env, config.flash_loan_fee);
+    require_lte_percentage_factor(env, config.liquidation_protocol_fee);
+    require_non_negative(env, config.min_collat_amount);
+    require_non_negative(env, config.min_debt_amount);
+
+    assert_with_error!(env, config.grace_period <= ONE_DAY, Error::ExceededOneDay);
+    assert_with_error!(
+        env,
+        config.timestamp_window <= ONE_DAY,
+        Error::ExceededOneDay
+    );
+    assert_with_error!(env, config.user_assets_limit > 0, Error::MustBePositive);
 }

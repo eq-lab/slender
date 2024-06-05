@@ -163,7 +163,7 @@ fn init_reserve() {
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
 
-    let pool = create_pool_contract(&env, &admin, false);
+    let pool = create_pool_contract(&env, &admin, false, &underlying_token.address);
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
@@ -204,6 +204,7 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
         flash_loan_fee: 5,
         initial_health: 100,
         timestamp_window: 20,
+        grace_period: 1,
         user_assets_limit: 4,
         min_collat_amount: 0,
         min_debt_amount: 0,
@@ -405,7 +406,7 @@ fn set_price_feed() {
     let asset_2 = Address::generate(&env);
     let asset_3 = Address::generate(&env);
 
-    let pool = create_pool_contract(&env, &admin, false);
+    let pool = create_pool_contract(&env, &admin, false, &asset_1);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
 
     let feed_inputs = Vec::from_array(
@@ -561,6 +562,7 @@ fn set_pool_configuration() {
             flash_loan_fee: 5,
             initial_health: 2_500,
             timestamp_window: 20,
+            grace_period: 1,
             user_assets_limit: 4,
             min_collat_amount: 0,
             min_debt_amount: 0,

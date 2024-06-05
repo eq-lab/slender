@@ -61,6 +61,7 @@ pub(crate) fn create_pool_contract<'a>(
     e: &Env,
     admin: &Address,
     use_wasm: bool,
+    base_token: &Address,
 ) -> LendingPoolClient<'a> {
     let client = if use_wasm {
         LendingPoolClient::new(e, &e.register_contract_wasm(None, pool::WASM))
@@ -68,8 +69,6 @@ pub(crate) fn create_pool_contract<'a>(
         LendingPoolClient::new(e, &e.register_contract(None, LendingPool))
     };
 
-    let flash_loan_fee = 5;
-    let initial_health = 0;
     let grace_period = 1;
 
     e.ledger()
@@ -77,15 +76,24 @@ pub(crate) fn create_pool_contract<'a>(
 
     client.initialize(
         &admin,
-        &flash_loan_fee,
-        &initial_health,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
             max_rate: 50_000,
             scaling_coeff: 9_000,
         },
-        &grace_period,
+        &PoolConfig {
+            base_asset_address: base_token.clone(),
+            base_asset_decimals: 7,
+            flash_loan_fee: 5,
+            initial_health: 0,
+            timestamp_window: 20,
+            grace_period: 1,
+            user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
     );
     client
 }
@@ -142,15 +150,26 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
     let admin = Address::generate(&env);
     let token_admin = Address::generate(&env);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, use_pool_wasm);
+    let (base_token, _) = create_token_contract(&env, &token_admin);
+    let pool: LendingPoolClient<'_> =
+        create_pool_contract(&env, &admin, use_pool_wasm, &base_token.address);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
     let flash_loan_receiver: FlashLoanReceiverClient<'_> =
         create_flash_loan_receiver_contract(&env);
 
     let reserves: std::vec::Vec<ReserveConfig<'a>> = (0..4)
         .map(|i| {
-            let (token, token_admin_client) = create_token_contract(&env, &token_admin);
-            let decimals = (i == 0).then(|| 7).unwrap_or(9);
+            let (token, token_admin_client, decimals) = if i == 0 {
+                (
+                    TokenClient::new(env, &base_token.address.clone()),
+                    TokenAdminClient::new(env, &base_token.address.clone()),
+                    7,
+                )
+            } else {
+                let (token, token_admin_client) = create_token_contract(&env, &token_admin);
+
+                (token, token_admin_client, 9)
+            };
 
             let (s_token, debt_token) = if i == 3 {
                 pool.init_reserve(&token.address, &ReserveType::RWA);
@@ -174,6 +193,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     flash_loan_fee: 5,
                     initial_health: 0,
                     timestamp_window: 20,
+                    grace_period: 1,
                     user_assets_limit: 4,
                     min_collat_amount: 0,
                     min_debt_amount: 0,

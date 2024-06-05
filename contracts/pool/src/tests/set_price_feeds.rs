@@ -19,7 +19,7 @@ fn should_require_admin() {
     let asset_1 = Address::generate(&env);
     let asset_2 = Address::generate(&env);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false, &asset_1);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
 
     assert!(pool.price_feeds(&asset_1.clone()).is_none());
@@ -92,7 +92,7 @@ fn should_set_price_feed() {
     let asset_1 = Address::generate(&env);
     let asset_2 = Address::generate(&env);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false, &asset_1);
     let price_feed_1: PriceFeedClient<'_> = create_price_feed_contract(&env);
     let price_feed_2: PriceFeedClient<'_> = create_price_feed_contract(&env);
 

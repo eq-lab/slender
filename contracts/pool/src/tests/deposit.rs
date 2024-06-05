@@ -334,6 +334,7 @@ fn rwa_fail_when_exceed_assets_limit() {
         flash_loan_fee: 5,
         initial_health: 0,
         timestamp_window: 20,
+        grace_period: 1,
         user_assets_limit: 2,
         min_collat_amount: 0,
         min_debt_amount: 0,

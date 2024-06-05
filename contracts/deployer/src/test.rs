@@ -3,6 +3,7 @@ extern crate std;
 
 use crate::{Deployer, DeployerClient};
 use pool_interface::types::ir_params::IRParams;
+use pool_interface::types::pool_config::PoolConfig;
 use soroban_sdk::{
     testutils::Address as _, token::Client as TokenClient, Address, BytesN, Env, String,
 };
@@ -26,6 +27,10 @@ fn deploy_pool_and_s_token() {
     let env = Env::default();
     let client = DeployerClient::new(&env, &env.register_contract(None, Deployer));
 
+    let flash_loan_fee = 5;
+    let initial_health = 2_500;
+    let grace_period = 60 * 60 * 24;
+
     // Deploy pool
     let pool_ir_params = IRParams {
         alpha: 143,
@@ -33,9 +38,19 @@ fn deploy_pool_and_s_token() {
         max_rate: 50_000,
         scaling_coeff: 9_000,
     };
-    let flash_loan_fee = 5;
-    let initial_health = 2_500;
-    let grace_period = 60 * 60 * 24;
+    let pool_config = PoolConfig {
+        base_asset_address: Address::generate(&env),
+        base_asset_decimals: 7,
+        flash_loan_fee: flash_loan_fee,
+        initial_health: initial_health,
+        timestamp_window: 20,
+        grace_period: grace_period,
+        user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
+    };
+
     let pool_contract_id = {
         // Install the WASM code to be deployed from the deployer contract.
         let pool_wasm_hash = env.deployer().upload_contract_wasm(pool::WASM);
@@ -48,10 +63,8 @@ fn deploy_pool_and_s_token() {
             &salt,
             &pool_wasm_hash,
             &pool_admin,
-            &flash_loan_fee,
-            &initial_health,
             &pool_ir_params,
-            &grace_period,
+            &pool_config,
         );
         assert!(init_result.is_void());
 

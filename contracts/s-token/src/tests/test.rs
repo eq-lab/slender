@@ -10,8 +10,8 @@ use soroban_sdk::token::{Client as TokenClient, StellarAssetClient as TokenAdmin
 use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
 use self::pool::{
-    CollateralParamsInput, IRParams, OracleAsset, PriceFeed, PriceFeedConfigInput, ReserveType,
-    TimestampPrecision,
+    CollateralParamsInput, IRParams, OracleAsset, PoolConfig, PriceFeed, PriceFeedConfigInput,
+    ReserveType, TimestampPrecision,
 };
 
 mod pool {
@@ -39,30 +39,41 @@ fn create_token<'a>(
     TokenClient,
     TokenAdminClient,
 ) {
-    let pool = pool::Client::new(e, &e.register_contract_wasm(None, pool::WASM));
     let pool_admin = Address::generate(e);
+
+    let pool = pool::Client::new(e, &e.register_contract_wasm(None, pool::WASM));
+    let s_token = STokenClient::new(e, &e.register_contract(None, SToken {}));
+    let stellar_asset = &e.register_stellar_asset_contract(pool_admin.clone());
+
+    let underlying_asset = TokenClient::new(e, stellar_asset);
+    let underlying_asset_admin = TokenAdminClient::new(e, stellar_asset);
+
     let flash_loan_fee = 5;
     let initial_health = 2_500;
     let grace_period = 60 * 60 * 24;
 
     pool.initialize(
         &pool_admin,
-        &flash_loan_fee,
-        &initial_health,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
             max_rate: 50_000,
             scaling_coeff: 9_000,
         },
-        &grace_period,
+        &PoolConfig {
+            base_asset_address: underlying_asset.address.clone(),
+            base_asset_decimals: 7,
+            flash_loan_fee: flash_loan_fee,
+            initial_health: initial_health,
+            timestamp_window: 20,
+            grace_period: grace_period,
+            user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
     );
 
-    let s_token = STokenClient::new(e, &e.register_contract(None, SToken {}));
-
-    let stellar_asset = &e.register_stellar_asset_contract(pool_admin.clone());
-    let underlying_asset = TokenClient::new(e, stellar_asset);
-    let underlying_asset_admin = TokenAdminClient::new(e, stellar_asset);
     e.budget().reset_default();
     let price_feed = oracle::Client::new(e, &e.register_contract_wasm(None, oracle::WASM));
 

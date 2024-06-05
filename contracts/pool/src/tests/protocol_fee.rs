@@ -161,6 +161,7 @@ fn should_claim_fee_rwa() {
         flash_loan_fee: 5,
         initial_health: 2_500,
         timestamp_window: 20,
+        grace_period: 1,
         user_assets_limit: 4,
         min_collat_amount: 0,
         min_debt_amount: 0,
