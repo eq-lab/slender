@@ -217,7 +217,7 @@ fn should_emit_events() {
                     &sut.reserves[0].token.address
                 )
                     .into_val(&env),
-                (1000000i128, 500i128).into_val(&env)
+                (1000000i128, 500i128, false).into_val(&env)
             ),
         ]
     );

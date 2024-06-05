@@ -106,7 +106,8 @@ pub(crate) fn flash_loan(
     asset: &Address,
     amount: i128,
     premium: i128,
+    borrow: bool,
 ) {
     let topics = (Symbol::new(e, "flash_loan"), who, receiver, asset);
-    e.events().publish(topics, (amount, premium));
+    e.events().publish(topics, (amount, premium, borrow));
 }
