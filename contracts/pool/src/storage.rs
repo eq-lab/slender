@@ -1,5 +1,6 @@
 use pool_interface::types::error::Error;
 use pool_interface::types::ir_params::IRParams;
+use pool_interface::types::permission::Permission;
 use pool_interface::types::price_feed_config::PriceFeedConfig;
 use pool_interface::types::price_feed_config_input::PriceFeedConfigInput;
 use pool_interface::types::reserve_data::ReserveData;
@@ -36,33 +37,7 @@ pub enum DataKey {
     InitialHealth,
     LiquidationProtocolFee,
     ProtocolFeeVault(Address),
-}
-
-pub fn has_admin(env: &Env) -> bool {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage().instance().has(&DataKey::Admin)
-}
-
-pub fn write_admin(env: &Env, admin: &Address) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage().instance().set(&DataKey::Admin, admin);
-}
-
-pub fn read_admin(env: &Env) -> Result<Address, Error> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage()
-        .instance()
-        .get(&DataKey::Admin)
-        .ok_or(Error::Uninitialized)
+    Owners(Permission),
 }
 
 pub fn write_ir_params(env: &Env, ir_params: &IRParams) {
@@ -442,14 +417,12 @@ pub fn write_token_balance(
 
 pub fn read_liquidation_protocol_fee(env: &Env) -> u32 {
     let key = DataKey::LiquidationProtocolFee;
-    let value = env.storage().persistent().get(&key);
+    let value = env.storage().instance().get(&key);
 
     if value.is_some() {
-        env.storage().persistent().extend_ttl(
-            &key,
-            LOW_USER_DATA_BUMP_LEDGERS,
-            HIGH_USER_DATA_BUMP_LEDGERS,
-        );
+        env.storage()
+            .instance()
+            .extend_ttl(LOW_USER_DATA_BUMP_LEDGERS, HIGH_USER_DATA_BUMP_LEDGERS);
     }
 
     value.unwrap_or(0)
@@ -458,12 +431,10 @@ pub fn read_liquidation_protocol_fee(env: &Env) -> u32 {
 pub fn write_liquidation_protocol_fee(env: &Env, value: u32) {
     let key = DataKey::LiquidationProtocolFee;
 
-    env.storage().persistent().set(&key, &value);
-    env.storage().persistent().extend_ttl(
-        &key,
-        LOW_USER_DATA_BUMP_LEDGERS,
-        HIGH_USER_DATA_BUMP_LEDGERS,
-    );
+    env.storage().instance().set(&key, &value);
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_USER_DATA_BUMP_LEDGERS, HIGH_USER_DATA_BUMP_LEDGERS);
 }
 
 pub fn read_protocol_fee_vault(env: &Env, asset: &Address) -> i128 {
@@ -502,4 +473,31 @@ pub fn add_protocol_fee_vault(env: &Env, asset: &Address, amount: i128) -> Resul
     write_protocol_fee_vault(env, asset, balance);
 
     Ok(())
+}
+
+pub fn write_permission_owners(env: &Env, owners: &Vec<Address>, permission: &Permission) {
+    let key = DataKey::Owners(permission.clone());
+
+    env.storage().persistent().set(&key, owners);
+    env.storage().persistent().extend_ttl(
+        &key,
+        LOW_USER_DATA_BUMP_LEDGERS,
+        HIGH_USER_DATA_BUMP_LEDGERS,
+    );
+}
+
+pub fn read_permission_owners(env: &Env, permission: &Permission) -> Vec<Address> {
+    let key = DataKey::Owners(permission.clone());
+
+    let mb_vec = env.storage().persistent().get(&key);
+
+    if mb_vec.is_some() {
+        env.storage().persistent().extend_ttl(
+            &key,
+            LOW_INSTANCE_BUMP_LEDGERS,
+            HIGH_INSTANCE_BUMP_LEDGERS,
+        );
+    }
+
+    mb_vec.unwrap_or(vec![env])
 }

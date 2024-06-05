@@ -8,6 +8,7 @@ use types::error::Error;
 use types::flash_loan_asset::FlashLoanAsset;
 use types::ir_params::IRParams;
 use types::pause_info::PauseInfo;
+use types::permission::Permission;
 use types::pool_config::PoolConfig;
 use types::price_feed_config::PriceFeedConfig;
 use types::price_feed_config_input::PriceFeedConfigInput;
@@ -30,26 +31,51 @@ pub trait LendingPoolTrait {
         pool_config: PoolConfig,
     ) -> Result<(), Error>;
 
-    fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), Error>;
+    fn upgrade(env: Env, who: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error>;
 
-    fn upgrade_s_token(env: Env, asset: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error>;
+    fn upgrade_s_token(
+        env: Env,
+        who: Address,
+        asset: Address,
+        new_wasm_hash: BytesN<32>,
+    ) -> Result<(), Error>;
 
-    fn upgrade_debt_token(env: Env, asset: Address, new_wasm_hash: BytesN<32>)
-        -> Result<(), Error>;
+    fn upgrade_debt_token(
+        env: Env,
+        who: Address,
+        asset: Address,
+        new_wasm_hash: BytesN<32>,
+    ) -> Result<(), Error>;
 
     fn version() -> u32;
 
-    fn init_reserve(env: Env, asset: Address, reserve_type: ReserveType) -> Result<(), Error>;
+    fn init_reserve(
+        env: Env,
+        who: Address,
+        asset: Address,
+        reserve_type: ReserveType,
+    ) -> Result<(), Error>;
 
-    fn set_reserve_status(env: Env, asset: Address, is_active: bool) -> Result<(), Error>;
+    fn set_reserve_status(
+        env: Env,
+        who: Address,
+        asset: Address,
+        is_active: bool,
+    ) -> Result<(), Error>;
 
     fn configure_as_collateral(
         env: Env,
+        who: Address,
         asset: Address,
         config: CollateralParamsInput,
     ) -> Result<(), Error>;
 
-    fn enable_borrowing_on_reserve(env: Env, asset: Address, enabled: bool) -> Result<(), Error>;
+    fn enable_borrowing_on_reserve(
+        env: Env,
+        who: Address,
+        asset: Address,
+        enabled: bool,
+    ) -> Result<(), Error>;
 
     fn get_reserve(env: Env, asset: Address) -> Option<ReserveData>;
 
@@ -57,15 +83,19 @@ pub trait LendingPoolTrait {
 
     fn debt_coeff(env: Env, asset: Address) -> Result<i128, Error>;
 
-    fn set_pool_configuration(env: Env, config: PoolConfig) -> Result<(), Error>;
+    fn set_pool_configuration(env: Env, who: Address, config: PoolConfig) -> Result<(), Error>;
 
     fn pool_configuration(env: Env) -> Result<PoolConfig, Error>;
 
-    fn set_price_feeds(env: Env, inputs: Vec<PriceFeedConfigInput>) -> Result<(), Error>;
+    fn set_price_feeds(
+        env: Env,
+        who: Address,
+        inputs: Vec<PriceFeedConfigInput>,
+    ) -> Result<(), Error>;
 
     fn price_feeds(env: Env, asset: Address) -> Option<PriceFeedConfig>;
 
-    fn set_ir_params(env: Env, input: IRParams) -> Result<(), Error>;
+    fn set_ir_params(env: Env, who: Address, input: IRParams) -> Result<(), Error>;
 
     fn ir_params(env: Env) -> Option<IRParams>;
 
@@ -101,7 +131,7 @@ pub trait LendingPoolTrait {
 
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
-    fn set_pause(env: Env, value: bool) -> Result<(), Error>;
+    fn set_pause(env: Env, who: Address, value: bool) -> Result<(), Error>;
 
     fn pause_info(env: Env) -> Result<PauseInfo, Error>;
 
@@ -132,5 +162,26 @@ pub trait LendingPoolTrait {
 
     fn protocol_fee(env: Env, asset: Address) -> i128;
 
-    fn claim_protocol_fee(env: Env, asset: Address, recipient: Address) -> Result<(), Error>;
+    fn claim_protocol_fee(
+        env: Env,
+        who: Address,
+        asset: Address,
+        recipient: Address,
+    ) -> Result<(), Error>;
+
+    fn grant_permission(
+        env: Env,
+        who: Address,
+        receiver: Address,
+        permission: Permission,
+    ) -> Result<(), Error>;
+
+    fn revoke_permission(
+        env: Env,
+        who: Address,
+        owner: Address,
+        permission: Permission,
+    ) -> Result<(), Error>;
+
+    fn permissioned(env: Env, permission: Permission) -> Vec<Address>;
 }

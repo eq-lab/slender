@@ -11,6 +11,7 @@ pub enum Error {
     NoPoolConfig = 4,
     ZeroGracePeriod = 5,
     GracePeriod = 6,
+    NoPermissioned = 7,
 
     NoReserveExistForAsset = 100,
     NoActiveReserve = 101,
@@ -23,9 +24,7 @@ pub enum Error {
     InitialHealthNotInitialized = 108,
     LiquidationOrderMustBeUnique = 109,
     NotFungible = 110,
-    ExceededMaxDecimals = 111,
-    ExceededOneDay = 112,
-    InitialRateGtMaxRate = 113,
+    ExceededMaxValue = 111,
 
     UserConfigInvalidIndex = 200,
     NotEnoughAvailableUserBalance = 201,

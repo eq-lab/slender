@@ -57,7 +57,7 @@ fn should_fail_when_feed_is_missing_for_asset() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     set_time(&env, &sut, 1704790800000, false); // delta = 600_000
 
@@ -122,7 +122,7 @@ fn should_fail_when_price_is_missing_in_feed() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     set_time(&env, &sut, 1704790800000, false); // delta = 600_000
 
@@ -184,7 +184,7 @@ fn should_fail_when_all_price_feeds_throws_error() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     sut.pool.twap_median_price(&asset_1, &1_000_000_000);
 }
@@ -245,7 +245,7 @@ fn should_fail_when_price_is_not_stale() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     set_time(&env, &sut, 1704790800, false); // delta = 600
     extern crate std;
@@ -309,7 +309,7 @@ fn should_fail_when_price_is_below_min_sanity() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     set_time(&env, &sut, 1704790800, false); // delta = 600
     extern crate std;
@@ -373,7 +373,7 @@ fn should_fail_when_price_is_below_max_sanity() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     set_time(&env, &sut, 1704790800, false); // delta = 600
     extern crate std;
@@ -459,7 +459,7 @@ fn should_return_twap_median_price() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     set_time(&env, &sut, 1704790800, false); // delta = 600_000
     extern crate std;
@@ -519,7 +519,7 @@ fn should_return_twap_median_price() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     let twap_median_price_2 = sut.pool.twap_median_price(&asset_1, &1_000_000_000);
 
@@ -604,7 +604,7 @@ fn should_return_twap_median_price_when_unsorted_prices() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     set_time(&env, &sut, 1704790800, false); // delta = 600_000
     extern crate std;
@@ -701,7 +701,7 @@ fn should_use_backup_price_feed() {
         },
     ];
 
-    sut.pool.set_price_feeds(&price_feeds);
+    sut.pool.set_price_feeds(&sut.pool_admin, &price_feeds);
 
     set_time(&env, &sut, 1704790800, false); // delta = 600_000
     extern crate std;

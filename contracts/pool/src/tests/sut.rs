@@ -95,6 +95,24 @@ pub(crate) fn create_pool_contract<'a>(
             liquidation_protocol_fee: 0,
         },
     );
+
+    for p in [
+        Permission::ClaimProtocolFee,
+        Permission::CollateralReserveParams,
+        Permission::InitReserve,
+        Permission::SetGracePeriod,
+        Permission::SetIRParams,
+        Permission::SetPause,
+        Permission::SetPoolConfiguration,
+        Permission::SetPriceFeeds,
+        Permission::SetReserveBorrowing,
+        Permission::SetReserveStatus,
+        Permission::UpgradeLPTokens,
+        Permission::UpgradePoolWasm,
+    ] {
+        client.grant_permission(admin, admin, &p);
+    }
+
     client
 }
 
@@ -172,33 +190,37 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             };
 
             let (s_token, debt_token) = if i == 3 {
-                pool.init_reserve(&token.address, &ReserveType::RWA);
+                pool.init_reserve(&admin, &token.address, &ReserveType::RWA);
                 (None, None)
             } else {
                 let s_token = create_s_token_contract(&env, &pool.address, &token.address);
                 assert!(pool.get_reserve(&s_token.address).is_none());
                 let debt_token = create_debt_token_contract(&env, &pool.address, &token.address);
                 pool.init_reserve(
+                    &admin,
                     &token.address,
                     &ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone()),
                 );
-                pool.enable_borrowing_on_reserve(&token.address, &true);
+                pool.enable_borrowing_on_reserve(&admin, &token.address, &true);
                 (Some(s_token), Some(debt_token))
             };
 
             if i == 0 {
-                pool.set_pool_configuration(&PoolConfig {
-                    base_asset_address: token.address.clone(),
-                    base_asset_decimals: decimals,
-                    flash_loan_fee: 5,
-                    initial_health: 0,
-                    timestamp_window: 20,
-                    grace_period: 1,
-                    user_assets_limit: 4,
-                    min_collat_amount: 0,
-                    min_debt_amount: 0,
-                    liquidation_protocol_fee: 0,
-                });
+                pool.set_pool_configuration(
+                    &admin,
+                    &PoolConfig {
+                        base_asset_address: token.address.clone(),
+                        base_asset_decimals: decimals,
+                        flash_loan_fee: 5,
+                        initial_health: 0,
+                        timestamp_window: 20,
+                        grace_period: 1,
+                        user_assets_limit: 4,
+                        min_collat_amount: 0,
+                        min_debt_amount: 0,
+                        liquidation_protocol_fee: 0,
+                    },
+                );
             }
 
             let liquidity_cap = 100_000_000 * 10_i128.pow(decimals); // 100M
@@ -207,6 +229,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
             let discount = 6000; //60%
 
             pool.configure_as_collateral(
+                &admin,
                 &token.address.clone(),
                 &CollateralParamsInput {
                     liq_cap: liquidity_cap,
@@ -352,7 +375,7 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
         ],
     );
 
-    pool.set_price_feeds(&feed_inputs);
+    pool.set_price_feeds(&admin, &feed_inputs);
 
     Sut {
         pool,

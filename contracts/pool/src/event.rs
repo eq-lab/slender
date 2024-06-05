@@ -4,10 +4,15 @@ use pool_interface::types::{
 };
 use soroban_sdk::{symbol_short, Address, Env, Symbol};
 
-pub(crate) fn initialized(e: &Env, admin: &Address, params: &IRParams, pool_config: &PoolConfig) {
+pub(crate) fn initialized(
+    e: &Env,
+    permission_owner: &Address,
+    params: &IRParams,
+    pool_config: &PoolConfig,
+) {
     let topics = (
         Symbol::new(e, "initialize"),
-        admin,
+        permission_owner,
         pool_config.base_asset_address.clone(),
     );
     e.events().publish(

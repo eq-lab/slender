@@ -205,18 +205,21 @@ fn should_fail_when_debt_lt_min_position_amount() {
     let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
 
-    sut.pool.set_pool_configuration(&PoolConfig {
-        base_asset_address: sut.reserves[0].token.address.clone(),
-        base_asset_decimals: sut.reserves[0].token.decimals(),
-        flash_loan_fee: 5,
-        initial_health: 0,
-        timestamp_window: 20,
-        grace_period: 1,
-        user_assets_limit: 2,
-        min_collat_amount: 0,
-        min_debt_amount: 300_000,
-        liquidation_protocol_fee: 0,
-    });
+    sut.pool.set_pool_configuration(
+        &sut.pool_admin,
+        &PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 0,
+            timestamp_window: 20,
+            grace_period: 1,
+            user_assets_limit: 2,
+            min_collat_amount: 0,
+            min_debt_amount: 300_000,
+            liquidation_protocol_fee: 0,
+        },
+    );
 
     set_time(&env, &sut, 2 * DAY, false);
 
@@ -245,8 +248,8 @@ fn should_not_fail_in_grace_period() {
     assert_eq!(treasury_balance, 0);
     assert_eq!(user_debt_balance, 40_000_001);
 
-    sut.pool.set_pause(&true);
-    sut.pool.set_pause(&false);
+    sut.pool.set_pause(&sut.pool_admin, &true);
+    sut.pool.set_pause(&sut.pool_admin, &false);
 
     sut.pool.repay(&borrower, &debt_token, &i128::MAX);
 

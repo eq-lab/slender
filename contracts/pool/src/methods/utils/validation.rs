@@ -5,25 +5,33 @@ use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::error::Error;
 use pool_interface::types::ir_params::IRParams;
 use pool_interface::types::pause_info::PauseInfo;
+use pool_interface::types::permission::Permission;
 use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::types::user_config::UserConfiguration;
-use soroban_sdk::{assert_with_error, panic_with_error, Address, Env};
+use soroban_sdk::{assert_with_error, Address, Env};
 
-use crate::storage::{has_admin, has_reserve, read_admin, read_initial_health};
+use crate::methods::permissioned::permissioned;
+use crate::storage::{has_reserve, read_initial_health};
 use crate::types::account_data::AccountData;
-use crate::{read_min_position_amounts, read_reserve, read_reserves};
+use crate::{read_min_position_amounts, read_permission_owners, read_reserve, read_reserves};
 
-pub fn require_admin_not_exist(env: &Env) {
-    if has_admin(env) {
-        panic_with_error!(env, Error::AlreadyInitialized);
-    }
+pub fn require_permissions_owner_not_exist(env: &Env) {
+    assert_with_error!(
+        env,
+        read_permission_owners(env, &Permission::Permission).is_empty(),
+        Error::AlreadyInitialized
+    );
 }
 
-pub fn require_admin(env: &Env) -> Result<(), Error> {
-    let admin: Address = read_admin(env)?;
-    admin.require_auth();
+pub fn require_permission(env: &Env, who: &Address, permission: &Permission) -> Result<(), Error> {
+    assert_with_error!(
+        env,
+        permissioned(env, who, permission)?,
+        Error::NoPermissioned
+    );
+    who.require_auth();
     Ok(())
 }
 
@@ -36,7 +44,7 @@ pub fn require_valid_ir_params(env: &Env, params: &IRParams) {
     assert_with_error!(
         env,
         params.initial_rate <= params.max_rate,
-        Error::InitialRateGtMaxRate
+        Error::ExceededMaxValue
     );
 }
 
@@ -268,7 +276,7 @@ pub fn require_non_zero_grace_period(env: &Env, grace_period: u64) {
 }
 
 pub fn require_not_exceeded_max_decimals(env: &Env, decimals: u32) {
-    assert_with_error!(env, decimals <= 38, Error::ExceededMaxDecimals);
+    assert_with_error!(env, decimals <= 38, Error::ExceededMaxValue);
 }
 
 pub fn require_valid_pool_config(env: &Env, config: &PoolConfig) {
@@ -280,11 +288,11 @@ pub fn require_valid_pool_config(env: &Env, config: &PoolConfig) {
     require_non_negative(env, config.min_collat_amount);
     require_non_negative(env, config.min_debt_amount);
 
-    assert_with_error!(env, config.grace_period <= ONE_DAY, Error::ExceededOneDay);
+    assert_with_error!(env, config.grace_period <= ONE_DAY, Error::ExceededMaxValue);
     assert_with_error!(
         env,
         config.timestamp_window <= ONE_DAY,
-        Error::ExceededOneDay
+        Error::ExceededMaxValue
     );
     assert_with_error!(env, config.user_assets_limit > 0, Error::MustBePositive);
 }

@@ -84,18 +84,21 @@ fn should_fail_when_npv_fails_bellow_initial_health() {
 
     let (sut, user, (collat_reserve_index, _), (collat_token, _)) = init_with_debt(&env);
 
-    sut.pool.set_pool_configuration(&PoolConfig {
-        base_asset_address: sut.reserves[0].token.address.clone(),
-        base_asset_decimals: sut.reserves[0].token.decimals(),
-        flash_loan_fee: 5,
-        initial_health: 2_500,
-        timestamp_window: 20,
-        grace_period: 1,
-        user_assets_limit: 4,
-        min_collat_amount: 0,
-        min_debt_amount: 0,
-        liquidation_protocol_fee: 0,
-    });
+    sut.pool.set_pool_configuration(
+        &sut.pool_admin,
+        &PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 2_500,
+            timestamp_window: 20,
+            grace_period: 1,
+            user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
+    );
 
     sut.pool
         .set_as_collateral(&user, &collat_token.clone(), &false);
@@ -160,18 +163,21 @@ fn rwa_fail_when_exceed_assets_limit() {
         ()
     );
 
-    sut.pool.set_pool_configuration(&PoolConfig {
-        base_asset_address: sut.reserves[0].token.address.clone(),
-        base_asset_decimals: sut.reserves[0].token.decimals(),
-        flash_loan_fee: 5,
-        initial_health: 0,
-        timestamp_window: 20,
-        grace_period: 1,
-        user_assets_limit: 2,
-        min_collat_amount: 0,
-        min_debt_amount: 300_000,
-        liquidation_protocol_fee: 0,
-    });
+    sut.pool.set_pool_configuration(
+        &sut.pool_admin,
+        &PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 0,
+            timestamp_window: 20,
+            grace_period: 1,
+            user_assets_limit: 2,
+            min_collat_amount: 0,
+            min_debt_amount: 300_000,
+            liquidation_protocol_fee: 0,
+        },
+    );
 
     sut.pool
         .set_as_collateral(&user, &&sut.reserves[0].token.address, &true);
@@ -186,18 +192,21 @@ fn should_fail_when_collat_lt_min_position_amount() {
     deposit(&sut.pool, &sut.reserves[0].token_admin, &user);
     deposit(&sut.pool, &sut.reserves[2].token_admin, &user);
 
-    sut.pool.set_pool_configuration(&PoolConfig {
-        base_asset_address: sut.reserves[0].token.address.clone(),
-        base_asset_decimals: sut.reserves[0].token.decimals(),
-        flash_loan_fee: 5,
-        initial_health: 0,
-        timestamp_window: 20,
-        grace_period: 1,
-        user_assets_limit: 2,
-        min_collat_amount: 7_000_000,
-        min_debt_amount: 0,
-        liquidation_protocol_fee: 0,
-    });
+    sut.pool.set_pool_configuration(
+        &sut.pool_admin,
+        &PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 0,
+            timestamp_window: 20,
+            grace_period: 1,
+            user_assets_limit: 2,
+            min_collat_amount: 7_000_000,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
+    );
 
     assert_eq!(sut.pool.set_as_collateral(&user, &collat_token, &false), ());
 }

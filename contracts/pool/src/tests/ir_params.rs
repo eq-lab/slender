@@ -15,7 +15,7 @@ fn should_return_ir_params() {
         scaling_coeff: 9_001,
     };
 
-    sut.pool.set_ir_params(&ir_params_input);
+    sut.pool.set_ir_params(&sut.pool_admin, &ir_params_input);
 
     let ir_params = sut.pool.ir_params().unwrap();
 

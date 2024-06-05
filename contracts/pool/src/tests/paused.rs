@@ -8,7 +8,7 @@ fn should_return_pause_info() {
     let sut = init_pool(&env, false);
     let prev_pause_info = sut.pool.pause_info();
 
-    sut.pool.set_pause(&false);
+    sut.pool.set_pause(&sut.pool_admin, &false);
     let next_pause_info = sut.pool.pause_info();
     assert!(!next_pause_info.paused);
     assert_eq!(
@@ -17,7 +17,7 @@ fn should_return_pause_info() {
     );
     assert_eq!(prev_pause_info.unpaused_at, next_pause_info.unpaused_at);
 
-    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&sut.pool_admin, &true);
     let next_pause_info = sut.pool.pause_info();
     assert!(next_pause_info.paused);
     assert_eq!(

@@ -36,7 +36,7 @@ fn should_fail_when_pool_paused() {
     let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
-    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&sut.pool_admin, &true);
     sut.pool.deposit(&user, &token_address, &1);
 }
 
@@ -63,7 +63,8 @@ fn should_fail_when_reserve_deactivated() {
     let sut = init_pool(&env, false);
     let token_address = sut.token().address.clone();
 
-    sut.pool.set_reserve_status(&token_address, &false);
+    sut.pool
+        .set_reserve_status(&sut.pool_admin, &token_address, &false);
     sut.pool.deposit(&user, &token_address, &1);
 }
 
@@ -328,18 +329,21 @@ fn rwa_fail_when_exceed_assets_limit() {
     let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
 
-    sut.pool.set_pool_configuration(&PoolConfig {
-        base_asset_address: sut.reserves[0].token.address.clone(),
-        base_asset_decimals: sut.reserves[0].token.decimals(),
-        flash_loan_fee: 5,
-        initial_health: 0,
-        timestamp_window: 20,
-        grace_period: 1,
-        user_assets_limit: 2,
-        min_collat_amount: 0,
-        min_debt_amount: 0,
-        liquidation_protocol_fee: 0,
-    });
+    sut.pool.set_pool_configuration(
+        &sut.pool_admin,
+        &PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 0,
+            timestamp_window: 20,
+            grace_period: 1,
+            user_assets_limit: 2,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
+    );
 
     sut.pool
         .deposit(&borrower, &sut.reserves[2].token.address, &1_000_000_000);
@@ -359,8 +363,8 @@ fn should_not_fail_in_grace_period() {
 
     sut.pool.deposit(&user, &token_address, &3_000_000_000);
 
-    sut.pool.set_pause(&true);
-    sut.pool.set_pause(&false);
+    sut.pool.set_pause(&sut.pool_admin, &true);
+    sut.pool.set_pause(&sut.pool_admin, &false);
 
     sut.pool.deposit(&user, &token_address, &3_000_000_000);
 

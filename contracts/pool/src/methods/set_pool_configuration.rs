@@ -1,7 +1,9 @@
 use pool_interface::types::base_asset_config::BaseAssetConfig;
 use pool_interface::types::error::Error;
 use pool_interface::types::pause_info::PauseInfo;
+use pool_interface::types::permission::Permission;
 use pool_interface::types::pool_config::PoolConfig;
+use soroban_sdk::Address;
 use soroban_sdk::Env;
 
 use crate::read_pause_info;
@@ -14,16 +16,20 @@ use crate::write_pause_info;
 use crate::write_reserve_timestamp_window;
 use crate::write_user_assets_limit;
 
-use super::utils::validation::require_admin;
+use super::utils::validation::require_permission;
 use super::utils::validation::require_valid_pool_config;
 
 pub fn set_pool_configuration(
     env: &Env,
+    check_permission: Option<Address>,
     config: &PoolConfig,
-    check_admin: bool,
 ) -> Result<(), Error> {
-    if check_admin {
-        require_admin(env)?;
+    if check_permission.is_some() {
+        require_permission(
+            env,
+            &check_permission.unwrap(),
+            &Permission::SetPoolConfiguration,
+        )?;
     }
 
     require_valid_pool_config(env, config);

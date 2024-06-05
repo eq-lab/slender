@@ -95,7 +95,7 @@ fn configure_as_collateral() {
 
     measure_budget(&env, function_name!(), || {
         sut.pool
-            .configure_as_collateral(&asset_address.clone(), &params.clone());
+            .configure_as_collateral(&sut.pool_admin, &asset_address.clone(), &params.clone());
     });
 }
 
@@ -135,7 +135,8 @@ fn enable_borrowing_on_reserve() {
     let asset = sut.token().address.clone();
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.enable_borrowing_on_reserve(&asset, &true);
+        sut.pool
+            .enable_borrowing_on_reserve(&sut.pool_admin, &asset, &true);
     });
 }
 
@@ -172,6 +173,7 @@ fn init_reserve() {
 
     measure_budget(&env, function_name!(), || {
         pool.init_reserve(
+            &admin,
             &underlying_token.address.clone(),
             &init_reserve_input.clone(),
         );
@@ -198,18 +200,21 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
 
     let sut = init_pool(&env, true);
     let (_, borrower, _) = fill_pool_four(&env, &sut);
-    sut.pool.set_pool_configuration(&PoolConfig {
-        base_asset_address: sut.reserves[0].token.address.clone(),
-        base_asset_decimals: sut.reserves[0].token.decimals(),
-        flash_loan_fee: 5,
-        initial_health: 100,
-        timestamp_window: 20,
-        grace_period: 1,
-        user_assets_limit: 4,
-        min_collat_amount: 0,
-        min_debt_amount: 0,
-        liquidation_protocol_fee: 0,
-    });
+    sut.pool.set_pool_configuration(
+        &sut.pool_admin,
+        &PoolConfig {
+            base_asset_address: sut.reserves[0].token.address.clone(),
+            base_asset_decimals: sut.reserves[0].token.decimals(),
+            flash_loan_fee: 5,
+            initial_health: 100,
+            timestamp_window: 20,
+            grace_period: 1,
+            user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
+    );
 
     sut.pool
         .borrow(&borrower, &sut.reserves[2].token.address, &4_990_400_000);
@@ -380,7 +385,7 @@ fn set_ir_params() {
     };
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.set_ir_params(&ir_params_input);
+        sut.pool.set_ir_params(&sut.pool_admin, &ir_params_input);
     });
 }
 
@@ -392,7 +397,7 @@ fn set_pause() {
     let sut = init_pool(&env, true);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.set_pause(&true);
+        sut.pool.set_pause(&sut.pool_admin, &true);
     });
 }
 
@@ -467,7 +472,7 @@ fn set_price_feed() {
     );
 
     measure_budget(&env, function_name!(), || {
-        pool.set_price_feeds(&feed_inputs);
+        pool.set_price_feeds(&admin, &feed_inputs);
     });
 }
 
@@ -480,7 +485,7 @@ fn set_reserve_status() {
     let asset = sut.token().address.clone();
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.set_reserve_status(&asset, &true);
+        sut.pool.set_reserve_status(&sut.pool_admin, &asset, &true);
     });
 }
 
@@ -556,18 +561,21 @@ fn set_pool_configuration() {
     let sut = init_pool(&env, true);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.set_pool_configuration(&PoolConfig {
-            base_asset_address: sut.reserves[0].token.address.clone(),
-            base_asset_decimals: sut.reserves[0].token.decimals(),
-            flash_loan_fee: 5,
-            initial_health: 2_500,
-            timestamp_window: 20,
-            grace_period: 1,
-            user_assets_limit: 4,
-            min_collat_amount: 0,
-            min_debt_amount: 0,
-            liquidation_protocol_fee: 0,
-        });
+        sut.pool.set_pool_configuration(
+            &sut.pool_admin,
+            &PoolConfig {
+                base_asset_address: sut.reserves[0].token.address.clone(),
+                base_asset_decimals: sut.reserves[0].token.decimals(),
+                flash_loan_fee: 5,
+                initial_health: 2_500,
+                timestamp_window: 20,
+                grace_period: 1,
+                user_assets_limit: 4,
+                min_collat_amount: 0,
+                min_debt_amount: 0,
+                liquidation_protocol_fee: 0,
+            },
+        );
     });
 }
 
@@ -670,7 +678,7 @@ fn upgrade() {
     let pool_v2_wasm = env.deployer().upload_contract_wasm(pool_v2::WASM);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.upgrade(&pool_v2_wasm);
+        sut.pool.upgrade(&sut.pool_admin, &pool_v2_wasm);
     });
 }
 
@@ -685,7 +693,8 @@ fn upgrade_s_token() {
     let s_token_v2_wasm = env.deployer().upload_contract_wasm(s_token_v2::WASM);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.upgrade_s_token(&asset, &s_token_v2_wasm);
+        sut.pool
+            .upgrade_s_token(&sut.pool_admin, &asset, &s_token_v2_wasm);
     });
 }
 
@@ -699,7 +708,8 @@ fn upgrade_debt_token() {
     let asset = sut.reserves[0].token.address.clone();
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.upgrade_debt_token(&asset, &debt_token_v2_wasm);
+        sut.pool
+            .upgrade_debt_token(&sut.pool_admin, &asset, &debt_token_v2_wasm);
     });
 }
 
