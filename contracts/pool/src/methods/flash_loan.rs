@@ -113,17 +113,19 @@ pub fn flash_loan(
             )?;
         }
 
+        let premium = if loan_asset.borrow {
+            0
+        } else {
+            received_asset.premium
+        };
+
         event::flash_loan(
             env,
             who,
             receiver,
             &received_asset.asset,
             received_asset.amount,
-            if loan_asset.borrow {
-                0
-            } else {
-                received_asset.premium
-            },
+            premium,
             loan_asset.borrow,
         );
     }
