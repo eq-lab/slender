@@ -15,5 +15,5 @@ pub enum Permission {
     SetReserveStatus,
     UpgradeLPTokens,
     UpgradePoolWasm,
-    Permisssion,
+    Permission,
 }

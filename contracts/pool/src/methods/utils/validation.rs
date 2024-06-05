@@ -17,7 +17,7 @@ use crate::{read_min_position_amounts, read_permission_owners, read_reserve, rea
 pub fn require_permissions_owner_not_exist(env: &Env) {
     assert_with_error!(
         env,
-        read_permission_owners(env, &Permission::Permisssion).is_empty(),
+        read_permission_owners(env, &Permission::Permission).is_empty(),
         Error::AlreadyInitialized
     );
 }

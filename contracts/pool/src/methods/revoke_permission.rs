@@ -11,7 +11,7 @@ pub fn revoke_permission(
     owner: &Address,
     permission: &Permission,
 ) -> Result<(), Error> {
-    require_permission(env, who, &Permission::Permisssion)?;
+    require_permission(env, who, &Permission::Permission)?;
 
     let mut permission_owners = read_permission_owners(env, permission);
 

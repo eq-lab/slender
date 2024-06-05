@@ -10,7 +10,7 @@ use soroban_sdk::testutils::{Address as _, AuthorizedFunction, AuthorizedInvocat
 use soroban_sdk::{IntoVal, Symbol};
 
 #[test]
-fn should_require_admin() {
+fn should_require_permission() {
     let env = Env::default();
     env.mock_all_auths();
 
@@ -27,8 +27,11 @@ fn should_require_admin() {
     let init_reserve_input =
         ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
 
+    let init_reserve_owner = Address::generate(&env);
+    pool.grant_permission(&admin, &init_reserve_owner, &Permission::InitReserve);
+
     pool.init_reserve(
-        &admin,
+        &init_reserve_owner,
         &underlying_token.address.clone(),
         &init_reserve_input.clone(),
     );
@@ -36,13 +39,13 @@ fn should_require_admin() {
     assert_eq!(
         env.auths(),
         [(
-            admin.clone(),
+            init_reserve_owner.clone(),
             AuthorizedInvocation {
                 function: AuthorizedFunction::Contract((
                     pool.address.clone(),
                     Symbol::new(&env, "init_reserve"),
                     (
-                        admin,
+                        init_reserve_owner,
                         underlying_token.address.clone(),
                         // false,
                         init_reserve_input.clone()
@@ -123,4 +126,114 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
     let reserve = pool.get_reserve(&underlying_token.address).unwrap();
 
     assert_eq!(reserve.reserve_type, init_reserve_input);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #7)")]
+fn should_fail_if_no_permission() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+
+    let (underlying_token, _) = create_token_contract(&env, &token_admin);
+    let (debt_token, _) = create_token_contract(&env, &token_admin);
+
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
+    assert!(pool.get_reserve(&underlying_token.address).is_none());
+
+    let perm = Address::generate(&env);
+    assert!(pool
+        .permissioned(&Permission::Permission)
+        .binary_search(&admin)
+        .is_ok());
+    pool.grant_permission(&admin, &perm, &Permission::InitReserve);
+    let no_perm = Address::generate(&env);
+    let permissioned = pool.permissioned(&Permission::InitReserve);
+
+    assert!(permissioned.binary_search(&no_perm).is_err());
+
+    let init_reserve_input =
+        ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
+
+    pool.init_reserve(&no_perm, &underlying_token.address, &init_reserve_input);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #7)")]
+fn should_fail_if_has_another_permission() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+
+    let (underlying_token, _) = create_token_contract(&env, &token_admin);
+    let (debt_token, _) = create_token_contract(&env, &token_admin);
+
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
+    assert!(pool.get_reserve(&underlying_token.address).is_none());
+
+    let perm = Address::generate(&env);
+    assert!(pool
+        .permissioned(&Permission::Permission)
+        .binary_search(&admin)
+        .is_ok());
+    pool.grant_permission(&admin, &perm, &Permission::InitReserve);
+    let another_perm = Address::generate(&env);
+    pool.grant_permission(&admin, &another_perm, &Permission::CollateralReserveParams);
+    let permissioned = pool.permissioned(&Permission::InitReserve);
+
+    assert!(permissioned.binary_search(&another_perm).is_err());
+
+    let init_reserve_input =
+        ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
+
+    pool.init_reserve(
+        &another_perm,
+        &underlying_token.address,
+        &init_reserve_input,
+    );
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #7)")]
+fn should_fail_if_permission_revoked() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let token_admin = Address::generate(&env);
+
+    let (underlying_token, _) = create_token_contract(&env, &token_admin);
+    let (debt_token, _) = create_token_contract(&env, &token_admin);
+
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
+    assert!(pool.get_reserve(&underlying_token.address).is_none());
+
+    let perm = Address::generate(&env);
+    assert!(pool
+        .permissioned(&Permission::Permission)
+        .binary_search(&admin)
+        .is_ok());
+    pool.grant_permission(&admin, &perm, &Permission::InitReserve);
+    let revoked_perm = Address::generate(&env);
+    pool.grant_permission(&admin, &revoked_perm, &Permission::InitReserve);
+    pool.revoke_permission(&admin, &revoked_perm, &Permission::InitReserve);
+    let permissioned = pool.permissioned(&Permission::InitReserve);
+
+    assert!(permissioned.binary_search(&revoked_perm).is_err());
+
+    let init_reserve_input =
+        ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
+
+    pool.init_reserve(
+        &revoked_perm,
+        &underlying_token.address,
+        &init_reserve_input,
+    );
 }

@@ -24,7 +24,7 @@ pub fn initialize(
 
     let owners = vec![env, permission_owner.clone()];
 
-    write_permission_owners(env, &owners, &Permission::Permisssion);
+    write_permission_owners(env, &owners, &Permission::Permission);
     write_ir_params(env, ir_params);
     write_flash_loan_fee(env, flash_loan_fee);
     write_initial_health(env, initial_health);

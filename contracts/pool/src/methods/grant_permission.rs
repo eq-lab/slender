@@ -11,7 +11,7 @@ pub fn grant_permission(
     receiver: &Address,
     permission: &Permission,
 ) -> Result<(), Error> {
-    require_permission(env, who, &Permission::Permisssion)?;
+    require_permission(env, who, &Permission::Permission)?;
 
     let mut permission_owners = read_permission_owners(env, permission);
 
