@@ -24,6 +24,7 @@ pub enum Error {
     InitialHealthNotInitialized = 108,
     LiquidationOrderMustBeUnique = 109,
     NotFungible = 110,
+    ExceededMaxValue = 111,
 
     UserConfigInvalidIndex = 200,
     NotEnoughAvailableUserBalance = 201,

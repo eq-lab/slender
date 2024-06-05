@@ -4,16 +4,16 @@ extern crate std;
 use pool_interface::types::{permission::Permission, pool_config::PoolConfig};
 use price_feed_interface::types::{asset::Asset, price_data::PriceData};
 use soroban_sdk::{
-    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation, Ledger},
+    testutils::{Address as _, AuthorizedFunction, AuthorizedInvocation},
     vec, Address, Env, IntoVal, Symbol,
 };
 
-use crate::tests::sut::fill_pool_six;
+use crate::tests::sut::{fill_pool_six, set_time};
 
 use super::sut::{create_token_contract, fill_pool, init_pool, Sut, DAY};
 
 fn generate_protocol_fee(env: &Env, sut: &Sut, debt_token: &Address, borrower: &Address) -> i128 {
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(env, sut, 2 * DAY, false);
 
     let protocol_fee_before = sut.pool.protocol_fee(debt_token);
 
@@ -172,6 +172,7 @@ fn should_claim_fee_rwa() {
             flash_loan_fee: 5,
             initial_health: 2_500,
             timestamp_window: 20,
+            grace_period: 1,
             user_assets_limit: 4,
             min_collat_amount: 0,
             min_debt_amount: 0,
@@ -179,7 +180,7 @@ fn should_claim_fee_rwa() {
         },
     );
 
-    env.ledger().with_mut(|li| li.timestamp = 10_000);
+    set_time(&env, &sut, 10_000, false);
 
     sut.pool
         .deposit(&borrower, &collat_1_token, &10_000_000_000);
@@ -192,7 +193,7 @@ fn should_claim_fee_rwa() {
             &env,
             PriceData {
                 price: (18 * 10i128.pow(15)),
-                timestamp: 0,
+                timestamp: 10_000,
             },
         ],
     );

@@ -150,15 +150,24 @@ fn should_revoke_permission() {
 
     pool.initialize(
         &pool_admin,
-        &1,
-        &25,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
             max_rate: 50_000,
             scaling_coeff: 9_000,
         },
-        &1,
+        &PoolConfig {
+            base_asset_address: Address::generate(&e),
+            base_asset_decimals: 7,
+            flash_loan_fee: 5,
+            initial_health: 0,
+            timestamp_window: 20,
+            grace_period: 1,
+            user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
     );
 
     let permissioned_permission = pool.permissioned(&Permission::Permission);
@@ -198,15 +207,24 @@ fn should_not_affect_repeated_revoke_permission() {
 
     pool.initialize(
         &pool_admin,
-        &1,
-        &25,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
             max_rate: 50_000,
             scaling_coeff: 9_000,
         },
-        &1,
+        &PoolConfig {
+            base_asset_address: Address::generate(&e),
+            base_asset_decimals: 7,
+            flash_loan_fee: 5,
+            initial_health: 0,
+            timestamp_window: 20,
+            grace_period: 1,
+            user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
     );
 
     let permission_receiver_1 = Address::generate(&e);
@@ -253,15 +271,24 @@ fn should_fail_on_revoke_last_permission() {
 
     pool.initialize(
         &pool_admin,
-        &1,
-        &25,
         &IRParams {
             alpha: 143,
             initial_rate: 200,
             max_rate: 50_000,
             scaling_coeff: 9_000,
         },
-        &1,
+        &PoolConfig {
+            base_asset_address: Address::generate(&e),
+            base_asset_decimals: 7,
+            flash_loan_fee: 5,
+            initial_health: 0,
+            timestamp_window: 20,
+            grace_period: 1,
+            user_assets_limit: 4,
+            min_collat_amount: 0,
+            min_debt_amount: 0,
+            liquidation_protocol_fee: 0,
+        },
     );
 
     let permissioned_permission = pool.permissioned(&Permission::Permission);

@@ -20,7 +20,8 @@ fn should_require_permission() {
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> =
+        create_pool_contract(&env, &admin, false, &underlying_token.address);
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
@@ -109,7 +110,8 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> =
+        create_pool_contract(&env, &admin, false, &underlying_token.address);
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
@@ -140,7 +142,8 @@ fn should_fail_if_no_permission() {
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> =
+        create_pool_contract(&env, &admin, false, &underlying_token.address);
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
@@ -173,7 +176,8 @@ fn should_fail_if_has_another_permission() {
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> =
+        create_pool_contract(&env, &admin, false, &underlying_token.address);
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
@@ -211,7 +215,8 @@ fn should_fail_if_permission_revoked() {
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> =
+        create_pool_contract(&env, &admin, false, &underlying_token.address);
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 

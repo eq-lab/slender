@@ -19,7 +19,7 @@ fn should_require_permission() {
     let asset_1 = Address::generate(&env);
     let asset_2 = Address::generate(&env);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false, &asset_1);
     let price_feed: PriceFeedClient<'_> = create_price_feed_contract(&env);
 
     assert!(pool.price_feeds(&asset_1.clone()).is_none());
@@ -31,6 +31,8 @@ fn should_require_permission() {
             PriceFeedConfigInput {
                 asset: asset_1.clone(),
                 asset_decimals: 7,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -38,6 +40,7 @@ fn should_require_permission() {
                         feed_asset: OracleAsset::Stellar(asset_1),
                         feed_decimals: 14,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -45,6 +48,8 @@ fn should_require_permission() {
             PriceFeedConfigInput {
                 asset: asset_2.clone(),
                 asset_decimals: 9,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -52,6 +57,7 @@ fn should_require_permission() {
                         feed_asset: OracleAsset::Stellar(asset_2),
                         feed_decimals: 16,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -93,7 +99,7 @@ fn should_set_price_feed() {
     let asset_1 = Address::generate(&env);
     let asset_2 = Address::generate(&env);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false, &asset_1);
     let price_feed_1: PriceFeedClient<'_> = create_price_feed_contract(&env);
     let price_feed_2: PriceFeedClient<'_> = create_price_feed_contract(&env);
 
@@ -106,6 +112,8 @@ fn should_set_price_feed() {
             PriceFeedConfigInput {
                 asset: asset_1.clone(),
                 asset_decimals: 7,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -113,6 +121,7 @@ fn should_set_price_feed() {
                         feed_asset: OracleAsset::Stellar(asset_1.clone()),
                         feed_decimals: 14,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -120,6 +129,8 @@ fn should_set_price_feed() {
             PriceFeedConfigInput {
                 asset: asset_2.clone(),
                 asset_decimals: 9,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -127,6 +138,7 @@ fn should_set_price_feed() {
                         feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                         feed_decimals: 16,
                         twap_records: 9,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -174,7 +186,7 @@ fn should_fail_if_no_permission() {
     let asset_1 = Address::generate(&env);
     let asset_2 = Address::generate(&env);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false, &asset_1);
     let price_feed_1: PriceFeedClient<'_> = create_price_feed_contract(&env);
     let price_feed_2: PriceFeedClient<'_> = create_price_feed_contract(&env);
 
@@ -187,6 +199,8 @@ fn should_fail_if_no_permission() {
             PriceFeedConfigInput {
                 asset: asset_1.clone(),
                 asset_decimals: 7,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -194,6 +208,7 @@ fn should_fail_if_no_permission() {
                         feed_asset: OracleAsset::Stellar(asset_1.clone()),
                         feed_decimals: 14,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -201,6 +216,8 @@ fn should_fail_if_no_permission() {
             PriceFeedConfigInput {
                 asset: asset_2.clone(),
                 asset_decimals: 9,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -208,6 +225,7 @@ fn should_fail_if_no_permission() {
                         feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                         feed_decimals: 16,
                         twap_records: 9,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -239,7 +257,7 @@ fn should_fail_if_has_another_permission() {
     let asset_1 = Address::generate(&env);
     let asset_2 = Address::generate(&env);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false, &asset_1);
     let price_feed_1: PriceFeedClient<'_> = create_price_feed_contract(&env);
     let price_feed_2: PriceFeedClient<'_> = create_price_feed_contract(&env);
 
@@ -252,6 +270,8 @@ fn should_fail_if_has_another_permission() {
             PriceFeedConfigInput {
                 asset: asset_1.clone(),
                 asset_decimals: 7,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -259,6 +279,7 @@ fn should_fail_if_has_another_permission() {
                         feed_asset: OracleAsset::Stellar(asset_1.clone()),
                         feed_decimals: 14,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -266,6 +287,8 @@ fn should_fail_if_has_another_permission() {
             PriceFeedConfigInput {
                 asset: asset_2.clone(),
                 asset_decimals: 9,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -273,6 +296,7 @@ fn should_fail_if_has_another_permission() {
                         feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                         feed_decimals: 16,
                         twap_records: 9,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -305,7 +329,7 @@ fn should_fail_if_permission_revoked() {
     let asset_1 = Address::generate(&env);
     let asset_2 = Address::generate(&env);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false, &asset_1);
     let price_feed_1: PriceFeedClient<'_> = create_price_feed_contract(&env);
     let price_feed_2: PriceFeedClient<'_> = create_price_feed_contract(&env);
 
@@ -318,6 +342,8 @@ fn should_fail_if_permission_revoked() {
             PriceFeedConfigInput {
                 asset: asset_1.clone(),
                 asset_decimals: 7,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -325,6 +351,7 @@ fn should_fail_if_permission_revoked() {
                         feed_asset: OracleAsset::Stellar(asset_1.clone()),
                         feed_decimals: 14,
                         twap_records: 10,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],
@@ -332,6 +359,8 @@ fn should_fail_if_permission_revoked() {
             PriceFeedConfigInput {
                 asset: asset_2.clone(),
                 asset_decimals: 9,
+                min_sanity_price_in_base: 5_000_000,
+                max_sanity_price_in_base: 100_000_000,
                 feeds: vec![
                     &env,
                     PriceFeed {
@@ -339,6 +368,7 @@ fn should_fail_if_permission_revoked() {
                         feed_asset: OracleAsset::Other(symbol_short!("XRP")),
                         feed_decimals: 16,
                         twap_records: 9,
+                        min_timestamp_delta: 100,
                         timestamp_precision: TimestampPrecision::Sec,
                     },
                 ],

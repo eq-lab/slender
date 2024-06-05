@@ -27,10 +27,8 @@ pub trait LendingPoolTrait {
     fn initialize(
         env: Env,
         admin: Address,
-        flash_loan_fee: u32,
-        initial_health: u32,
         ir_params: IRParams,
-        grace_period: u64,
+        pool_config: PoolConfig,
     ) -> Result<(), Error>;
 
     fn upgrade(env: Env, who: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error>;
@@ -134,8 +132,6 @@ pub trait LendingPoolTrait {
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
     fn set_pause(env: Env, who: Address, value: bool) -> Result<(), Error>;
-
-    fn set_grace_period(env: Env, who: Address, grace_period: u64) -> Result<(), Error>;
 
     fn pause_info(env: Env) -> Result<PauseInfo, Error>;
 

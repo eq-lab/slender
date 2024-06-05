@@ -70,6 +70,7 @@ pub fn withdraw(
                     stoken_underlying_balance,
                     debt_token_supply,
                     amount,
+                    true,
                 )?;
 
                 (amount, s_token_to_burn)

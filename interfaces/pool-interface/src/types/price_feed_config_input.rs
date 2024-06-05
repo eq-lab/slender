@@ -7,5 +7,7 @@ use crate::types::price_feed::PriceFeed;
 pub struct PriceFeedConfigInput {
     pub asset: Address,
     pub asset_decimals: u32,
+    pub min_sanity_price_in_base: i128,
+    pub max_sanity_price_in_base: i128,
     pub feeds: Vec<PriceFeed>,
 }

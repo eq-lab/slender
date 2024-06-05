@@ -1,6 +1,5 @@
-use crate::tests::sut::{fill_pool, init_pool};
+use crate::tests::sut::{fill_pool, init_pool, set_time};
 use pool_interface::types::pool_config::PoolConfig;
-use soroban_sdk::testutils::Ledger;
 use soroban_sdk::Env;
 
 use super::sut::{create_s_token_contract, create_token_contract};
@@ -236,6 +235,7 @@ fn rwa_fail_when_exceed_assets_limit() {
             flash_loan_fee: 5,
             initial_health: 0,
             timestamp_window: 20,
+            grace_period: 1,
             user_assets_limit: 2,
             min_collat_amount: 0,
             min_debt_amount: 0,
@@ -275,6 +275,7 @@ fn should_fail_when_collat_lt_min_position_amount() {
             flash_loan_fee: 5,
             initial_health: 0,
             timestamp_window: 20,
+            grace_period: 1,
             user_assets_limit: 3,
             min_collat_amount: 600_000,
             min_debt_amount: 0,
@@ -383,10 +384,14 @@ fn should_not_fail_after_grace_period() {
     assert_eq!(borrower_in_pool_after - borrower_in_pool_before, 1);
 
     sut.pool.set_pause(&sut.pool_admin, &true);
-    env.ledger().with_mut(|li| li.timestamp = start + gap);
+    set_time(&env, &sut, start + gap, false);
     sut.pool.set_pause(&sut.pool_admin, &false);
-    env.ledger()
-        .with_mut(|li| li.timestamp = start + gap + pause_info.grace_period_secs);
+    set_time(
+        &env,
+        &sut,
+        start + gap + pause_info.grace_period_secs,
+        false,
+    );
 
     let lender_balance_before = lender_balance_before - 1;
     let borrower_balance_before = borrower_balance_before + 1;

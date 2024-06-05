@@ -5,8 +5,14 @@ use crate::storage::write_ir_params;
 
 use super::utils::validation::{require_permission, require_valid_ir_params};
 
-pub fn set_ir_params(env: &Env, who: &Address, input: &IRParams) -> Result<(), Error> {
-    require_permission(env, who, &Permission::SetIRParams)?;
+pub fn set_ir_params(
+    env: &Env,
+    check_permission: Option<Address>,
+    input: &IRParams,
+) -> Result<(), Error> {
+    if check_permission.is_some() {
+        require_permission(env, &check_permission.unwrap(), &Permission::SetIRParams)?;
+    }
 
     require_valid_ir_params(env, input);
 

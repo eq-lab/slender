@@ -119,7 +119,12 @@ pub fn flash_loan(
             receiver,
             &received_asset.asset,
             received_asset.amount,
-            received_asset.premium,
+            if loan_asset.borrow {
+                0
+            } else {
+                received_asset.premium
+            },
+            loan_asset.borrow,
         );
     }
 

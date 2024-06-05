@@ -2,8 +2,9 @@ use super::sut::fill_pool;
 use crate::tests::sut::{fill_pool_two, init_pool, DAY};
 use crate::*;
 use soroban_sdk::symbol_short;
-use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
+use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events};
 use soroban_sdk::{vec, IntoVal, Symbol};
+use tests::sut::set_time;
 
 #[test]
 fn should_require_authorized_caller() {
@@ -14,7 +15,7 @@ fn should_require_authorized_caller() {
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool
         .withdraw(&borrower, &token_address, &10_000, &borrower);
@@ -45,7 +46,7 @@ fn should_fail_when_pool_paused() {
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool.set_pause(&sut.pool_admin, &true);
     sut.pool
@@ -62,7 +63,7 @@ fn should_fail_when_invalid_amount() {
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool.withdraw(&borrower, &token_address, &-1, &borrower);
 }
@@ -77,7 +78,7 @@ fn should_fail_when_reserve_deactivated() {
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool
         .set_reserve_status(&sut.pool_admin, &token_address, &false);
@@ -95,7 +96,7 @@ fn should_fail_when_bellow_initial_health() {
     let (_, borrower, _) = fill_pool(&env, &sut, true);
     let token_address = sut.token().address.clone();
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool
         .withdraw(&borrower, &token_address, &50_000_000, &borrower);
@@ -111,7 +112,7 @@ fn should_fail_when_unknown_asset() {
     let sut = init_pool(&env, false);
     let (_, borrower, _) = fill_pool(&env, &sut, true);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool
         .withdraw(&borrower, &unknown_asset, &1_000_000, &borrower);
@@ -159,7 +160,7 @@ fn should_partially_withdraw() {
     let (lender, _, _, debt_config) = fill_pool_two(&env, &sut);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = 60 * DAY);
+    set_time(&env, &sut, 60 * DAY, false);
 
     let s_token_supply_before = debt_config.s_token().total_supply();
     let lender_stoken_balance_before = debt_config.s_token().balance(&lender);
@@ -182,9 +183,9 @@ fn should_partially_withdraw() {
     assert_eq!(s_token_supply_before, 199_991_812);
     assert_eq!(s_token_underlying_supply_before, 160_000_000);
 
-    assert_eq!(lender_stoken_balance, 50_043_048);
+    assert_eq!(lender_stoken_balance, 50_043_047);
     assert_eq!(lender_underlying_balance, 950_000_000);
-    assert_eq!(s_token_supply, 150_034_860);
+    assert_eq!(s_token_supply, 150_034_859);
     assert_eq!(s_token_underlying_supply, 110_000_000);
 }
 
@@ -198,7 +199,7 @@ fn should_fully_withdraw() {
     let (lender, _, _, debt_config) = fill_pool_two(&env, &sut);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = 60 * DAY);
+    set_time(&env, &sut, 60 * DAY, false);
 
     let s_token_supply_before = debt_config.s_token().total_supply();
     let lender_stoken_balance_before = debt_config.s_token().balance(&lender);
@@ -209,7 +210,7 @@ fn should_fully_withdraw() {
 
     sut.pool.withdraw(&lender, debt_token, &i128::MAX, &lender);
 
-    env.ledger().with_mut(|li| li.timestamp = 60 * DAY + 1);
+    set_time(&env, &sut, 60 * DAY + 1, false);
 
     let lender_stoken_balance = debt_config.s_token().balance(&lender);
     let lender_underlying_balance = debt_config.token.balance(&lender);
@@ -239,14 +240,14 @@ fn should_affect_coeffs() {
     let (lender, _, _, debt_config) = fill_pool_two(&env, &sut);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     let collat_coeff_prev = sut.pool.collat_coeff(&debt_token);
     let debt_coeff_prev = sut.pool.debt_coeff(&debt_token);
 
     sut.pool.withdraw(&lender, debt_token, &i128::MAX, &lender);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
+    set_time(&env, &sut, 3 * DAY, false);
 
     let collat_coeff = sut.pool.collat_coeff(&debt_token);
     let debt_coeff = sut.pool.debt_coeff(&debt_token);
@@ -266,14 +267,14 @@ fn should_affect_account_data() {
 
     let account_position_prev = sut.pool.account_position(&borrower);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool
         .withdraw(&borrower, &token_address, &100_000, &borrower);
 
     let account_position = sut.pool.account_position(&borrower);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY + 1);
+    set_time(&env, &sut, 2 * DAY + 1, false);
 
     let collat_token_total_supply = sut.s_token().total_supply();
     let pool_collat_token_total_supply = sut.pool.token_total_supply(&sut.s_token().address);
@@ -299,7 +300,7 @@ fn should_allow_withdraw_to_other_address() {
     let (lender, borrower, _, debt_config) = fill_pool_two(&env, &sut);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = 60 * DAY);
+    set_time(&env, &sut, 60 * DAY, false);
 
     let borrower_underlying_balance_before = debt_config.token.balance(&borrower);
     let lender_stoken_balance_before = debt_config.s_token().balance(&lender);
@@ -327,9 +328,9 @@ fn should_allow_withdraw_to_other_address() {
     assert_eq!(s_token_underlying_supply_before, 160_000_000);
 
     assert_eq!(borrower_underlying_balance, 950000000);
-    assert_eq!(lender_stoken_balance, 50_043_048);
+    assert_eq!(lender_stoken_balance, 50_043_047);
     assert_eq!(lender_underlying_balance, 900_000_000);
-    assert_eq!(s_token_supply, 150_034_860);
+    assert_eq!(s_token_supply, 150_034_859);
     assert_eq!(s_token_underlying_supply, 110_000_000);
 }
 
@@ -397,7 +398,7 @@ fn rwa_partially_withdraw() {
     sut.pool
         .deposit(&lender, &rwa_config.token.address, &100_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 60 * DAY);
+    set_time(&env, &sut, 60 * DAY, false);
 
     let lender_rwa_balance_before = rwa_config.token.balance(&lender);
     let pool_rwa_balance_before = rwa_config.token.balance(&sut.pool.address);
@@ -405,7 +406,7 @@ fn rwa_partially_withdraw() {
     sut.pool
         .withdraw(&lender, &rwa_config.token.address, &50_000_000, &lender);
 
-    env.ledger().with_mut(|li| li.timestamp = 60 * DAY + 1);
+    set_time(&env, &sut, 60 * DAY + 1, false);
 
     let lender_rwa_balance = rwa_config.token.balance(&lender);
     let pool_rwa_balance = rwa_config.token.balance(&sut.pool.address);
@@ -429,7 +430,7 @@ fn rwa_fully_withdraw() {
     sut.pool
         .deposit(&lender, &rwa_config.token.address, &100_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 60 * DAY);
+    set_time(&env, &sut, 60 * DAY, false);
 
     let lender_rwa_balance_before = rwa_config.token.balance(&lender);
     let pool_rwa_balance_before = rwa_config.token.balance(&sut.pool.address);
@@ -437,7 +438,7 @@ fn rwa_fully_withdraw() {
     sut.pool
         .withdraw(&lender, &rwa_config.token.address, &i128::MAX, &lender);
 
-    env.ledger().with_mut(|li| li.timestamp = 60 * DAY + 1);
+    set_time(&env, &sut, 60 * DAY + 1, false);
 
     let lender_rwa_balance = rwa_config.token.balance(&lender);
     let pool_rwa_balance = rwa_config.token.balance(&sut.pool.address);
@@ -462,7 +463,7 @@ fn rwa_should_not_affect_coeffs() {
     sut.pool
         .deposit(&lender, &rwa_config.token.address, &100_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     let collat_coeff_prev = sut.pool.collat_coeff(debt_token);
     let debt_coeff_prev = sut.pool.debt_coeff(debt_token);
@@ -492,14 +493,14 @@ fn rwa_should_affect_account_data() {
 
     let account_position_prev = sut.pool.account_position(&borrower);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool
         .withdraw(&borrower, rwa_address, &100_000, &borrower);
 
     let account_position = sut.pool.account_position(&borrower);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY + 1);
+    set_time(&env, &sut, 2 * DAY + 1, false);
 
     let collat_token_total_supply = sut.s_token().total_supply();
     let pool_collat_token_total_supply = sut.pool.token_total_supply(&sut.s_token().address);
@@ -531,6 +532,7 @@ fn should_fail_when_bad_position_after_withdraw() {
             flash_loan_fee: 5,
             initial_health: 2_500,
             timestamp_window: 20,
+            grace_period: 1,
             user_assets_limit: 4,
             min_collat_amount: 0,
             min_debt_amount: 0,
@@ -579,6 +581,7 @@ fn should_fail_when_collat_lt_min_position_amount() {
             flash_loan_fee: 5,
             initial_health: 2_500,
             timestamp_window: 20,
+            grace_period: 1,
             user_assets_limit: 4,
             min_collat_amount: 115_000_000,
             min_debt_amount: 0,
@@ -645,10 +648,14 @@ fn should_not_fail_after_grace_period() {
     assert!(s_token_after < s_token_before);
 
     sut.pool.set_pause(&sut.pool_admin, &true);
-    env.ledger().with_mut(|li| li.timestamp = start + gap);
+    set_time(&env, &sut, start + gap, false);
     sut.pool.set_pause(&sut.pool_admin, &false);
-    env.ledger()
-        .with_mut(|li| li.timestamp = start + gap + pause_info.grace_period_secs);
+    set_time(
+        &env,
+        &sut,
+        start + gap + pause_info.grace_period_secs,
+        false,
+    );
 
     let s_token_before = sut.reserves[0].s_token().balance(&borrower);
     sut.pool.withdraw(&borrower, &collat_address, &1, &borrower);

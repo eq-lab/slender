@@ -217,7 +217,7 @@ fn should_emit_events() {
                     &sut.reserves[0].token.address
                 )
                     .into_val(&env),
-                (1000000i128, 500i128).into_val(&env)
+                (1000000i128, 500i128, false).into_val(&env)
             ),
         ]
     );
@@ -240,6 +240,7 @@ fn rwa_fail_when_exceed_assets_limit() {
             flash_loan_fee: 5,
             initial_health: 0,
             timestamp_window: 20,
+            grace_period: 1,
             user_assets_limit: 1,
             min_collat_amount: 0,
             min_debt_amount: 0,
@@ -299,6 +300,7 @@ fn should_fail_when_debt_lt_min_position_amount() {
             flash_loan_fee: 5,
             initial_health: 0,
             timestamp_window: 20,
+            grace_period: 1,
             user_assets_limit: 2,
             min_collat_amount: 0,
             min_debt_amount: 4_000_000,

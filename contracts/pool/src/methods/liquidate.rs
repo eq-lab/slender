@@ -173,6 +173,7 @@ fn do_liquidate(
                     read_stoken_underlying_balance(env, s_token_address),
                     debt_token_supply,
                     liq_comp_amount,
+                    false,
                 )?
             } else {
                 collat.lp_balance.unwrap()

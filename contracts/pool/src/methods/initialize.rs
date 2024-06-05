@@ -1,43 +1,28 @@
-use pool_interface::types::pause_info::PauseInfo;
 use pool_interface::types::permission::Permission;
+use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::{error::Error, ir_params::IRParams};
 use soroban_sdk::{vec, Address, Env};
 
-use crate::storage::{write_flash_loan_fee, write_initial_health, write_ir_params};
-use crate::{event, write_pause_info, write_permission_owners};
+use crate::{event, write_permission_owners};
 
-use super::utils::validation::{
-    require_non_zero_grace_period, require_permissions_owner_not_exist, require_valid_ir_params,
-};
+use super::set_ir_params::set_ir_params;
+use super::set_pool_configuration::set_pool_configuration;
+use super::utils::validation::require_permissions_owner_not_exist;
 
 pub fn initialize(
     env: &Env,
     permission_owner: &Address,
-    flash_loan_fee: u32,
-    initial_health: u32,
     ir_params: &IRParams,
-    grace_period: u64,
+    pool_config: &PoolConfig,
 ) -> Result<(), Error> {
     require_permissions_owner_not_exist(env);
-    require_valid_ir_params(env, ir_params);
-    require_non_zero_grace_period(env, grace_period);
 
     let owners = vec![env, permission_owner.clone()];
-
     write_permission_owners(env, &owners, &Permission::Permission);
-    write_ir_params(env, ir_params);
-    write_flash_loan_fee(env, flash_loan_fee);
-    write_initial_health(env, initial_health);
-    write_pause_info(
-        env,
-        PauseInfo {
-            paused: false,
-            grace_period_secs: grace_period,
-            unpaused_at: 0,
-        },
-    );
+    set_ir_params(env, None, ir_params)?;
+    set_pool_configuration(env, None, pool_config)?;
 
-    event::initialized(env, permission_owner, ir_params);
+    event::initialized(env, permission_owner, ir_params, pool_config);
 
     Ok(())
 }

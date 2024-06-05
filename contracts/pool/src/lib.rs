@@ -1,6 +1,7 @@
 #![deny(warnings)]
 #![no_std]
 
+use methods::revoke_permission::revoke_permission;
 use methods::{
     account_position::account_position, borrow::borrow, claim_protocol_fee::claim_protocol_fee,
     collat_coeff::collat_coeff, configure_as_collateral::configure_as_collateral,
@@ -8,11 +9,11 @@ use methods::{
     enable_borrowing_on_reserve::enable_borrowing_on_reserve, finalize_transfer::finalize_transfer,
     flash_loan::flash_loan, grant_permission::grant_permission, init_reserve::init_reserve,
     initialize::initialize, liquidate::liquidate, pool_configuration::pool_configuration,
-    repay::repay, revoke_permission::revoke_permission, set_as_collateral::set_as_collateral,
-    set_grace_period::set_grace_period, set_ir_params::set_ir_params, set_pause::set_pause,
-    set_pool_configuration::set_pool_configuration, set_price_feeds::set_price_feeds,
-    set_reserve_status::set_reserve_status, twap_median_price::twap_median_price, upgrade::upgrade,
-    upgrade_debt_token::upgrade_debt_token, upgrade_s_token::upgrade_s_token, withdraw::withdraw,
+    repay::repay, set_as_collateral::set_as_collateral, set_ir_params::set_ir_params,
+    set_pause::set_pause, set_pool_configuration::set_pool_configuration,
+    set_price_feeds::set_price_feeds, set_reserve_status::set_reserve_status,
+    twap_median_price::twap_median_price, upgrade::upgrade, upgrade_debt_token::upgrade_debt_token,
+    upgrade_s_token::upgrade_s_token, withdraw::withdraw,
 };
 use pool_interface::types::permission::Permission;
 use pool_interface::types::{
@@ -42,19 +43,10 @@ impl LendingPoolTrait for LendingPool {
     fn initialize(
         env: Env,
         permisssions_owner: Address,
-        flash_loan_fee: u32,
-        initial_health: u32,
         ir_params: IRParams,
-        grace_period: u64,
+        pool_config: PoolConfig,
     ) -> Result<(), Error> {
-        initialize(
-            &env,
-            &permisssions_owner,
-            flash_loan_fee,
-            initial_health,
-            &ir_params,
-            grace_period,
-        )
+        initialize(&env, &permisssions_owner, &ir_params, &pool_config)
     }
 
     fn upgrade(env: Env, who: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error> {
@@ -102,7 +94,7 @@ impl LendingPoolTrait for LendingPool {
     }
 
     fn set_ir_params(env: Env, who: Address, input: IRParams) -> Result<(), Error> {
-        set_ir_params(&env, &who, &input)
+        set_ir_params(&env, Some(who), &input)
     }
 
     fn ir_params(env: Env) -> Option<IRParams> {
@@ -140,7 +132,7 @@ impl LendingPoolTrait for LendingPool {
     }
 
     fn set_pool_configuration(env: Env, who: Address, config: PoolConfig) -> Result<(), Error> {
-        set_pool_configuration(&env, &who, &config)
+        set_pool_configuration(&env, Some(who), &config)
     }
 
     fn pool_configuration(env: Env) -> Result<PoolConfig, Error> {
@@ -202,10 +194,6 @@ impl LendingPoolTrait for LendingPool {
 
     fn borrow(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error> {
         borrow(&env, &who, &asset, amount)
-    }
-
-    fn set_grace_period(env: Env, who: Address, grace_period: u64) -> Result<(), Error> {
-        set_grace_period(env, &who, grace_period)
     }
 
     fn set_pause(env: Env, who: Address, value: bool) -> Result<(), Error> {

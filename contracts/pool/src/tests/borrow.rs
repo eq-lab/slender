@@ -1,7 +1,7 @@
 use super::sut::DAY;
-use crate::tests::sut::{fill_pool, init_pool};
+use crate::tests::sut::{fill_pool, init_pool, set_time};
 use pool_interface::types::pool_config::PoolConfig;
-use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events, Ledger};
+use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events};
 use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
 #[test]
@@ -155,6 +155,7 @@ fn should_fail_when_lt_initial_health() {
             flash_loan_fee: 5,
             initial_health: 2_500,
             timestamp_window: 20,
+            grace_period: 1,
             user_assets_limit: 4,
             min_collat_amount: 0,
             min_debt_amount: 0,
@@ -238,14 +239,14 @@ fn should_affect_coeffs() {
     let (_, borrower, debt_config) = fill_pool(&env, &sut, false);
     let token_address = debt_config.token.address.clone();
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     let collat_coeff_prev = sut.pool.collat_coeff(&token_address);
     let debt_coeff_prev = sut.pool.debt_coeff(&token_address);
 
     sut.pool.borrow(&borrower, &token_address, &20_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
+    set_time(&env, &sut, 3 * DAY, false);
 
     let collat_coeff = sut.pool.collat_coeff(&token_address);
     let debt_coeff = sut.pool.debt_coeff(&token_address);
@@ -297,8 +298,7 @@ fn should_change_balances_when_borrow_and_repay() {
     let token_address = debt_config.token.address.clone();
     // let treasury = sut.pool.treasury();
 
-    env.ledger()
-        .with_mut(|li| li.timestamp = li.timestamp + 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, true);
 
     let treasury_before = sut.pool.protocol_fee(&debt_config.token.address);
     let debt_balance_before = debt_config.debt_token().balance(&borrower);
@@ -318,7 +318,7 @@ fn should_change_balances_when_borrow_and_repay() {
         .pool
         .stoken_underlying_balance(&debt_config.s_token().address);
 
-    env.ledger().with_mut(|li| li.timestamp = 30 * DAY);
+    set_time(&env, &sut, 30 * DAY, false);
 
     sut.pool.repay(&borrower, &token_address, &i128::MAX);
 
@@ -405,6 +405,7 @@ fn rwa_fail_when_exceed_assets_limit() {
             flash_loan_fee: 5,
             initial_health: 0,
             timestamp_window: 20,
+            grace_period: 1,
             user_assets_limit: 2,
             min_collat_amount: 0,
             min_debt_amount: 0,
@@ -432,6 +433,7 @@ fn should_fail_when_collat_lt_min_position_amount() {
             flash_loan_fee: 5,
             initial_health: 2_500,
             timestamp_window: 20,
+            grace_period: 1,
             user_assets_limit: 4,
             min_collat_amount: 0,
             min_debt_amount: 60_000_000,
@@ -487,10 +489,14 @@ fn should_not_fail_after_grace_period() {
     assert!(debt_token_after > debt_token_before);
 
     sut.pool.set_pause(&sut.pool_admin, &true);
-    env.ledger().with_mut(|li| li.timestamp = start + gap);
+    set_time(&env, &sut, start + gap, false);
     sut.pool.set_pause(&sut.pool_admin, &false);
-    env.ledger()
-        .with_mut(|li| li.timestamp = start + gap + pause_info.grace_period_secs);
+    set_time(
+        &env,
+        &sut,
+        start + gap + pause_info.grace_period_secs,
+        false,
+    );
 
     let debt_token_before = debt_reserve.debt_token().balance(&borrower);
     sut.pool.borrow(&borrower, &debt_reserve.token.address, &1);

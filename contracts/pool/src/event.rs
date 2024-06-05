@@ -1,9 +1,20 @@
-use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::ir_params::IRParams;
+use pool_interface::types::{
+    collateral_params_input::CollateralParamsInput, pool_config::PoolConfig,
+};
 use soroban_sdk::{symbol_short, Address, Env, Symbol};
 
-pub(crate) fn initialized(e: &Env, permission_owner: &Address, params: &IRParams) {
-    let topics = (Symbol::new(e, "initialize"), permission_owner);
+pub(crate) fn initialized(
+    e: &Env,
+    permission_owner: &Address,
+    params: &IRParams,
+    pool_config: &PoolConfig,
+) {
+    let topics = (
+        Symbol::new(e, "initialize"),
+        permission_owner,
+        pool_config.base_asset_address.clone(),
+    );
     e.events().publish(
         topics,
         (
@@ -11,6 +22,15 @@ pub(crate) fn initialized(e: &Env, permission_owner: &Address, params: &IRParams
             params.initial_rate,
             params.max_rate,
             params.scaling_coeff,
+            pool_config.base_asset_decimals,
+            pool_config.initial_health,
+            pool_config.grace_period,
+            pool_config.timestamp_window,
+            pool_config.flash_loan_fee,
+            pool_config.user_assets_limit,
+            pool_config.min_collat_amount,
+            pool_config.min_debt_amount,
+            pool_config.liquidation_protocol_fee,
         ),
     );
 }
@@ -91,7 +111,8 @@ pub(crate) fn flash_loan(
     asset: &Address,
     amount: i128,
     premium: i128,
+    borrow: bool,
 ) {
     let topics = (Symbol::new(e, "flash_loan"), who, receiver, asset);
-    e.events().publish(topics, (amount, premium));
+    e.events().publish(topics, (amount, premium, borrow));
 }
