@@ -21,10 +21,10 @@ fn should_require_permission() {
         &Permission::Permission,
     );
 
-    let perm_receiver = Address::generate(&env);
-    sut.pool.grant_permission(
+    let perm_revoke = Address::generate(&env);
+    sut.pool.revoke_permission(
         &grant_permission_owner,
-        &perm_receiver,
+        &perm_revoke,
         &Permission::ClaimProtocolFee,
     );
 
@@ -35,11 +35,11 @@ fn should_require_permission() {
             AuthorizedInvocation {
                 function: AuthorizedFunction::Contract((
                     sut.pool.address.clone(),
-                    Symbol::new(&env, "grant_permission"),
+                    Symbol::new(&env, "revoke_permission"),
                     vec![
                         &env,
                         grant_permission_owner.into_val(&env),
-                        perm_receiver.into_val(&env),
+                        perm_revoke.into_val(&env),
                         Permission::ClaimProtocolFee.into_val(&env)
                     ]
                 )),
@@ -67,7 +67,7 @@ fn should_fail_if_no_permission() {
 
     let perm_receiver = Address::generate(&env);
     sut.pool
-        .grant_permission(&no_perm, &perm_receiver, &Permission::ClaimProtocolFee);
+        .revoke_permission(&no_perm, &perm_receiver, &Permission::ClaimProtocolFee);
 }
 
 #[test]
@@ -93,7 +93,7 @@ fn should_fail_if_has_another_permission() {
 
     let perm_receiver = Address::generate(&env);
     sut.pool
-        .grant_permission(&another_perm, &perm_receiver, &Permission::ClaimProtocolFee);
+        .revoke_permission(&another_perm, &perm_receiver, &Permission::ClaimProtocolFee);
 }
 
 #[test]
@@ -118,11 +118,11 @@ fn should_fail_if_permission_revoked() {
 
     let perm_receiver = Address::generate(&env);
     sut.pool
-        .grant_permission(&revoked_perm, &perm_receiver, &Permission::ClaimProtocolFee);
+        .revoke_permission(&revoked_perm, &perm_receiver, &Permission::ClaimProtocolFee);
 }
 
 #[test]
-fn should_grant_permission() {
+fn should_revoke_permission() {
     let e = Env::default();
     e.mock_all_auths();
     let pool = LendingPoolClient::new(&e, &e.register_contract(None, LendingPool));
@@ -175,15 +175,22 @@ fn should_grant_permission() {
             let permission_receiver = Address::generate(&e);
             pool.grant_permission(&pool_admin, &permission_receiver, &p);
             expected_permissioned.push(permission_receiver);
-            expected_permissioned.sort(); // check that onchain permissioned addresses are sorted
-            let actual_permissioned = std::vec::Vec::from_iter(pool.permissioned(&p).iter());
-            assert_eq!(expected_permissioned, actual_permissioned);
+        }
+        let owners = expected_permissioned.clone();
+        expected_permissioned.sort();
+        for o in &owners {
+            if p != &Permission::Permission && owners.len() != 1 {
+                pool.revoke_permission(&pool_admin, o, &p);
+                expected_permissioned.remove(expected_permissioned.binary_search(o).unwrap());
+                let actual_permissioned = std::vec::Vec::from_iter(pool.permissioned(&p).iter());
+                assert_eq!(expected_permissioned, actual_permissioned);
+            }
         }
     }
 }
 
 #[test]
-fn should_not_affect_repeated_grant_permission() {
+fn should_not_affect_repeated_revoke_permission() {
     let e = Env::default();
     e.mock_all_auths();
     let pool = LendingPoolClient::new(&e, &e.register_contract(None, LendingPool));
@@ -202,18 +209,29 @@ fn should_not_affect_repeated_grant_permission() {
         &1,
     );
 
-    let permission_receiver = Address::generate(&e);
+    let permission_receiver_1 = Address::generate(&e);
+    let permission_receiver_2 = Address::generate(&e);
     assert!(pool.permissioned(&Permission::ClaimProtocolFee).is_empty());
 
     pool.grant_permission(&pool_admin, &pool_admin, &Permission::ClaimProtocolFee);
-    let mut expected_permissioned = std::vec![pool_admin.clone(), permission_receiver.clone()];
+    pool.grant_permission(
+        &pool_admin,
+        &permission_receiver_1,
+        &Permission::ClaimProtocolFee,
+    );
+    pool.grant_permission(
+        &pool_admin,
+        &permission_receiver_2,
+        &Permission::ClaimProtocolFee,
+    );
+    let mut expected_permissioned = std::vec![pool_admin.clone(), permission_receiver_2.clone()];
     expected_permissioned.sort();
     let expected_permissioned = Vec::from_slice(&e, &expected_permissioned);
 
     for _ in 0..15 {
-        pool.grant_permission(
+        pool.revoke_permission(
             &pool_admin,
-            &permission_receiver,
+            &permission_receiver_1,
             &Permission::ClaimProtocolFee,
         );
         assert_eq!(
@@ -221,4 +239,36 @@ fn should_not_affect_repeated_grant_permission() {
             pool.permissioned(&Permission::ClaimProtocolFee)
         );
     }
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #7)")]
+fn should_fail_on_revoke_last_permission() {
+    let e = Env::default();
+    e.mock_all_auths();
+    let pool = LendingPoolClient::new(&e, &e.register_contract(None, LendingPool));
+    let pool_admin = Address::generate(&e);
+
+    assert!(pool.permissioned(&Permission::Permission).is_empty());
+
+    pool.initialize(
+        &pool_admin,
+        &1,
+        &25,
+        &IRParams {
+            alpha: 143,
+            initial_rate: 200,
+            max_rate: 50_000,
+            scaling_coeff: 9_000,
+        },
+        &1,
+    );
+
+    let permissioned_permission = pool.permissioned(&Permission::Permission);
+    assert!(permissioned_permission.len() == 1);
+    assert!(permissioned_permission.get(0) == Some(pool_admin.clone()));
+
+    let receiver = Address::generate(&e);
+    pool.revoke_permission(&pool_admin, &receiver, &Permission::Permission);
+    pool.revoke_permission(&pool_admin, &receiver, &Permission::Permission);
 }

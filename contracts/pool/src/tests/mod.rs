@@ -18,6 +18,7 @@ pub mod paused;
 pub mod protocol_fee;
 pub mod rates;
 pub mod repay;
+pub mod revoke_permission;
 pub mod rounding;
 pub mod set_as_collateral;
 pub mod set_grace_period;
