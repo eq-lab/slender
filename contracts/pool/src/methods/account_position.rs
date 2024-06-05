@@ -226,11 +226,11 @@ fn calculate_fungible(
             .map(|x| x.balance)
             .unwrap_or_else(|| read_token_balance(env, &debt_token_address, who));
 
-        let compounded_balance = debt_coeff
+        let compounded_debt = debt_coeff
             .mul_int(who_debt)
             .ok_or(Error::CalcAccountDataMathError)?;
 
-        let debt_balance_in_base = price_provider.convert_to_base(&asset, compounded_balance)?;
+        let debt_balance_in_base = price_provider.convert_to_base(&asset, compounded_debt)?;
 
         *total_debt_in_base = total_debt_in_base
             .checked_add(debt_balance_in_base)
@@ -260,7 +260,7 @@ fn calculate_fungible(
                 reserve,
                 coeff: Some(debt_coeff.into_inner()),
                 lp_balance: Some(who_debt),
-                comp_balance: compounded_balance,
+                comp_balance: compounded_debt,
             });
 
             sorted_debt_to_cover.set(utilization, debt_to_cover);
