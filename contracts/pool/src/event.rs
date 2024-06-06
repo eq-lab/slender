@@ -82,14 +82,9 @@ pub(crate) fn borrowing_disabled(e: &Env, asset: &Address) {
     e.events().publish(topics, ());
 }
 
-pub(crate) fn reserve_activated(e: &Env, asset: &Address) {
+pub(crate) fn reserve_activated(e: &Env, asset: &Address, activated: bool) {
     let topics = (Symbol::new(e, "reserve_activated"), asset.clone());
-    e.events().publish(topics, ());
-}
-
-pub(crate) fn reserve_deactivated(e: &Env, asset: &Address) {
-    let topics = (Symbol::new(e, "reserve_deactivated"), asset.clone());
-    e.events().publish(topics, ());
+    e.events().publish(topics, activated);
 }
 
 pub(crate) fn liquidation(e: &Env, who: &Address, covered_debt: i128, liquidated_collateral: i128) {

@@ -31,25 +31,19 @@ pub enum DataKey {
 }
 
 pub fn has_admin(env: &Env) -> bool {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     env.storage().instance().has(&DataKey::Admin)
 }
 
 pub fn write_admin(env: &Env, admin: &Address) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     env.storage().instance().set(&DataKey::Admin, admin);
 }
 
 pub fn read_admin(env: &Env) -> Result<Address, Error> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     env.storage()
         .instance()
@@ -58,9 +52,7 @@ pub fn read_admin(env: &Env) -> Result<Address, Error> {
 }
 
 pub fn read_reserve(env: &Env, asset: &Address) -> Result<ReserveData, Error> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     env.storage()
         .instance()
@@ -69,18 +61,14 @@ pub fn read_reserve(env: &Env, asset: &Address) -> Result<ReserveData, Error> {
 }
 
 pub fn write_reserve(env: &Env, asset: &Address, reserve_data: &ReserveData) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     let asset_key: DataKey = DataKey::ReserveAssetKey(asset.clone());
     env.storage().instance().set(&asset_key, reserve_data);
 }
 
 pub fn read_reserves(env: &Env) -> Vec<Address> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     env.storage()
         .instance()
@@ -89,9 +77,7 @@ pub fn read_reserves(env: &Env) -> Vec<Address> {
 }
 
 pub fn write_reserves(env: &Env, reserves: &Vec<Address>) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     env.storage().instance().set(&DataKey::Reserves, reserves);
 }
@@ -122,9 +108,7 @@ pub fn write_user_config(env: &Env, user: &Address, config: &UserConfiguration) 
 }
 
 pub fn read_price_feeds(env: &Env, asset: &Address) -> Result<PriceFeedConfig, Error> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     let data_key = DataKey::PriceFeed(asset.clone());
 
@@ -135,28 +119,25 @@ pub fn read_price_feeds(env: &Env, asset: &Address) -> Result<PriceFeedConfig, E
 }
 
 pub fn write_price_feeds(env: &Env, inputs: &Vec<PriceFeedConfigInput>) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     for input in inputs.iter() {
         let data_key = DataKey::PriceFeed(input.asset.clone());
 
-        let config = PriceFeedConfig {
-            asset_decimals: input.asset_decimals,
-            min_sanity_price_in_base: input.min_sanity_price_in_base,
-            max_sanity_price_in_base: input.max_sanity_price_in_base,
-            feeds: input.feeds,
-        };
-
-        env.storage().instance().set(&data_key, &config);
+        env.storage().instance().set(
+            &data_key,
+            &PriceFeedConfig {
+                asset_decimals: input.asset_decimals,
+                min_sanity_price_in_base: input.min_sanity_price_in_base,
+                max_sanity_price_in_base: input.max_sanity_price_in_base,
+                feeds: input.feeds,
+            },
+        );
     }
 }
 
 pub fn read_pause_info(env: &Env) -> Result<PauseInfo, Error> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     env.storage()
         .instance()
@@ -165,9 +146,7 @@ pub fn read_pause_info(env: &Env) -> Result<PauseInfo, Error> {
 }
 
 pub fn write_pause_info(env: &Env, value: PauseInfo) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     env.storage().instance().set(&DataKey::Pause, &value);
 }
@@ -190,9 +169,7 @@ pub fn add_token_balance(
 }
 
 pub fn read_token_total_supply(env: &Env, token: &Address) -> i128 {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     let key = DataKey::TokenSupply(token.clone());
     env.storage().instance().get(&key).unwrap_or(0i128)
@@ -203,9 +180,7 @@ pub fn write_token_total_supply(
     token: &Address,
     total_supply: i128,
 ) -> Result<(), Error> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     assert_with_error!(env, !total_supply.is_negative(), Error::MustBeNonNegative);
 
@@ -250,9 +225,7 @@ pub fn write_token_balance(
 }
 
 pub fn read_protocol_fee_vault(env: &Env, asset: &Address) -> i128 {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     let key = DataKey::ProtocolFeeVault(asset.clone());
     let value = env.storage().instance().get(&key);
@@ -265,9 +238,7 @@ pub fn write_protocol_fee_vault(env: &Env, asset: &Address, balance: i128) {
     let key = DataKey::ProtocolFeeVault(asset.clone());
 
     env.storage().instance().set(&key, &balance);
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 }
 
 pub fn add_protocol_fee_vault(env: &Env, asset: &Address, amount: i128) -> Result<(), Error> {
@@ -282,9 +253,7 @@ pub fn add_protocol_fee_vault(env: &Env, asset: &Address, amount: i128) -> Resul
 }
 
 pub fn write_pool_config(env: &Env, config: &PoolConfig) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     env.storage()
         .instance()
@@ -292,12 +261,16 @@ pub fn write_pool_config(env: &Env, config: &PoolConfig) {
 }
 
 pub fn read_pool_config(env: &Env) -> Result<PoolConfig, Error> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+    bump_instance(env);
 
     env.storage()
         .instance()
         .get(&DataKey::PoolConfig)
         .ok_or(Error::Uninitialized)
+}
+
+fn bump_instance(env: &Env) {
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 }

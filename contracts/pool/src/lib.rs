@@ -1,8 +1,6 @@
 #![deny(warnings)]
 #![no_std]
 
-use methods::upgrade_token::upgrade_token;
-use methods::withdraw::withdraw;
 use methods::{
     account_position::account_position, borrow::borrow, claim_protocol_fee::claim_protocol_fee,
     collat_coeff::collat_coeff, configure_as_collateral::configure_as_collateral,
@@ -12,6 +10,7 @@ use methods::{
     liquidate::liquidate, repay::repay, set_as_collateral::set_as_collateral, set_pause::set_pause,
     set_pool_configuration::set_pool_configuration, set_price_feeds::set_price_feeds,
     set_reserve_status::set_reserve_status, twap_median_price::twap_median_price, upgrade::upgrade,
+    upgrade_token::upgrade_token, withdraw::withdraw,
 };
 use pool_interface::types::{
     account_position::AccountPosition, collateral_params_input::CollateralParamsInput,
