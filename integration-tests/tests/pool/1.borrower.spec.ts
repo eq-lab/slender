@@ -41,8 +41,8 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
     before(async function () {
         client = new SorobanClient();
 
-        // await cleanSlenderEnvKeys();
-        // await deploy();
+        await cleanSlenderEnvKeys();
+        await deploy();
         await init(client);
 
         lender1Address = lender1Keys.publicKey();

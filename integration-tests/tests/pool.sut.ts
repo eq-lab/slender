@@ -95,8 +95,6 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     await initPoolBorrowing(client, "XRP");
     await initPoolBorrowing(client, "USDC");
 
-    await initBaseAsset(client, "XLM", 7);
-
     await initPrice(client, "XLM", 100_000_000_000_000n, 0);
     await initPrice(client, "XRP", 10_000_000_000_000_000n, 0);
     await initPrice(client, "USDC", 10_000_000_000_000_000n, 0);
@@ -252,8 +250,9 @@ export async function sTokenUnderlyingBalanceOf(
 ): Promise<bigint> {
     const xdrResponse = await client.simulateTransaction(
         process.env.SLENDER_POOL,
-        "stoken_underlying_balance",
-        convertToScvAddress(process.env[`SLENDER_S_TOKEN_${asset}`])
+        "token_balance",
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
+        convertToScvAddress(process.env[`SLENDER_S_TOKEN_${asset}`]),
     );
 
     return parseScvToJs(xdrResponse);
@@ -850,24 +849,6 @@ async function initPoolBorrowing(client: SorobanClient, asset: SlenderAsset): Pr
             3,
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvBool(true)
-        )
-    );
-}
-
-async function initBaseAsset(
-    client: SorobanClient,
-    asset: SlenderAsset,
-    decimals: number
-): Promise<void> {
-    await initContract(
-        `POOL_${asset}_BASE_ASSET_SET`,
-        () => client.sendTransaction(
-            process.env.SLENDER_POOL,
-            "set_base_asset",
-            adminKeys,
-            3,
-            convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
-            convertToScvU32(decimals)
         )
     );
 }
