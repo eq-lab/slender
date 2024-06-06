@@ -78,16 +78,6 @@ pub fn write_reserve(env: &Env, asset: &Address, reserve_data: &ReserveData) {
     env.storage().instance().set(&asset_key, reserve_data);
 }
 
-pub fn has_reserve(env: &Env, asset: &Address) -> bool {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage()
-        .instance()
-        .has(&DataKey::ReserveAssetKey(asset.clone()))
-}
-
 pub fn read_reserves(env: &Env) -> Vec<Address> {
     env.storage()
         .instance()

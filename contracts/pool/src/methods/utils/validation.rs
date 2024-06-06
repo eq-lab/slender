@@ -10,7 +10,7 @@ use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::types::user_config::UserConfiguration;
 use soroban_sdk::{assert_with_error, panic_with_error, Address, Env};
 
-use crate::storage::{has_admin, has_reserve, read_admin};
+use crate::storage::{has_admin, read_admin};
 use crate::types::account_data::AccountData;
 use crate::{read_reserve, read_reserves};
 
@@ -30,10 +30,6 @@ pub fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput
     require_lte_percentage_factor(env, params.discount);
     require_lte_percentage_factor(env, params.util_cap);
     assert_with_error!(env, params.liq_cap > 0, Error::BellowMinValue);
-}
-
-pub fn require_uninitialized_reserve(env: &Env, asset: &Address) {
-    assert_with_error!(env, !has_reserve(env, asset), Error::AlreadyInitialized);
 }
 
 pub fn require_lte_percentage_factor(env: &Env, value: u32) {
