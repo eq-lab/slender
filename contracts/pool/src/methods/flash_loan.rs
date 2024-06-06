@@ -32,7 +32,7 @@ pub fn flash_loan(
         FixedI128::from_percentage(pool_config.flash_loan_fee).ok_or(Error::MathOverflowError)?;
 
     let loan_asset_len = loan_assets.len();
-    assert_with_error!(env, loan_asset_len > 0, Error::MustBePositive);
+    assert_with_error!(env, loan_asset_len > 0, Error::BellowMinValue);
 
     let mut receiver_assets = vec![env];
     let mut reserves = vec![env];

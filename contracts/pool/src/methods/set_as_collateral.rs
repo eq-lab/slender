@@ -27,7 +27,7 @@ pub fn set_as_collateral(
     assert_with_error!(
         env,
         !user_config.is_borrowing(env, reserve_id),
-        Error::MustNotHaveDebt
+        Error::DebtError
     );
 
     if !use_as_collateral

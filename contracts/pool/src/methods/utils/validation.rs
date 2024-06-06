@@ -29,15 +29,11 @@ pub fn require_admin(env: &Env) -> Result<(), Error> {
 pub fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
     require_lte_percentage_factor(env, params.discount);
     require_lte_percentage_factor(env, params.util_cap);
-    require_positive(env, params.liq_cap);
+    assert_with_error!(env, params.liq_cap > 0, Error::BellowMinValue);
 }
 
 pub fn require_uninitialized_reserve(env: &Env, asset: &Address) {
-    assert_with_error!(
-        env,
-        !has_reserve(env, asset),
-        Error::ReserveAlreadyInitialized
-    );
+    assert_with_error!(env, !has_reserve(env, asset), Error::AlreadyInitialized);
 }
 
 pub fn require_lte_percentage_factor(env: &Env, value: u32) {
@@ -64,10 +60,6 @@ pub fn require_gt_percentage_factor(env: &Env, value: u32) {
     );
 }
 
-pub fn require_positive(env: &Env, value: i128) {
-    assert_with_error!(env, value > 0, Error::MustBePositive);
-}
-
 pub fn require_non_negative(env: &Env, value: i128) {
     assert_with_error!(env, value >= 0, Error::MustBeNonNegative);
 }
@@ -84,7 +76,7 @@ pub fn require_borrowing_enabled(env: &Env, reserve: &ReserveData) {
     assert_with_error!(
         env,
         reserve.configuration.borrowing_enabled,
-        Error::BorrowingNotEnabled
+        Error::BorrowingDisabled
     );
 }
 
@@ -107,7 +99,7 @@ pub fn require_liquidity_cap_not_exceeded(
     assert_with_error!(
         env,
         balance_after_deposit <= reserve.configuration.liquidity_cap,
-        Error::LiqCapExceeded
+        Error::AboveMaxValue
     );
 
     Ok(())
@@ -127,7 +119,7 @@ pub fn require_util_cap_not_exceeded(
         .ok_or(Error::ValidateBorrowMathError)?;
     let util_cap = FixedI128::from_percentage(util_cap).ok_or(Error::ValidateBorrowMathError)?;
 
-    assert_with_error!(env, utilization <= util_cap, Error::UtilizationCapExceeded);
+    assert_with_error!(env, utilization <= util_cap, Error::AboveMaxValue);
 
     Ok(())
 }
@@ -145,7 +137,7 @@ pub fn require_gte_initial_health(
     assert_with_error!(
         env,
         account_data.npv >= 0 && account_data.discounted_collateral >= 0,
-        Error::BelowInitialHealth
+        Error::BellowMinValue
     );
 
     let npv_after_percent =
@@ -157,7 +149,7 @@ pub fn require_gte_initial_health(
     assert_with_error!(
         env,
         npv_after_percent >= initial_health_percent,
-        Error::BelowInitialHealth
+        Error::BellowMinValue
     );
 
     Ok(())
@@ -186,7 +178,7 @@ pub fn require_debt(env: &Env, user_config: &UserConfiguration, reserve_id: u8) 
     assert_with_error!(
         env,
         user_config.is_borrowing(env, reserve_id),
-        Error::MustHaveDebt
+        Error::DebtError
     );
 }
 
@@ -194,7 +186,7 @@ pub fn require_zero_debt(env: &Env, user_config: &UserConfiguration, reserve_id:
     assert_with_error!(
         env,
         !user_config.is_borrowing(env, reserve_id),
-        Error::MustNotHaveDebt
+        Error::DebtError
     );
 }
 
@@ -229,11 +221,7 @@ pub fn require_unique_liquidation_order(
 }
 
 pub fn require_not_exceed_assets_limit(env: &Env, assets_total: u32, assets_limit: u32) {
-    assert_with_error!(
-        env,
-        assets_total <= assets_limit,
-        Error::MustNotExceedAssetsLimit
-    );
+    assert_with_error!(env, assets_total <= assets_limit, Error::AboveMaxValue);
 }
 
 pub fn require_min_position_amounts(
@@ -248,12 +236,12 @@ pub fn require_min_position_amounts(
     assert_with_error!(
         env,
         account_data.discounted_collateral >= pool_config.min_collat_amount,
-        Error::CollateralIsTooSmall
+        Error::BellowMinValue
     );
     assert_with_error!(
         env,
         account_data.debt >= pool_config.min_debt_amount,
-        Error::DebtIsTooSmall
+        Error::BellowMinValue
     );
 
     Ok(())
@@ -269,24 +257,20 @@ pub fn require_valid_pool_config(env: &Env, config: &PoolConfig) {
     require_gt_percentage_factor(env, config.ir_max_rate);
     require_lt_percentage_factor(env, config.ir_scaling_coeff);
 
-    assert_with_error!(env, config.ir_scaling_coeff > 0, Error::MustBePositive);
+    assert_with_error!(env, config.ir_scaling_coeff > 0, Error::MustBeNonNegative);
     assert_with_error!(
         env,
         config.ir_initial_rate <= config.ir_max_rate,
-        Error::InitialRateGtMaxRate
+        Error::AboveMaxValue
     );
 
-    assert_with_error!(
-        env,
-        config.base_asset_decimals <= 38,
-        Error::ExceededMaxDecimals
-    );
-    assert_with_error!(env, config.grace_period != 0, Error::ZeroGracePeriod);
-    assert_with_error!(env, config.grace_period <= ONE_DAY, Error::ExceededOneDay);
+    assert_with_error!(env, config.base_asset_decimals <= 38, Error::AboveMaxValue);
+    assert_with_error!(env, config.grace_period != 0, Error::BellowMinValue);
+    assert_with_error!(env, config.grace_period <= ONE_DAY, Error::AboveMaxValue);
     assert_with_error!(
         env,
         config.timestamp_window <= ONE_DAY,
-        Error::ExceededOneDay
+        Error::AboveMaxValue
     );
-    assert_with_error!(env, config.user_assets_limit > 0, Error::MustBePositive);
+    assert_with_error!(env, config.user_assets_limit > 0, Error::BellowMinValue);
 }
