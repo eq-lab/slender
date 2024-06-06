@@ -7,7 +7,7 @@ const BORROWING_MASK: u128 = 0x55555555555555555555555555555555;
 #[contracttype]
 #[derive(Default)]
 /// Implements the bitmap logic to handle the user configuration.
-/// Even positions is collateral flags and uneven is borrowing flags.
+/// Even positions are collateral flags and uneven are borrowing flags.
 /// (assets bitmap, total assets)
 pub struct UserConfiguration(u128, u32);
 
@@ -90,8 +90,8 @@ impl UserConfiguration {
     fn require_reserve_index(env: &Env, reserve_index: u8) {
         assert_with_error!(
             env,
-            reserve_index < core::mem::size_of::<u128>() as u8 / 2,
-            Error::UserConfigInvalidIndex
+            reserve_index < core::mem::size_of::<u128>() as u8 / 2, // todo: size_of returns bytes, not bits, need to multiply by 8
+            Error::ExceededMaxValue
         );
     }
 }

@@ -14,9 +14,9 @@ use super::get_elapsed_time::get_elapsed_time;
 /// ir_params.initial_rate - base interest rate, by default 2%, expressed as 200 with denominator 10000
 ///
 /// For (1-U)^alpha calculation use binomial approximation with four terms if U is less or equal 0.5
-/// 
+///
 /// (1-U)^a = 1 - a * U + a/2 * (a - 1) * U^2 - a/6 * (a-1) * (a-2) * U^3 + a/24 * (a-1) *(a-2) * (a-3) * U^4
-/// 
+///
 /// and 20 items if U is more then 0.5.
 pub fn calc_interest_rate(
     total_collateral: i128,

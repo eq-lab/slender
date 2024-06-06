@@ -67,7 +67,7 @@ pub fn read_reserve(env: &Env, asset: &Address) -> Result<ReserveData, Error> {
     env.storage()
         .instance()
         .get(&DataKey::ReserveAssetKey(asset.clone()))
-        .ok_or(Error::NoReserveExistForAsset)
+        .ok_or(Error::Uninitialized)
 }
 
 pub fn write_reserve(env: &Env, asset: &Address, reserve_data: &ReserveData) {
@@ -141,7 +141,7 @@ pub fn read_user_config(env: &Env, user: &Address) -> Result<UserConfiguration, 
         );
     }
 
-    user_config.ok_or(Error::UserConfigNotExists)
+    user_config.ok_or(Error::Uninitialized)
 }
 
 pub fn write_user_config(env: &Env, user: &Address, config: &UserConfiguration) {
@@ -164,7 +164,7 @@ pub fn read_price_feeds(env: &Env, asset: &Address) -> Result<PriceFeedConfig, E
     env.storage()
         .instance()
         .get(&data_key)
-        .ok_or(Error::NoPriceFeed)
+        .ok_or(Error::Uninitialized)
 }
 
 pub fn write_price_feeds(env: &Env, inputs: &Vec<PriceFeedConfigInput>) {
@@ -206,7 +206,7 @@ pub fn read_base_asset(env: &Env) -> Result<BaseAssetConfig, Error> {
     env.storage()
         .instance()
         .get(&data_key)
-        .ok_or(Error::BaseAssetNotInitialized)
+        .ok_or(Error::Uninitialized)
 }
 
 pub fn write_initial_health(env: &Env, value: u32) {
@@ -229,7 +229,7 @@ pub fn read_initial_health(env: &Env) -> Result<u32, Error> {
     env.storage()
         .instance()
         .get(&data_key)
-        .ok_or(Error::InitialHealthNotInitialized)
+        .ok_or(Error::Uninitialized)
 }
 
 pub fn read_user_assets_limit(env: &Env) -> u32 {
@@ -322,7 +322,7 @@ fn write_stoken_underlying_balance(
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
-    assert_with_error!(env, !total_supply.is_negative(), Error::MustBePositive);
+    assert_with_error!(env, !total_supply.is_negative(), Error::MustBeNonNegative);
 
     let data_key = DataKey::STokenUnderlyingBalance(s_token_address.clone());
     env.storage().instance().set(&data_key, &total_supply);
@@ -373,7 +373,7 @@ pub fn write_token_total_supply(
         .instance()
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
-    assert_with_error!(env, !total_supply.is_negative(), Error::MustBePositive);
+    assert_with_error!(env, !total_supply.is_negative(), Error::MustBeNonNegative);
 
     let data_key = DataKey::TokenSupply(token.clone());
     env.storage().instance().set(&data_key, &total_supply);
@@ -402,7 +402,7 @@ pub fn write_token_balance(
     account: &Address,
     balance: i128,
 ) -> Result<(), Error> {
-    assert_with_error!(env, !balance.is_negative(), Error::MustBePositive);
+    assert_with_error!(env, !balance.is_negative(), Error::MustBeNonNegative);
 
     let key = DataKey::TokenBalance(token.clone(), account.clone());
     env.storage().persistent().set(&key, &balance);
@@ -453,7 +453,7 @@ pub fn read_protocol_fee_vault(env: &Env, asset: &Address) -> i128 {
 }
 
 pub fn write_protocol_fee_vault(env: &Env, asset: &Address, balance: i128) {
-    assert_with_error!(env, !balance.is_negative(), Error::MustBePositive);
+    assert_with_error!(env, !balance.is_negative(), Error::MustBeNonNegative);
     let key = DataKey::ProtocolFeeVault(asset.clone());
 
     env.storage().persistent().set(&key, &balance);
