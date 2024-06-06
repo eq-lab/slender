@@ -82,7 +82,6 @@ pub fn finalize_transfer(
         )?;
 
         require_min_position_amounts(env, &from_account_data, &pool_config)?;
-        // account data calculation takes into account the decrease of collateral
         require_gte_initial_health(env, &from_account_data, &pool_config)?;
     }
 

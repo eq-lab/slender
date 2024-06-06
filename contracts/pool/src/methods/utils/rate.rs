@@ -6,18 +6,6 @@ use soroban_sdk::Env;
 
 use super::get_elapsed_time::get_elapsed_time;
 
-/// Calculate interest rate IR = MIN [ max_rate, base_rate / (1 - U)^alpha]
-/// where
-/// U - utilization, U = total_debt / total_collateral
-/// ir_params.alpha - parameter, by default 1.43 expressed as 143 with denominator 100
-/// ir_params.max_rate - maximal value of interest rate, by default 500% expressed as 50000 with denominator 10000
-/// ir_params.initial_rate - base interest rate, by default 2%, expressed as 200 with denominator 10000
-///
-/// For (1-U)^alpha calculation use binomial approximation with four terms if U is less or equal 0.5
-///
-/// (1-U)^a = 1 - a * U + a/2 * (a - 1) * U^2 - a/6 * (a-1) * (a-2) * U^3 + a/24 * (a-1) *(a-2) * (a-3) * U^4
-///
-/// and 20 items if U is more then 0.5.
 pub fn calc_interest_rate(
     total_collateral: i128,
     total_debt: i128,
@@ -36,7 +24,7 @@ pub fn calc_interest_rate(
     let max_rate = FixedI128::from_percentage(pool_config.ir_max_rate)?;
 
     if u >= FixedI128::ONE {
-        return Some(max_rate); // utilization shouldn't be greater or equal one
+        return Some(max_rate);
     }
 
     let alpha = FixedI128::from_rational(pool_config.ir_alpha, ALPHA_DENOMINATOR)?;
@@ -75,11 +63,6 @@ pub fn calc_interest_rate(
     Some(FixedI128::min(ir, max_rate))
 }
 
-/// Calculate accrued rate on time `t` AR(t) = AR(t-1)*(1 + r(t-1)*elapsed_time)
-/// where:
-///     AR(t-1) - prev value of accrued rate
-///     r(t-1) - prev value of interest rate
-///     elapsed_time - elapsed time in seconds from last accrued rate update
 pub fn calc_next_accrued_rate(
     prev_ar: FixedI128,
     ir: FixedI128,
@@ -97,7 +80,6 @@ pub struct AccruedRates {
     pub borrower_ir: FixedI128,
 }
 
-/// Calculates lender and borrower accrued/interest rates
 pub fn calc_accrued_rates(
     total_collateral: i128,
     total_debt: i128,
@@ -130,7 +112,6 @@ pub fn calc_accrued_rates(
     })
 }
 
-/// Returns lender accrued rate corrected for the current time
 pub fn get_actual_lender_accrued_rate(
     env: &Env,
     reserve: &ReserveData,
@@ -152,7 +133,6 @@ pub fn get_actual_lender_accrued_rate(
     }
 }
 
-/// Returns borrower accrued rate corrected for the current time
 pub fn get_actual_borrower_accrued_rate(
     env: &Env,
     reserve: &ReserveData,

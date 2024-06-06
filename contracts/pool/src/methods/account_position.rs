@@ -60,7 +60,6 @@ pub fn calc_account_data(
     let reserves_len =
         u8::try_from(reserves.len()).map_err(|_| Error::ReservesMaxCapacityExceeded)?;
 
-    // calc collateral and debt expressed in base token
     for i in 0..reserves_len {
         if !user_config.is_using_as_collateral_or_borrowing(env, i) {
             continue;

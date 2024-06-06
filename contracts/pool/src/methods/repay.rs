@@ -64,8 +64,6 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
     Ok(())
 }
 
-/// Returns
-/// i128: total debt after repayment
 #[allow(clippy::too_many_arguments)]
 pub fn do_repay(
     env: &Env,

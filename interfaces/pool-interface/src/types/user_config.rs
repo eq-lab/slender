@@ -6,9 +6,6 @@ const BORROWING_MASK: u128 = 0x55555555555555555555555555555555;
 
 #[contracttype]
 #[derive(Default)]
-/// Implements the bitmap logic to handle the user configuration.
-/// Even positions are collateral flags and uneven are borrowing flags.
-/// (assets bitmap, total assets)
 pub struct UserConfiguration(u128, u32);
 
 impl UserConfiguration {

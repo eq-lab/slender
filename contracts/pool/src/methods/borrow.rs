@@ -94,7 +94,6 @@ pub fn do_borrow(
 
     let mut user_configurator =
         UserConfigurator::new(env, who, false, Some(pool_config.user_assets_limit));
-    // to fail early if user_config is not exists
     user_configurator.user_config()?;
 
     let debt_coeff = get_actual_borrower_accrued_rate(env, reserve, pool_config)?;

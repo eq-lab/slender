@@ -133,7 +133,6 @@ pub fn withdraw(
                 )?;
 
                 require_min_position_amounts(env, &account_data, &pool_config)?;
-                // account data calculation takes into account the decrease of collateral
                 require_gte_initial_health(env, &account_data, &pool_config)?;
             }
 
@@ -186,7 +185,6 @@ pub fn withdraw(
                 )?;
 
                 require_min_position_amounts(env, &account_data, &pool_config)?;
-                // account data calculation takes into account the decrease of collateral
                 require_gte_initial_health(env, &account_data, &pool_config)?;
             }
 

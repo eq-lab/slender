@@ -76,7 +76,6 @@ pub fn require_borrowing_enabled(env: &Env, reserve: &ReserveData) {
     );
 }
 
-/// Check that balance + deposit + debt * ar_lender <= reserve.configuration.liquidity_cap
 pub fn require_liquidity_cap_not_exceeded(
     env: &Env,
     reserve: &ReserveData,
@@ -129,7 +128,6 @@ pub fn require_gte_initial_health(
         return Ok(());
     }
 
-    // more conventional error when discounted_collateral == 0
     assert_with_error!(
         env,
         account_data.npv >= 0 && account_data.discounted_collateral >= 0,
@@ -152,8 +150,6 @@ pub fn require_gte_initial_health(
 }
 
 pub fn require_not_in_collateral_asset(env: &Env, collat_balance: i128) {
-    // `is_using_as_collateral` is skipped to avoid case when user:
-    // makes deposit => disables `is_using_as_collateral` => borrows the asset
     assert_with_error!(env, collat_balance == 0, Error::MustNotBeInCollateralAsset);
 }
 

@@ -114,7 +114,6 @@ fn do_liquidate(
             let discount_percent =
                 FixedI128::from_percentage(collat.reserve.configuration.discount).unwrap();
 
-            // the same for token-based RWA
             let liq_comp_amount = calc_liq_amount(
                 price_provider,
                 &collat,
@@ -278,7 +277,7 @@ fn do_liquidate(
                         &debt.asset,
                         total_debt_to_cover_in_base,
                         true,
-                    )?; // ceil (convert_from_base_with_ceil)
+                    )?;
 
                     let debt_lp_amount = FixedI128::from_inner(debt.coeff.unwrap())
                         .recip_mul_int(debt_comp_amount)

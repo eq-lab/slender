@@ -1,6 +1,5 @@
 use soroban_sdk::Env;
 
-/// Returns (current_time, elapsed_time)
 pub fn get_elapsed_time(
     env: &Env,
     last_update_timestamp: u64,

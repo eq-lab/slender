@@ -9,11 +9,11 @@ use soroban_sdk::{assert_with_error, contracttype, vec, Address, Env, Vec};
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17_280;
 
-pub(crate) const LOW_USER_DATA_BUMP_LEDGERS: u32 = 10 * DAY_IN_LEDGERS; // 20 days
-pub(crate) const HIGH_USER_DATA_BUMP_LEDGERS: u32 = 20 * DAY_IN_LEDGERS; // 30 days
+pub(crate) const LOW_USER_DATA_BUMP_LEDGERS: u32 = 10 * DAY_IN_LEDGERS;
+pub(crate) const HIGH_USER_DATA_BUMP_LEDGERS: u32 = 20 * DAY_IN_LEDGERS;
 
-pub(crate) const LOW_INSTANCE_BUMP_LEDGERS: u32 = DAY_IN_LEDGERS; // 1 day
-pub(crate) const HIGH_INSTANCE_BUMP_LEDGERS: u32 = 7 * DAY_IN_LEDGERS; // 7 days
+pub(crate) const LOW_INSTANCE_BUMP_LEDGERS: u32 = DAY_IN_LEDGERS;
+pub(crate) const HIGH_INSTANCE_BUMP_LEDGERS: u32 = 7 * DAY_IN_LEDGERS;
 
 #[derive(Clone)]
 #[contracttype]

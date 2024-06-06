@@ -6,8 +6,6 @@ use soroban_sdk::Env;
 
 use super::rate::get_actual_lender_accrued_rate;
 
-/// Returns collateral coefficient
-/// [underlying_balance + lender_ar * total_debt_token] / total_stoken
 pub fn get_collat_coeff(
     env: &Env,
     reserve: &ReserveData,
@@ -35,8 +33,6 @@ pub fn get_collat_coeff(
     .ok_or(Error::CollateralCoeffMathError)
 }
 
-/// Returns compounded amount
-/// [(s_token_underlying_balance + lender_ar * debt_token_supply) * amount] / s_token_supply
 pub fn get_compounded_amount(
     env: &Env,
     reserve: &ReserveData,
@@ -66,8 +62,6 @@ pub fn get_compounded_amount(
         .ok_or(Error::CollateralCoeffMathError)
 }
 
-/// Returns lp amount
-/// s_token_supply * amount / (s_token_underlying_balance + lender_ar * debt_token_supply)
 pub fn get_lp_amount(
     env: &Env,
     reserve: &ReserveData,
