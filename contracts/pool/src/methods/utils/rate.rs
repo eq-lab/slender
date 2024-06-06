@@ -33,14 +33,14 @@ pub fn calc_interest_rate(
     let first_term = alpha.checked_mul(neg_u)?;
 
     let num_of_iterations = if u > FixedI128::from_rational(1, 2)? {
-        19
+        20
     } else {
-        3
+        4
     };
     let mut prev_term = first_term;
     let mut terms_sum = first_term;
     let mut alpha_mul = alpha;
-    for i in 2..(num_of_iterations + 2) {
+    for i in 2..=num_of_iterations {
         alpha_mul = alpha_mul.checked_sub(FixedI128::ONE)?;
         let next_term = prev_term
             .checked_mul(neg_u)?
