@@ -1,6 +1,7 @@
 use common::{FixedI128, PERCENTAGE_FACTOR};
 use debt_token_interface::DebtTokenClient;
 use pool_interface::types::error::Error;
+use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::reserve_type::ReserveType;
 use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, token, Address, Env};
@@ -13,9 +14,9 @@ use crate::types::liquidation_asset::LiquidationAsset;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 use crate::{
-    add_protocol_fee_vault, add_stoken_underlying_balance, event, read_initial_health,
-    read_liquidation_protocol_fee, read_pause_info, read_stoken_underlying_balance,
-    read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
+    add_protocol_fee_vault, add_stoken_underlying_balance, event, read_pause_info,
+    read_pool_config, read_stoken_underlying_balance, read_token_balance, read_token_total_supply,
+    write_token_balance, write_token_total_supply,
 };
 
 use super::account_position::calc_account_data;
@@ -31,12 +32,14 @@ pub fn liquidate(env: &Env, liquidator: &Address, who: &Address) -> Result<(), E
 
     let mut user_configurator = UserConfigurator::new(env, who, false, None);
     let user_config = user_configurator.user_config()?;
-    let mut price_provider = PriceProvider::new(env)?;
+    let pool_config = read_pool_config(env)?;
+    let mut price_provider = PriceProvider::new(env, &pool_config)?;
 
     let account_data = calc_account_data(
         env,
         who,
         &CalcAccountDataCache::none(),
+        &pool_config,
         user_config,
         &mut price_provider,
         true,
@@ -49,6 +52,7 @@ pub fn liquidate(env: &Env, liquidator: &Address, who: &Address) -> Result<(), E
         liquidator,
         who,
         account_data,
+        &pool_config,
         &mut user_configurator,
         &mut price_provider,
     )?;
@@ -63,6 +67,7 @@ fn do_liquidate(
     liquidator: &Address,
     who: &Address,
     account_data: AccountData,
+    pool_config: &PoolConfig,
     user_configurator: &mut UserConfigurator,
     price_provider: &mut PriceProvider,
 ) -> Result<(i128, i128), Error> {
@@ -74,7 +79,7 @@ fn do_liquidate(
     let total_collat_in_base = account_data.collat.ok_or(Error::LiquidateMathError)?;
 
     let zero_percent = FixedI128::ZERO;
-    let initial_health_percent = FixedI128::from_percentage(read_initial_health(env)?).unwrap();
+    let initial_health_percent = FixedI128::from_percentage(pool_config.initial_health).unwrap();
     let hundred_percent = FixedI128::from_percentage(PERCENTAGE_FACTOR).unwrap();
     let npv_percent = FixedI128::from_rational(account_data.npv, total_collat_disc_after_in_base)
         .ok_or(Error::LiquidateMathError)?;
@@ -102,7 +107,7 @@ fn do_liquidate(
         (FixedI128::ZERO, FixedI128::ZERO)
     };
 
-    let liquidation_protocol_fee = FixedI128::from_percentage(read_liquidation_protocol_fee(env))
+    let liquidation_protocol_fee = FixedI128::from_percentage(pool_config.liquidation_protocol_fee)
         .ok_or(Error::MathOverflowError)?;
 
     for collat in account_data.liq_collats.ok_or(Error::LiquidateMathError)? {
@@ -169,6 +174,7 @@ fn do_liquidate(
                 get_lp_amount(
                     env,
                     &collat.reserve,
+                    pool_config,
                     s_token_supply,
                     read_stoken_underlying_balance(env, s_token_address),
                     debt_token_supply,
@@ -206,6 +212,7 @@ fn do_liquidate(
                 env,
                 &collat.asset,
                 &collat.reserve,
+                pool_config,
                 s_token_supply,
                 debt_token_supply,
             )?;
@@ -315,6 +322,7 @@ fn do_liquidate(
                 env,
                 &debt.asset,
                 &debt.reserve,
+                pool_config,
                 s_token_supply,
                 debt_token_supply,
             )?;

@@ -1,10 +1,9 @@
-use pool_interface::types::ir_params::IRParams;
 use pool_interface::types::{
     collateral_params_input::CollateralParamsInput, pool_config::PoolConfig,
 };
 use soroban_sdk::{symbol_short, Address, Env, Symbol};
 
-pub(crate) fn initialized(e: &Env, admin: &Address, params: &IRParams, pool_config: &PoolConfig) {
+pub(crate) fn initialized(e: &Env, admin: &Address, pool_config: &PoolConfig) {
     let topics = (
         Symbol::new(e, "initialize"),
         admin,
@@ -13,10 +12,10 @@ pub(crate) fn initialized(e: &Env, admin: &Address, params: &IRParams, pool_conf
     e.events().publish(
         topics,
         (
-            params.alpha,
-            params.initial_rate,
-            params.max_rate,
-            params.scaling_coeff,
+            pool_config.ir_alpha,
+            pool_config.ir_initial_rate,
+            pool_config.ir_max_rate,
+            pool_config.ir_scaling_coeff,
             pool_config.base_asset_decimals,
             pool_config.initial_health,
             pool_config.grace_period,

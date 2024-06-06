@@ -1,6 +1,7 @@
 use debt_token_interface::DebtTokenClient;
 use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
+use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::reserve_data::ReserveData;
 use soroban_sdk::{token, Address, Env};
 
@@ -11,7 +12,7 @@ use crate::storage::{
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
-use crate::{add_protocol_fee_vault, event, read_pause_info};
+use crate::{add_protocol_fee_vault, event, read_pause_info, read_pool_config};
 
 use super::account_position::calc_account_data;
 use super::utils::get_collat_coeff::get_collat_coeff;
@@ -37,12 +38,14 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
     let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
     let s_token_supply = read_token_total_supply(env, s_token_address);
     let debt_token_supply = read_token_total_supply(env, debt_token_address);
+    let pool_config = read_pool_config(env)?;
 
     let debt_token_supply_after = do_repay(
         env,
         who,
         asset,
         &reserve,
+        &pool_config,
         s_token_supply,
         debt_token_supply,
         s_token_address,
@@ -54,6 +57,7 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
         env,
         asset,
         &reserve,
+        &pool_config,
         s_token_supply,
         debt_token_supply_after,
     )?;
@@ -69,6 +73,7 @@ pub fn do_repay(
     who: &Address,
     asset: &Address,
     reserve: &ReserveData,
+    pool_config: &PoolConfig,
     s_token_supply: i128,
     debt_token_supply: i128,
     s_token_address: &Address,
@@ -78,10 +83,11 @@ pub fn do_repay(
     let mut user_configurator = UserConfigurator::new(env, who, false, None);
     require_debt(env, user_configurator.user_config()?, reserve.get_id());
 
-    let debt_coeff = get_actual_borrower_accrued_rate(env, reserve)?;
+    let debt_coeff = get_actual_borrower_accrued_rate(env, reserve, pool_config)?;
     let collat_coeff = get_collat_coeff(
         env,
         reserve,
+        pool_config,
         s_token_supply,
         read_stoken_underlying_balance(env, s_token_address),
         debt_token_supply,
@@ -144,12 +150,13 @@ pub fn do_repay(
             )),
             mb_rwa_balance: None,
         },
+        pool_config,
         user_configurator.user_config()?,
-        &mut PriceProvider::new(env)?,
+        &mut PriceProvider::new(env, &pool_config)?,
         false,
     )?;
 
-    require_min_position_amounts(env, &account_data)?;
+    require_min_position_amounts(env, &account_data, &pool_config)?;
 
     let underlying_asset = token::Client::new(env, asset);
     let debt_token = DebtTokenClient::new(env, debt_token_address);

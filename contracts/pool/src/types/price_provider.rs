@@ -1,36 +1,36 @@
 use core::ops::Div;
 
-use pool_interface::types::base_asset_config::BaseAssetConfig;
 use pool_interface::types::error::Error;
+use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::price_feed::PriceFeed;
 use pool_interface::types::price_feed_config::PriceFeedConfig;
 use pool_interface::types::timestamp_precision::TimestampPrecision;
 use price_feed_interface::PriceFeedClient;
 use soroban_sdk::{assert_with_error, Address, Env, Map, Vec};
 
-use crate::storage::{read_base_asset, read_price_feeds};
+use crate::storage::read_price_feeds;
 
 pub struct PriceProvider<'a> {
     env: &'a Env,
-    base_asset: BaseAssetConfig,
+    base_asset_address: Address,
+    base_asset_decimals: u32,
     configs: Map<Address, PriceFeedConfig>,
     prices: Map<Address, i128>,
 }
 
 impl<'a> PriceProvider<'a> {
-    pub fn new(env: &'a Env) -> Result<Self, Error> {
-        let base_asset = read_base_asset(env)?;
-
+    pub fn new(env: &'a Env, pool_config: &PoolConfig) -> Result<Self, Error> {
         Ok(Self {
             env,
-            base_asset,
+            base_asset_address: pool_config.base_asset_address.clone(),
+            base_asset_decimals: pool_config.base_asset_decimals,
             configs: Map::new(env),
             prices: Map::new(env),
         })
     }
 
     pub fn convert_to_base(&mut self, asset: &Address, amount: i128) -> Result<i128, Error> {
-        if self.base_asset.address == *asset {
+        if self.base_asset_address == *asset {
             return Ok(amount);
         }
 
@@ -54,7 +54,7 @@ impl<'a> PriceProvider<'a> {
         amount: i128,
         round_ceil: bool,
     ) -> Result<i128, Error> {
-        if self.base_asset.address == *asset {
+        if self.base_asset_address == *asset {
             return Ok(amount);
         }
 
@@ -121,7 +121,7 @@ impl<'a> PriceProvider<'a> {
                     }
 
                     let base_precision = 10i128
-                        .checked_pow(self.base_asset.decimals)
+                        .checked_pow(self.base_asset_decimals)
                         .ok_or(Error::MathOverflowError)?;
 
                     let feed_precision = 10i128

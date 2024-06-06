@@ -2,6 +2,7 @@ use common::FixedI128;
 use pool_interface::types::account_position::AccountPosition;
 use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
+use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::types::user_config::UserConfiguration;
@@ -19,14 +20,19 @@ use crate::types::price_provider::PriceProvider;
 use super::utils::get_collat_coeff::get_compounded_amount;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 
-pub fn account_position(env: &Env, who: &Address) -> Result<AccountPosition, Error> {
+pub fn account_position(
+    env: &Env,
+    who: &Address,
+    pool_config: &PoolConfig,
+) -> Result<AccountPosition, Error> {
     let user_config = read_user_config(env, who)?;
     let account_data = calc_account_data(
         env,
         who,
         &CalcAccountDataCache::none(),
+        pool_config,
         &user_config,
-        &mut PriceProvider::new(env)?,
+        &mut PriceProvider::new(env, pool_config)?,
         false,
     )?;
 
@@ -37,6 +43,7 @@ pub fn calc_account_data(
     env: &Env,
     who: &Address,
     cache: &CalcAccountDataCache,
+    pool_config: &PoolConfig,
     user_config: &UserConfiguration,
     price_provider: &mut PriceProvider,
     liquidation: bool,
@@ -78,6 +85,7 @@ pub fn calc_account_data(
                 user_config,
                 cache,
                 reserve,
+                pool_config,
                 s_token_address,
                 debt_token_address,
                 asset,
@@ -137,6 +145,7 @@ fn calculate_fungible(
     user_config: &UserConfiguration,
     cache: &CalcAccountDataCache,
     reserve: ReserveData,
+    pool_config: &PoolConfig,
     s_token_address: Address,
     debt_token_address: Address,
     asset: Address,
@@ -185,6 +194,7 @@ fn calculate_fungible(
         let compounded_balance = get_compounded_amount(
             env,
             &reserve,
+            pool_config,
             s_token_supply,
             s_token_underlying_balance,
             debt_token_supply,
@@ -219,7 +229,7 @@ fn calculate_fungible(
             );
         }
     } else if user_config.is_borrowing(env, reserve_index) {
-        let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve)?;
+        let debt_coeff = get_actual_borrower_accrued_rate(env, &reserve, pool_config)?;
 
         let who_debt = mb_who_debt
             .filter(|x| x.asset == debt_token_address)

@@ -3,7 +3,6 @@ use common::ONE_DAY;
 use common::PERCENTAGE_FACTOR;
 use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::error::Error;
-use pool_interface::types::ir_params::IRParams;
 use pool_interface::types::pause_info::PauseInfo;
 use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::reserve_data::ReserveData;
@@ -11,9 +10,9 @@ use pool_interface::types::reserve_type::ReserveType;
 use pool_interface::types::user_config::UserConfiguration;
 use soroban_sdk::{assert_with_error, panic_with_error, Address, Env};
 
-use crate::storage::{has_admin, has_reserve, read_admin, read_initial_health};
+use crate::storage::{has_admin, has_reserve, read_admin};
 use crate::types::account_data::AccountData;
-use crate::{read_min_position_amounts, read_reserve, read_reserves};
+use crate::{read_reserve, read_reserves};
 
 pub fn require_admin_not_exist(env: &Env) {
     if has_admin(env) {
@@ -25,19 +24,6 @@ pub fn require_admin(env: &Env) -> Result<(), Error> {
     let admin: Address = read_admin(env)?;
     admin.require_auth();
     Ok(())
-}
-
-pub fn require_valid_ir_params(env: &Env, params: &IRParams) {
-    require_lte_percentage_factor(env, params.initial_rate);
-    require_gt_percentage_factor(env, params.max_rate);
-    require_lt_percentage_factor(env, params.scaling_coeff);
-
-    assert_with_error!(env, params.scaling_coeff > 0, Error::MustBePositive);
-    assert_with_error!(
-        env,
-        params.initial_rate <= params.max_rate,
-        Error::InitialRateGtMaxRate
-    );
 }
 
 pub fn require_valid_collateral_params(env: &Env, params: &CollateralParamsInput) {
@@ -146,7 +132,11 @@ pub fn require_util_cap_not_exceeded(
     Ok(())
 }
 
-pub fn require_gte_initial_health(env: &Env, account_data: &AccountData) -> Result<(), Error> {
+pub fn require_gte_initial_health(
+    env: &Env,
+    account_data: &AccountData,
+    pool_config: &PoolConfig,
+) -> Result<(), Error> {
     if account_data.npv == 0 && account_data.discounted_collateral == 0 {
         return Ok(());
     }
@@ -162,7 +152,7 @@ pub fn require_gte_initial_health(env: &Env, account_data: &AccountData) -> Resu
         FixedI128::from_rational(account_data.npv, account_data.discounted_collateral)
             .ok_or(Error::MathOverflowError)?;
     let initial_health_percent =
-        FixedI128::from_percentage(read_initial_health(env)?).ok_or(Error::MathOverflowError)?;
+        FixedI128::from_percentage(pool_config.initial_health).ok_or(Error::MathOverflowError)?;
 
     assert_with_error!(
         env,
@@ -246,40 +236,52 @@ pub fn require_not_exceed_assets_limit(env: &Env, assets_total: u32, assets_limi
     );
 }
 
-pub fn require_min_position_amounts(env: &Env, account_data: &AccountData) -> Result<(), Error> {
-    let (min_collat, min_debt) = read_min_position_amounts(env);
-
+pub fn require_min_position_amounts(
+    env: &Env,
+    account_data: &AccountData,
+    pool_config: &PoolConfig,
+) -> Result<(), Error> {
     if account_data.debt == 0 {
         return Ok(());
     }
 
     assert_with_error!(
         env,
-        account_data.discounted_collateral >= min_collat,
+        account_data.discounted_collateral >= pool_config.min_collat_amount,
         Error::CollateralIsTooSmall
     );
-    assert_with_error!(env, account_data.debt >= min_debt, Error::DebtIsTooSmall);
+    assert_with_error!(
+        env,
+        account_data.debt >= pool_config.min_debt_amount,
+        Error::DebtIsTooSmall
+    );
 
     Ok(())
 }
 
-pub fn require_non_zero_grace_period(env: &Env, grace_period: u64) {
-    assert_with_error!(env, grace_period != 0, Error::ZeroGracePeriod);
-}
-
-pub fn require_not_exceeded_max_decimals(env: &Env, decimals: u32) {
-    assert_with_error!(env, decimals <= 38, Error::ExceededMaxDecimals);
-}
-
 pub fn require_valid_pool_config(env: &Env, config: &PoolConfig) {
-    require_not_exceeded_max_decimals(env, config.base_asset_decimals);
-    require_non_zero_grace_period(env, config.grace_period);
     require_lte_percentage_factor(env, config.initial_health);
     require_lte_percentage_factor(env, config.flash_loan_fee);
     require_lte_percentage_factor(env, config.liquidation_protocol_fee);
     require_non_negative(env, config.min_collat_amount);
     require_non_negative(env, config.min_debt_amount);
+    require_lte_percentage_factor(env, config.ir_initial_rate);
+    require_gt_percentage_factor(env, config.ir_max_rate);
+    require_lt_percentage_factor(env, config.ir_scaling_coeff);
 
+    assert_with_error!(env, config.ir_scaling_coeff > 0, Error::MustBePositive);
+    assert_with_error!(
+        env,
+        config.ir_initial_rate <= config.ir_max_rate,
+        Error::InitialRateGtMaxRate
+    );
+
+    assert_with_error!(
+        env,
+        config.base_asset_decimals <= 38,
+        Error::ExceededMaxDecimals
+    );
+    assert_with_error!(env, config.grace_period != 0, Error::ZeroGracePeriod);
     assert_with_error!(env, config.grace_period <= ONE_DAY, Error::ExceededOneDay);
     assert_with_error!(
         env,

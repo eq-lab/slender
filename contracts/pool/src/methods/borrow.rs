@@ -1,14 +1,15 @@
 use debt_token_interface::DebtTokenClient;
 use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
+use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::reserve_data::ReserveData;
 use s_token_interface::STokenClient;
 use soroban_sdk::{Address, Env};
 
 use crate::event;
 use crate::read_pause_info;
+use crate::read_pool_config;
 use crate::read_stoken_underlying_balance;
-use crate::read_user_assets_limit;
 use crate::storage::{
     add_stoken_underlying_balance, read_reserve, read_token_balance, read_token_total_supply,
     write_token_balance, write_token_total_supply,
@@ -45,12 +46,14 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
     let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
 
     let s_token_supply = read_token_total_supply(env, s_token_address);
+    let pool_config = read_pool_config(env)?;
 
     let debt_token_supply_after = do_borrow(
         env,
         who,
         asset,
         &reserve,
+        &pool_config,
         read_token_balance(env, s_token_address, who),
         read_token_balance(env, debt_token_address, who),
         s_token_supply,
@@ -64,6 +67,7 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
         env,
         asset,
         &reserve,
+        &pool_config,
         s_token_supply,
         debt_token_supply_after,
     )?;
@@ -77,6 +81,7 @@ pub fn do_borrow(
     who: &Address,
     asset: &Address,
     reserve: &ReserveData,
+    pool_config: &PoolConfig,
     who_collat: i128,
     who_debt: i128,
     s_token_supply: i128,
@@ -88,12 +93,12 @@ pub fn do_borrow(
     require_not_in_collateral_asset(env, who_collat);
     require_positive_amount(env, amount);
 
-    let user_assets_limit = read_user_assets_limit(env);
-    let mut user_configurator = UserConfigurator::new(env, who, false, Some(user_assets_limit));
+    let mut user_configurator =
+        UserConfigurator::new(env, who, false, Some(pool_config.user_assets_limit));
     // to fail early if user_config is not exists
     user_configurator.user_config()?;
 
-    let debt_coeff = get_actual_borrower_accrued_rate(env, reserve)?;
+    let debt_coeff = get_actual_borrower_accrued_rate(env, reserve, pool_config)?;
     let amount_of_debt_token = debt_coeff
         .recip_mul_int_ceil(amount)
         .ok_or(Error::MathOverflowError)?;
@@ -139,13 +144,14 @@ pub fn do_borrow(
             )),
             mb_rwa_balance: None,
         },
+        pool_config,
         user_configurator.user_config()?,
-        &mut PriceProvider::new(env)?,
+        &mut PriceProvider::new(env, &pool_config)?,
         false,
     )?;
 
-    require_min_position_amounts(env, &account_data)?;
-    require_gte_initial_health(env, &account_data)?;
+    require_min_position_amounts(env, &account_data, &pool_config)?;
+    require_gte_initial_health(env, &account_data, &pool_config)?;
 
     DebtTokenClient::new(env, debt_token_address).mint(who, &amount_of_debt_token);
     STokenClient::new(env, s_token_address).transfer_underlying_to(who, &amount);

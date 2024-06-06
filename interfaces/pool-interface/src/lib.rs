@@ -6,7 +6,6 @@ use types::account_position::AccountPosition;
 use types::collateral_params_input::CollateralParamsInput;
 use types::error::Error;
 use types::flash_loan_asset::FlashLoanAsset;
-use types::ir_params::IRParams;
 use types::pause_info::PauseInfo;
 use types::pool_config::PoolConfig;
 use types::price_feed_config::PriceFeedConfig;
@@ -23,12 +22,7 @@ pub struct Spec;
 #[contractspecfn(name = "Spec", export = false)]
 #[contractclient(name = "LendingPoolClient")]
 pub trait LendingPoolTrait {
-    fn initialize(
-        env: Env,
-        admin: Address,
-        ir_params: IRParams,
-        pool_config: PoolConfig,
-    ) -> Result<(), Error>;
+    fn initialize(env: Env, admin: Address, pool_config: PoolConfig) -> Result<(), Error>;
 
     fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), Error>;
 
@@ -64,10 +58,6 @@ pub trait LendingPoolTrait {
     fn set_price_feeds(env: Env, inputs: Vec<PriceFeedConfigInput>) -> Result<(), Error>;
 
     fn price_feeds(env: Env, asset: Address) -> Option<PriceFeedConfig>;
-
-    fn set_ir_params(env: Env, input: IRParams) -> Result<(), Error>;
-
-    fn ir_params(env: Env) -> Option<IRParams>;
 
     fn deposit(env: Env, who: Address, asset: Address, amount: i128) -> Result<(), Error>;
 
@@ -127,8 +117,6 @@ pub trait LendingPoolTrait {
     ) -> Result<(), Error>;
 
     fn twap_median_price(env: Env, asset: Address, amount: i128) -> Result<i128, Error>;
-
-    fn balance(env: Env, id: Address, asset: Address) -> i128;
 
     fn protocol_fee(env: Env, asset: Address) -> i128;
 

@@ -1,10 +1,10 @@
 use pool_interface::types::error::Error;
-use pool_interface::types::ir_params::IRParams;
+use pool_interface::types::pause_info::PauseInfo;
+use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::price_feed_config::PriceFeedConfig;
 use pool_interface::types::price_feed_config_input::PriceFeedConfigInput;
 use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::user_config::UserConfiguration;
-use pool_interface::types::{base_asset_config::BaseAssetConfig, pause_info::PauseInfo};
 use soroban_sdk::{assert_with_error, contracttype, vec, Address, Env, Vec};
 
 pub(crate) const DAY_IN_LEDGERS: u32 = 17_280;
@@ -19,22 +19,15 @@ pub(crate) const HIGH_INSTANCE_BUMP_LEDGERS: u32 = 7 * DAY_IN_LEDGERS; // 7 days
 #[contracttype]
 pub enum DataKey {
     Admin,
-    BaseAsset,
     Reserves,
     ReserveAssetKey(Address),
-    ReserveTimestampWindow,
-    IRParams,
-    UserAssetsLimit,
     UserConfig(Address),
     PriceFeed(Address),
     Pause,
-    FlashLoanFee,
-    MinPositionAmounts,
     STokenUnderlyingBalance(Address),
     TokenSupply(Address),
     TokenBalance(Address, Address),
-    InitialHealth,
-    LiquidationProtocolFee,
+    PoolConfig,
     ProtocolFeeVault(Address),
 }
 
@@ -62,25 +55,6 @@ pub fn read_admin(env: &Env) -> Result<Address, Error> {
     env.storage()
         .instance()
         .get(&DataKey::Admin)
-        .ok_or(Error::Uninitialized)
-}
-
-pub fn write_ir_params(env: &Env, ir_params: &IRParams) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage().instance().set(&DataKey::IRParams, ir_params);
-}
-
-pub fn read_ir_params(env: &Env) -> Result<IRParams, Error> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage()
-        .instance()
-        .get(&DataKey::IRParams)
         .ok_or(Error::Uninitialized)
 }
 
@@ -123,27 +97,6 @@ pub fn read_reserves(env: &Env) -> Vec<Address> {
         .instance()
         .get(&DataKey::Reserves)
         .unwrap_or(vec![env])
-}
-
-pub fn read_reserve_timestamp_window(env: &Env) -> u64 {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage()
-        .instance()
-        .get(&DataKey::ReserveTimestampWindow)
-        .unwrap_or(20)
-}
-
-pub fn write_reserve_timestamp_window(env: &Env, window: u64) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage()
-        .instance()
-        .set(&DataKey::ReserveTimestampWindow, &window);
 }
 
 pub fn write_reserves(env: &Env, reserves: &Vec<Address>) {
@@ -211,95 +164,6 @@ pub fn write_price_feeds(env: &Env, inputs: &Vec<PriceFeedConfigInput>) {
     }
 }
 
-pub fn write_base_asset(env: &Env, config: &BaseAssetConfig) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    let data_key = DataKey::BaseAsset;
-
-    env.storage().instance().set(&data_key, config);
-}
-
-pub fn read_base_asset(env: &Env) -> Result<BaseAssetConfig, Error> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    let data_key = DataKey::BaseAsset;
-
-    env.storage()
-        .instance()
-        .get(&data_key)
-        .ok_or(Error::BaseAssetNotInitialized)
-}
-
-pub fn write_initial_health(env: &Env, value: u32) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    let data_key = DataKey::InitialHealth;
-
-    env.storage().instance().set(&data_key, &value);
-}
-
-pub fn read_initial_health(env: &Env) -> Result<u32, Error> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    let data_key = DataKey::InitialHealth;
-
-    env.storage()
-        .instance()
-        .get(&data_key)
-        .ok_or(Error::InitialHealthNotInitialized)
-}
-
-pub fn read_user_assets_limit(env: &Env) -> u32 {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage()
-        .instance()
-        .get(&DataKey::UserAssetsLimit)
-        .unwrap_or(3)
-}
-
-pub fn write_user_assets_limit(env: &Env, user_assets_limit: u32) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage()
-        .instance()
-        .set(&DataKey::UserAssetsLimit, &user_assets_limit);
-}
-
-pub fn read_min_position_amounts(env: &Env) -> (i128, i128) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage()
-        .instance()
-        .get(&DataKey::MinPositionAmounts)
-        .unwrap_or((0, 0))
-}
-
-pub fn write_min_position_amounts(env: &Env, min_collat_amount: i128, min_debt_amount: i128) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage().instance().set(
-        &DataKey::MinPositionAmounts,
-        &(min_collat_amount, min_debt_amount),
-    );
-}
-
 pub fn read_pause_info(env: &Env) -> Result<PauseInfo, Error> {
     env.storage()
         .instance()
@@ -317,25 +181,6 @@ pub fn write_pause_info(env: &Env, value: PauseInfo) {
         .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
     env.storage().instance().set(&DataKey::Pause, &value);
-}
-
-pub fn write_flash_loan_fee(env: &Env, fee: u32) {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage().instance().set(&DataKey::FlashLoanFee, &fee);
-}
-
-pub fn read_flash_loan_fee(env: &Env) -> u32 {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    env.storage()
-        .instance()
-        .get(&DataKey::FlashLoanFee)
-        .unwrap()
 }
 
 fn write_stoken_underlying_balance(
@@ -440,43 +285,13 @@ pub fn write_token_balance(
     Ok(())
 }
 
-pub fn read_liquidation_protocol_fee(env: &Env) -> u32 {
-    let key = DataKey::LiquidationProtocolFee;
-    let value = env.storage().persistent().get(&key);
-
-    if value.is_some() {
-        env.storage().persistent().extend_ttl(
-            &key,
-            LOW_USER_DATA_BUMP_LEDGERS,
-            HIGH_USER_DATA_BUMP_LEDGERS,
-        );
-    }
-
-    value.unwrap_or(0)
-}
-
-pub fn write_liquidation_protocol_fee(env: &Env, value: u32) {
-    let key = DataKey::LiquidationProtocolFee;
-
-    env.storage().persistent().set(&key, &value);
-    env.storage().persistent().extend_ttl(
-        &key,
-        LOW_USER_DATA_BUMP_LEDGERS,
-        HIGH_USER_DATA_BUMP_LEDGERS,
-    );
-}
-
 pub fn read_protocol_fee_vault(env: &Env, asset: &Address) -> i128 {
-    let key = DataKey::ProtocolFeeVault(asset.clone());
-    let value = env.storage().persistent().get(&key);
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 
-    if value.is_some() {
-        env.storage().persistent().extend_ttl(
-            &key,
-            LOW_USER_DATA_BUMP_LEDGERS,
-            HIGH_USER_DATA_BUMP_LEDGERS,
-        );
-    }
+    let key = DataKey::ProtocolFeeVault(asset.clone());
+    let value = env.storage().instance().get(&key);
 
     value.unwrap_or(0)
 }
@@ -485,12 +300,10 @@ pub fn write_protocol_fee_vault(env: &Env, asset: &Address, balance: i128) {
     assert_with_error!(env, !balance.is_negative(), Error::MustBePositive);
     let key = DataKey::ProtocolFeeVault(asset.clone());
 
-    env.storage().persistent().set(&key, &balance);
-    env.storage().persistent().extend_ttl(
-        &key,
-        LOW_USER_DATA_BUMP_LEDGERS,
-        HIGH_USER_DATA_BUMP_LEDGERS,
-    );
+    env.storage().instance().set(&key, &balance);
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
 }
 
 pub fn add_protocol_fee_vault(env: &Env, asset: &Address, amount: i128) -> Result<(), Error> {
@@ -502,4 +315,25 @@ pub fn add_protocol_fee_vault(env: &Env, asset: &Address, amount: i128) -> Resul
     write_protocol_fee_vault(env, asset, balance);
 
     Ok(())
+}
+
+pub fn write_pool_config(env: &Env, config: &PoolConfig) {
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    env.storage()
+        .instance()
+        .set(&DataKey::PoolConfig, &config.clone());
+}
+
+pub fn read_pool_config(env: &Env) -> Result<PoolConfig, Error> {
+    env.storage()
+        .instance()
+        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
+
+    env.storage()
+        .instance()
+        .get(&DataKey::PoolConfig)
+        .ok_or(Error::Uninitialized)
 }

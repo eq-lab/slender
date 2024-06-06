@@ -13,4 +13,8 @@ pub struct PoolConfig {
     pub min_collat_amount: i128,
     pub min_debt_amount: i128,
     pub liquidation_protocol_fee: u32,
+    pub ir_alpha: u32,
+    pub ir_initial_rate: u32,
+    pub ir_max_rate: u32,
+    pub ir_scaling_coeff: u32,
 }

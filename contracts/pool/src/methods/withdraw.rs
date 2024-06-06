@@ -1,6 +1,7 @@
 use crate::methods::utils::get_collat_coeff::get_compounded_amount;
 use crate::methods::utils::get_collat_coeff::get_lp_amount;
 use crate::methods::utils::validation::require_gte_initial_health;
+use crate::read_pool_config;
 use crate::storage::{
     add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
     read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
@@ -41,6 +42,8 @@ pub fn withdraw(
     require_active_reserve(env, &reserve);
     let mut user_configurator = UserConfigurator::new(env, who, false, None);
 
+    let pool_config = read_pool_config(env)?;
+
     let withdraw_amount =
         if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
             let s_token_supply = read_token_total_supply(env, s_token_address);
@@ -54,6 +57,7 @@ pub fn withdraw(
             let underlying_balance = get_compounded_amount(
                 env,
                 &reserve,
+                &pool_config,
                 s_token_supply,
                 stoken_underlying_balance,
                 debt_token_supply,
@@ -66,6 +70,7 @@ pub fn withdraw(
                 let s_token_to_burn = get_lp_amount(
                     env,
                     &reserve,
+                    &pool_config,
                     s_token_supply,
                     stoken_underlying_balance,
                     debt_token_supply,
@@ -120,14 +125,15 @@ pub fn withdraw(
                         )),
                         mb_rwa_balance: None,
                     },
+                    &pool_config,
                     user_configurator.user_config()?,
-                    &mut PriceProvider::new(env)?,
+                    &mut PriceProvider::new(env, &pool_config)?,
                     false,
                 )?;
 
-                require_min_position_amounts(env, &account_data)?;
+                require_min_position_amounts(env, &account_data, &pool_config)?;
                 // account data calculation takes into account the decrease of collateral
-                require_gte_initial_health(env, &account_data)?;
+                require_gte_initial_health(env, &account_data, &pool_config)?;
             }
 
             let amount_to_sub = underlying_to_withdraw
@@ -144,6 +150,7 @@ pub fn withdraw(
                 env,
                 asset,
                 &reserve,
+                &pool_config,
                 s_token_supply_after,
                 debt_token_supply,
             )?;
@@ -171,14 +178,15 @@ pub fn withdraw(
                         mb_s_token_underlying_balance: None,
                         mb_rwa_balance: Some(&AssetBalance::new(asset.clone(), rwa_balance_after)),
                     },
+                    &pool_config,
                     user_configurator.user_config()?,
-                    &mut PriceProvider::new(env)?,
+                    &mut PriceProvider::new(env, &pool_config)?,
                     false,
                 )?;
 
-                require_min_position_amounts(env, &account_data)?;
+                require_min_position_amounts(env, &account_data, &pool_config)?;
                 // account data calculation takes into account the decrease of collateral
-                require_gte_initial_health(env, &account_data)?;
+                require_gte_initial_health(env, &account_data, &pool_config)?;
             }
 
             token::Client::new(env, asset).transfer(

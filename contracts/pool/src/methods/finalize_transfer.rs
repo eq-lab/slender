@@ -6,7 +6,7 @@ use crate::storage::{read_reserve, read_token_total_supply, write_token_balance}
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
-use crate::{read_pause_info, read_user_assets_limit};
+use crate::{read_pause_info, read_pool_config};
 
 use super::account_position::calc_account_data;
 use super::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
@@ -36,8 +36,9 @@ pub fn finalize_transfer(
     let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
     s_token_address.require_auth();
 
-    let user_assets_limit = read_user_assets_limit(env);
-    let mut to_configurator = UserConfigurator::new(env, to, true, Some(user_assets_limit));
+    let pool_config = read_pool_config(env)?;
+    let mut to_configurator =
+        UserConfigurator::new(env, to, true, Some(pool_config.user_assets_limit));
     let to_config = to_configurator.user_config()?;
 
     require_zero_debt(env, to_config, reserve.get_id());
@@ -75,14 +76,15 @@ pub fn finalize_transfer(
                 mb_s_token_underlying_balance: None,
                 mb_rwa_balance: None,
             },
+            &pool_config,
             from_configurator.user_config()?,
-            &mut PriceProvider::new(env)?,
+            &mut PriceProvider::new(env, &pool_config)?,
             false,
         )?;
 
-        require_min_position_amounts(env, &from_account_data)?;
+        require_min_position_amounts(env, &from_account_data, &pool_config)?;
         // account data calculation takes into account the decrease of collateral
-        require_gte_initial_health(env, &from_account_data)?;
+        require_gte_initial_health(env, &from_account_data, &pool_config)?;
     }
 
     if from != to {

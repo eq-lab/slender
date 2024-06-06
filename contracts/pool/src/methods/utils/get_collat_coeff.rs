@@ -1,5 +1,7 @@
 use common::FixedI128;
-use pool_interface::types::{error::Error, reserve_data::ReserveData};
+use pool_interface::types::error::Error;
+use pool_interface::types::pool_config::PoolConfig;
+use pool_interface::types::reserve_data::ReserveData;
 use soroban_sdk::Env;
 
 use super::rate::get_actual_lender_accrued_rate;
@@ -9,6 +11,7 @@ use super::rate::get_actual_lender_accrued_rate;
 pub fn get_collat_coeff(
     env: &Env,
     reserve: &ReserveData,
+    pool_config: &PoolConfig,
     s_token_supply: i128,
     s_token_underlying_balance: i128,
     debt_token_supply: i128,
@@ -17,7 +20,7 @@ pub fn get_collat_coeff(
         return Ok(FixedI128::ONE);
     }
 
-    let collat_ar = get_actual_lender_accrued_rate(env, reserve)?;
+    let collat_ar = get_actual_lender_accrued_rate(env, reserve, pool_config)?;
 
     FixedI128::from_rational(
         s_token_underlying_balance
@@ -37,6 +40,7 @@ pub fn get_collat_coeff(
 pub fn get_compounded_amount(
     env: &Env,
     reserve: &ReserveData,
+    pool_config: &PoolConfig,
     s_token_supply: i128,
     s_token_underlying_balance: i128,
     debt_token_supply: i128,
@@ -46,7 +50,7 @@ pub fn get_compounded_amount(
         return Ok(amount);
     }
 
-    let collat_ar = get_actual_lender_accrued_rate(env, reserve)?;
+    let collat_ar = get_actual_lender_accrued_rate(env, reserve, pool_config)?;
 
     let x1 = collat_ar
         .mul_int(debt_token_supply)
@@ -67,6 +71,7 @@ pub fn get_compounded_amount(
 pub fn get_lp_amount(
     env: &Env,
     reserve: &ReserveData,
+    pool_config: &PoolConfig,
     s_token_supply: i128,
     s_token_underlying_balance: i128,
     debt_token_supply: i128,
@@ -77,7 +82,7 @@ pub fn get_lp_amount(
         return Ok(amount);
     }
 
-    let collat_ar = get_actual_lender_accrued_rate(env, reserve)?;
+    let collat_ar = get_actual_lender_accrued_rate(env, reserve, pool_config)?;
 
     let x1 = collat_ar
         .mul_int(debt_token_supply)

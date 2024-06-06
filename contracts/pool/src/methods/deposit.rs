@@ -1,4 +1,5 @@
 use pool_interface::types::error::Error;
+use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::reserve_type::ReserveType;
 use s_token_interface::STokenClient;
@@ -6,7 +7,7 @@ use soroban_sdk::{token, Address, Env};
 
 use crate::event;
 use crate::read_pause_info;
-use crate::read_user_assets_limit;
+use crate::read_pool_config;
 use crate::storage::{
     add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
     read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
@@ -31,8 +32,9 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
 
-    let user_assets_limit = read_user_assets_limit(env);
-    let mut user_configurator = UserConfigurator::new(env, who, true, Some(user_assets_limit));
+    let pool_config = read_pool_config(env)?;
+    let mut user_configurator =
+        UserConfigurator::new(env, who, true, Some(pool_config.user_assets_limit));
     let user_config = user_configurator.user_config()?;
     require_zero_debt(env, user_config, reserve.get_id());
 
@@ -45,6 +47,7 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
                 who,
                 asset,
                 &reserve,
+                &pool_config,
                 read_token_total_supply(env, s_token_address),
                 debt_token_supply,
                 read_token_balance(env, s_token_address, who),
@@ -56,6 +59,7 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
                 env,
                 asset,
                 &reserve,
+                &pool_config,
                 s_token_supply_after,
                 debt_token_supply,
             )?;
@@ -80,6 +84,7 @@ fn do_deposit_fungible(
     who: &Address,
     asset: &Address,
     reserve: &ReserveData,
+    pool_config: &PoolConfig,
     s_token_supply: i128,
     debt_token_supply: i128,
     who_collat: i128,
@@ -99,6 +104,7 @@ fn do_deposit_fungible(
     let amount_to_mint = get_lp_amount(
         env,
         reserve,
+        pool_config,
         s_token_supply,
         s_token_underlying_balance,
         debt_token_supply,

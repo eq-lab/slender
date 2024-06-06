@@ -1,7 +1,7 @@
 #![deny(warnings)]
 #![no_std]
 
-use pool_interface::types::{ir_params::IRParams, pool_config::PoolConfig};
+use pool_interface::types::pool_config::PoolConfig;
 use soroban_sdk::{
     contract, contractimpl, vec, Address, BytesN, Env, IntoVal, String, Symbol, Val,
 };
@@ -20,17 +20,11 @@ impl Deployer {
         salt: BytesN<32>,
         wasm_hash: BytesN<32>,
         admin: Address,
-        ir_params: IRParams,
         pool_config: PoolConfig,
     ) -> (Address, Val) {
         let id = env.deployer().with_current_contract(salt).deploy(wasm_hash);
         let init_fn = Symbol::new(&env, "initialize");
-        let init_args = vec![
-            &env,
-            admin.into_val(&env),
-            ir_params.into_val(&env),
-            pool_config.into_val(&env),
-        ];
+        let init_args = vec![&env, admin.into_val(&env), pool_config.into_val(&env)];
         let res: Val = env.invoke_contract(&id, &init_fn, init_args);
         (id, res)
     }
