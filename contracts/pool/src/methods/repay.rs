@@ -16,7 +16,6 @@ use crate::{add_protocol_fee_vault, event, read_pause_info, read_pool_config};
 
 use super::account_position::calc_account_data;
 use super::utils::get_collat_coeff::get_collat_coeff;
-use super::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
@@ -35,7 +34,7 @@ pub fn repay(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
 
-    let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
+    let (s_token_address, debt_token_address) = reserve.get_fungible()?;
     let s_token_supply = read_token_total_supply(env, s_token_address);
     let debt_token_supply = read_token_total_supply(env, debt_token_address);
     let pool_config = read_pool_config(env)?;

@@ -1,7 +1,8 @@
 use common::FixedI128;
-use soroban_sdk::{contracttype, BytesN, Env};
+use soroban_sdk::{contracttype, Address, BytesN, Env};
 
 use super::collateral_params_input::CollateralParamsInput;
+use super::error::Error;
 use super::reserve_configuration::ReserveConfiguration;
 use super::reserve_type::ReserveType;
 
@@ -42,6 +43,14 @@ impl ReserveData {
 
     pub fn get_id(&self) -> u8 {
         self.id.get(0).unwrap()
+    }
+
+    pub fn get_fungible(&self) -> Result<(&Address, &Address), Error> {
+        if let ReserveType::Fungible(s_token_address, debt_token_address) = &self.reserve_type {
+            Ok((s_token_address, debt_token_address))
+        } else {
+            Err(Error::NotFungible)
+        }
     }
 }
 

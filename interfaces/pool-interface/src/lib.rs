@@ -26,10 +26,12 @@ pub trait LendingPoolTrait {
 
     fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), Error>;
 
-    fn upgrade_s_token(env: Env, asset: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error>;
-
-    fn upgrade_debt_token(env: Env, asset: Address, new_wasm_hash: BytesN<32>)
-        -> Result<(), Error>;
+    fn upgrade_token(
+        env: Env,
+        asset: Address,
+        s_token: bool,
+        new_wasm_hash: BytesN<32>,
+    ) -> Result<(), Error>;
 
     fn version() -> u32;
 

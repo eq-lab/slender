@@ -44,16 +44,13 @@ impl LendingPoolTrait for LendingPool {
         upgrade(&env, &new_wasm_hash)
     }
 
-    fn upgrade_s_token(env: Env, asset: Address, new_wasm_hash: BytesN<32>) -> Result<(), Error> {
-        upgrade_token(&env, &asset, &new_wasm_hash, true)
-    }
-
-    fn upgrade_debt_token(
+    fn upgrade_token(
         env: Env,
         asset: Address,
+        s_token: bool,
         new_wasm_hash: BytesN<32>,
     ) -> Result<(), Error> {
-        upgrade_token(&env, &asset, &new_wasm_hash, false)
+        upgrade_token(&env, &asset, &new_wasm_hash, s_token)
     }
 
     fn version() -> u32 {

@@ -9,7 +9,6 @@ use crate::types::user_configurator::UserConfigurator;
 use crate::{read_pause_info, read_pool_config};
 
 use super::account_position::calc_account_data;
-use super::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use super::utils::validation::{
     require_active_reserve, require_gte_initial_health, require_min_position_amounts,
     require_not_in_grace_period, require_not_paused, require_zero_debt,
@@ -33,7 +32,7 @@ pub fn finalize_transfer(
     let reserve: pool_interface::types::reserve_data::ReserveData = read_reserve(env, asset)?;
     let reserve_id = reserve.get_id();
     require_active_reserve(env, &reserve);
-    let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
+    let (s_token_address, debt_token_address) = reserve.get_fungible()?;
     s_token_address.require_auth();
 
     let pool_config = read_pool_config(env)?;

@@ -19,7 +19,6 @@ use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 
 use super::account_position::calc_account_data;
-use super::utils::get_fungible_lp_tokens::get_fungible_lp_tokens;
 use super::utils::rate::get_actual_borrower_accrued_rate;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::require_min_position_amounts;
@@ -43,7 +42,7 @@ pub fn borrow(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result
     require_active_reserve(env, &reserve);
     require_borrowing_enabled(env, &reserve);
 
-    let (s_token_address, debt_token_address) = get_fungible_lp_tokens(&reserve)?;
+    let (s_token_address, debt_token_address) = reserve.get_fungible()?;
 
     let s_token_supply = read_token_total_supply(env, s_token_address);
     let pool_config = read_pool_config(env)?;
