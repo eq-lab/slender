@@ -90,7 +90,6 @@ pub fn do_borrow(
     debt_token_address: &Address,
 ) -> Result<i128, Error> {
     require_not_in_collateral_asset(env, who_collat);
-    require_positive_amount(env, amount);
 
     let mut user_configurator =
         UserConfigurator::new(env, who, false, Some(pool_config.user_assets_limit));
