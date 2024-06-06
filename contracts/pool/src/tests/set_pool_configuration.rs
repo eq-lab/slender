@@ -25,6 +25,10 @@ fn should_require_admin() {
         min_collat_amount: 0,
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     };
 
     sut.pool.set_pool_configuration(&pool_config);
@@ -66,6 +70,10 @@ fn should_set_pool_configuration() {
         min_collat_amount: 123,
         min_debt_amount: 1234,
         liquidation_protocol_fee: 5,
+        ir_alpha: 144,
+        ir_initial_rate: 201,
+        ir_max_rate: 50_001,
+        ir_scaling_coeff: 9_001,
     });
 
     let pause_info_after = sut.pool.pause_info();
@@ -109,8 +117,14 @@ fn should_set_pool_configuration() {
         pool_config_after.grace_period,
         pause_info_after.grace_period_secs
     );
+    assert_eq!(pool_config_after.ir_alpha, 144);
+    assert_eq!(pool_config_after.ir_initial_rate, 201);
+    assert_eq!(pool_config_after.ir_max_rate, 50_001);
+    assert_eq!(pool_config_after.ir_scaling_coeff, 9_001);
+
     assert_eq!(pause_info_before.paused, pause_info_after.paused);
     assert_eq!(pause_info_before.unpaused_at, pause_info_after.unpaused_at);
+
 }
 
 // #[test]

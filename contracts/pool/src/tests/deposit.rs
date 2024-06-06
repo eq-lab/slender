@@ -27,7 +27,7 @@ fn should_require_authorized_caller() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #3)")]
+#[should_panic(expected = "HostError: Error(Contract, #2)")]
 fn should_fail_when_pool_paused() {
     let env = Env::default();
     env.mock_all_auths();
@@ -41,7 +41,7 @@ fn should_fail_when_pool_paused() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #303)")]
+#[should_panic(expected = "HostError: Error(Contract, #302)")]
 fn should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -54,7 +54,7 @@ fn should_fail_when_invalid_amount() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #101)")]
+#[should_panic(expected = "HostError: Error(Contract, #100)")]
 fn should_fail_when_reserve_deactivated() {
     let env = Env::default();
     env.mock_all_auths();
@@ -68,7 +68,7 @@ fn should_fail_when_reserve_deactivated() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #309)")]
+#[should_panic(expected = "HostError: Error(Contract, #4)")]
 fn should_fail_when_liquidity_cap_exceeded() {
     let env = Env::default();
     env.mock_all_auths();
@@ -125,7 +125,7 @@ fn should_change_balances() {
 
     sut.pool.deposit(&user, &token_address, &3_000_000_000);
 
-    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&sut.s_token().address);
+    let stoken_underlying_balance = sut.pool.token_balance(&sut.token().address, &sut.s_token().address);
     let user_balance = sut.token().balance(&user);
     let user_stoken_balance = sut.s_token().balance(&user);
 
@@ -321,7 +321,7 @@ fn rwa_should_affect_account_data() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #205)")]
+#[should_panic(expected = "HostError: Error(Contract, #4)")]
 fn rwa_fail_when_exceed_assets_limit() {
     let env = Env::default();
     env.mock_all_auths();
@@ -339,6 +339,10 @@ fn rwa_fail_when_exceed_assets_limit() {
         min_collat_amount: 0,
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
     });
 
     sut.pool
@@ -364,7 +368,7 @@ fn should_not_fail_in_grace_period() {
 
     sut.pool.deposit(&user, &token_address, &3_000_000_000);
 
-    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&sut.s_token().address);
+    let stoken_underlying_balance = sut.pool.token_balance(&sut.token().address, &sut.s_token().address);
     let user_balance = sut.token().balance(&user);
     let user_stoken_balance = sut.s_token().balance(&user);
 

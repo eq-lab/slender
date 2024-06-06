@@ -70,7 +70,7 @@ fn should_require_admin() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #100)")]
+#[should_panic(expected = "HostError: Error(Contract, #1)")]
 fn should_fail_if_reserve_not_exists() {
     let env = Env::default();
     env.mock_all_auths();
@@ -99,9 +99,9 @@ fn should_claim_fee() {
     let s_token_balance_before = debt_config.token.balance(&debt_config.s_token().address);
     let s_token_balance_internal_before = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token().address);
+        .token_balance(&debt_config.token.address, &debt_config.s_token().address);
     let recipient_internal_balance_before =
-        sut.pool.balance(&recipient, &debt_config.token.address);
+        sut.pool.token_balance(&recipient, &debt_config.token.address);
     let fee_before = sut.pool.protocol_fee(&debt_config.token.address);
 
     sut.pool
@@ -112,8 +112,8 @@ fn should_claim_fee() {
     let s_token_balance_after = debt_config.token.balance(&debt_config.s_token().address);
     let s_token_balance_internal_after = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token().address);
-    let recipient_internal_balance_after = sut.pool.balance(&recipient, &debt_config.token.address);
+        .token_balance(&debt_config.token.address, &debt_config.s_token().address);
+    let recipient_internal_balance_after = sut.pool.token_balance(&recipient, &debt_config.token.address);
     let fee_after = sut.pool.protocol_fee(&debt_config.token.address);
 
     assert_eq!(
@@ -166,6 +166,10 @@ fn should_claim_fee_rwa() {
         min_collat_amount: 0,
         min_debt_amount: 0,
         liquidation_protocol_fee: 100,
+        ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
     });
 
     set_time(&env, &sut, 10_000, false);

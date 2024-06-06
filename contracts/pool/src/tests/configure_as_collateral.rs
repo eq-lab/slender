@@ -82,7 +82,7 @@ fn should_fail_when_invalid_util_cap() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #404)")]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
 fn should_fail_when_invalid_liquidity_cap() {
     let env = Env::default();
     env.mock_all_auths();

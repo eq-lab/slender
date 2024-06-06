@@ -3,7 +3,7 @@ use crate::tests::sut::init_pool;
 use crate::*;
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #202)")]
+#[should_panic(expected = "HostError: Error(Contract, #1)")]
 fn should_fail_when_user_config_not_exist() {
     let env = Env::default();
     env.mock_all_auths();

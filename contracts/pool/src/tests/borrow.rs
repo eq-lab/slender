@@ -26,7 +26,7 @@ fn should_require_authorized_caller() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #3)")]
+#[should_panic(expected = "HostError: Error(Contract, #2)")]
 fn should_fail_when_pool_paused() {
     let env = Env::default();
     env.mock_all_auths();
@@ -40,7 +40,7 @@ fn should_fail_when_pool_paused() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #303)")]
+#[should_panic(expected = "HostError: Error(Contract, #302)")]
 fn should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -53,7 +53,7 @@ fn should_fail_when_invalid_amount() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #101)")]
+#[should_panic(expected = "HostError: Error(Contract, #100)")]
 fn should_fail_when_reserve_deactivated() {
     let env = Env::default();
     env.mock_all_auths();
@@ -81,7 +81,7 @@ fn should_fail_when_borrowing_disabled() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #307)")]
+#[should_panic(expected = "HostError: Error(Contract, #306)")]
 fn should_fail_when_borrowing_collat_asset() {
     let env = Env::default();
     env.mock_all_auths();
@@ -95,7 +95,7 @@ fn should_fail_when_borrowing_collat_asset() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #308)")]
+#[should_panic(expected = "HostError: Error(Contract, #4)")]
 fn should_fail_when_util_cap_exceeded() {
     let env = Env::default();
     env.mock_all_auths();
@@ -111,7 +111,7 @@ fn should_fail_when_util_cap_exceeded() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #301)")]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
 fn should_fail_when_collat_not_covers_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -124,7 +124,7 @@ fn should_fail_when_collat_not_covers_amount() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #202)")]
+#[should_panic(expected = "HostError: Error(Contract, #1)")]
 fn should_fail_when_user_config_not_exist() {
     let env = Env::default();
     env.mock_all_auths();
@@ -136,7 +136,7 @@ fn should_fail_when_user_config_not_exist() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #301)")]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
 fn should_fail_when_lt_initial_health() {
     let env = Env::default();
     env.mock_all_auths();
@@ -156,6 +156,10 @@ fn should_fail_when_lt_initial_health() {
         min_collat_amount: 0,
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
     });
     sut.pool.borrow(&borrower, &token_address, &50_000_000);
 }
@@ -301,7 +305,7 @@ fn should_change_balances_when_borrow_and_repay() {
     let borrower_balance_before = debt_config.token.balance(&borrower);
     let underlying_supply_before = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token().address);
+        .token_balance(&debt_config.token.address, &debt_config.s_token().address);
 
     sut.pool.borrow(&borrower, &token_address, &20_000_000);
 
@@ -311,7 +315,7 @@ fn should_change_balances_when_borrow_and_repay() {
     let borrower_balance_after_borrow = debt_config.token.balance(&borrower);
     let underlying_supply_after_borrow = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token().address);
+        .token_balance(&debt_config.token.address, &debt_config.s_token().address);
 
     set_time(&env, &sut, 30 * DAY, false);
 
@@ -323,7 +327,7 @@ fn should_change_balances_when_borrow_and_repay() {
     let borrower_balance_after_repay = debt_config.token.balance(&borrower);
     let underlying_supply_after_repay = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token().address);
+        .token_balance(&debt_config.token.address, &debt_config.s_token().address);
 
     assert_eq!(treasury_before, 0);
     assert_eq!(debt_balance_before, 0);
@@ -385,7 +389,7 @@ fn should_fail_when_borrow_rwa() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #205)")]
+#[should_panic(expected = "HostError: Error(Contract, #4)")]
 fn rwa_fail_when_exceed_assets_limit() {
     let env = Env::default();
     env.mock_all_auths();
@@ -403,6 +407,10 @@ fn rwa_fail_when_exceed_assets_limit() {
         min_collat_amount: 0,
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
     });
 
     sut.pool
@@ -410,7 +418,7 @@ fn rwa_fail_when_exceed_assets_limit() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #208)")]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
 fn should_fail_when_collat_lt_min_position_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -428,6 +436,10 @@ fn should_fail_when_collat_lt_min_position_amount() {
         min_collat_amount: 0,
         min_debt_amount: 60_000_000,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
     });
 
     let lender = Address::generate(&env);
@@ -447,7 +459,7 @@ fn should_fail_when_collat_lt_min_position_amount() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #6)")]
+#[should_panic(expected = "HostError: Error(Contract, #5)")]
 fn should_fail_in_grace_period() {
     let env = Env::default();
     env.mock_all_auths();

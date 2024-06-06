@@ -82,8 +82,8 @@ pub(crate) fn borrowing_disabled(e: &Env, asset: &Address) {
     e.events().publish(topics, ());
 }
 
-pub(crate) fn reserve_activated(e: &Env, asset: &Address, activated: bool) {
-    let topics = (Symbol::new(e, "reserve_activated"), asset.clone());
+pub(crate) fn reserve_status_changed(e: &Env, asset: &Address, activated: bool) {
+    let topics = (asset.clone(),);
     e.events().publish(topics, activated);
 }
 

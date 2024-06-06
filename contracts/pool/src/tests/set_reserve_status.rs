@@ -81,8 +81,8 @@ fn should_emit_events() {
             &env,
             (
                 sut.pool.address.clone(),
-                (Symbol::new(&env, "reserve_activated"), &asset).into_val(&env),
-                ().into_val(&env)
+                (&asset, ).into_val(&env),
+                (true).into_val(&env)
             ),
         ]
     );
@@ -97,8 +97,8 @@ fn should_emit_events() {
             &env,
             (
                 sut.pool.address.clone(),
-                (Symbol::new(&env, "reserve_deactivated"), &asset).into_val(&env),
-                ().into_val(&env)
+                (&asset,).into_val(&env),
+                (false).into_val(&env)
             ),
         ]
     );

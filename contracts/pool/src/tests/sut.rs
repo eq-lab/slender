@@ -76,12 +76,6 @@ pub(crate) fn create_pool_contract<'a>(
 
     client.initialize(
         &admin,
-        &IRParams {
-            alpha: 143,
-            initial_rate: 200,
-            max_rate: 50_000,
-            scaling_coeff: 9_000,
-        },
         &PoolConfig {
             base_asset_address: base_token.clone(),
             base_asset_decimals: 7,
@@ -93,6 +87,10 @@ pub(crate) fn create_pool_contract<'a>(
             min_collat_amount: 0,
             min_debt_amount: 0,
             liquidation_protocol_fee: 0,
+            ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
         },
     );
     client
@@ -198,6 +196,10 @@ pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
                     min_collat_amount: 0,
                     min_debt_amount: 0,
                     liquidation_protocol_fee: 0,
+                    ir_alpha: 143,
+                    ir_initial_rate: 200,
+                    ir_max_rate: 50_000,
+                    ir_scaling_coeff: 9_000,
                 });
             }
 

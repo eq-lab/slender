@@ -37,7 +37,7 @@ fn should_require_authorized_caller() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #3)")]
+#[should_panic(expected = "HostError: Error(Contract, #2)")]
 fn should_fail_when_pool_paused() {
     let env = Env::default();
     env.mock_all_auths();
@@ -54,7 +54,7 @@ fn should_fail_when_pool_paused() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #303)")]
+#[should_panic(expected = "HostError: Error(Contract, #302)")]
 fn should_fail_when_invalid_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -69,7 +69,7 @@ fn should_fail_when_invalid_amount() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #101)")]
+#[should_panic(expected = "HostError: Error(Contract, #100)")]
 fn should_fail_when_reserve_deactivated() {
     let env = Env::default();
     env.mock_all_auths();
@@ -102,7 +102,7 @@ fn should_fail_when_bellow_initial_health() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #100)")]
+#[should_panic(expected = "HostError: Error(Contract, #1)")]
 fn should_fail_when_unknown_asset() {
     let env = Env::default();
     env.mock_all_auths();
@@ -166,7 +166,7 @@ fn should_partially_withdraw() {
     let lender_underlying_balance_before = debt_config.token.balance(&lender);
     let s_token_underlying_supply_before = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token().address);
+        .token_balance(&debt_config.token.address, &debt_config.s_token().address);
 
     sut.pool.withdraw(&lender, debt_token, &50_000_000, &lender);
 
@@ -175,7 +175,7 @@ fn should_partially_withdraw() {
     let s_token_supply = debt_config.s_token().total_supply();
     let s_token_underlying_supply = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token().address);
+        .token_balance(&debt_config.token.address, &debt_config.s_token().address);
 
     assert_eq!(lender_stoken_balance_before, 100_000_000);
     assert_eq!(lender_underlying_balance_before, 900_000_000);
@@ -205,7 +205,7 @@ fn should_fully_withdraw() {
     let lender_underlying_balance_before = debt_config.token.balance(&lender);
     let s_token_underlying_supply_before = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token().address);
+        .token_balance(&debt_config.token.address, &debt_config.s_token().address);
 
     sut.pool.withdraw(&lender, debt_token, &i128::MAX, &lender);
 
@@ -216,7 +216,7 @@ fn should_fully_withdraw() {
     let s_token_supply = debt_config.s_token().total_supply();
     let s_token_underlying_supply = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token().address);
+        .token_balance(&debt_config.token.address, &debt_config.s_token().address);
 
     assert_eq!(lender_stoken_balance_before, 100_000_000);
     assert_eq!(lender_underlying_balance_before, 900_000_000);
@@ -307,7 +307,7 @@ fn should_allow_withdraw_to_other_address() {
     let s_token_supply_before = debt_config.s_token().total_supply();
     let s_token_underlying_supply_before = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token().address);
+        .token_balance(&debt_config.token.address, &debt_config.s_token().address);
 
     sut.pool
         .withdraw(&lender, debt_token, &50_000_000, &borrower);
@@ -318,7 +318,7 @@ fn should_allow_withdraw_to_other_address() {
     let s_token_supply = debt_config.s_token().total_supply();
     let s_token_underlying_supply = sut
         .pool
-        .stoken_underlying_balance(&debt_config.s_token().address);
+        .token_balance(&debt_config.token.address, &debt_config.s_token().address);
 
     assert_eq!(borrower_underlying_balance_before, 900_000_000);
     assert_eq!(lender_stoken_balance_before, 100_000_000);
@@ -534,6 +534,10 @@ fn should_fail_when_bad_position_after_withdraw() {
         min_collat_amount: 0,
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
     });
 
     let lender = Address::generate(&env);
@@ -580,6 +584,10 @@ fn should_fail_when_collat_lt_min_position_amount() {
         min_collat_amount: 115_000_000,
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     });
 
     let lender = Address::generate(&env);
@@ -608,7 +616,7 @@ fn should_fail_when_collat_lt_min_position_amount() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #6)")]
+#[should_panic(expected = "HostError: Error(Contract, #5)")]
 fn should_fail_in_grace_period() {
     let env = Env::default();
     env.mock_all_auths();

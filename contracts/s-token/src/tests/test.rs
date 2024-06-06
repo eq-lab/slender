@@ -10,7 +10,7 @@ use soroban_sdk::token::{Client as TokenClient, StellarAssetClient as TokenAdmin
 use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
 use self::pool::{
-    CollateralParamsInput, IRParams, OracleAsset, PoolConfig, PriceFeed, PriceFeedConfigInput,
+    CollateralParamsInput, OracleAsset, PoolConfig, PriceFeed, PriceFeedConfigInput,
     ReserveType, TimestampPrecision,
 };
 
@@ -54,12 +54,6 @@ fn create_token<'a>(
 
     pool.initialize(
         &pool_admin,
-        &IRParams {
-            alpha: 143,
-            initial_rate: 200,
-            max_rate: 50_000,
-            scaling_coeff: 9_000,
-        },
         &PoolConfig {
             base_asset_address: underlying_asset.address.clone(),
             base_asset_decimals: 7,
@@ -71,6 +65,10 @@ fn create_token<'a>(
             min_collat_amount: 0,
             min_debt_amount: 0,
             liquidation_protocol_fee: 0,
+            ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
         },
     );
 

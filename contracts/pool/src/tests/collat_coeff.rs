@@ -23,6 +23,10 @@ fn should_update_when_deposit_borrow_withdraw_liquidate() {
         min_collat_amount: 0,
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
     });
 
     let debt_token = sut.reserves[1].token.address.clone();
@@ -131,6 +135,10 @@ fn should_change_when_elapsed_time_gte_window() {
         min_collat_amount: 0,
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
     });
 
     let (_, _, _, debt_config) = fill_pool_three(&env, &sut);

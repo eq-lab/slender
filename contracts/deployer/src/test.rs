@@ -2,7 +2,6 @@
 extern crate std;
 
 use crate::{Deployer, DeployerClient};
-use pool_interface::types::ir_params::IRParams;
 use pool_interface::types::pool_config::PoolConfig;
 use soroban_sdk::{
     testutils::Address as _, token::Client as TokenClient, Address, BytesN, Env, String,
@@ -32,12 +31,6 @@ fn deploy_pool_and_s_token() {
     let grace_period = 60 * 60 * 24;
 
     // Deploy pool
-    let pool_ir_params = IRParams {
-        alpha: 143,
-        initial_rate: 200,
-        max_rate: 50_000,
-        scaling_coeff: 9_000,
-    };
     let pool_config = PoolConfig {
         base_asset_address: Address::generate(&env),
         base_asset_decimals: 7,
@@ -49,6 +42,10 @@ fn deploy_pool_and_s_token() {
         min_collat_amount: 0,
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000
     };
 
     let pool_contract_id = {
@@ -63,7 +60,6 @@ fn deploy_pool_and_s_token() {
             &salt,
             &pool_wasm_hash,
             &pool_admin,
-            &pool_ir_params,
             &pool_config,
         );
         assert!(init_result.is_void());
@@ -124,10 +120,10 @@ fn deploy_pool_and_s_token() {
     };
 
     let _debt_token_client = debt_token::Client::new(&env, &debt_token_contract_id);
-    let ir_params = pool_client.ir_params().unwrap();
+    let onchain_pool_config = pool_client.pool_configuration();
 
-    assert_eq!(pool_ir_params.alpha, ir_params.alpha);
-    assert_eq!(pool_ir_params.initial_rate, ir_params.initial_rate);
-    assert_eq!(pool_ir_params.max_rate, ir_params.max_rate);
-    assert_eq!(pool_ir_params.scaling_coeff, ir_params.scaling_coeff);
+    assert_eq!(pool_config.ir_alpha, onchain_pool_config.ir_alpha);
+    assert_eq!(pool_config.ir_initial_rate, onchain_pool_config.ir_initial_rate);
+    assert_eq!(pool_config.ir_max_rate, onchain_pool_config.ir_max_rate);
+    assert_eq!(pool_config.ir_scaling_coeff, onchain_pool_config.ir_scaling_coeff);
 }

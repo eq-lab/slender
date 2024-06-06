@@ -94,7 +94,7 @@ pub fn require_liquidity_cap_not_exceeded(
     assert_with_error!(
         env,
         balance_after_deposit <= reserve.configuration.liquidity_cap,
-        Error::AboveMaxValue
+        Error::ExceededMaxValue
     );
 
     Ok(())
@@ -114,7 +114,7 @@ pub fn require_util_cap_not_exceeded(
         .ok_or(Error::ValidateBorrowMathError)?;
     let util_cap = FixedI128::from_percentage(util_cap).ok_or(Error::ValidateBorrowMathError)?;
 
-    assert_with_error!(env, utilization <= util_cap, Error::AboveMaxValue);
+    assert_with_error!(env, utilization <= util_cap, Error::ExceededMaxValue);
 
     Ok(())
 }
@@ -213,7 +213,7 @@ pub fn require_unique_liquidation_order(
 }
 
 pub fn require_not_exceed_assets_limit(env: &Env, assets_total: u32, assets_limit: u32) {
-    assert_with_error!(env, assets_total <= assets_limit, Error::AboveMaxValue);
+    assert_with_error!(env, assets_total <= assets_limit, Error::ExceededMaxValue);
 }
 
 pub fn require_min_position_amounts(
@@ -253,16 +253,16 @@ pub fn require_valid_pool_config(env: &Env, config: &PoolConfig) {
     assert_with_error!(
         env,
         config.ir_initial_rate <= config.ir_max_rate,
-        Error::AboveMaxValue
+        Error::ExceededMaxValue
     );
 
-    assert_with_error!(env, config.base_asset_decimals <= 38, Error::AboveMaxValue);
+    assert_with_error!(env, config.base_asset_decimals <= 38, Error::ExceededMaxValue);
     assert_with_error!(env, config.grace_period != 0, Error::BellowMinValue);
-    assert_with_error!(env, config.grace_period <= ONE_DAY, Error::AboveMaxValue);
+    assert_with_error!(env, config.grace_period <= ONE_DAY, Error::ExceededMaxValue);
     assert_with_error!(
         env,
         config.timestamp_window <= ONE_DAY,
-        Error::AboveMaxValue
+        Error::ExceededMaxValue
     );
     assert_with_error!(env, config.user_assets_limit > 0, Error::BellowMinValue);
 }

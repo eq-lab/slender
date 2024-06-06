@@ -8,8 +8,8 @@ pub enum Error {
     Uninitialized = 1,
     Paused = 2,
     BellowMinValue = 3,
-    AboveMaxValue = 4,
-    GracePeriod = 6,
+    ExceededMaxValue = 4,
+    GracePeriod = 5,
 
     NoActiveReserve = 100,
     ReservesMaxCapacityExceeded = 101,
@@ -17,7 +17,6 @@ pub enum Error {
     InvalidAssetPrice = 103,
     LiquidationOrderMustBeUnique = 104,
     NotFungible = 105,
-    ExceededMaxValue = 106,
 
     NotEnoughAvailableUserBalance = 200,
     DebtError = 201,

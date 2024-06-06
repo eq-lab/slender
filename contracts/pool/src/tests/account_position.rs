@@ -7,7 +7,7 @@ use soroban_sdk::testutils::Address as _;
 use soroban_sdk::vec;
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #202)")]
+#[should_panic(expected = "HostError: Error(Contract, #1)")]
 fn should_fail_when_user_config_not_exist() {
     let env = Env::default();
     env.mock_all_auths();
@@ -35,6 +35,10 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
         min_collat_amount: 0,
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
     });
 
     let debt_token = sut.reserves[1].token.address.clone();

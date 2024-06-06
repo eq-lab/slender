@@ -224,7 +224,7 @@ fn should_emit_events() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #205)")]
+#[should_panic(expected = "HostError: Error(Contract, #4)")]
 fn rwa_fail_when_exceed_assets_limit() {
     let env = Env::default();
     env.mock_all_auths();
@@ -243,6 +243,10 @@ fn rwa_fail_when_exceed_assets_limit() {
         min_collat_amount: 0,
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
     });
 
     let _: Val = env.invoke_contract(
@@ -281,7 +285,7 @@ fn rwa_fail_when_exceed_assets_limit() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #208)")]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
 fn should_fail_when_debt_lt_min_position_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -300,6 +304,10 @@ fn should_fail_when_debt_lt_min_position_amount() {
         min_collat_amount: 0,
         min_debt_amount: 4_000_000,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
     });
 
     let _: Val = env.invoke_contract(
