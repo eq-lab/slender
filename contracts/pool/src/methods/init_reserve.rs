@@ -9,7 +9,11 @@ use super::utils::validation::require_admin;
 
 pub fn init_reserve(env: &Env, asset: &Address, reserve_type: ReserveType) -> Result<(), Error> {
     require_admin(env)?;
-    assert_with_error!(env, read_reserve(env, asset).is_err(), Error::AlreadyInitialized);
+    assert_with_error!(
+        env,
+        read_reserve(env, asset).is_err(),
+        Error::AlreadyInitialized
+    );
 
     let mut reserve_data = ReserveData::new(env, reserve_type);
     let mut reserves = read_reserves(env);
