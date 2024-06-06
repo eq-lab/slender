@@ -41,6 +41,8 @@ interface PriceFeedConfig {
     feed_asset: SlenderAsset;
     feed_decimals: number;
     twap_records: number;
+    min_timestamp_delta: number;
+    timestamp_precision: string;
 }
 
 interface PriceData {
@@ -111,42 +113,50 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
                 feed_decimals: 14,
                 feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
+                min_timestamp_delta: 100_000_000_000,
+                timestamp_precision: "Sec"
             },
         },
         {
             asset: "XRP",
             asset_decimals: 9,
-            max_sanity_price_in_base: 1n,
-            min_sanity_price_in_base: 99_999_999_999n,
+            max_sanity_price_in_base: 99_999_999_999n,
+            min_sanity_price_in_base: 1n,
             priceFeedConfig: {
                 feed_asset: "XRP",
                 feed_decimals: 16,
                 feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
+                min_timestamp_delta: 100_000_000_000,
+                timestamp_precision: "Sec"
             },
         },
         {
             asset: "USDC",
             asset_decimals: 9,
-            max_sanity_price_in_base: 1n,
-            min_sanity_price_in_base: 99_999_999_999n,
+            max_sanity_price_in_base: 99_999_999_999n,
+            min_sanity_price_in_base: 1n,
             priceFeedConfig: {
                 feed_asset: "USDC",
                 feed_decimals: 16,
                 feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
+                min_timestamp_delta: 100_000_000_000,
+                timestamp_precision: "Sec"
             },
         },
         {
             asset: "RWA",
             asset_decimals: 9,
-            max_sanity_price_in_base: 1n,
-            min_sanity_price_in_base: 99_999_999_999n,
+            max_sanity_price_in_base: 99_999_999_999n,
+            min_sanity_price_in_base: 1n,
             priceFeedConfig: {
                 feed_asset: "RWA",
                 feed_decimals: 16,
                 feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
+                min_timestamp_delta: 100_000_000_000,
+                timestamp_precision: "Sec"
             },
         },
     ]);
@@ -829,6 +839,8 @@ async function initPoolPriceFeed(
                             convertToScvAddress(process.env[`SLENDER_TOKEN_${input.priceFeedConfig.feed_asset}`])
                         ]),
                         "feed_decimals": convertToScvU32(input.priceFeedConfig.feed_decimals),
+                        "min_timestamp_delta": convertToScvU64(input.priceFeedConfig.min_timestamp_delta),
+                        "timestamp_precision": convertToScvVec([xdr.ScVal.scvSymbol(input.priceFeedConfig.timestamp_precision)]),
                         "twap_records": convertToScvU32(input.priceFeedConfig.twap_records)
                     })
                 ]),
