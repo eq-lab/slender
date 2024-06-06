@@ -93,7 +93,7 @@ pub trait LendingPoolTrait {
 
     fn set_pause(env: Env, value: bool) -> Result<(), Error>;
 
-    fn pause_info(env: Env) -> Result<PauseInfo, Error>;
+    fn pause_info(env: Env) -> PauseInfo;
 
     fn account_position(env: Env, who: Address) -> Result<AccountPosition, Error>;
 

@@ -1,5 +1,4 @@
 use pool_interface::types::error::Error;
-use pool_interface::types::pause_info::PauseInfo;
 use pool_interface::types::pool_config::PoolConfig;
 use soroban_sdk::Env;
 
@@ -23,21 +22,10 @@ pub fn set_pool_configuration(
 
     write_pool_config(env, config);
 
-    let pause_info = read_pause_info(env);
-    if pause_info.is_err() {
-        write_pause_info(
-            env,
-            PauseInfo {
-                paused: false,
-                grace_period_secs: config.grace_period,
-                unpaused_at: 0,
-            },
-        );
-    } else {
-        let mut pause_info = pause_info.unwrap();
-        pause_info.grace_period_secs = config.grace_period;
-        write_pause_info(env, pause_info);
-    }
+    let mut pause_info = read_pause_info(env);
+    pause_info.grace_period_secs = config.grace_period;
+
+    write_pause_info(env, pause_info);
 
     Ok(())
 }

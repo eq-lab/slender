@@ -25,7 +25,7 @@ use super::utils::validation::require_not_paused;
 pub fn liquidate(env: &Env, liquidator: &Address, who: &Address) -> Result<(), Error> {
     liquidator.require_auth();
 
-    let pause_info = read_pause_info(env)?;
+    let pause_info = read_pause_info(env);
     require_not_paused(env, &pause_info);
     require_not_in_grace_period(env, &pause_info);
 

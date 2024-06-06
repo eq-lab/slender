@@ -33,7 +33,7 @@ pub fn withdraw(
 ) -> Result<(), Error> {
     who.require_auth();
 
-    let pause_info = read_pause_info(env)?;
+    let pause_info = read_pause_info(env);
     require_not_paused(env, &pause_info);
     require_not_in_grace_period(env, &pause_info);
 

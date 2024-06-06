@@ -25,7 +25,7 @@ use super::utils::validation::{
 pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
     who.require_auth();
 
-    let pause_info = read_pause_info(env)?;
+    let pause_info = read_pause_info(env);
     require_not_paused(env, &pause_info);
 
     require_positive_amount(env, amount);

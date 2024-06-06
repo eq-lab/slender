@@ -153,7 +153,7 @@ impl LendingPoolTrait for LendingPool {
         set_pause(&env, value)
     }
 
-    fn pause_info(env: Env) -> Result<PauseInfo, Error> {
+    fn pause_info(env: Env) -> PauseInfo {
         read_pause_info(&env)
     }
 

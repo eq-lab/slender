@@ -8,8 +8,10 @@ use super::utils::validation::require_admin;
 
 pub fn claim_protocol_fee(env: &Env, asset: &Address, recipient: &Address) -> Result<(), Error> {
     require_admin(env)?;
+
     let reserve_data = read_reserve(env, asset)?;
     let amount = &read_protocol_fee_vault(env, asset);
+
     match reserve_data.reserve_type {
         ReserveType::Fungible(s_token, _) => {
             STokenClient::new(env, &s_token).transfer_underlying_to(recipient, amount);

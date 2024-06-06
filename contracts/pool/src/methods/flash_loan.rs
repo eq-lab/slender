@@ -23,7 +23,7 @@ pub fn flash_loan(
     params: &Bytes,
 ) -> Result<(), Error> {
     who.require_auth();
-    let pause_info = read_pause_info(env)?;
+    let pause_info = read_pause_info(env);
     require_not_paused(env, &pause_info);
 
     let pool_config = read_pool_config(env)?;

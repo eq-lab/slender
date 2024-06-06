@@ -13,7 +13,7 @@ pub fn upgrade_token(
     new_wasm_hash: &BytesN<32>,
     s_token: bool,
 ) -> Result<(), Error> {
-    require_admin(env).unwrap();
+    require_admin(env)?;
 
     let reserve = read_reserve(env, asset)?;
     let (s_token_address, debt_token_address) = reserve.get_fungible()?;

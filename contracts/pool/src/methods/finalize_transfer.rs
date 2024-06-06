@@ -25,7 +25,7 @@ pub fn finalize_transfer(
     balance_to_before: i128,
     s_token_supply: i128,
 ) -> Result<(), Error> {
-    let pause_info = read_pause_info(env)?;
+    let pause_info = read_pause_info(env);
     require_not_paused(env, &pause_info);
     require_not_in_grace_period(env, &pause_info);
 

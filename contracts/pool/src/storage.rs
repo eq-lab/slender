@@ -136,13 +136,17 @@ pub fn write_price_feeds(env: &Env, inputs: &Vec<PriceFeedConfigInput>) {
     }
 }
 
-pub fn read_pause_info(env: &Env) -> Result<PauseInfo, Error> {
+pub fn read_pause_info(env: &Env) -> PauseInfo {
     bump_instance(env);
 
     env.storage()
         .instance()
         .get(&DataKey::Pause)
-        .ok_or(Error::Uninitialized)
+        .unwrap_or(PauseInfo {
+            paused: false,
+            grace_period_secs: 0,
+            unpaused_at: 0,
+        })
 }
 
 pub fn write_pause_info(env: &Env, value: PauseInfo) {
