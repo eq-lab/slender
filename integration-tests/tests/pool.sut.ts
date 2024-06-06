@@ -69,7 +69,7 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     await initToken(client, "USDC", "USD Coin", 9);
     await initToken(client, "RWA", "RWA asset", 9);
 
-    await initPool(client, `${generateSalt(++salt)}`);
+    await initPool(client, `${generateSalt(++salt)}`, "XLM");
     // need to create treasury account to be able to receive native XLM token
     await client.registerAccount(treasuryKeys.publicKey());
 
@@ -104,38 +104,46 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
 
     await initPoolPriceFeed(client, [
         {
-        asset: "XLM",
-        asset_decimals: 7,
-        priceFeedConfig: {
-            feed_asset: "XLM",
-            feed_decimals: 14,
-            feed: process.env.SLENDER_PRICE_FEED,
+            asset: "XLM",
+            asset_decimals: 7,
+            max_sanity_price_in_base: 1n,
+            min_sanity_price_in_base: 99_999_999_999n,
+            priceFeedConfig: {
+                feed_asset: "XLM",
+                feed_decimals: 14,
+                feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
             },
         },
         {
-        asset: "XRP",
-        asset_decimals: 9,
-        priceFeedConfig: {
-            feed_asset: "XRP",
-            feed_decimals: 16,
-            feed: process.env.SLENDER_PRICE_FEED,
+            asset: "XRP",
+            asset_decimals: 9,
+            max_sanity_price_in_base: 1n,
+            min_sanity_price_in_base: 99_999_999_999n,
+            priceFeedConfig: {
+                feed_asset: "XRP",
+                feed_decimals: 16,
+                feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
             },
         },
         {
-        asset: "USDC",
-        asset_decimals: 9,
-        priceFeedConfig: {
-            feed_asset: "USDC",
-            feed_decimals: 16,
-            feed: process.env.SLENDER_PRICE_FEED,
+            asset: "USDC",
+            asset_decimals: 9,
+            max_sanity_price_in_base: 1n,
+            min_sanity_price_in_base: 99_999_999_999n,
+            priceFeedConfig: {
+                feed_asset: "USDC",
+                feed_decimals: 16,
+                feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
             },
         },
         {
             asset: "RWA",
             asset_decimals: 9,
+            max_sanity_price_in_base: 1n,
+            min_sanity_price_in_base: 99_999_999_999n,
             priceFeedConfig: {
                 feed_asset: "RWA",
                 feed_decimals: 16,
@@ -427,7 +435,7 @@ export async function deployReceiverMock(): Promise<string> {
     const flashLoadReceiverMockAddress = (
         (await new Promise((resolve, reject) => {
             exec(
-        `soroban contract deploy \
+                `soroban contract deploy \
         --wasm ../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm \
         --source ${adminKeys.secret()} \
         --rpc-url "${process.env.SOROBAN_RPC_URL}" \
@@ -459,7 +467,7 @@ export async function liquidateCli(
     const liquidateResult = (
         (await new Promise((resolve) => {
             exec(
-        `soroban --very-verbose contract invoke \
+                `soroban --very-verbose contract invoke \
         --id ${process.env.SLENDER_POOL} \
         --source ${liquidatorKeys.secret()} \
         --rpc-url "${process.env.SOROBAN_RPC_URL}" \
@@ -714,7 +722,11 @@ async function initDToken(
     );
 }
 
-async function initPool(client: SorobanClient, salt: string): Promise<void> {
+async function initPool(
+    client: SorobanClient,
+    salt: string,
+    base_asset: SlenderAsset
+): Promise<void> {
     await initContract<Array<any>>(
         "POOL",
         () =>
@@ -726,14 +738,21 @@ async function initPool(client: SorobanClient, salt: string): Promise<void> {
                 convertToScvBytes(salt, "hex"),
                 convertToScvBytes(process.env.SLENDER_POOL_HASH, "hex"),
                 convertToScvAddress(adminKeys.publicKey()),
-                convertToScvAddress(treasuryKeys.publicKey()),
-                convertToScvU32(5),
-                convertToScvU32(2_500),
                 convertToScvMap({
-                    alpha: convertToScvU32(143),
-                    initial_rate: convertToScvU32(200),
-                    max_rate: convertToScvU32(50_000),
-                    scaling_coeff: convertToScvU32(9_000),
+                    base_asset_address: convertToScvAddress(process.env[`SLENDER_TOKEN_${base_asset}`]),
+                    base_asset_decimals: convertToScvU32(7),
+                    flash_loan_fee: convertToScvU32(5),
+                    grace_period: convertToScvU64(1),
+                    initial_health: convertToScvU32(2_500),
+                    ir_alpha: convertToScvU32(143),
+                    ir_initial_rate: convertToScvU32(200),
+                    ir_max_rate: convertToScvU32(50_000),
+                    ir_scaling_coeff: convertToScvU32(9_000),
+                    liquidation_protocol_fee: convertToScvU32(0),
+                    min_collat_amount: convertToScvI128(1n),
+                    min_debt_amount: convertToScvI128(1n),
+                    timestamp_window: convertToScvU64(20),
+                    user_assets_limit: convertToScvU32(4),
                 })
             ),
         (result) => result[0]
@@ -788,6 +807,8 @@ async function initPoolPriceFeed(
     inputs: {
         asset: SlenderAsset,
         asset_decimals: number,
+        max_sanity_price_in_base: bigint,
+        min_sanity_price_in_base: bigint,
         priceFeedConfig: PriceFeedConfig
     }[]
 ): Promise<void> {
@@ -812,6 +833,8 @@ async function initPoolPriceFeed(
                         "twap_records": convertToScvU32(input.priceFeedConfig.twap_records)
                     })
                 ]),
+                "max_sanity_price_in_base": convertToScvI128(input.max_sanity_price_in_base),
+                "min_sanity_price_in_base": convertToScvI128(input.min_sanity_price_in_base)
             })))
         )
     );
