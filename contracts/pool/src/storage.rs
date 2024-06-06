@@ -24,7 +24,6 @@ pub enum DataKey {
     UserConfig(Address),
     PriceFeed(Address),
     Pause,
-    STokenUnderlyingBalance(Address),
     TokenSupply(Address),
     TokenBalance(Address, Address),
     PoolConfig,
@@ -173,46 +172,21 @@ pub fn write_pause_info(env: &Env, value: PauseInfo) {
     env.storage().instance().set(&DataKey::Pause, &value);
 }
 
-fn write_stoken_underlying_balance(
+pub fn add_token_balance(
     env: &Env,
-    s_token_address: &Address,
-    total_supply: i128,
-) -> Result<(), Error> {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    assert_with_error!(env, !total_supply.is_negative(), Error::MustBeNonNegative);
-
-    let data_key = DataKey::STokenUnderlyingBalance(s_token_address.clone());
-    env.storage().instance().set(&data_key, &total_supply);
-
-    Ok(())
-}
-
-pub fn read_stoken_underlying_balance(env: &Env, s_token_address: &Address) -> i128 {
-    env.storage()
-        .instance()
-        .extend_ttl(LOW_INSTANCE_BUMP_LEDGERS, HIGH_INSTANCE_BUMP_LEDGERS);
-
-    let data_key = DataKey::STokenUnderlyingBalance(s_token_address.clone());
-    env.storage().instance().get(&data_key).unwrap_or(0i128)
-}
-
-pub fn add_stoken_underlying_balance(
-    env: &Env,
-    s_token_address: &Address,
+    token: &Address,
+    account: &Address,
     amount: i128,
 ) -> Result<i128, Error> {
-    let mut total_supply = read_stoken_underlying_balance(env, s_token_address);
+    let mut balance = read_token_balance(env, token, account);
 
-    total_supply = total_supply
+    balance = balance
         .checked_add(amount)
         .ok_or(Error::MathOverflowError)?;
 
-    write_stoken_underlying_balance(env, s_token_address, total_supply)?;
+    write_token_balance(env, token, account, balance)?;
 
-    Ok(total_supply)
+    Ok(balance)
 }
 
 pub fn read_token_total_supply(env: &Env, token: &Address) -> i128 {

@@ -14,9 +14,8 @@ use crate::types::liquidation_asset::LiquidationAsset;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 use crate::{
-    add_protocol_fee_vault, add_stoken_underlying_balance, event, read_pause_info,
-    read_pool_config, read_stoken_underlying_balance, read_token_balance, read_token_total_supply,
-    write_token_balance, write_token_total_supply,
+    add_protocol_fee_vault, add_token_balance, event, read_pause_info, read_pool_config,
+    read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
 };
 
 use super::account_position::calc_account_data;
@@ -176,7 +175,7 @@ fn do_liquidate(
                     &collat.reserve,
                     pool_config,
                     s_token_supply,
-                    read_stoken_underlying_balance(env, s_token_address),
+                    read_token_balance(env, &collat.asset, s_token_address),
                     debt_token_supply,
                     liq_comp_amount,
                     false,
@@ -198,7 +197,7 @@ fn do_liquidate(
                 s_token.burn(who, &liq_lp_amount, &liquidator_part_underlying, liquidator);
             }
 
-            add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
+            add_token_balance(env, &collat.asset, &s_token.address, amount_to_sub)?;
 
             write_token_total_supply(env, s_token_address, s_token_supply)?;
             write_token_balance(
@@ -309,7 +308,7 @@ fn do_liquidate(
                 .checked_sub(debt_lp_to_burn)
                 .ok_or(Error::LiquidateMathError)?;
 
-            add_stoken_underlying_balance(env, s_token_address, debt_comp_to_transfer)?;
+            add_token_balance(env, &debt.asset, s_token_address, debt_comp_to_transfer)?;
             write_token_total_supply(env, debt_token_address, debt_token_supply)?;
             write_token_balance(
                 env,

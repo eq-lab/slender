@@ -6,13 +6,13 @@ use pool_interface::types::reserve_data::ReserveData;
 use s_token_interface::STokenClient;
 use soroban_sdk::{Address, Env};
 
+use crate::add_token_balance;
 use crate::event;
 use crate::read_pause_info;
 use crate::read_pool_config;
-use crate::read_stoken_underlying_balance;
 use crate::storage::{
-    add_stoken_underlying_balance, read_reserve, read_token_balance, read_token_total_supply,
-    write_token_balance, write_token_total_supply,
+    read_reserve, read_token_balance, read_token_total_supply, write_token_balance,
+    write_token_total_supply,
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
@@ -117,7 +117,7 @@ pub fn do_borrow(
     let who_debt_after = who_debt
         .checked_add(amount_of_debt_token)
         .ok_or(Error::MathOverflowError)?;
-    let s_token_underlying_after = read_stoken_underlying_balance(env, s_token_address)
+    let s_token_underlying_after = read_token_balance(env, asset, s_token_address)
         .checked_sub(amount)
         .ok_or(Error::MathOverflowError)?;
 
@@ -155,7 +155,7 @@ pub fn do_borrow(
     DebtTokenClient::new(env, debt_token_address).mint(who, &amount_of_debt_token);
     STokenClient::new(env, s_token_address).transfer_underlying_to(who, &amount);
 
-    add_stoken_underlying_balance(env, s_token_address, amount_to_sub)?;
+    add_token_balance(env, asset, s_token_address, amount_to_sub)?;
     write_token_total_supply(env, debt_token_address, debt_token_supply_after)?;
     write_token_balance(env, debt_token_address, who, who_debt_after)?;
 

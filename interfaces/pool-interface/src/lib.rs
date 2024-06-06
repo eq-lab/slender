@@ -85,8 +85,6 @@ pub trait LendingPoolTrait {
         to: Address,
     ) -> Result<(), Error>;
 
-    fn stoken_underlying_balance(env: Env, stoken_address: Address) -> i128;
-
     fn token_balance(env: Env, token: Address, account: Address) -> i128;
 
     fn token_total_supply(env: Env, token: Address) -> i128;

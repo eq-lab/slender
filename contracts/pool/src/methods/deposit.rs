@@ -5,12 +5,13 @@ use pool_interface::types::reserve_type::ReserveType;
 use s_token_interface::STokenClient;
 use soroban_sdk::{token, Address, Env};
 
+use crate::add_token_balance;
 use crate::event;
 use crate::read_pause_info;
 use crate::read_pool_config;
 use crate::storage::{
-    add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
-    read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
+    read_reserve, read_token_balance, read_token_total_supply, write_token_balance,
+    write_token_total_supply,
 };
 use crate::types::user_configurator::UserConfigurator;
 
@@ -91,7 +92,7 @@ fn do_deposit_fungible(
     amount: i128,
     s_token_address: &Address,
 ) -> Result<(bool, i128), Error> {
-    let s_token_underlying_balance = read_stoken_underlying_balance(env, s_token_address);
+    let s_token_underlying_balance = read_token_balance(env, asset, s_token_address);
     require_liquidity_cap_not_exceeded(
         env,
         reserve,
@@ -121,7 +122,7 @@ fn do_deposit_fungible(
     token::Client::new(env, asset).transfer(who, s_token_address, &amount);
     STokenClient::new(env, s_token_address).mint(who, &amount_to_mint);
 
-    add_stoken_underlying_balance(env, s_token_address, amount)?;
+    add_token_balance(env, asset, s_token_address, amount)?;
     write_token_total_supply(env, s_token_address, s_token_supply_after)?;
     write_token_balance(env, s_token_address, who, who_collat_after)?;
 

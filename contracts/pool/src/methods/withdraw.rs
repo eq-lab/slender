@@ -1,10 +1,11 @@
+use crate::add_token_balance;
 use crate::methods::utils::get_collat_coeff::get_compounded_amount;
 use crate::methods::utils::get_collat_coeff::get_lp_amount;
 use crate::methods::utils::validation::require_gte_initial_health;
 use crate::read_pool_config;
 use crate::storage::{
-    add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
-    read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
+    read_reserve, read_token_balance, read_token_total_supply, write_token_balance,
+    write_token_total_supply,
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
@@ -52,7 +53,7 @@ pub fn withdraw(
             let s_token = STokenClient::new(env, s_token_address);
 
             let collat_balance = read_token_balance(env, s_token_address, who);
-            let stoken_underlying_balance = read_stoken_underlying_balance(env, s_token_address);
+            let stoken_underlying_balance = read_token_balance(env, asset, s_token_address);
 
             let underlying_balance = get_compounded_amount(
                 env,
@@ -142,7 +143,7 @@ pub fn withdraw(
 
             s_token.burn(who, &s_token_to_burn, &underlying_to_withdraw, to);
 
-            add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
+            add_token_balance(env, asset, &s_token.address, amount_to_sub)?;
             write_token_total_supply(env, &s_token.address, s_token_supply_after)?;
             write_token_balance(env, &s_token.address, who, collat_balance_after)?;
 

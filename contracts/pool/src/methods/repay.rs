@@ -6,13 +6,13 @@ use pool_interface::types::reserve_data::ReserveData;
 use soroban_sdk::{token, Address, Env};
 
 use crate::storage::{
-    add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
-    read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
+    read_reserve, read_token_balance, read_token_total_supply, write_token_balance,
+    write_token_total_supply,
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
-use crate::{add_protocol_fee_vault, event, read_pause_info, read_pool_config};
+use crate::{add_protocol_fee_vault, add_token_balance, event, read_pause_info, read_pool_config};
 
 use super::account_position::calc_account_data;
 use super::utils::get_collat_coeff::get_collat_coeff;
@@ -83,12 +83,14 @@ pub fn do_repay(
     require_debt(env, user_configurator.user_config()?, reserve.get_id());
 
     let debt_coeff = get_actual_borrower_accrued_rate(env, reserve, pool_config)?;
+    let s_token_underlying_balance = read_token_balance(env, asset, s_token_address);
+
     let collat_coeff = get_collat_coeff(
         env,
         reserve,
         pool_config,
         s_token_supply,
-        read_stoken_underlying_balance(env, s_token_address),
+        s_token_underlying_balance,
         debt_token_supply,
     )?;
 
@@ -123,7 +125,7 @@ pub fn do_repay(
     let who_debt_after = who_debt
         .checked_sub(borrower_debt_to_burn)
         .ok_or(Error::MathOverflowError)?;
-    let s_token_underlying_after = read_stoken_underlying_balance(env, s_token_address)
+    let s_token_underlying_after = s_token_underlying_balance
         .checked_add(lender_part)
         .ok_or(Error::MathOverflowError)?;
 
@@ -164,7 +166,7 @@ pub fn do_repay(
     add_protocol_fee_vault(env, asset, treasury_part)?;
     debt_token.burn(who, &borrower_debt_to_burn);
 
-    add_stoken_underlying_balance(env, s_token_address, lender_part)?;
+    add_token_balance(env, asset, s_token_address, lender_part)?;
     write_token_total_supply(env, debt_token_address, debt_token_supply_after)?;
     write_token_balance(env, debt_token_address, who, who_debt_after)?;
 

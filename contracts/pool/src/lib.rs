@@ -179,10 +179,6 @@ impl LendingPoolTrait for LendingPool {
         read_user_config(&env, &who)
     }
 
-    fn stoken_underlying_balance(env: Env, stoken_address: Address) -> i128 {
-        read_stoken_underlying_balance(&env, &stoken_address)
-    }
-
     fn token_balance(env: Env, token: Address, account: Address) -> i128 {
         read_token_balance(&env, &token, &account)
     }
