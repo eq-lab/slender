@@ -14,9 +14,10 @@ fn should_not_be_changed_when_direct_transfer_to_underlying_asset() {
     sut.pool
         .deposit(&lender, &sut.reserves[0].token.address, &1_000_000_000);
 
-    let s_token_underlying_supply = sut
-        .pool
-        .token_balance(&sut.reserves[0].token.address, &sut.reserves[0].s_token().address);
+    let s_token_underlying_supply = sut.pool.token_balance(
+        &sut.reserves[0].token.address,
+        &sut.reserves[0].s_token().address,
+    );
 
     assert_eq!(s_token_underlying_supply, 1_000_000_000);
 
@@ -24,9 +25,10 @@ fn should_not_be_changed_when_direct_transfer_to_underlying_asset() {
         .token
         .transfer(&lender, &sut.reserves[0].s_token().address, &1_000_000_000);
 
-    let s_token_underlying_supply = sut
-        .pool
-        .token_balance(&sut.reserves[0].token.address, &sut.reserves[0].s_token().address);
+    let s_token_underlying_supply = sut.pool.token_balance(
+        &sut.reserves[0].token.address,
+        &sut.reserves[0].s_token().address,
+    );
 
     assert_eq!(s_token_underlying_supply, 1_000_000_000);
 }

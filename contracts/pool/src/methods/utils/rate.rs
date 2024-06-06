@@ -87,7 +87,7 @@ pub fn calc_accrued_rates(
     pool_config: &PoolConfig,
     reserve_data: &ReserveData,
 ) -> Option<AccruedRates> {
-    let borrower_ir = calc_interest_rate(total_collateral, total_debt, &pool_config)?;
+    let borrower_ir = calc_interest_rate(total_collateral, total_debt, pool_config)?;
 
     let scale_coeff = FixedI128::from_percentage(pool_config.ir_scaling_coeff)?;
     let lender_ir = borrower_ir.checked_mul(scale_coeff)?;

@@ -74,7 +74,7 @@ fn should_fail_when_transfering_unknown_asset() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #100)")]
+#[should_panic(expected = "HostError: Error(Contract, #1)")]
 fn should_fail_when_on_no_reserve() {
     let env = Env::default();
     env.mock_all_auths();
@@ -173,7 +173,7 @@ fn finalize_transfer_should_fail_if_receiver_has_debt_in_same_asset() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #303)")]
+#[should_panic(expected = "HostError: Error(Contract, #302)")]
 fn finalize_transfer_should_fail_if_transfers_with_underflow() {
     let env = Env::default();
     env.mock_all_auths();
@@ -238,9 +238,9 @@ fn rwa_fail_when_exceed_assets_limit() {
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
         ir_alpha: 143,
-            ir_initial_rate: 200,
-            ir_max_rate: 50_000,
-            ir_scaling_coeff: 9_000,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     });
 
     let (lender, borrower, _debt_token_reserve) = fill_pool(&env, &sut, true);
@@ -262,7 +262,7 @@ fn rwa_fail_when_exceed_assets_limit() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #207)")]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
 fn should_fail_when_collat_lt_min_position_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -279,9 +279,9 @@ fn should_fail_when_collat_lt_min_position_amount() {
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
         ir_alpha: 143,
-            ir_initial_rate: 200,
-            ir_max_rate: 50_000,
-            ir_scaling_coeff: 9_000,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     });
 
     let (lender, borrower, _debt_token_reserve) = fill_pool(&env, &sut, true);
@@ -316,8 +316,8 @@ fn should_fail_in_grace_period() {
 
     let lender_balance_before = s_token_client.balance(&lender);
     let borrower_balance_before = s_token_client.balance(&borrower);
-    let lender_in_pool_before = sut.pool.token_balance(&lender, &s_token_client.address);
-    let borrower_in_pool_before = sut.pool.token_balance(&borrower, &s_token_client.address);
+    let lender_in_pool_before = sut.pool.token_balance(&s_token_client.address, &lender);
+    let borrower_in_pool_before = sut.pool.token_balance(&s_token_client.address, &borrower);
     let s_token_supply = s_token_client.total_supply();
     sut.pool.finalize_transfer(
         &token_client.address,
@@ -329,8 +329,8 @@ fn should_fail_in_grace_period() {
         &s_token_supply,
     );
 
-    let lender_in_pool_after = sut.pool.token_balance(&lender, &s_token_client.address);
-    let borrower_in_pool_after = sut.pool.token_balance(&borrower, &s_token_client.address);
+    let lender_in_pool_after = sut.pool.token_balance(&s_token_client.address, &lender);
+    let borrower_in_pool_after = sut.pool.token_balance(&s_token_client.address, &borrower);
 
     assert_eq!(lender_in_pool_before - lender_in_pool_after, 1);
     assert_eq!(borrower_in_pool_after - borrower_in_pool_before, 1);
@@ -365,8 +365,8 @@ fn should_not_fail_after_grace_period() {
 
     let lender_balance_before = s_token_client.balance(&lender);
     let borrower_balance_before = s_token_client.balance(&borrower);
-    let lender_in_pool_before = sut.pool.token_balance(&lender, &s_token_client.address);
-    let borrower_in_pool_before = sut.pool.token_balance(&borrower, &s_token_client.address);
+    let lender_in_pool_before = sut.pool.token_balance(&s_token_client.address, &lender);
+    let borrower_in_pool_before = sut.pool.token_balance(&s_token_client.address, &borrower);
     let s_token_supply = s_token_client.total_supply();
     sut.pool.finalize_transfer(
         &token_client.address,
@@ -378,8 +378,8 @@ fn should_not_fail_after_grace_period() {
         &s_token_supply,
     );
 
-    let lender_in_pool_after = sut.pool.token_balance(&lender, &s_token_client.address);
-    let borrower_in_pool_after = sut.pool.token_balance(&borrower, &s_token_client.address);
+    let lender_in_pool_after = sut.pool.token_balance(&s_token_client.address, &lender);
+    let borrower_in_pool_after = sut.pool.token_balance(&s_token_client.address, &borrower);
 
     assert_eq!(lender_in_pool_before - lender_in_pool_after, 1);
     assert_eq!(borrower_in_pool_after - borrower_in_pool_before, 1);
@@ -396,8 +396,8 @@ fn should_not_fail_after_grace_period() {
 
     let lender_balance_before = lender_balance_before - 1;
     let borrower_balance_before = borrower_balance_before + 1;
-    let lender_in_pool_before = sut.pool.token_balance(&lender, &s_token_client.address);
-    let borrower_in_pool_before = sut.pool.token_balance(&borrower, &s_token_client.address);
+    let lender_in_pool_before = sut.pool.token_balance(&s_token_client.address, &lender);
+    let borrower_in_pool_before = sut.pool.token_balance(&s_token_client.address, &borrower);
     let s_token_supply = s_token_client.total_supply();
     sut.pool.finalize_transfer(
         &token_client.address,
@@ -409,8 +409,8 @@ fn should_not_fail_after_grace_period() {
         &s_token_supply,
     );
 
-    let lender_in_pool_after = sut.pool.token_balance(&lender, &s_token_client.address);
-    let borrower_in_pool_after = sut.pool.token_balance(&borrower, &s_token_client.address);
+    let lender_in_pool_after = sut.pool.token_balance(&s_token_client.address, &lender);
+    let borrower_in_pool_after = sut.pool.token_balance(&s_token_client.address, &borrower);
 
     assert_eq!(lender_in_pool_before - lender_in_pool_after, 1);
     assert_eq!(borrower_in_pool_after - borrower_in_pool_before, 1);

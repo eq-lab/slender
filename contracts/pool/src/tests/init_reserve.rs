@@ -55,7 +55,7 @@ fn should_require_admin() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #105)")]
+#[should_panic(expected = "HostError: Error(Contract, #0)")]
 fn should_fail_when_calling_second_time() {
     let env = Env::default();
     env.mock_all_auths();

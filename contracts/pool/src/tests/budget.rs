@@ -3,7 +3,6 @@ extern crate std;
 
 use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::flash_loan_asset::FlashLoanAsset;
-use pool_interface::types::ir_params::IRParams;
 use pool_interface::types::oracle_asset::OracleAsset;
 use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::price_feed::PriceFeed;
@@ -179,19 +178,6 @@ fn init_reserve() {
 }
 
 #[test]
-fn ir_params() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, true);
-    let (_, _, _) = fill_pool_four(&env, &sut);
-
-    measure_budget(&env, function_name!(), || {
-        sut.pool.ir_params();
-    });
-}
-
-#[test]
 fn liquidate_receive_underlying_when_borrower_has_one_debt() {
     let env = Env::default();
     env.mock_all_auths();
@@ -209,6 +195,10 @@ fn liquidate_receive_underlying_when_borrower_has_one_debt() {
         min_collat_amount: 0,
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     });
 
     sut.pool
@@ -366,25 +356,6 @@ fn set_as_collateral() {
 }
 
 #[test]
-fn set_ir_params() {
-    let env = Env::default();
-    env.mock_all_auths();
-
-    let sut = init_pool(&env, true);
-
-    let ir_params_input = IRParams {
-        alpha: 144,
-        initial_rate: 201,
-        max_rate: 50_001,
-        scaling_coeff: 9_001,
-    };
-
-    measure_budget(&env, function_name!(), || {
-        sut.pool.set_ir_params(&ir_params_input);
-    });
-}
-
-#[test]
 fn set_pause() {
     let env = Env::default();
     env.mock_all_auths();
@@ -497,8 +468,10 @@ fn stoken_underlying_balance() {
         .deposit(&lender, &sut.reserves[0].token.address, &10_000_000);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool
-            .stoken_underlying_balance(&sut.reserves[0].s_token().address);
+        sut.pool.token_balance(
+            &sut.reserves[0].token.address,
+            &sut.reserves[0].s_token().address,
+        );
     });
 }
 
@@ -567,6 +540,10 @@ fn set_pool_configuration() {
             min_collat_amount: 0,
             min_debt_amount: 0,
             liquidation_protocol_fee: 0,
+            ir_alpha: 143,
+            ir_initial_rate: 200,
+            ir_max_rate: 50_000,
+            ir_scaling_coeff: 9_000,
         });
     });
 }
@@ -685,7 +662,7 @@ fn upgrade_s_token() {
     let s_token_v2_wasm = env.deployer().upload_contract_wasm(s_token_v2::WASM);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.upgrade_s_token(&asset, &s_token_v2_wasm);
+        sut.pool.upgrade_token(&asset, &true, &s_token_v2_wasm);
     });
 }
 
@@ -699,7 +676,7 @@ fn upgrade_debt_token() {
     let asset = sut.reserves[0].token.address.clone();
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.upgrade_debt_token(&asset, &debt_token_v2_wasm);
+        sut.pool.upgrade_token(&asset, &false, &debt_token_v2_wasm);
     });
 }
 

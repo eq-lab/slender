@@ -100,8 +100,9 @@ fn should_claim_fee() {
     let s_token_balance_internal_before = sut
         .pool
         .token_balance(&debt_config.token.address, &debt_config.s_token().address);
-    let recipient_internal_balance_before =
-        sut.pool.token_balance(&recipient, &debt_config.token.address);
+    let recipient_internal_balance_before = sut
+        .pool
+        .token_balance(&recipient, &debt_config.token.address);
     let fee_before = sut.pool.protocol_fee(&debt_config.token.address);
 
     sut.pool
@@ -113,7 +114,9 @@ fn should_claim_fee() {
     let s_token_balance_internal_after = sut
         .pool
         .token_balance(&debt_config.token.address, &debt_config.s_token().address);
-    let recipient_internal_balance_after = sut.pool.token_balance(&recipient, &debt_config.token.address);
+    let recipient_internal_balance_after = sut
+        .pool
+        .token_balance(&recipient, &debt_config.token.address);
     let fee_after = sut.pool.protocol_fee(&debt_config.token.address);
 
     assert_eq!(
@@ -167,9 +170,9 @@ fn should_claim_fee_rwa() {
         min_debt_amount: 0,
         liquidation_protocol_fee: 100,
         ir_alpha: 143,
-            ir_initial_rate: 200,
-            ir_max_rate: 50_000,
-            ir_scaling_coeff: 9_000,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     });
 
     set_time(&env, &sut, 10_000, false);

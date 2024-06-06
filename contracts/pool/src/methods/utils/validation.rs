@@ -256,7 +256,11 @@ pub fn require_valid_pool_config(env: &Env, config: &PoolConfig) {
         Error::ExceededMaxValue
     );
 
-    assert_with_error!(env, config.base_asset_decimals <= 38, Error::ExceededMaxValue);
+    assert_with_error!(
+        env,
+        config.base_asset_decimals <= 38,
+        Error::ExceededMaxValue
+    );
     assert_with_error!(env, config.grace_period != 0, Error::BellowMinValue);
     assert_with_error!(env, config.grace_period <= ONE_DAY, Error::ExceededMaxValue);
     assert_with_error!(

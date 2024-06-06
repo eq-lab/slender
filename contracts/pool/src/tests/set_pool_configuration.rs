@@ -124,7 +124,6 @@ fn should_set_pool_configuration() {
 
     assert_eq!(pause_info_before.paused, pause_info_after.paused);
     assert_eq!(pause_info_before.unpaused_at, pause_info_after.unpaused_at);
-
 }
 
 // #[test]

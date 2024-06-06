@@ -12,7 +12,7 @@ use crate::tests::sut::init_pool;
 use super::sut::{create_price_feed_contract, set_time};
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #2)")]
+#[should_panic(expected = "HostError: Error(Contract, #1)")]
 fn should_fail_when_feed_is_missing_for_asset() {
     let env = Env::default();
     env.mock_all_auths();
@@ -65,7 +65,7 @@ fn should_fail_when_feed_is_missing_for_asset() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #104)")]
+#[should_panic(expected = "HostError: Error(Contract, #102)")]
 fn should_fail_when_price_is_missing_in_feed() {
     let env = Env::default();
     env.mock_all_auths();
@@ -130,7 +130,7 @@ fn should_fail_when_price_is_missing_in_feed() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #104)")]
+#[should_panic(expected = "HostError: Error(Contract, #102)")]
 fn should_fail_when_all_price_feeds_throws_error() {
     let env = Env::default();
     env.mock_all_auths();
@@ -190,7 +190,7 @@ fn should_fail_when_all_price_feeds_throws_error() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #104)")]
+#[should_panic(expected = "HostError: Error(Contract, #102)")]
 fn should_fail_when_price_is_not_stale() {
     let env = Env::default();
     env.mock_all_auths();
@@ -254,7 +254,7 @@ fn should_fail_when_price_is_not_stale() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #106)")]
+#[should_panic(expected = "HostError: Error(Contract, #103)")]
 fn should_fail_when_price_is_below_min_sanity() {
     let env = Env::default();
     env.mock_all_auths();
@@ -318,7 +318,7 @@ fn should_fail_when_price_is_below_min_sanity() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #106)")]
+#[should_panic(expected = "HostError: Error(Contract, #103)")]
 fn should_fail_when_price_is_below_max_sanity() {
     let env = Env::default();
     env.mock_all_auths();

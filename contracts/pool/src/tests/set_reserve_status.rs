@@ -81,7 +81,7 @@ fn should_emit_events() {
             &env,
             (
                 sut.pool.address.clone(),
-                (&asset, ).into_val(&env),
+                (&asset,).into_val(&env),
                 (true).into_val(&env)
             ),
         ]

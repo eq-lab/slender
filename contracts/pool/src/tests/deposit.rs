@@ -125,7 +125,9 @@ fn should_change_balances() {
 
     sut.pool.deposit(&user, &token_address, &3_000_000_000);
 
-    let stoken_underlying_balance = sut.pool.token_balance(&sut.token().address, &sut.s_token().address);
+    let stoken_underlying_balance = sut
+        .pool
+        .token_balance(&sut.token().address, &sut.s_token().address);
     let user_balance = sut.token().balance(&user);
     let user_stoken_balance = sut.s_token().balance(&user);
 
@@ -340,9 +342,9 @@ fn rwa_fail_when_exceed_assets_limit() {
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
         ir_alpha: 143,
-            ir_initial_rate: 200,
-            ir_max_rate: 50_000,
-            ir_scaling_coeff: 9_000,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     });
 
     sut.pool
@@ -368,7 +370,9 @@ fn should_not_fail_in_grace_period() {
 
     sut.pool.deposit(&user, &token_address, &3_000_000_000);
 
-    let stoken_underlying_balance = sut.pool.token_balance(&sut.token().address, &sut.s_token().address);
+    let stoken_underlying_balance = sut
+        .pool
+        .token_balance(&sut.token().address, &sut.s_token().address);
     let user_balance = sut.token().balance(&user);
     let user_stoken_balance = sut.s_token().balance(&user);
 

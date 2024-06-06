@@ -10,8 +10,8 @@ use soroban_sdk::token::{Client as TokenClient, StellarAssetClient as TokenAdmin
 use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
 
 use self::pool::{
-    CollateralParamsInput, OracleAsset, PoolConfig, PriceFeed, PriceFeedConfigInput,
-    ReserveType, TimestampPrecision,
+    CollateralParamsInput, OracleAsset, PoolConfig, PriceFeed, PriceFeedConfigInput, ReserveType,
+    TimestampPrecision,
 };
 
 mod pool {

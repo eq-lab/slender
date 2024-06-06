@@ -45,7 +45,7 @@ fn deploy_pool_and_s_token() {
         ir_alpha: 143,
         ir_initial_rate: 200,
         ir_max_rate: 50_000,
-        ir_scaling_coeff: 9_000
+        ir_scaling_coeff: 9_000,
     };
 
     let pool_contract_id = {
@@ -56,12 +56,8 @@ fn deploy_pool_and_s_token() {
         let salt = BytesN::from_array(&env, &[0; 32]);
         let pool_admin = Address::generate(&env);
 
-        let (contract_id, init_result) = client.deploy_pool(
-            &salt,
-            &pool_wasm_hash,
-            &pool_admin,
-            &pool_config,
-        );
+        let (contract_id, init_result) =
+            client.deploy_pool(&salt, &pool_wasm_hash, &pool_admin, &pool_config);
         assert!(init_result.is_void());
 
         contract_id
@@ -123,7 +119,13 @@ fn deploy_pool_and_s_token() {
     let onchain_pool_config = pool_client.pool_configuration();
 
     assert_eq!(pool_config.ir_alpha, onchain_pool_config.ir_alpha);
-    assert_eq!(pool_config.ir_initial_rate, onchain_pool_config.ir_initial_rate);
+    assert_eq!(
+        pool_config.ir_initial_rate,
+        onchain_pool_config.ir_initial_rate
+    );
     assert_eq!(pool_config.ir_max_rate, onchain_pool_config.ir_max_rate);
-    assert_eq!(pool_config.ir_scaling_coeff, onchain_pool_config.ir_scaling_coeff);
+    assert_eq!(
+        pool_config.ir_scaling_coeff,
+        onchain_pool_config.ir_scaling_coeff
+    );
 }

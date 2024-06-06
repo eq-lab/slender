@@ -6,7 +6,7 @@ use soroban_sdk::testutils::Events;
 use soroban_sdk::{vec, Bytes, Env, IntoVal, Symbol, Val, Vec};
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #310)")]
+#[should_panic(expected = "HostError: Error(Contract, #307)")]
 fn should_fail_when_receiver_receive_returns_false() {
     let env = Env::default();
     env.mock_all_auths();
@@ -244,9 +244,9 @@ fn rwa_fail_when_exceed_assets_limit() {
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
         ir_alpha: 143,
-            ir_initial_rate: 200,
-            ir_max_rate: 50_000,
-            ir_scaling_coeff: 9_000,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     });
 
     let _: Val = env.invoke_contract(
@@ -305,9 +305,9 @@ fn should_fail_when_debt_lt_min_position_amount() {
         min_debt_amount: 4_000_000,
         liquidation_protocol_fee: 0,
         ir_alpha: 143,
-            ir_initial_rate: 200,
-            ir_max_rate: 50_000,
-            ir_scaling_coeff: 9_000,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     });
 
     let _: Val = env.invoke_contract(
@@ -346,7 +346,7 @@ fn should_fail_when_debt_lt_min_position_amount() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #6)")]
+#[should_panic(expected = "HostError: Error(Contract, #5)")]
 fn should_fail_if_borrow_in_grace_period() {
     let env = Env::default();
     env.mock_all_auths();

@@ -151,11 +151,11 @@ pub fn do_repay(
         },
         pool_config,
         user_configurator.user_config()?,
-        &mut PriceProvider::new(env, &pool_config)?,
+        &mut PriceProvider::new(env, pool_config)?,
         false,
     )?;
 
-    require_min_position_amounts(env, &account_data, &pool_config)?;
+    require_min_position_amounts(env, &account_data, pool_config)?;
 
     let underlying_asset = token::Client::new(env, asset);
     let debt_token = DebtTokenClient::new(env, debt_token_address);

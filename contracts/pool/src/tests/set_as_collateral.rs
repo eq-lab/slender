@@ -65,7 +65,7 @@ fn should_disable_collateral_when_deposited() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #204)")]
+#[should_panic(expected = "HostError: Error(Contract, #201)")]
 fn should_fail_when_has_debt() {
     let env = Env::default();
     env.mock_all_auths();
@@ -77,7 +77,7 @@ fn should_fail_when_has_debt() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #301)")]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
 fn should_fail_when_npv_fails_bellow_initial_health() {
     let env = Env::default();
     env.mock_all_auths();
@@ -96,9 +96,9 @@ fn should_fail_when_npv_fails_bellow_initial_health() {
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
         ir_alpha: 143,
-            ir_initial_rate: 200,
-            ir_max_rate: 50_000,
-            ir_scaling_coeff: 9_000,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     });
 
     sut.pool
@@ -176,9 +176,9 @@ fn rwa_fail_when_exceed_assets_limit() {
         min_debt_amount: 300_000,
         liquidation_protocol_fee: 0,
         ir_alpha: 143,
-            ir_initial_rate: 200,
-            ir_max_rate: 50_000,
-            ir_scaling_coeff: 9_000,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     });
 
     sut.pool
@@ -186,7 +186,7 @@ fn rwa_fail_when_exceed_assets_limit() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #207)")]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
 fn should_fail_when_collat_lt_min_position_amount() {
     let env = Env::default();
     env.mock_all_auths();
@@ -206,9 +206,9 @@ fn should_fail_when_collat_lt_min_position_amount() {
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
         ir_alpha: 143,
-            ir_initial_rate: 200,
-            ir_max_rate: 50_000,
-            ir_scaling_coeff: 9_000,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     });
 
     assert_eq!(sut.pool.set_as_collateral(&user, &collat_token, &false), ());

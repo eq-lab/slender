@@ -45,7 +45,6 @@ fn should_return_max_rate_when_utilization_is_gte_one() {
     let env = Env::default();
     let pool_config = get_default_ir_params(&env);
 
-
     let ir = calc_interest_rate(total_collateral, total_debt, &pool_config);
 
     assert_eq!(ir, FixedI128::from_percentage(pool_config.ir_max_rate));
@@ -55,9 +54,8 @@ fn should_return_max_rate_when_utilization_is_gte_one() {
 fn should_return_none_when_collateral_or_debt_is_negative() {
     let total_collateral = -1;
     let total_debt = 1;
-        let env = Env::default();
+    let env = Env::default();
     let pool_config = get_default_ir_params(&env);
-
 
     let ir = calc_interest_rate(total_collateral, total_debt, &pool_config);
 
@@ -78,9 +76,8 @@ fn should_return_none_when_collateral_or_debt_is_negative() {
 
 #[test]
 fn should_calc_interest_rate() {
-        let env = Env::default();
+    let env = Env::default();
     let pool_config = get_default_ir_params(&env);
-
 
     //utilization = 0.2, ir ~ 0.027517810, ir = 0.02/(1-0.2)^1.43 = 0,0275176482
     let total_debt = 20;
@@ -166,12 +163,17 @@ fn should_calc_borrower_and_lender_rates() {
 
     let input = ReserveType::Fungible(Address::generate(env), Address::generate(env));
     let reserve_data = ReserveData::new(env, input);
-        let env = Env::default();
+    let env = Env::default();
     let pool_config = get_default_ir_params(&env);
 
-
-    let accrued_rates =
-        calc_accrued_rates(total_collateral, total_debt, DAY, &pool_config, &reserve_data).unwrap();
+    let accrued_rates = calc_accrued_rates(
+        total_collateral,
+        total_debt,
+        DAY,
+        &pool_config,
+        &reserve_data,
+    )
+    .unwrap();
 
     //debt_ir = 0,027517810
     assert_eq!(accrued_rates.borrower_ir.into_inner(), 27517810);
@@ -192,12 +194,16 @@ fn should_fail_when_collateral_is_zero() {
 
     let input = ReserveType::Fungible(Address::generate(env), Address::generate(env));
     let reserve_data = ReserveData::new(env, input);
-        let env = Env::default();
+    let env = Env::default();
     let pool_config = get_default_ir_params(&env);
 
-
-    let mb_accrued_rates =
-        calc_accrued_rates(total_collateral, total_debt, DAY, &pool_config, &reserve_data);
+    let mb_accrued_rates = calc_accrued_rates(
+        total_collateral,
+        total_debt,
+        DAY,
+        &pool_config,
+        &reserve_data,
+    );
     assert!(mb_accrued_rates.is_none());
 }
 

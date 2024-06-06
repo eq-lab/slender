@@ -62,6 +62,7 @@ pub fn get_compounded_amount(
         .ok_or(Error::CollateralCoeffMathError)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn get_lp_amount(
     env: &Env,
     reserve: &ReserveData,

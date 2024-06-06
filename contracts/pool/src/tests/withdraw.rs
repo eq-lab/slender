@@ -86,7 +86,7 @@ fn should_fail_when_reserve_deactivated() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #301)")]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
 fn should_fail_when_bellow_initial_health() {
     let env = Env::default();
     env.mock_all_auths();
@@ -516,7 +516,7 @@ fn rwa_should_affect_account_data() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #301)")]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
 fn should_fail_when_bad_position_after_withdraw() {
     let env = Env::default();
     env.mock_all_auths();
@@ -535,9 +535,9 @@ fn should_fail_when_bad_position_after_withdraw() {
         min_debt_amount: 0,
         liquidation_protocol_fee: 0,
         ir_alpha: 143,
-            ir_initial_rate: 200,
-            ir_max_rate: 50_000,
-            ir_scaling_coeff: 9_000,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
     });
 
     let lender = Address::generate(&env);
@@ -566,7 +566,7 @@ fn should_fail_when_bad_position_after_withdraw() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #207)")]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
 fn should_fail_when_collat_lt_min_position_amount() {
     let env = Env::default();
     env.mock_all_auths();

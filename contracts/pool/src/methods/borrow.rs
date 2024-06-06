@@ -143,12 +143,12 @@ pub fn do_borrow(
         },
         pool_config,
         user_configurator.user_config()?,
-        &mut PriceProvider::new(env, &pool_config)?,
+        &mut PriceProvider::new(env, pool_config)?,
         false,
     )?;
 
-    require_min_position_amounts(env, &account_data, &pool_config)?;
-    require_gte_initial_health(env, &account_data, &pool_config)?;
+    require_min_position_amounts(env, &account_data, pool_config)?;
+    require_gte_initial_health(env, &account_data, pool_config)?;
 
     DebtTokenClient::new(env, debt_token_address).mint(who, &amount_of_debt_token);
     STokenClient::new(env, s_token_address).transfer_underlying_to(who, &amount);
