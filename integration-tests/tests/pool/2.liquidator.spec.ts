@@ -176,7 +176,7 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
 
         console.log("liquidator1Address", liquidator1Address);
         console.log("borrower1Address", borrower1Address);
-        await liquidate(client, liquidator1Keys, borrower1Address, false);
+        await liquidate(client, liquidator1Keys, borrower1Address);
 
         const liquidator1XrpBalanceAfter = await tokenBalanceOf(client, "XRP", liquidator1Address);
         const liquidator1SXrpBalance = await sTokenBalanceOf(client, "XRP", liquidator1Address);
@@ -227,7 +227,7 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
         const borrower1DXlmBalanceBefore = await debtTokenBalanceOf(client, "XLM", borrower1Address);
         const dXlmSupplyBefore = await debtTokenTotalSupply(client, "XLM");
 
-        await liquidate(client, liquidator1Keys, borrower1Address, false);
+        await liquidate(client, liquidator1Keys, borrower1Address);
 
         const liquidator1UsdcBalanceAfter = await tokenBalanceOf(client, "USDC", liquidator1Address);
         const liquidator1SUsdcBalance = await sTokenBalanceOf(client, "USDC", liquidator1Address);

@@ -145,7 +145,7 @@ describe("LendingPool: Liquidation (RWA)", function () {
 
         console.log("liquidator1Address", liquidator1Address);
         console.log("borrower1Address", borrower1Address);
-        await liquidate(client, liquidator1Keys, borrower1Address, false);
+        await liquidate(client, liquidator1Keys, borrower1Address);
 
         const liquidator1XrpBalanceAfter = await tokenBalanceOf(client, "XRP", liquidator1Address);
         const liquidator1SXrpBalance = await sTokenBalanceOf(client, "XRP", liquidator1Address);
