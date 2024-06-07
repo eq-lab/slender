@@ -1,24 +1,29 @@
 #![allow(non_upper_case_globals)]
 use price_feed_interface::types::asset::Asset;
+use price_feed_interface::types::price_data::PriceData;
 use soroban_sdk::storage::{Instance, Temporary};
-use soroban_sdk::Env;
+use soroban_sdk::{contracttype, Env};
+
+use super::u128_helper::U128Helper;
 
 // use crate::extensions;
 
 // use extensions::u128_helper::U128Helper;
 // const ADMIN_KEY: &str = "admin";
-const LAST_TIMESTAMP: &str = "last_timestamp";
+pub const LAST_TIMESTAMP: &str = "last_timestamp";
 // const RETENTION_PERIOD: &str = "period";
 // const ASSETS: &str = "assets";
 // const BASE_ASSET: &str = "base_asset";
 // const DECIMALS: &str = "decimals";
-const RESOLUTION: &str = "resolution";
+#[contracttype]
+pub struct PricesLength(u32);
 
 pub trait EnvExtensions {
     fn get_asset_index(&self, asset: &Asset) -> Option<u32>;
-    fn get_price(&self, asset: u32) -> Option<i128>;
-    fn get_resolution(&self) -> u32;
+    fn get_price(&self, asset: u32, timestamp: u64) -> Option<PriceData>;
+    fn get_prices_length(&self, asset_index: u32) -> u32;
     fn get_last_timestamp(&self) -> u64;
+    fn set_prices_length(&self, asset_index: u32, prices_length: u32);
 }
 
 impl EnvExtensions for Env {
@@ -29,16 +34,17 @@ impl EnvExtensions for Env {
         }
     }
 
-    fn get_price(&self, asset_index: u32) -> Option<i128> {
+    fn get_price(&self, asset_index: u32, i: u64) -> Option<PriceData> {
         //build the key for the price
-        // let data_key = U128Helper::encode_price_record_key(timestamp, asset);
-        let data_key = asset_index;
+        let data_key = U128Helper::encode_price_record_key(i, asset_index);
         //get the price
         get_temporary_storage(self).get(&data_key)
     }
 
-    fn get_resolution(&self) -> u32 {
-        get_instance_storage(self).get(&RESOLUTION).unwrap()
+    fn get_prices_length(&self, asset_index: u32) -> u32 {
+        get_instance_storage(self)
+            .get(&PricesLength(asset_index))
+            .unwrap()
     }
 
     fn get_last_timestamp(&self) -> u64 {
@@ -46,6 +52,10 @@ impl EnvExtensions for Env {
         get_instance_storage(self)
             .get(&LAST_TIMESTAMP)
             .unwrap_or_default()
+    }
+
+    fn set_prices_length(&self, asset_index: u32, prices_length: u32) {
+        get_instance_storage(self).set(&PricesLength(asset_index), &prices_length)
     }
 }
 
