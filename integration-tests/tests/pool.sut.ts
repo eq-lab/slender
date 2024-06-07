@@ -914,12 +914,10 @@ export async function initPrice(
             xdr.ScVal.scvSymbol("Stellar"),
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
         ]),
-        convertToScvVec([
-            convertToScvMap({
-                "price": convertToScvI128(price),
-                "timestamp": convertToScvU64(timestamp)
-            })
-        ]),
+        convertToScvVec(Array(20).fill(0).map((_, i) => convertToScvMap({
+            "price": convertToScvI128(price),
+            "timestamp": convertToScvU64(timestamp + i * 1000)
+        }))),
     );
 }
 
