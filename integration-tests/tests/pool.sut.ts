@@ -909,9 +909,9 @@ export async function inPoolBalanceOf(
 ): Promise<bigint> {
     const xdrResponse = await client.simulateTransaction(
         process.env.SLENDER_POOL,
-        "balance",
+        "token_balance",
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvAddress(who),
-        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
     );
 
     return parseScvToJs(xdrResponse);

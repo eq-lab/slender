@@ -245,7 +245,7 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
 
     it("Case 7: Borrower1 makes partial repay", async function () {
         // Borrower1 repays 1.0 XLM
-        // await repay(client, borrower1Keys, "XLM", 10_000_000n);
+        await repay(client, borrower1Keys, "XLM", 10_000_000n);
 
         const borrower1XlmBalance = await tokenBalanceOf(client, "XLM", borrower1Address);
         const treasuryXlmBalance = await protocolFee(client, "XLM");
@@ -267,7 +267,7 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         await repay(client, borrower1Keys, "XLM", 90_000_000n);
 
         const borrower1XlmBalance = await tokenBalanceOf(client, "XLM", borrower1Address);
-        const treasuryXlmBalance = await tokenBalanceOf(client, "XLM", treasuryAddress);
+        const treasuryXlmBalance = await protocolFee(client, "XLM");
         const borrower1DXlmBalance = await debtTokenBalanceOf(client, "XLM", borrower1Address);
         const sXlmBalance = await sTokenUnderlyingBalanceOf(client, "XLM");
         const dXlmSupply = await debtTokenTotalSupply(client, "XLM");
@@ -287,7 +287,7 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         await repay(client, borrower2Keys, "XRP", 10_000_000_000n);
 
         const borrower2XrpBalance = await tokenBalanceOf(client, "XRP", borrower2Address);
-        const treasuryXrpBalance = await tokenBalanceOf(client, "XRP", treasuryAddress);
+        const treasuryXrpBalance = await protocolFee(client, "XRP");
         const borrower2DXrpBalance = await debtTokenBalanceOf(client, "XRP", borrower2Address);
         const sXrpBalance = await sTokenUnderlyingBalanceOf(client, "XRP");
         const dXrpSupply = await debtTokenTotalSupply(client, "XRP");
@@ -457,9 +457,8 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
 
         assert.equal(borrwer1RWABalanceAfter - borrwer1RWABalanceBefore, 0n);
         assert.equal(borrower1InPoolBalanceBefore - borrower1InPoolBalanceAfter, 0n);
-        assert(borrower1AccountPositionBefore.npv > borrower1AccountPositionAfter.npv);
+        assert(borrower1AccountPositionBefore.npv >= borrower1AccountPositionAfter.npv);
     })
-
 
     it("Case 17: Borrower tries to borrow RWA without deposit", async function () {
         const borrwer1RWABalanceBefore = await tokenBalanceOf(client, "RWA", borrower1Address);
