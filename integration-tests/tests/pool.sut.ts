@@ -224,6 +224,19 @@ export async function tokenBalanceOf(
     return parseScvToJs(xdrResponse);
 }
 
+export async function protocolFee(
+    client: SorobanClient,
+    asset: SlenderAsset
+): Promise<bigint> {
+    const xdrResponse = await client.simulateTransaction(
+        process.env.SLENDER_POOL,
+        "protocol_fee",
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
+    );
+
+    return parseScvToJs(xdrResponse);
+}
+
 export async function accountPosition(
     client: SorobanClient,
     signer: Keypair

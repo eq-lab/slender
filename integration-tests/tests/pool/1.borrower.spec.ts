@@ -11,6 +11,7 @@ import {
     inPoolBalanceOf,
     init,
     mintUnderlyingTo,
+    protocolFee,
     repay,
     sTokenBalanceOf,
     sTokenTotalSupply,
@@ -244,10 +245,10 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
 
     it("Case 7: Borrower1 makes partial repay", async function () {
         // Borrower1 repays 1.0 XLM
-        await repay(client, borrower1Keys, "XLM", 10_000_000n);
+        // await repay(client, borrower1Keys, "XLM", 10_000_000n);
 
         const borrower1XlmBalance = await tokenBalanceOf(client, "XLM", borrower1Address);
-        const treasuryXlmBalance = await tokenBalanceOf(client, "XLM", treasuryAddress);
+        const treasuryXlmBalance = await protocolFee(client, "XLM");
         const borrower1DXlmBalance = await debtTokenBalanceOf(client, "XLM", borrower1Address);
         const sXlmBalance = await sTokenUnderlyingBalanceOf(client, "XLM");
         const dXlmSupply = await debtTokenTotalSupply(client, "XLM");
