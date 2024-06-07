@@ -3,6 +3,7 @@ import {
     BUDGET_SNAPSHOT_FILE,
     FlashLoanAsset,
     I128_MAX,
+    accountPosition,
     borrow,
     cleanSlenderEnvKeys,
     deploy,
@@ -22,6 +23,7 @@ import {
     adminKeys,
     borrower1Keys,
     borrower2Keys,
+    contractsFilename,
     lender1Keys,
     liquidator1Keys,
 } from "../soroban.config";
@@ -77,10 +79,10 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await deposit(client, borrower1Keys, "XRP", 30_000_000_000n);
         await borrow(client, borrower1Keys, "USDC", 6_000_000_000n);
 
-        // Borrower2 deposits 20_000_000_000 USDC, borrows 60_000_000 XLM, 5_999_000_000 XRP
+        // Borrower2 deposits 20_000_000_000 USDC, borrows 60_000_000 XLM, 2_999_999_999n XRP
         await deposit(client, borrower2Keys, "USDC", 20_000_000_000n);
         await borrow(client, borrower2Keys, "XLM", 60_000_000n);
-        await borrow(client, borrower2Keys, "XRP", 5_900_000_000n);
+        await borrow(client, borrower2Keys, "XRP", 2_999_997_000n);
 
         try {
             fs.unlinkSync(BUDGET_SNAPSHOT_FILE);
