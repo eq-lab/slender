@@ -455,8 +455,8 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         const borrower1InPoolBalanceAfter = await inPoolBalanceOf(client, "RWA", borrower1Address);
         const borrower1AccountPositionAfter = await accountPosition(client, borrower1Keys);
 
-        assert.equal(borrwer1RWABalanceAfter - borrwer1RWABalanceBefore, 0n);
-        assert.equal(borrower1InPoolBalanceBefore - borrower1InPoolBalanceAfter, 0n);
+        assert.equal(borrwer1RWABalanceAfter - borrwer1RWABalanceBefore, toWithdraw);
+        assert.equal(borrower1InPoolBalanceBefore - borrower1InPoolBalanceAfter, toWithdraw);
         assert(borrower1AccountPositionBefore.npv >= borrower1AccountPositionAfter.npv);
     })
 
