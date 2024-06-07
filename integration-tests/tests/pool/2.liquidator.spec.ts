@@ -108,10 +108,10 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
     });
 
     it("Case 2: Borrower borrows XLM with health ~= initial_health", async function () {
-        await delay(20_000);
+        // await delay(20_000);
 
-        // Borrower1 borrows 11_999_000_000n XLM
-        await borrow(client, borrower1Keys, "XLM", 90_000_000n);
+        // Borrower1 borrows 89_999_999n XLM
+        await borrow(client, borrower1Keys, "XLM", 89_999_999n);
 
         const borrower1XlmBalance = await tokenBalanceOf(client, "XLM", borrower1Address);
         const borrower1DXlmBalance = await debtTokenBalanceOf(client, "XLM", borrower1Address);
@@ -119,16 +119,16 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
         const dXlmSupply = await debtTokenTotalSupply(client, "XLM");
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
-        assert.equal(borrower1XlmBalance, 90_000_000n);
-        assert.equal(borrower1DXlmBalance, 90_000_001n);
-        assert.equal(sXlmBalance, 210000000n);
-        assert.equal(dXlmSupply, 90_000_001n);
+        assert.equal(borrower1XlmBalance, 89_999_999n);
+        assert.equal(borrower1DXlmBalance, 90_000_000n);
+        assert.equal(sXlmBalance, 210000001n);
+        assert.equal(dXlmSupply, 90_000_000n);
 
-        assert(borrower1Position.debt > 90_000_000n
+        assert(borrower1Position.debt > 89_999_998n
             && borrower1Position.debt < 120_000_000n);
         assert.equal(borrower1Position.discounted_collateral, 120_000_000n);
         assert(borrower1Position.npv > 0
-            && borrower1Position.npv < 90_000_000n);
+            && borrower1Position.npv < 89_999_999n);
     });
 
     it("Case 3: Liquidator borrows USDC with npv > 0", async function () {
