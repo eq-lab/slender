@@ -108,7 +108,7 @@ describe("LendingPool: Liquidation (receive underlying assets)", function () {
     });
 
     it("Case 2: Borrower borrows XLM with health ~= initial_health", async function () {
-        // await delay(20_000);
+        await delay(20_000);
 
         // Borrower1 borrows 89_999_999n XLM
         await borrow(client, borrower1Keys, "XLM", 89_999_999n);
