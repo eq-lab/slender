@@ -37,12 +37,17 @@ export interface FlashLoanAsset {
 }
 
 interface PriceFeedConfig {
-    feed: string;
-    feed_asset: SlenderAsset;
-    feed_decimals: number;
-    twap_records: number;
-    min_timestamp_delta: number;
-    timestamp_precision: string;
+    asset_decimals: number;
+    min_sanity_price_in_base: bigint;
+    max_sanity_price_in_base: bigint;
+    feeds: {
+        feed: string;
+        feed_asset: SlenderAsset;
+        feed_decimals: number;
+        twap_records: number;
+        min_timestamp_delta: number;
+        timestamp_precision: string;
+    }[];
 }
 
 interface PriceData {
@@ -54,7 +59,12 @@ export function healthFactor(accountPosition: AccountPosition): number {
     return Number(accountPosition.npv) / Number(accountPosition.discounted_collateral);
 }
 
-export async function init(client: SorobanClient, customXlm = true): Promise<void> {
+export async function init(
+    client: SorobanClient,
+    customXlm = true,
+    reserve_timestamp_window = 20,
+    initial_health = 2_500
+): Promise<void> {
     console.log("    Contracts initialization has been started");
 
     require("dotenv").config({ path: contractsFilename });
@@ -71,7 +81,13 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     await initToken(client, "USDC", "USD Coin", 9);
     await initToken(client, "RWA", "RWA asset", 9);
 
-    await initPool(client, `${generateSalt(++salt)}`, "XLM");
+    await initPool(
+        client,
+        `${generateSalt(++salt)}`,
+        "XLM",
+        reserve_timestamp_window,
+        initial_health
+    );
     // need to create treasury account to be able to receive native XLM token
     await client.registerAccount(treasuryKeys.publicKey());
 
@@ -105,58 +121,66 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     await initPoolPriceFeed(client, [
         {
             asset: "XLM",
-            asset_decimals: 7,
-            max_sanity_price_in_base: 1n,
-            min_sanity_price_in_base: 99_999_999_999n,
             priceFeedConfig: {
-                feed_asset: "XLM",
-                feed_decimals: 14,
-                feed: process.env.SLENDER_PRICE_FEED,
-                twap_records: 1,
-                min_timestamp_delta: 100_000_000_000,
-                timestamp_precision: "Sec"
+                asset_decimals: 7,
+                max_sanity_price_in_base: 1n,
+                min_sanity_price_in_base: 99_999_999_999n,
+                feeds: [{
+                    feed_asset: "XLM",
+                    feed_decimals: 14,
+                    feed: process.env.SLENDER_PRICE_FEED,
+                    twap_records: 1,
+                    min_timestamp_delta: 100_000_000_000,
+                    timestamp_precision: "Sec"
+                }]
             },
         },
         {
             asset: "XRP",
-            asset_decimals: 9,
-            max_sanity_price_in_base: 99_999_999_999n,
-            min_sanity_price_in_base: 1n,
             priceFeedConfig: {
-                feed_asset: "XRP",
-                feed_decimals: 16,
-                feed: process.env.SLENDER_PRICE_FEED,
-                twap_records: 1,
-                min_timestamp_delta: 100_000_000_000,
-                timestamp_precision: "Sec"
+                asset_decimals: 9,
+                max_sanity_price_in_base: 99_999_999_999n,
+                min_sanity_price_in_base: 1n,
+                feeds: [{
+                    feed_asset: "XRP",
+                    feed_decimals: 16,
+                    feed: process.env.SLENDER_PRICE_FEED,
+                    twap_records: 1,
+                    min_timestamp_delta: 100_000_000_000,
+                    timestamp_precision: "Sec"
+                }]
             },
         },
         {
             asset: "USDC",
-            asset_decimals: 9,
-            max_sanity_price_in_base: 99_999_999_999n,
-            min_sanity_price_in_base: 1n,
             priceFeedConfig: {
-                feed_asset: "USDC",
-                feed_decimals: 16,
-                feed: process.env.SLENDER_PRICE_FEED,
-                twap_records: 1,
-                min_timestamp_delta: 100_000_000_000,
-                timestamp_precision: "Sec"
+                asset_decimals: 9,
+                max_sanity_price_in_base: 99_999_999_999n,
+                min_sanity_price_in_base: 1n,
+                feeds: [{
+                    feed_asset: "USDC",
+                    feed_decimals: 16,
+                    feed: process.env.SLENDER_PRICE_FEED,
+                    twap_records: 1,
+                    min_timestamp_delta: 100_000_000_000,
+                    timestamp_precision: "Sec"
+                }]
             },
         },
         {
             asset: "RWA",
-            asset_decimals: 9,
-            max_sanity_price_in_base: 99_999_999_999n,
-            min_sanity_price_in_base: 1n,
             priceFeedConfig: {
-                feed_asset: "RWA",
-                feed_decimals: 16,
-                feed: process.env.SLENDER_PRICE_FEED,
-                twap_records: 1,
-                min_timestamp_delta: 100_000_000_000,
-                timestamp_precision: "Sec"
+                asset_decimals: 9,
+                max_sanity_price_in_base: 99_999_999_999n,
+                min_sanity_price_in_base: 1n,
+                feeds: [{
+                    feed_asset: "RWA",
+                    feed_decimals: 16,
+                    feed: process.env.SLENDER_PRICE_FEED,
+                    twap_records: 1,
+                    min_timestamp_delta: 100_000_000_000,
+                    timestamp_precision: "Sec"
+                }]
             },
         },
     ]);
@@ -386,7 +410,6 @@ export async function liquidate(
     client: SorobanClient,
     signer: Keypair,
     who: string,
-    receiveStoken: boolean
 ): Promise<SendTransactionResult> {
     const txResult = await client.sendTransaction(
         process.env.SLENDER_POOL,
@@ -395,7 +418,6 @@ export async function liquidate(
         10,
         convertToScvAddress(signer.publicKey()),
         convertToScvAddress(who),
-        convertToScvBool(receiveStoken)
     );
 
     return txResult;
@@ -633,7 +655,7 @@ export async function readPriceFeed(
 ): Promise<PriceFeedConfig> {
     const xdrResponse = await client.simulateTransaction(
         process.env.SLENDER_POOL,
-        "price_feed",
+        "price_feeds",
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
     );
 
@@ -747,7 +769,9 @@ async function initDToken(
 async function initPool(
     client: SorobanClient,
     salt: string,
-    base_asset: SlenderAsset
+    base_asset: SlenderAsset,
+    reserve_timestamp_window: number,
+    initial_health: number
 ): Promise<void> {
     await initContract<Array<any>>(
         "POOL",
@@ -765,7 +789,7 @@ async function initPool(
                     base_asset_decimals: convertToScvU32(7),
                     flash_loan_fee: convertToScvU32(5),
                     grace_period: convertToScvU64(1),
-                    initial_health: convertToScvU32(2_500),
+                    initial_health: convertToScvU32(initial_health),
                     ir_alpha: convertToScvU32(143),
                     ir_initial_rate: convertToScvU32(200),
                     ir_max_rate: convertToScvU32(50_000),
@@ -773,7 +797,7 @@ async function initPool(
                     liquidation_protocol_fee: convertToScvU32(0),
                     min_collat_amount: convertToScvI128(1n),
                     min_debt_amount: convertToScvI128(1n),
-                    timestamp_window: convertToScvU64(20),
+                    timestamp_window: convertToScvU64(reserve_timestamp_window),
                     user_assets_limit: convertToScvU32(4),
                 })
             ),
@@ -828,9 +852,6 @@ async function initPoolPriceFeed(
     client: SorobanClient,
     inputs: {
         asset: SlenderAsset,
-        asset_decimals: number,
-        max_sanity_price_in_base: bigint,
-        min_sanity_price_in_base: bigint,
         priceFeedConfig: PriceFeedConfig
     }[]
 ): Promise<void> {
@@ -843,22 +864,22 @@ async function initPoolPriceFeed(
             3,
             convertToScvVec(inputs.map(input => convertToScvMap({
                 "asset": convertToScvAddress(process.env[`SLENDER_TOKEN_${input.asset}`]),
-                "asset_decimals": convertToScvU32(input.asset_decimals),
-                "feeds": convertToScvVec([
+                "asset_decimals": convertToScvU32(input.priceFeedConfig.asset_decimals),
+                "feeds": convertToScvVec(input.priceFeedConfig.feeds.map(feed =>
                     convertToScvMap({
-                        "feed": convertToScvAddress(input.priceFeedConfig.feed),
+                        "feed": convertToScvAddress(feed.feed),
                         "feed_asset": convertToScvVec([
                             xdr.ScVal.scvSymbol("Stellar"),
-                            convertToScvAddress(process.env[`SLENDER_TOKEN_${input.priceFeedConfig.feed_asset}`])
+                            convertToScvAddress(process.env[`SLENDER_TOKEN_${feed.feed_asset}`])
                         ]),
-                        "feed_decimals": convertToScvU32(input.priceFeedConfig.feed_decimals),
-                        "min_timestamp_delta": convertToScvU64(input.priceFeedConfig.min_timestamp_delta),
-                        "timestamp_precision": convertToScvVec([xdr.ScVal.scvSymbol(input.priceFeedConfig.timestamp_precision)]),
-                        "twap_records": convertToScvU32(input.priceFeedConfig.twap_records)
+                        "feed_decimals": convertToScvU32(feed.feed_decimals),
+                        "min_timestamp_delta": convertToScvU64(feed.min_timestamp_delta),
+                        "timestamp_precision": convertToScvVec([xdr.ScVal.scvSymbol(feed.timestamp_precision)]),
+                        "twap_records": convertToScvU32(feed.twap_records)
                     })
-                ]),
-                "max_sanity_price_in_base": convertToScvI128(input.max_sanity_price_in_base),
-                "min_sanity_price_in_base": convertToScvI128(input.min_sanity_price_in_base)
+                )),
+                "max_sanity_price_in_base": convertToScvI128(input.priceFeedConfig.max_sanity_price_in_base),
+                "min_sanity_price_in_base": convertToScvI128(input.priceFeedConfig.min_sanity_price_in_base)
             })))
         )
     );
