@@ -257,3 +257,42 @@
     "ledgerWrites": 20
   }
 }
+{
+  "liquidateUnderlying1": {
+    "cost": {
+      "cpuInsns": "23944694",
+      "memBytes": "13137057"
+    },
+    "events": 3140,
+    "readBytes": 110784,
+    "writeBytes": 8804,
+    "ledgerReads": 15,
+    "ledgerWrites": 13
+  }
+}
+{
+  "liquidateUnderlying2": {
+    "cost": {
+      "cpuInsns": "23276794",
+      "memBytes": "13011715"
+    },
+    "events": 3140,
+    "readBytes": 110404,
+    "writeBytes": 8804,
+    "ledgerReads": 13,
+    "ledgerWrites": 13
+  }
+}
+{
+  "liquidateUnderlying3": {
+    "cost": {
+      "cpuInsns": "25796616",
+      "memBytes": "15880554"
+    },
+    "events": 4232,
+    "readBytes": 111848,
+    "writeBytes": 10132,
+    "ledgerReads": 14,
+    "ledgerWrites": 20
+  }
+}

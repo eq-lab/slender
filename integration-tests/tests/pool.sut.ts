@@ -129,7 +129,7 @@ export async function init(
                     feed_asset: "XLM",
                     feed_decimals: 14,
                     feed: process.env.SLENDER_PRICE_FEED,
-                    twap_records: 1,
+                    twap_records: 3,
                     min_timestamp_delta: 100_000_000_000,
                     timestamp_precision: "Sec"
                 }]
@@ -145,7 +145,7 @@ export async function init(
                     feed_asset: "XRP",
                     feed_decimals: 16,
                     feed: process.env.SLENDER_PRICE_FEED,
-                    twap_records: 1,
+                    twap_records: 3,
                     min_timestamp_delta: 100_000_000_000,
                     timestamp_precision: "Sec"
                 }]
@@ -161,7 +161,7 @@ export async function init(
                     feed_asset: "USDC",
                     feed_decimals: 16,
                     feed: process.env.SLENDER_PRICE_FEED,
-                    twap_records: 1,
+                    twap_records: 3,
                     min_timestamp_delta: 100_000_000_000,
                     timestamp_precision: "Sec"
                 }]
@@ -177,7 +177,7 @@ export async function init(
                     feed_asset: "RWA",
                     feed_decimals: 16,
                     feed: process.env.SLENDER_PRICE_FEED,
-                    twap_records: 1,
+                    twap_records: 3,
                     min_timestamp_delta: 100_000_000_000,
                     timestamp_precision: "Sec"
                 }]
@@ -914,12 +914,10 @@ export async function initPrice(
             xdr.ScVal.scvSymbol("Stellar"),
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
         ]),
-        convertToScvVec([
-            convertToScvMap({
-                "price": convertToScvI128(price),
-                "timestamp": convertToScvU64(timestamp)
-            })
-        ]),
+        convertToScvVec(Array(20).fill(0).map((_, i) => convertToScvMap({
+            "price": convertToScvI128(price),
+            "timestamp": convertToScvU64(timestamp + i * 1000)
+        }))),
     );
 }
 
