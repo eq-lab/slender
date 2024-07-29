@@ -14,5 +14,5 @@ doctest = false
 soroban-sdk = { workspace = true }
 pool-interface = { path = "../../interfaces/pool-interface", version = "0.1.0", package = "pool-interface" }
 
-[dev_dependencies]
+[dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }

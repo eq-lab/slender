@@ -32,11 +32,11 @@ impl DebtTokenTrait for DebtToken {
     /// Panics if name or symbol is empty
     ///
     fn initialize(e: Env, name: String, symbol: String, pool: Address, underlying_asset: Address) {
-        if name.len() == 0 {
+        if name.is_empty() {
             panic!("debt-token: no name");
         }
 
-        if symbol.len() == 0 {
+        if symbol.is_empty() {
             panic!("debt-token: no symbol");
         }
 
