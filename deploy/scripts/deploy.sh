@@ -33,48 +33,80 @@ addressFromResult() {
     echo $value1
 }
 
-cp $BUILD/*.wasm $ARTIFACTS
-cp $MOCKS/soroban_token_contract.wasm $ARTIFACTS/token.wasm
+if [ $1 == "mainnet" ]
+then
+    cp $BUILD/*.wasm $ARTIFACTS
 
-echo "WASM files have been copied"
+    echo "WASM files have been copied"
 
-find $ARTIFACTS -name \*.wasm -exec stellar contract optimize --wasm {} --wasm-out {} \; 1>/dev/null
+    find $ARTIFACTS -name \*.wasm -exec stellar contract optimize --wasm {} --wasm-out {} \; 1>/dev/null
 
-echo "WASM files has been optimized"
+    echo "WASM files has been optimized"
 
-curl -s "$FRIENDBOT_URL?addr=$ADMIN_PUBLIC" 1>/dev/null
-sleep 10
+    TOKEN_XLM="CAS3J7GYLGXMF6TDJBBYYSE3HQ6BBSMLNUQ34T6TZMYMW2EVH34XOWMA"
+    echo "  XLM contract address: $TOKEN_XLM"
 
-echo "Admin's account has been funded"
+    TOKEN_XRP="CAAV3AE3VKD2P4TY7LWTQMMJHIJ4WOCZ5ANCIJPC3NRSERKVXNHBU2W7"
+    echo "  XRP contract address: $TOKEN_XRP"
 
-TOKEN_XLM=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
-# TOKEN_XLM="CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
-echo "  XLM contract address: $TOKEN_XLM"
+    TOKEN_USDC="CCW67TSZV3SSS2HXMBQ5JFGCKJNXKZM7UQUWUZPUTHXSTZLEO7SJMI75"
+    echo "  USDC contract address: $TOKEN_USDC"
 
-TOKEN_XRP=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
-echo "  XRP contract address: $TOKEN_XRP"
+    DEPLOYER=$(deploy "$ARTIFACTS/deployer.wasm" $ADMIN_SECRET)
+    echo "  Deployer contract address: $DEPLOYER"
 
-TOKEN_USDC=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
-echo "  USDC contract address: $TOKEN_USDC"
+    S_TOKEN_HASH=$(install "$ARTIFACTS/s_token.wasm" $ADMIN_SECRET)
+    echo "  SToken wasm hash: $S_TOKEN_HASH"
 
-TOKEN_RWA=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
-echo "  RWA contract address: $TOKEN_RWA"
+    DEBT_TOKEN_HASH=$(install "$ARTIFACTS/debt_token.wasm" $ADMIN_SECRET)
+    echo "  DebtToken wasm hash: $DEBT_TOKEN_HASH"
 
-DEPLOYER=$(deploy "$ARTIFACTS/deployer.wasm" $ADMIN_SECRET)
-echo "  Deployer contract address: $DEPLOYER"
+    POOL_HASH=$(install "$ARTIFACTS/pool.wasm" $ADMIN_SECRET)
+    echo "  Pool wasm hash: $POOL_HASH"
+else
+    cp $BUILD/*.wasm $ARTIFACTS
+    cp $MOCKS/soroban_token_contract.wasm $ARTIFACTS/token.wasm
 
-S_TOKEN_HASH=$(install "$ARTIFACTS/s_token.wasm" $ADMIN_SECRET)
-echo "  SToken wasm hash: $S_TOKEN_HASH"
+    echo "WASM files have been copied"
 
-DEBT_TOKEN_HASH=$(install "$ARTIFACTS/debt_token.wasm" $ADMIN_SECRET)
-echo "  DebtToken wasm hash: $DEBT_TOKEN_HASH"
+    find $ARTIFACTS -name \*.wasm -exec stellar contract optimize --wasm {} --wasm-out {} \; 1>/dev/null
 
-POOL_HASH=$(install "$ARTIFACTS/pool.wasm" $ADMIN_SECRET)
-echo "  Pool wasm hash: $POOL_HASH"
+    echo "WASM files has been optimized"
 
-PRICE_FEED=$(deploy "$ARTIFACTS/price_feed_mock.wasm" $ADMIN_SECRET)
-PRICE_FEED=$(addressFromResult $PRICE_FEED)
-echo "  Price Feed contract address: $PRICE_FEED"
+    curl -s "$FRIENDBOT_URL?addr=$ADMIN_PUBLIC" 1>/dev/null
+    sleep 10
+
+    echo "Admin's account has been funded"
+
+    TOKEN_XLM=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+    # TOKEN_XLM="CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQVU2HHGCYSC"
+    echo "  XLM contract address: $TOKEN_XLM"
+
+    TOKEN_XRP=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+    echo "  XRP contract address: $TOKEN_XRP"
+
+    TOKEN_USDC=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+    echo "  USDC contract address: $TOKEN_USDC"
+
+    TOKEN_RWA=$(deploy "$ARTIFACTS/token.wasm" $ADMIN_SECRET)
+    echo "  RWA contract address: $TOKEN_RWA"
+
+    DEPLOYER=$(deploy "$ARTIFACTS/deployer.wasm" $ADMIN_SECRET)
+    echo "  Deployer contract address: $DEPLOYER"
+
+    S_TOKEN_HASH=$(install "$ARTIFACTS/s_token.wasm" $ADMIN_SECRET)
+    echo "  SToken wasm hash: $S_TOKEN_HASH"
+
+    DEBT_TOKEN_HASH=$(install "$ARTIFACTS/debt_token.wasm" $ADMIN_SECRET)
+    echo "  DebtToken wasm hash: $DEBT_TOKEN_HASH"
+
+    POOL_HASH=$(install "$ARTIFACTS/pool.wasm" $ADMIN_SECRET)
+    echo "  Pool wasm hash: $POOL_HASH"
+
+    PRICE_FEED=$(deploy "$ARTIFACTS/price_feed_mock.wasm" $ADMIN_SECRET)
+    PRICE_FEED=$(addressFromResult $PRICE_FEED)
+    echo "  Price Feed contract address: $PRICE_FEED"
+fi
 
 contracts="$ARTIFACTS/.contracts"
 {

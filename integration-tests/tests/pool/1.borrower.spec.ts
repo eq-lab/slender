@@ -23,9 +23,9 @@ import {
     borrower2Keys,
     lender1Keys,
     lender2Keys,
-    contractsFilename,
     treasuryKeys
 } from "../soroban.config";
+// import { main } from '../release';
 import { assert, expect, use } from "chai";
 import chaiAsPromised from 'chai-as-promised';
 use(chaiAsPromised);
@@ -40,6 +40,8 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
 
     before(async function () {
         client = new SorobanClient();
+
+        // await main();
 
         await cleanSlenderEnvKeys();
         await deploy();
