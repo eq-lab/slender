@@ -11,6 +11,3 @@ export async function main() {
   await releaseInit(client)
 }
 
-main()
-  .catch(console.error)
-  .finally(() => process.exit());

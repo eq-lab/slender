@@ -61,6 +61,9 @@ then
     DEBT_TOKEN_HASH=$(install "$ARTIFACTS/debt_token.wasm" $ADMIN_SECRET)
     echo "  DebtToken wasm hash: $DEBT_TOKEN_HASH"
 
+    PRICE_FEED="CALI2BYU2JE6WVRUFYTS6MSBNEHGJ35P4AVCZYF3B6QOE3QKOB2PLE6M"
+    echo "  Price Feed contract address: $PRICE_FEED"
+
     POOL_HASH=$(install "$ARTIFACTS/pool.wasm" $ADMIN_SECRET)
     echo "  Pool wasm hash: $POOL_HASH"
 else
