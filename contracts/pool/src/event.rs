@@ -1,16 +1,30 @@
-use pool_interface::types::collateral_params_input::CollateralParamsInput;
-use pool_interface::types::ir_params::IRParams;
+use pool_interface::types::{
+    collateral_params_input::CollateralParamsInput, pool_config::PoolConfig,
+};
 use soroban_sdk::{symbol_short, Address, Env, Symbol};
 
-pub(crate) fn initialized(e: &Env, admin: &Address, treasury: &Address, params: &IRParams) {
-    let topics = (Symbol::new(e, "initialize"), admin, treasury);
+pub(crate) fn initialized(e: &Env, admin: &Address, pool_config: &PoolConfig) {
+    let topics = (
+        Symbol::new(e, "initialize"),
+        admin,
+        pool_config.base_asset_address.clone(),
+    );
     e.events().publish(
         topics,
         (
-            params.alpha,
-            params.initial_rate,
-            params.max_rate,
-            params.scaling_coeff,
+            pool_config.ir_alpha,
+            pool_config.ir_initial_rate,
+            pool_config.ir_max_rate,
+            pool_config.ir_scaling_coeff,
+            pool_config.base_asset_decimals,
+            pool_config.initial_health,
+            pool_config.grace_period,
+            pool_config.timestamp_window,
+            pool_config.flash_loan_fee,
+            pool_config.user_assets_limit,
+            pool_config.min_collat_amount,
+            pool_config.min_debt_amount,
+            pool_config.liquidation_protocol_fee,
         ),
     );
 }
@@ -68,14 +82,9 @@ pub(crate) fn borrowing_disabled(e: &Env, asset: &Address) {
     e.events().publish(topics, ());
 }
 
-pub(crate) fn reserve_activated(e: &Env, asset: &Address) {
-    let topics = (Symbol::new(e, "reserve_activated"), asset.clone());
-    e.events().publish(topics, ());
-}
-
-pub(crate) fn reserve_deactivated(e: &Env, asset: &Address) {
-    let topics = (Symbol::new(e, "reserve_deactivated"), asset.clone());
-    e.events().publish(topics, ());
+pub(crate) fn reserve_status_changed(e: &Env, asset: &Address, activated: bool) {
+    let topics = (asset.clone(),);
+    e.events().publish(topics, activated);
 }
 
 pub(crate) fn liquidation(e: &Env, who: &Address, covered_debt: i128, liquidated_collateral: i128) {
@@ -91,7 +100,8 @@ pub(crate) fn flash_loan(
     asset: &Address,
     amount: i128,
     premium: i128,
+    borrow: bool,
 ) {
     let topics = (Symbol::new(e, "flash_loan"), who, receiver, asset);
-    e.events().publish(topics, (amount, premium));
+    e.events().publish(topics, (amount, premium, borrow));
 }

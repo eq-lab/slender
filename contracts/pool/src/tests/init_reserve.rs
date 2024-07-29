@@ -20,7 +20,8 @@ fn should_require_admin() {
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> =
+        create_pool_contract(&env, &admin, false, &underlying_token.address);
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
@@ -54,7 +55,7 @@ fn should_require_admin() {
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #105)")]
+#[should_panic(expected = "HostError: Error(Contract, #0)")]
 fn should_fail_when_calling_second_time() {
     let env = Env::default();
     env.mock_all_auths();
@@ -103,7 +104,8 @@ fn should_set_underlying_asset_s_token_and_debt_token_addresses() {
     let (underlying_token, _) = create_token_contract(&env, &token_admin);
     let (debt_token, _) = create_token_contract(&env, &token_admin);
 
-    let pool: LendingPoolClient<'_> = create_pool_contract(&env, &admin, false);
+    let pool: LendingPoolClient<'_> =
+        create_pool_contract(&env, &admin, false, &underlying_token.address);
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 

@@ -1,63 +1,96 @@
 use core::ops::Div;
 
-use common::FixedI128;
-use pool_interface::types::base_asset_config::BaseAssetConfig;
 use pool_interface::types::error::Error;
+use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::price_feed::PriceFeed;
 use pool_interface::types::price_feed_config::PriceFeedConfig;
 use pool_interface::types::timestamp_precision::TimestampPrecision;
 use price_feed_interface::PriceFeedClient;
-use soroban_sdk::{Address, Env, Map, Vec};
+use soroban_sdk::{assert_with_error, Address, Env, Map, Vec};
 
-use crate::storage::{read_base_asset, read_price_feeds};
+use crate::storage::read_price_feeds;
 
 pub struct PriceProvider<'a> {
     env: &'a Env,
-    base_asset: BaseAssetConfig,
+    base_asset_address: Address,
+    base_asset_decimals: u32,
     configs: Map<Address, PriceFeedConfig>,
     prices: Map<Address, i128>,
 }
 
 impl<'a> PriceProvider<'a> {
-    pub fn new(env: &'a Env) -> Result<Self, Error> {
-        let base_asset = read_base_asset(env)?;
-
+    pub fn new(env: &'a Env, pool_config: &PoolConfig) -> Result<Self, Error> {
         Ok(Self {
             env,
-            base_asset,
+            base_asset_address: pool_config.base_asset_address.clone(),
+            base_asset_decimals: pool_config.base_asset_decimals,
             configs: Map::new(env),
             prices: Map::new(env),
         })
     }
 
     pub fn convert_to_base(&mut self, asset: &Address, amount: i128) -> Result<i128, Error> {
-        if self.base_asset.address == *asset {
+        if self.base_asset_address == *asset {
             return Ok(amount);
         }
 
         let config = self.config(asset)?;
-        let median_twap_price = self.price(asset, &config)?;
+        let median_twap_price = self.price_in_base(asset, &config)?;
+
+        let precision = 10i128
+            .checked_pow(config.asset_decimals)
+            .ok_or(Error::MathOverflowError)?;
 
         median_twap_price
-            .mul_int(amount)
-            .and_then(|a| FixedI128::from_rational(a, 10i128.pow(config.asset_decimals)))
-            .and_then(|a| a.to_precision(self.base_asset.decimals))
+            .checked_mul(amount)
+            .ok_or(Error::InvalidAssetPrice)?
+            .checked_div(precision)
             .ok_or(Error::InvalidAssetPrice)
     }
 
-    pub fn convert_from_base(&mut self, asset: &Address, amount: i128) -> Result<i128, Error> {
-        if self.base_asset.address == *asset {
+    pub fn convert_from_base(
+        &mut self,
+        asset: &Address,
+        amount: i128,
+        round_ceil: bool,
+    ) -> Result<i128, Error> {
+        if self.base_asset_address == *asset {
             return Ok(amount);
         }
 
         let config = self.config(asset)?;
-        let median_twap_price = self.price(asset, &config)?;
+        let median_twap_price = self.price_in_base(asset, &config)?;
 
-        median_twap_price
-            .recip_mul_int(amount)
-            .and_then(|a| FixedI128::from_rational(a, 10i128.pow(self.base_asset.decimals)))
-            .and_then(|a| a.to_precision(config.asset_decimals))
-            .ok_or(Error::InvalidAssetPrice)
+        let precision = 10i128
+            .checked_pow(config.asset_decimals)
+            .ok_or(Error::MathOverflowError)?;
+
+        if round_ceil {
+            amount
+                .checked_mul(precision)
+                .ok_or(Error::InvalidAssetPrice)?
+                .checked_div(median_twap_price)
+                .ok_or(Error::InvalidAssetPrice)
+        } else {
+            amount
+                .checked_mul(precision)
+                .ok_or(Error::InvalidAssetPrice)?
+                .checked_div(median_twap_price)
+                .map(|res| {
+                    let res_1 = res.abs();
+                    let other_1 = amount.abs();
+                    let self_1 = median_twap_price.abs();
+
+                    if res_1 == 0 {
+                        1
+                    } else if other_1 % self_1 == 0 {
+                        res
+                    } else {
+                        res + 1
+                    }
+                })
+                .ok_or(Error::InvalidAssetPrice)
+        }
     }
 
     fn config(&mut self, asset: &Address) -> Result<PriceFeedConfig, Error> {
@@ -72,32 +105,56 @@ impl<'a> PriceProvider<'a> {
         }
     }
 
-    fn price(&mut self, asset: &Address, config: &PriceFeedConfig) -> Result<FixedI128, Error> {
+    fn price_in_base(&mut self, asset: &Address, config: &PriceFeedConfig) -> Result<i128, Error> {
         let price = self.prices.get(asset.clone());
 
-        let price = match price {
-            Some(price) => price,
+        match price {
+            Some(price) => Ok(price),
             None => {
                 let mut sorted_twap_prices = Map::new(self.env);
 
                 for feed in config.feeds.iter() {
-                    let twap_price =
-                        FixedI128::from_rational(self.twap(&feed)?, 10i128.pow(feed.feed_decimals))
-                            .ok_or(Error::MathOverflowError)?
-                            .into_inner();
+                    let twap = self.twap(&feed);
+
+                    if twap.is_err() {
+                        continue;
+                    }
+
+                    let base_precision = 10i128
+                        .checked_pow(self.base_asset_decimals)
+                        .ok_or(Error::MathOverflowError)?;
+
+                    let feed_precision = 10i128
+                        .checked_pow(feed.feed_decimals)
+                        .ok_or(Error::MathOverflowError)?;
+
+                    let twap_price = twap?
+                        .checked_mul(base_precision)
+                        .ok_or(Error::MathOverflowError)?
+                        .checked_div(feed_precision)
+                        .ok_or(Error::MathOverflowError)?;
+
+                    let is_sanity_price = twap_price >= config.min_sanity_price_in_base
+                        && twap_price <= config.max_sanity_price_in_base;
+
+                    assert_with_error!(self.env, is_sanity_price, Error::InvalidAssetPrice);
 
                     sorted_twap_prices.set(twap_price, twap_price);
                 }
+
+                assert_with_error!(
+                    self.env,
+                    !sorted_twap_prices.is_empty(),
+                    Error::NoPriceForAsset
+                );
 
                 let median_twap_price = self.median(&sorted_twap_prices.keys())?;
 
                 self.prices.set(asset.clone(), median_twap_price);
 
-                median_twap_price
+                Ok(median_twap_price)
             }
-        };
-
-        Ok(FixedI128::from_inner(price))
+        }
     }
 
     fn twap(&mut self, config: &PriceFeed) -> Result<i128, Error> {
@@ -113,40 +170,56 @@ impl<'a> PriceProvider<'a> {
 
         let prices_len = prices.len();
 
-        if prices_len == 1 {
-            return Ok(prices.first_unchecked().price);
-        }
-
         let curr_time = precise_timestamp(self.env, &config.timestamp_precision);
 
+        let mut sorted_prices = Map::new(self.env);
+
+        for price in prices {
+            sorted_prices.set(price.timestamp, price.price);
+        }
+
+        let prices = sorted_prices.values();
+        let timestamps = sorted_prices.keys();
+
+        let timestamp_delta = curr_time
+            .checked_sub(timestamps.last_unchecked())
+            .ok_or(Error::MathOverflowError)?;
+
+        if timestamp_delta > config.min_timestamp_delta {
+            return Err(Error::NoPriceForAsset);
+        }
+
+        if prices_len == 1 {
+            return Ok(sorted_prices.values().first_unchecked());
+        }
+
         let mut cum_price = {
-            let price_curr = prices.get_unchecked(0);
+            let price_curr = prices.last_unchecked();
+            let timestamp_curr = timestamps.last_unchecked();
 
             let time_delta = curr_time
-                .checked_sub(price_curr.timestamp)
+                .checked_sub(timestamp_curr)
                 .ok_or(Error::MathOverflowError)?;
 
             if time_delta.eq(&0) {
-                price_curr.price
+                price_curr
             } else {
                 price_curr
-                    .price
                     .checked_mul(time_delta.into())
                     .ok_or(Error::MathOverflowError)?
             }
         };
 
-        for i in 1..prices_len {
-            let price_prev = prices.get_unchecked(i - 1);
-            let price_curr = prices.get_unchecked(i);
+        for i in (1..prices_len).rev() {
+            let price_curr = prices.get_unchecked(i - 1);
+            let timestamp_curr = timestamps.get_unchecked(i - 1);
+            let timestamp_prev = timestamps.get_unchecked(i);
 
-            let time_delta = price_prev
-                .timestamp
-                .checked_sub(price_curr.timestamp)
+            let time_delta = timestamp_prev
+                .checked_sub(timestamp_curr)
                 .ok_or(Error::MathOverflowError)?;
 
             let tw_price = price_curr
-                .price
                 .checked_mul(time_delta.into())
                 .ok_or(Error::MathOverflowError)?;
 
@@ -156,7 +229,7 @@ impl<'a> PriceProvider<'a> {
         }
 
         let twap_time = curr_time
-            .checked_sub(prices.last_unchecked().timestamp)
+            .checked_sub(timestamps.first_unchecked())
             .ok_or(Error::MathOverflowError)?;
 
         let twap_price = cum_price

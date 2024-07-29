@@ -1,24 +1,15 @@
 use common::{FixedI128, ALPHA_DENOMINATOR};
 use pool_interface::types::error::Error;
-use pool_interface::types::ir_params::IRParams;
+use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::reserve_data::ReserveData;
 use soroban_sdk::Env;
 
 use super::get_elapsed_time::get_elapsed_time;
 
-/// Calculate interest rate IR = MIN [ max_rate, base_rate / (1 - U)^alpha]
-/// where
-/// U - utilization, U = total_debt / total_collateral
-/// ir_params.alpha - parameter, by default 1.43 expressed as 143 with denominator 100
-/// ir_params.max_rate - maximal value of interest rate, by default 500% expressed as 50000 with denominator 10000
-/// ir_params.initial_rate - base interest rate, by default 2%, expressed as 200 with denominator 10000
-///
-/// For (1-U)^alpha calculation use binomial approximation with four terms
-/// (1-U)^a = 1 - alpha * U + alpha/2 * (alpha - 1) * U^2 - alpha/6 * (alpha-1) * (alpha-2) * U^3 + alpha/24 * (alpha-1) *(alpha-2) * (alpha-3) * U^4
 pub fn calc_interest_rate(
     total_collateral: i128,
     total_debt: i128,
-    ir_params: &IRParams,
+    pool_config: &PoolConfig,
 ) -> Option<FixedI128> {
     if total_collateral.is_negative() || total_debt.is_negative() {
         return None;
@@ -30,26 +21,26 @@ pub fn calc_interest_rate(
         return Some(FixedI128::ZERO);
     }
 
-    let max_rate = FixedI128::from_percentage(ir_params.max_rate)?;
+    let max_rate = FixedI128::from_percentage(pool_config.ir_max_rate)?;
 
     if u >= FixedI128::ONE {
-        return Some(max_rate); // utilization shouldn't be greater or equal one
+        return Some(max_rate);
     }
 
-    let alpha = FixedI128::from_rational(ir_params.alpha, ALPHA_DENOMINATOR)?;
+    let alpha = FixedI128::from_rational(pool_config.ir_alpha, ALPHA_DENOMINATOR)?;
 
     let neg_u = u.mul_inner(-1)?;
     let first_term = alpha.checked_mul(neg_u)?;
 
     let num_of_iterations = if u > FixedI128::from_rational(1, 2)? {
-        19
+        20
     } else {
-        3
+        4
     };
     let mut prev_term = first_term;
     let mut terms_sum = first_term;
     let mut alpha_mul = alpha;
-    for i in 2..(num_of_iterations + 2) {
+    for i in 2..=num_of_iterations {
         alpha_mul = alpha_mul.checked_sub(FixedI128::ONE)?;
         let next_term = prev_term
             .checked_mul(neg_u)?
@@ -65,18 +56,13 @@ pub fn calc_interest_rate(
         return Some(max_rate);
     }
 
-    let initial_rate = FixedI128::from_percentage(ir_params.initial_rate)?;
+    let initial_rate = FixedI128::from_percentage(pool_config.ir_initial_rate)?;
 
     let ir = initial_rate.checked_div(denom)?;
 
     Some(FixedI128::min(ir, max_rate))
 }
 
-/// Calculate accrued rate on time `t` AR(t) = AR(t-1)*(1 + r(t-1)*elapsed_time)
-/// where:
-///     AR(t-1) - prev value of accrued rate
-///     r(t-1) - prev value of interest rate
-///     elapsed_time - elapsed time in seconds from last accrued rate update
 pub fn calc_next_accrued_rate(
     prev_ar: FixedI128,
     ir: FixedI128,
@@ -94,17 +80,16 @@ pub struct AccruedRates {
     pub borrower_ir: FixedI128,
 }
 
-/// Calculates lender and borrower accrued/interest rates
 pub fn calc_accrued_rates(
     total_collateral: i128,
     total_debt: i128,
     elapsed_time: u64,
-    ir_params: IRParams,
+    pool_config: &PoolConfig,
     reserve_data: &ReserveData,
 ) -> Option<AccruedRates> {
-    let borrower_ir = calc_interest_rate(total_collateral, total_debt, &ir_params)?;
+    let borrower_ir = calc_interest_rate(total_collateral, total_debt, pool_config)?;
 
-    let scale_coeff = FixedI128::from_percentage(ir_params.scaling_coeff)?;
+    let scale_coeff = FixedI128::from_percentage(pool_config.ir_scaling_coeff)?;
     let lender_ir = borrower_ir.checked_mul(scale_coeff)?;
 
     let borrower_ar = calc_next_accrued_rate(
@@ -127,12 +112,16 @@ pub fn calc_accrued_rates(
     })
 }
 
-/// Returns lender accrued rate corrected for the current time
 pub fn get_actual_lender_accrued_rate(
     env: &Env,
     reserve: &ReserveData,
+    pool_config: &PoolConfig,
 ) -> Result<FixedI128, Error> {
-    let (_, elapsed_time) = get_elapsed_time(env, reserve.last_update_timestamp);
+    let (_, elapsed_time) = get_elapsed_time(
+        env,
+        reserve.last_update_timestamp,
+        pool_config.timestamp_window,
+    );
     let prev_ar = FixedI128::from_inner(reserve.lender_ar);
 
     if elapsed_time == 0 {
@@ -144,12 +133,16 @@ pub fn get_actual_lender_accrued_rate(
     }
 }
 
-/// Returns borrower accrued rate corrected for the current time
 pub fn get_actual_borrower_accrued_rate(
     env: &Env,
     reserve: &ReserveData,
+    pool_config: &PoolConfig,
 ) -> Result<FixedI128, Error> {
-    let (_, elapsed_time) = get_elapsed_time(env, reserve.last_update_timestamp);
+    let (_, elapsed_time) = get_elapsed_time(
+        env,
+        reserve.last_update_timestamp,
+        pool_config.timestamp_window,
+    );
     let prev_ar = FixedI128::from_inner(reserve.borrower_ar);
 
     if elapsed_time == 0 {

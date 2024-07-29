@@ -7,7 +7,7 @@ use soroban_sdk::testutils::Address as _;
 use soroban_sdk::vec;
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #202)")]
+#[should_panic(expected = "HostError: Error(Contract, #1)")]
 fn should_fail_when_user_config_not_exist() {
     let env = Env::default();
     env.mock_all_auths();
@@ -24,7 +24,22 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, false);
-    sut.pool.set_initial_health(&2_500);
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 2_500,
+        grace_period: 1,
+        timestamp_window: 20,
+        user_assets_limit: 4,
+        min_collat_amount: 0,
+        min_debt_amount: 0,
+        liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
+    });
 
     let debt_token = sut.reserves[1].token.address.clone();
     let deposit_token = sut.reserves[0].token.address.clone();
@@ -69,7 +84,7 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
 
     let position_after_change_price = sut.pool.account_position(&borrower);
 
-    sut.pool.liquidate(&lender, &borrower, &false);
+    sut.pool.liquidate(&lender, &borrower);
     let position_after_liquidate = sut.pool.account_position(&borrower);
 
     assert_eq!(position_after_deposit.discounted_collateral, 600_000);
@@ -89,6 +104,6 @@ fn should_update_when_deposit_borrow_withdraw_liquidate_price_change() {
     assert_eq!(position_after_change_price.npv, -20_000);
 
     assert_eq!(position_after_liquidate.discounted_collateral, 358_700);
-    assert_eq!(position_after_liquidate.debt, 269_026);
-    assert_eq!(position_after_liquidate.npv, 89_674);
+    assert_eq!(position_after_liquidate.debt, 269_025);
+    assert_eq!(position_after_liquidate.npv, 89_675);
 }

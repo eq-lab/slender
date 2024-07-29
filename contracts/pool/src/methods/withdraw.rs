@@ -1,11 +1,16 @@
-use crate::event;
+use crate::add_token_balance;
+use crate::methods::utils::get_collat_coeff::get_compounded_amount;
+use crate::methods::utils::get_collat_coeff::get_lp_amount;
+use crate::methods::utils::validation::require_gte_initial_health;
+use crate::read_pool_config;
 use crate::storage::{
-    add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
-    read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
+    read_reserve, read_token_balance, read_token_total_supply, write_token_balance,
+    write_token_total_supply,
 };
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
+use crate::{event, read_pause_info};
 use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use pool_interface::types::reserve_type::ReserveType;
@@ -13,10 +18,10 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, token, Address, Env};
 
 use super::account_position::calc_account_data;
-use super::utils::get_collat_coeff::get_collat_coeff;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
-    require_active_reserve, require_good_position, require_not_paused, require_positive_amount,
+    require_active_reserve, require_min_position_amounts, require_not_in_grace_period,
+    require_not_paused, require_positive_amount,
 };
 
 pub fn withdraw(
@@ -28,39 +33,52 @@ pub fn withdraw(
 ) -> Result<(), Error> {
     who.require_auth();
 
-    require_not_paused(env);
+    let pause_info = read_pause_info(env);
+    require_not_paused(env, &pause_info);
+    require_not_in_grace_period(env, &pause_info);
+
     require_positive_amount(env, amount);
 
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
-    let mut user_configurator = UserConfigurator::new(env, who, false);
-    let user_config = user_configurator.user_config()?;
+    let mut user_configurator = UserConfigurator::new(env, who, false, None);
 
-    let (withdraw_amount, is_full_withdraw) =
+    let pool_config = read_pool_config(env)?;
+
+    let withdraw_amount =
         if let ReserveType::Fungible(s_token_address, debt_token_address) = &reserve.reserve_type {
             let s_token_supply = read_token_total_supply(env, s_token_address);
             let debt_token_supply = read_token_total_supply(env, debt_token_address);
-            let collat_coeff = get_collat_coeff(
-                env,
-                &reserve,
-                s_token_supply,
-                read_stoken_underlying_balance(env, s_token_address),
-                debt_token_supply,
-            )?;
 
             let s_token = STokenClient::new(env, s_token_address);
 
             let collat_balance = read_token_balance(env, s_token_address, who);
-            let underlying_balance = collat_coeff
-                .mul_int(collat_balance)
-                .ok_or(Error::MathOverflowError)?;
+            let stoken_underlying_balance = read_token_balance(env, asset, s_token_address);
+
+            let underlying_balance = get_compounded_amount(
+                env,
+                &reserve,
+                &pool_config,
+                s_token_supply,
+                stoken_underlying_balance,
+                debt_token_supply,
+                collat_balance,
+            )?;
 
             let (underlying_to_withdraw, s_token_to_burn) = if amount >= underlying_balance {
                 (underlying_balance, collat_balance)
             } else {
-                let s_token_to_burn = collat_coeff
-                    .recip_mul_int(amount)
-                    .ok_or(Error::MathOverflowError)?;
+                let s_token_to_burn = get_lp_amount(
+                    env,
+                    &reserve,
+                    &pool_config,
+                    s_token_supply,
+                    stoken_underlying_balance,
+                    debt_token_supply,
+                    amount,
+                    true,
+                )?;
+
                 (amount, s_token_to_burn)
             };
 
@@ -76,13 +94,15 @@ pub fn withdraw(
             let s_token_supply_after = s_token_supply
                 .checked_sub(s_token_to_burn)
                 .ok_or(Error::InvalidAmount)?;
-            let s_token_underlying_after = read_stoken_underlying_balance(env, s_token_address)
+            let s_token_underlying_after = stoken_underlying_balance
                 .checked_sub(underlying_to_withdraw)
                 .ok_or(Error::MathOverflowError)?;
 
-            if user_config.is_borrowing_any()
-                && user_config.is_using_as_collateral(env, reserve.get_id())
-            {
+            user_configurator.withdraw(reserve.get_id(), asset, collat_balance_after == 0)?;
+
+            let is_borrowing_any = user_configurator.user_config()?.is_borrowing_any();
+
+            if is_borrowing_any {
                 let account_data = calc_account_data(
                     env,
                     who,
@@ -106,20 +126,23 @@ pub fn withdraw(
                         )),
                         mb_rwa_balance: None,
                     },
-                    user_config,
-                    &mut PriceProvider::new(env)?,
+                    &pool_config,
+                    user_configurator.user_config()?,
+                    &mut PriceProvider::new(env, &pool_config)?,
                     false,
                 )?;
-                // TODO: do we need to check for initial_health?
-                require_good_position(env, &account_data);
+
+                require_min_position_amounts(env, &account_data, &pool_config)?;
+                require_gte_initial_health(env, &account_data, &pool_config)?;
             }
+
             let amount_to_sub = underlying_to_withdraw
                 .checked_neg()
                 .ok_or(Error::MathOverflowError)?;
 
             s_token.burn(who, &s_token_to_burn, &underlying_to_withdraw, to);
 
-            add_stoken_underlying_balance(env, &s_token.address, amount_to_sub)?;
+            add_token_balance(env, asset, &s_token.address, amount_to_sub)?;
             write_token_total_supply(env, &s_token.address, s_token_supply_after)?;
             write_token_balance(env, &s_token.address, who, collat_balance_after)?;
 
@@ -127,23 +150,23 @@ pub fn withdraw(
                 env,
                 asset,
                 &reserve,
+                &pool_config,
                 s_token_supply_after,
                 debt_token_supply,
             )?;
 
-            (
-                underlying_to_withdraw,
-                underlying_to_withdraw == underlying_balance,
-            )
+            underlying_to_withdraw
         } else {
             let rwa_balance = read_token_balance(env, asset, who);
 
             let withdraw_amount = amount.min(rwa_balance);
             let rwa_balance_after = rwa_balance - withdraw_amount;
 
-            if user_config.is_borrowing_any()
-                && user_config.is_using_as_collateral(env, reserve.get_id())
-            {
+            user_configurator.withdraw(reserve.get_id(), asset, rwa_balance_after == 0)?;
+
+            let is_borrowing_any = user_configurator.user_config()?.is_borrowing_any();
+
+            if is_borrowing_any {
                 let account_data = calc_account_data(
                     env,
                     who,
@@ -155,14 +178,16 @@ pub fn withdraw(
                         mb_s_token_underlying_balance: None,
                         mb_rwa_balance: Some(&AssetBalance::new(asset.clone(), rwa_balance_after)),
                     },
-                    user_config,
-                    &mut PriceProvider::new(env)?,
+                    &pool_config,
+                    user_configurator.user_config()?,
+                    &mut PriceProvider::new(env, &pool_config)?,
                     false,
                 )?;
 
-                // TODO: do we need to check for initial_health?
-                require_good_position(env, &account_data);
+                require_min_position_amounts(env, &account_data, &pool_config)?;
+                require_gte_initial_health(env, &account_data, &pool_config)?;
             }
+
             token::Client::new(env, asset).transfer(
                 &env.current_contract_address(),
                 who,
@@ -171,12 +196,10 @@ pub fn withdraw(
 
             write_token_balance(env, asset, who, rwa_balance_after)?;
 
-            (withdraw_amount, rwa_balance_after == 0)
+            withdraw_amount
         };
 
-    user_configurator
-        .withdraw(reserve.get_id(), asset, is_full_withdraw)?
-        .write();
+    user_configurator.write();
 
     event::withdraw(env, who, asset, to, withdraw_amount);
 

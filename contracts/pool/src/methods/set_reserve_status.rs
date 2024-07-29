@@ -14,11 +14,7 @@ pub fn set_reserve_status(env: &Env, asset: &Address, is_active: bool) -> Result
     reserve.configuration.is_active = is_active;
     write_reserve(env, asset, &reserve);
 
-    if is_active {
-        event::reserve_activated(env, asset);
-    } else {
-        event::reserve_deactivated(env, asset);
-    }
+    event::reserve_status_changed(env, asset, is_active);
 
     Ok(())
 }

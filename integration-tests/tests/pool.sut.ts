@@ -41,6 +41,8 @@ interface PriceFeedConfig {
     feed_asset: SlenderAsset;
     feed_decimals: number;
     twap_records: number;
+    min_timestamp_delta: number;
+    timestamp_precision: string;
 }
 
 interface PriceData {
@@ -69,7 +71,7 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     await initToken(client, "USDC", "USD Coin", 9);
     await initToken(client, "RWA", "RWA asset", 9);
 
-    await initPool(client, `${generateSalt(++salt)}`);
+    await initPool(client, `${generateSalt(++salt)}`, "XLM");
     // need to create treasury account to be able to receive native XLM token
     await client.registerAccount(treasuryKeys.publicKey());
 
@@ -95,8 +97,6 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     await initPoolBorrowing(client, "XRP");
     await initPoolBorrowing(client, "USDC");
 
-    await initBaseAsset(client, "XLM", 7);
-
     await initPrice(client, "XLM", 100_000_000_000_000n, 0);
     await initPrice(client, "XRP", 10_000_000_000_000_000n, 0);
     await initPrice(client, "USDC", 10_000_000_000_000_000n, 0);
@@ -104,43 +104,59 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
 
     await initPoolPriceFeed(client, [
         {
-        asset: "XLM",
-        asset_decimals: 7,
-        priceFeedConfig: {
-            feed_asset: "XLM",
-            feed_decimals: 14,
-            feed: process.env.SLENDER_PRICE_FEED,
+            asset: "XLM",
+            asset_decimals: 7,
+            max_sanity_price_in_base: 1n,
+            min_sanity_price_in_base: 99_999_999_999n,
+            priceFeedConfig: {
+                feed_asset: "XLM",
+                feed_decimals: 14,
+                feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
+                min_timestamp_delta: 100_000_000_000,
+                timestamp_precision: "Sec"
             },
         },
         {
-        asset: "XRP",
-        asset_decimals: 9,
-        priceFeedConfig: {
-            feed_asset: "XRP",
-            feed_decimals: 16,
-            feed: process.env.SLENDER_PRICE_FEED,
+            asset: "XRP",
+            asset_decimals: 9,
+            max_sanity_price_in_base: 99_999_999_999n,
+            min_sanity_price_in_base: 1n,
+            priceFeedConfig: {
+                feed_asset: "XRP",
+                feed_decimals: 16,
+                feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
+                min_timestamp_delta: 100_000_000_000,
+                timestamp_precision: "Sec"
             },
         },
         {
-        asset: "USDC",
-        asset_decimals: 9,
-        priceFeedConfig: {
-            feed_asset: "USDC",
-            feed_decimals: 16,
-            feed: process.env.SLENDER_PRICE_FEED,
+            asset: "USDC",
+            asset_decimals: 9,
+            max_sanity_price_in_base: 99_999_999_999n,
+            min_sanity_price_in_base: 1n,
+            priceFeedConfig: {
+                feed_asset: "USDC",
+                feed_decimals: 16,
+                feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
+                min_timestamp_delta: 100_000_000_000,
+                timestamp_precision: "Sec"
             },
         },
         {
             asset: "RWA",
             asset_decimals: 9,
+            max_sanity_price_in_base: 99_999_999_999n,
+            min_sanity_price_in_base: 1n,
             priceFeedConfig: {
                 feed_asset: "RWA",
                 feed_decimals: 16,
                 feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
+                min_timestamp_delta: 100_000_000_000,
+                timestamp_precision: "Sec"
             },
         },
     ]);
@@ -244,8 +260,9 @@ export async function sTokenUnderlyingBalanceOf(
 ): Promise<bigint> {
     const xdrResponse = await client.simulateTransaction(
         process.env.SLENDER_POOL,
-        "stoken_underlying_balance",
-        convertToScvAddress(process.env[`SLENDER_S_TOKEN_${asset}`])
+        "token_balance",
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
+        convertToScvAddress(process.env[`SLENDER_S_TOKEN_${asset}`]),
     );
 
     return parseScvToJs(xdrResponse);
@@ -427,7 +444,7 @@ export async function deployReceiverMock(): Promise<string> {
     const flashLoadReceiverMockAddress = (
         (await new Promise((resolve, reject) => {
             exec(
-        `soroban contract deploy \
+                `soroban contract deploy \
         --wasm ../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm \
         --source ${adminKeys.secret()} \
         --rpc-url "${process.env.SOROBAN_RPC_URL}" \
@@ -459,7 +476,7 @@ export async function liquidateCli(
     const liquidateResult = (
         (await new Promise((resolve) => {
             exec(
-        `soroban --very-verbose contract invoke \
+                `soroban --very-verbose contract invoke \
         --id ${process.env.SLENDER_POOL} \
         --source ${liquidatorKeys.secret()} \
         --rpc-url "${process.env.SOROBAN_RPC_URL}" \
@@ -714,7 +731,11 @@ async function initDToken(
     );
 }
 
-async function initPool(client: SorobanClient, salt: string): Promise<void> {
+async function initPool(
+    client: SorobanClient,
+    salt: string,
+    base_asset: SlenderAsset
+): Promise<void> {
     await initContract<Array<any>>(
         "POOL",
         () =>
@@ -726,14 +747,21 @@ async function initPool(client: SorobanClient, salt: string): Promise<void> {
                 convertToScvBytes(salt, "hex"),
                 convertToScvBytes(process.env.SLENDER_POOL_HASH, "hex"),
                 convertToScvAddress(adminKeys.publicKey()),
-                convertToScvAddress(treasuryKeys.publicKey()),
-                convertToScvU32(5),
-                convertToScvU32(2_500),
                 convertToScvMap({
-                    alpha: convertToScvU32(143),
-                    initial_rate: convertToScvU32(200),
-                    max_rate: convertToScvU32(50_000),
-                    scaling_coeff: convertToScvU32(9_000),
+                    base_asset_address: convertToScvAddress(process.env[`SLENDER_TOKEN_${base_asset}`]),
+                    base_asset_decimals: convertToScvU32(7),
+                    flash_loan_fee: convertToScvU32(5),
+                    grace_period: convertToScvU64(1),
+                    initial_health: convertToScvU32(2_500),
+                    ir_alpha: convertToScvU32(143),
+                    ir_initial_rate: convertToScvU32(200),
+                    ir_max_rate: convertToScvU32(50_000),
+                    ir_scaling_coeff: convertToScvU32(9_000),
+                    liquidation_protocol_fee: convertToScvU32(0),
+                    min_collat_amount: convertToScvI128(1n),
+                    min_debt_amount: convertToScvI128(1n),
+                    timestamp_window: convertToScvU64(20),
+                    user_assets_limit: convertToScvU32(4),
                 })
             ),
         (result) => result[0]
@@ -788,6 +816,8 @@ async function initPoolPriceFeed(
     inputs: {
         asset: SlenderAsset,
         asset_decimals: number,
+        max_sanity_price_in_base: bigint,
+        min_sanity_price_in_base: bigint,
         priceFeedConfig: PriceFeedConfig
     }[]
 ): Promise<void> {
@@ -809,9 +839,13 @@ async function initPoolPriceFeed(
                             convertToScvAddress(process.env[`SLENDER_TOKEN_${input.priceFeedConfig.feed_asset}`])
                         ]),
                         "feed_decimals": convertToScvU32(input.priceFeedConfig.feed_decimals),
+                        "min_timestamp_delta": convertToScvU64(input.priceFeedConfig.min_timestamp_delta),
+                        "timestamp_precision": convertToScvVec([xdr.ScVal.scvSymbol(input.priceFeedConfig.timestamp_precision)]),
                         "twap_records": convertToScvU32(input.priceFeedConfig.twap_records)
                     })
                 ]),
+                "max_sanity_price_in_base": convertToScvI128(input.max_sanity_price_in_base),
+                "min_sanity_price_in_base": convertToScvI128(input.min_sanity_price_in_base)
             })))
         )
     );
@@ -827,24 +861,6 @@ async function initPoolBorrowing(client: SorobanClient, asset: SlenderAsset): Pr
             3,
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvBool(true)
-        )
-    );
-}
-
-async function initBaseAsset(
-    client: SorobanClient,
-    asset: SlenderAsset,
-    decimals: number
-): Promise<void> {
-    await initContract(
-        `POOL_${asset}_BASE_ASSET_SET`,
-        () => client.sendTransaction(
-            process.env.SLENDER_POOL,
-            "set_base_asset",
-            adminKeys,
-            3,
-            convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
-            convertToScvU32(decimals)
         )
     );
 }

@@ -1,16 +1,21 @@
+use pool_interface::types::error::Error;
+use pool_interface::types::pool_config::PoolConfig;
+use pool_interface::types::reserve_data::ReserveData;
 use pool_interface::types::reserve_type::ReserveType;
-use pool_interface::types::{error::Error, reserve_data::ReserveData};
 use s_token_interface::STokenClient;
 use soroban_sdk::{token, Address, Env};
 
+use crate::add_token_balance;
 use crate::event;
+use crate::read_pause_info;
+use crate::read_pool_config;
 use crate::storage::{
-    add_stoken_underlying_balance, read_reserve, read_stoken_underlying_balance,
-    read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
+    read_reserve, read_token_balance, read_token_total_supply, write_token_balance,
+    write_token_total_supply,
 };
 use crate::types::user_configurator::UserConfigurator;
 
-use super::utils::get_collat_coeff::get_collat_coeff;
+use super::utils::get_collat_coeff::get_lp_amount;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
 use super::utils::validation::{
     require_active_reserve, require_liquidity_cap_not_exceeded, require_not_paused,
@@ -20,13 +25,17 @@ use super::utils::validation::{
 pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<(), Error> {
     who.require_auth();
 
-    require_not_paused(env);
+    let pause_info = read_pause_info(env);
+    require_not_paused(env, &pause_info);
+
     require_positive_amount(env, amount);
 
     let reserve = read_reserve(env, asset)?;
     require_active_reserve(env, &reserve);
 
-    let mut user_configurator = UserConfigurator::new(env, who, true);
+    let pool_config = read_pool_config(env)?;
+    let mut user_configurator =
+        UserConfigurator::new(env, who, true, Some(pool_config.user_assets_limit));
     let user_config = user_configurator.user_config()?;
     require_zero_debt(env, user_config, reserve.get_id());
 
@@ -39,6 +48,7 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
                 who,
                 asset,
                 &reserve,
+                &pool_config,
                 read_token_total_supply(env, s_token_address),
                 debt_token_supply,
                 read_token_balance(env, s_token_address, who),
@@ -50,6 +60,7 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
                 env,
                 asset,
                 &reserve,
+                &pool_config,
                 s_token_supply_after,
                 debt_token_supply,
             )?;
@@ -74,26 +85,33 @@ fn do_deposit_fungible(
     who: &Address,
     asset: &Address,
     reserve: &ReserveData,
+    pool_config: &PoolConfig,
     s_token_supply: i128,
     debt_token_supply: i128,
     who_collat: i128,
     amount: i128,
     s_token_address: &Address,
 ) -> Result<(bool, i128), Error> {
-    let balance = read_stoken_underlying_balance(env, s_token_address);
-    require_liquidity_cap_not_exceeded(env, reserve, debt_token_supply, balance, amount)?;
-
-    let collat_coeff = get_collat_coeff(
+    let s_token_underlying_balance = read_token_balance(env, asset, s_token_address);
+    require_liquidity_cap_not_exceeded(
         env,
         reserve,
-        s_token_supply,
-        read_stoken_underlying_balance(env, s_token_address),
         debt_token_supply,
+        s_token_underlying_balance,
+        amount,
     )?;
+
     let is_first_deposit = who_collat == 0;
-    let amount_to_mint = collat_coeff
-        .recip_mul_int(amount)
-        .ok_or(Error::MathOverflowError)?;
+    let amount_to_mint = get_lp_amount(
+        env,
+        reserve,
+        pool_config,
+        s_token_supply,
+        s_token_underlying_balance,
+        debt_token_supply,
+        amount,
+        false,
+    )?;
     let s_token_supply_after = s_token_supply
         .checked_add(amount_to_mint)
         .ok_or(Error::MathOverflowError)?;
@@ -104,7 +122,7 @@ fn do_deposit_fungible(
     token::Client::new(env, asset).transfer(who, s_token_address, &amount);
     STokenClient::new(env, s_token_address).mint(who, &amount_to_mint);
 
-    add_stoken_underlying_balance(env, s_token_address, amount)?;
+    add_token_balance(env, asset, s_token_address, amount)?;
     write_token_total_supply(env, s_token_address, s_token_supply_after)?;
     write_token_balance(env, s_token_address, who, who_collat_after)?;
 

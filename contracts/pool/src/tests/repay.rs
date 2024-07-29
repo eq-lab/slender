@@ -1,7 +1,8 @@
 use crate::tests::sut::{fill_pool, init_pool, DAY};
 use crate::*;
-use soroban_sdk::testutils::{Events, Ledger};
+use soroban_sdk::testutils::Events;
 use soroban_sdk::{vec, IntoVal, Symbol};
+use tests::sut::set_time;
 
 #[test]
 fn should_partially_repay() {
@@ -13,12 +14,13 @@ fn should_partially_repay() {
     let debt_token = &debt_config.token.address;
     let stoken_token = &debt_config.s_token().address;
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
-    let treasury_address = sut.pool.treasury().clone();
+    set_time(&env, &sut, 2 * DAY, false);
 
-    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
+    let stoken_underlying_balance = sut
+        .pool
+        .token_balance(&debt_config.token.address, &stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
-    let treasury_balance = debt_config.token.balance(&treasury_address);
+    let treasury_balance = sut.pool.protocol_fee(&debt_config.token.address);
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 60_000_000);
@@ -28,14 +30,16 @@ fn should_partially_repay() {
 
     sut.pool.repay(&borrower, &debt_token, &20_000_000i128);
 
-    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
+    let stoken_underlying_balance = sut
+        .pool
+        .token_balance(&debt_config.token.address, &stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
-    let treasury_balance = debt_config.token.balance(&treasury_address);
+    let treasury_balance = sut.pool.protocol_fee(&debt_config.token.address);
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
-    assert_eq!(stoken_underlying_balance, 79_997_089);
+    assert_eq!(stoken_underlying_balance, 79_997_090);
     assert_eq!(user_balance, 1_020_000_000);
-    assert_eq!(treasury_balance, 2_911);
+    assert_eq!(treasury_balance, 2_910);
     assert_eq!(user_debt_balance, 20_004_549);
 }
 
@@ -49,12 +53,13 @@ fn should_fully_repay() {
     let debt_token = &debt_config.token.address;
     let stoken_token = &debt_config.s_token().address;
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
-    let treasury_address = sut.pool.treasury().clone();
+    set_time(&env, &sut, 2 * DAY, false);
 
-    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
+    let stoken_underlying_balance = sut
+        .pool
+        .token_balance(&debt_config.token.address, &stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
-    let treasury_balance = debt_config.token.balance(&treasury_address);
+    let treasury_balance = sut.pool.protocol_fee(&debt_config.token.address);
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 60_000_000);
@@ -64,14 +69,16 @@ fn should_fully_repay() {
 
     sut.pool.repay(&borrower, &debt_token, &i128::MAX);
 
-    let stoken_underlying_balance = sut.pool.stoken_underlying_balance(&stoken_token);
+    let stoken_underlying_balance = sut
+        .pool
+        .token_balance(&debt_config.token.address, &stoken_token);
     let user_balance = debt_config.token.balance(&borrower);
-    let treasury_balance = debt_config.token.balance(&treasury_address);
+    let treasury_balance = sut.pool.protocol_fee(&debt_config.token.address);
     let user_debt_balance = debt_config.debt_token().balance(&borrower);
 
     assert_eq!(stoken_underlying_balance, 100_003_275);
-    assert_eq!(user_balance, 999_990_902);
-    assert_eq!(treasury_balance, 5_823);
+    assert_eq!(user_balance, 999_990_903);
+    assert_eq!(treasury_balance, 5_822);
     assert_eq!(user_debt_balance, 0);
 }
 
@@ -90,6 +97,7 @@ fn should_change_user_config() {
     let reserve = sut.pool.get_reserve(&debt_config.token.address).unwrap();
 
     assert_eq!(user_config.is_borrowing(&env, reserve.get_id()), false);
+    assert_eq!(user_config.total_assets(), 1);
 }
 
 #[test]
@@ -100,7 +108,7 @@ fn should_affect_coeffs() {
     let sut = init_pool(&env, false);
     let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     let collat_coeff_prev = sut.pool.collat_coeff(&debt_config.token.address);
     let debt_coeff_prev = sut.pool.debt_coeff(&debt_config.token.address);
@@ -108,7 +116,7 @@ fn should_affect_coeffs() {
     sut.pool
         .repay(&borrower, &debt_config.token.address, &20_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
+    set_time(&env, &sut, 3 * DAY, false);
 
     let collat_coeff = sut.pool.collat_coeff(&debt_config.token.address);
     let debt_coeff = sut.pool.debt_coeff(&debt_config.token.address);
@@ -127,12 +135,12 @@ fn should_affect_account_data() {
 
     let account_position_prev = sut.pool.account_position(&borrower);
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool
         .repay(&borrower, &debt_config.token.address, &10_000_000);
 
-    env.ledger().with_mut(|li| li.timestamp = 3 * DAY);
+    set_time(&env, &sut, 3 * DAY, false);
 
     let account_position = sut.pool.account_position(&borrower);
 
@@ -163,7 +171,7 @@ fn should_emit_events() {
     let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
     let debt_token = &debt_config.token.address;
 
-    env.ledger().with_mut(|li| li.timestamp = 2 * DAY);
+    set_time(&env, &sut, 2 * DAY, false);
 
     sut.pool.repay(&borrower, &debt_token.clone(), &i128::MAX);
 
@@ -176,14 +184,14 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "repay"), borrower.clone()).into_val(&env),
-                (debt_token, 40_009_098i128).into_val(&env)
+                (debt_token, 40_009_097i128).into_val(&env)
             ),
         ]
     );
 }
 
 #[test]
-#[should_panic(expected = "HostError: Error(Contract, #110)")]
+#[should_panic(expected = "HostError: Error(Contract, #105)")]
 fn should_fail_when_repay_rwa() {
     let env = Env::default();
     env.mock_all_auths();
@@ -193,4 +201,98 @@ fn should_fail_when_repay_rwa() {
     let rwa_address = sut.rwa_config().token.address.clone();
 
     sut.pool.repay(&borrower, &rwa_address, &10_000_000);
+}
+
+#[test]
+#[should_panic(expected = "HostError: Error(Contract, #3)")]
+fn should_fail_when_debt_lt_min_position_amount() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
+    let debt_token = &debt_config.token.address;
+
+    sut.pool.set_pool_configuration(&PoolConfig {
+        base_asset_address: sut.reserves[0].token.address.clone(),
+        base_asset_decimals: sut.reserves[0].token.decimals(),
+        flash_loan_fee: 5,
+        initial_health: 0,
+        timestamp_window: 20,
+        grace_period: 1,
+        user_assets_limit: 2,
+        min_collat_amount: 0,
+        min_debt_amount: 300_000,
+        liquidation_protocol_fee: 0,
+        ir_alpha: 143,
+        ir_initial_rate: 200,
+        ir_max_rate: 50_000,
+        ir_scaling_coeff: 9_000,
+    });
+
+    set_time(&env, &sut, 2 * DAY, false);
+
+    sut.pool.repay(&borrower, &debt_token, &20_000_000i128);
+}
+
+#[test]
+fn should_not_fail_in_grace_period() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
+    let debt_token = &debt_config.token.address;
+    let stoken_token = &debt_config.s_token().address;
+
+    set_time(&env, &sut, 2 * DAY, false);
+
+    let stoken_underlying_balance = sut
+        .pool
+        .token_balance(&debt_config.token.address, &stoken_token);
+    let user_balance = debt_config.token.balance(&borrower);
+    let treasury_balance = sut.pool.protocol_fee(&debt_config.token.address);
+    let user_debt_balance = debt_config.debt_token().balance(&borrower);
+
+    assert_eq!(stoken_underlying_balance, 60_000_000);
+    assert_eq!(user_balance, 1_040_000_000);
+    assert_eq!(treasury_balance, 0);
+    assert_eq!(user_debt_balance, 40_000_001);
+
+    sut.pool.set_pause(&true);
+    sut.pool.set_pause(&false);
+
+    sut.pool.repay(&borrower, &debt_token, &i128::MAX);
+
+    let stoken_underlying_balance = sut
+        .pool
+        .token_balance(&debt_config.token.address, &stoken_token);
+    let user_balance = debt_config.token.balance(&borrower);
+    let treasury_balance = sut.pool.protocol_fee(&debt_config.token.address);
+    let user_debt_balance = debt_config.debt_token().balance(&borrower);
+
+    assert_eq!(stoken_underlying_balance, 100_003_275);
+    assert_eq!(user_balance, 999_990_903);
+    assert_eq!(treasury_balance, 5_822);
+    assert_eq!(user_debt_balance, 0);
+}
+
+#[test]
+fn repay_should_pay_protocol_fee() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let sut = init_pool(&env, false);
+    let (_, borrower, debt_config) = fill_pool(&env, &sut, true);
+    let debt_token = &debt_config.token.address;
+
+    set_time(&env, &sut, 2 * DAY, false);
+
+    let protocol_fee_before = sut.pool.protocol_fee(debt_token);
+
+    sut.pool.repay(&borrower, debt_token, &i128::MAX);
+
+    let protocol_fee_after = sut.pool.protocol_fee(debt_token);
+
+    assert_eq!(protocol_fee_after - protocol_fee_before, 5822);
 }

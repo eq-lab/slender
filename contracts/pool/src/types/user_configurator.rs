@@ -3,22 +3,30 @@ use pool_interface::types::user_config::UserConfiguration;
 use soroban_sdk::{Address, Env};
 
 use crate::event;
+use crate::methods::utils::validation::require_not_exceed_assets_limit;
 use crate::storage::{read_user_config, write_user_config};
 
 pub struct UserConfigurator<'a> {
     env: &'a Env,
     user: &'a Address,
+    assets_limit: u32,
     create_if_none: bool,
     should_write: bool,
     user_config: Option<UserConfiguration>,
 }
 
 impl<'a> UserConfigurator<'a> {
-    pub fn new(env: &'a Env, user: &'a Address, create_if_none: bool) -> Self {
+    pub fn new(
+        env: &'a Env,
+        user: &'a Address,
+        create_if_none: bool,
+        mb_assets_limit: Option<u32>,
+    ) -> Self {
         Self {
             env,
             create_if_none,
             user,
+            assets_limit: mb_assets_limit.unwrap_or_default(),
             user_config: None,
             should_write: false,
         }
@@ -38,6 +46,7 @@ impl<'a> UserConfigurator<'a> {
         let user_config = self.read_user_config()?.user_config.as_mut().unwrap();
 
         user_config.set_using_as_collateral(env, reserve_id, false);
+
         event::reserve_used_as_collateral_disabled(env, self.user, asset);
 
         self.should_write = true;
@@ -56,9 +65,12 @@ impl<'a> UserConfigurator<'a> {
         }
 
         let env = self.env;
+        let assets_limit = self.assets_limit;
         let user_config = self.read_user_config()?.user_config.as_mut().unwrap();
 
         user_config.set_using_as_collateral(env, reserve_id, true);
+        require_not_exceed_assets_limit(env, user_config.total_assets(), assets_limit);
+
         event::reserve_used_as_collateral_enabled(env, self.user, asset);
 
         self.should_write = true;
@@ -72,9 +84,11 @@ impl<'a> UserConfigurator<'a> {
         }
 
         let env = self.env;
+        let assets_limit = self.assets_limit;
         let user_config = self.read_user_config()?.user_config.as_mut().unwrap();
 
         user_config.set_borrowing(env, reserve_id, true);
+        require_not_exceed_assets_limit(env, user_config.total_assets(), assets_limit);
 
         self.should_write = true;
 
@@ -88,6 +102,7 @@ impl<'a> UserConfigurator<'a> {
 
         let env = self.env;
         let user_config = self.read_user_config()?.user_config.as_mut().unwrap();
+
         user_config.set_borrowing(env, reserve_id, false);
 
         self.should_write = true;

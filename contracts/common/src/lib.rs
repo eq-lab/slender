@@ -15,3 +15,6 @@ pub const PERCENTAGE_FACTOR: u32 = 10_000;
 
 ///Seconds in year. Equal 365.25 * 24 * 60 * 60
 pub const ONE_YEAR: u64 = 31_557_600;
+
+///Seconds in day. Equal 24 * 60 * 60
+pub const ONE_DAY: u64 = 86_400;

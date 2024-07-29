@@ -61,8 +61,8 @@ fn should_upgrade_contracts() {
     let s_token_version_before = sut.s_token().version();
     let debt_token_version_before = sut.debt_token().version();
 
-    sut.pool.upgrade_s_token(&asset, &s_token_v2_wasm);
-    sut.pool.upgrade_debt_token(&asset, &debt_token_v2_wasm);
+    sut.pool.upgrade_token(&asset, &true, &s_token_v2_wasm);
+    sut.pool.upgrade_token(&asset, &false, &debt_token_v2_wasm);
     sut.pool.upgrade(&pool_v2_wasm);
 
     let pool_version_after = sut.pool.version();

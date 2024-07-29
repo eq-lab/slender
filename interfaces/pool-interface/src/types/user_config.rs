@@ -6,30 +6,50 @@ const BORROWING_MASK: u128 = 0x55555555555555555555555555555555;
 
 #[contracttype]
 #[derive(Default)]
-/// Implements the bitmap logic to handle the user configuration.
-/// Even positions is collateral flags and uneven is borrowing flags.
-pub struct UserConfiguration(u128);
+pub struct UserConfiguration(u128, u32);
 
 impl UserConfiguration {
-    pub fn set_borrowing(&mut self, env: &Env, reserve_index: u8, borrowing: bool) {
+    pub fn set_borrowing(&mut self, env: &Env, reserve_index: u8, borrow: bool) {
         Self::require_reserve_index(env, reserve_index);
+        let is_borrowed_before = self.is_borrowing(env, reserve_index);
 
         let reserve_index: u128 = reserve_index.into();
         self.0 = (self.0 & !(1 << (reserve_index * 2)))
-            | ((if borrowing { 1 } else { 0 }) << (reserve_index * 2));
+            | ((if borrow { 1 } else { 0 }) << (reserve_index * 2));
+
+        if is_borrowed_before == borrow {
+            return;
+        }
+
+        if borrow {
+            self.1 += 1;
+        } else {
+            self.1 -= 1;
+        };
     }
 
     pub fn set_using_as_collateral(
         &mut self,
         env: &Env,
         reserve_index: u8,
-        using_as_collateral: bool,
+        use_as_collateral: bool,
     ) {
         Self::require_reserve_index(env, reserve_index);
+        let is_collat_before = self.is_using_as_collateral(env, reserve_index);
 
         let reserve_index: u128 = reserve_index.into();
         self.0 = (self.0 & !(1 << (reserve_index * 2 + 1)))
-            | ((if using_as_collateral { 1 } else { 0 }) << (reserve_index * 2 + 1));
+            | ((if use_as_collateral { 1 } else { 0 }) << (reserve_index * 2 + 1));
+
+        if is_collat_before == use_as_collateral {
+            return;
+        }
+
+        if use_as_collateral {
+            self.1 += 1;
+        } else {
+            self.1 -= 1;
+        };
     }
 
     pub fn is_using_as_collateral(&self, env: &Env, reserve_index: u8) -> bool {
@@ -60,11 +80,15 @@ impl UserConfiguration {
         self.0 == 0
     }
 
+    pub fn total_assets(&self) -> u32 {
+        self.1
+    }
+
     fn require_reserve_index(env: &Env, reserve_index: u8) {
         assert_with_error!(
             env,
-            reserve_index < core::mem::size_of::<u128>() as u8 / 2,
-            Error::UserConfigInvalidIndex
+            reserve_index < core::mem::size_of::<u128>() as u8 / 2, // todo: size_of returns bytes, not bits, need to multiply by 8
+            Error::ExceededMaxValue
         );
     }
 }

@@ -42,14 +42,6 @@ impl FixedI128 {
             .map(FixedI128)
     }
 
-    pub fn to_precision(self, precision: u32) -> Option<i128> {
-        let prec_denom = 10i128.checked_pow(precision)?;
-
-        self.0
-            .checked_mul(prec_denom)?
-            .checked_div(Self::DENOMINATOR)
-    }
-
     /// Multiplication of two fixed values
     pub fn checked_mul(self, value: FixedI128) -> Option<FixedI128> {
         self.0
@@ -82,6 +74,27 @@ impl FixedI128 {
             .checked_div(Self::DENOMINATOR)
     }
 
+    pub fn mul_int_ceil<T: Into<i128>>(self, other: T) -> Option<i128> {
+        let other = other.into();
+        if other == 0 {
+            return Some(0);
+        }
+
+        let mb_res = self.0.checked_mul(other)?.checked_div(Self::DENOMINATOR);
+
+        mb_res.map(|res| {
+            let res_1 = res.abs();
+
+            if res_1 == 0 {
+                1
+            } else if res_1 % Self::DENOMINATOR == 0 {
+                res
+            } else {
+                res + 1
+            }
+        })
+    }
+
     /// Calculates division of non fixed int value and fixed value, e.g.  other / self.
     /// Result is int value
     pub fn recip_mul_int<T: Into<i128>>(self, other: T) -> Option<i128> {
@@ -99,9 +112,13 @@ impl FixedI128 {
         }
         let mb_res = Self::DENOMINATOR.checked_mul(other)?.checked_div(self.0);
         mb_res.map(|res| {
-            if res == 0 {
+            let res_1 = res.abs();
+            let other_1 = other.abs();
+            let self_1 = self.0.abs();
+
+            if res_1 == 0 {
                 1
-            } else if other >= self.0 && other % self.0 == 0 {
+            } else if other_1 % self_1 == 0 {
                 res
             } else {
                 res + 1
