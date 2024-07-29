@@ -444,7 +444,7 @@ export async function deployReceiverMock(): Promise<string> {
     const flashLoadReceiverMockAddress = (
         (await new Promise((resolve, reject) => {
             exec(
-                `soroban contract deploy \
+                `stellar contract deploy \
         --wasm ../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm \
         --source ${adminKeys.secret()} \
         --rpc-url "${process.env.SOROBAN_RPC_URL}" \
@@ -476,7 +476,7 @@ export async function liquidateCli(
     const liquidateResult = (
         (await new Promise((resolve) => {
             exec(
-                `soroban --very-verbose contract invoke \
+                `stellar --very-verbose contract invoke \
         --id ${process.env.SLENDER_POOL} \
         --source ${liquidatorKeys.secret()} \
         --rpc-url "${process.env.SOROBAN_RPC_URL}" \

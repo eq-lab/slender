@@ -6,25 +6,25 @@ ARTIFACTS=$BASEDIR/../artifacts
 source $ARTIFACTS/.contracts
 source $BASEDIR/.$1.env
 
-soroban contract bindings typescript \
+stellar contract bindings typescript \
   --output-dir $ARTIFACTS/debttoken \
   --rpc-url "$SOROBAN_RPC_URL" \
   --network-passphrase "$PASSPHRASE" \
   --contract-id $SLENDER_DEBT_TOKEN_XLM &>/dev/null
 
-soroban contract bindings typescript \
+stellar contract bindings typescript \
   --output-dir $ARTIFACTS/stoken \
   --rpc-url "$SOROBAN_RPC_URL" \
   --network-passphrase "$PASSPHRASE" \
   --contract-id $SLENDER_S_TOKEN_XLM &>/dev/null
 
-soroban contract bindings typescript \
+stellar contract bindings typescript \
   --output-dir $ARTIFACTS/pool \
   --rpc-url "$SOROBAN_RPC_URL" \
   --network-passphrase "$PASSPHRASE" \
   --contract-id $SLENDER_POOL &>/dev/null
 
-soroban contract bindings typescript \
+stellar contract bindings typescript \
   --output-dir $ARTIFACTS/token \
   --rpc-url "$SOROBAN_RPC_URL" \
   --network-passphrase "$PASSPHRASE" \

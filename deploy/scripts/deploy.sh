@@ -8,7 +8,7 @@ BUILD=$BASEDIR/../../target/wasm32-unknown-unknown/release
 source $BASEDIR/.$1.env
 
 deploy() {
-    local address=$(soroban contract deploy \
+    local address=$(stellar contract deploy \
         --wasm $1 \
         --source $2 \
         --rpc-url "$SOROBAN_RPC_URL" \
@@ -17,7 +17,7 @@ deploy() {
 }
 
 install() {
-    local hash=$(soroban contract install \
+    local hash=$(stellar contract install \
         --wasm $1 \
         --source $2 \
         --rpc-url "$SOROBAN_RPC_URL" \
@@ -38,7 +38,7 @@ cp $MOCKS/soroban_token_contract.wasm $ARTIFACTS/token.wasm
 
 echo "WASM files have been copied"
 
-find $ARTIFACTS -name \*.wasm -exec soroban contract optimize --wasm {} --wasm-out {} \; 1>/dev/null
+find $ARTIFACTS -name \*.wasm -exec stellar contract optimize --wasm {} --wasm-out {} \; 1>/dev/null
 
 echo "WASM files has been optimized"
 
