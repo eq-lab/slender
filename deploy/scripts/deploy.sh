@@ -8,7 +8,8 @@ BUILD=$BASEDIR/../../target/wasm32-unknown-unknown/release
 source $BASEDIR/.$1.env
 
 deploy() {
-    local address=$(stellar contract deploy \
+    local address
+    address=$(stellar contract deploy \
         --wasm $1 \
         --source $2 \
         --rpc-url "$SOROBAN_RPC_URL" \
@@ -17,7 +18,8 @@ deploy() {
 }
 
 install() {
-    local hash=$(stellar contract install \
+    local hash
+    hash=$(stellar contract install \
         --wasm $1 \
         --source $2 \
         --rpc-url "$SOROBAN_RPC_URL" \
