@@ -1,6 +1,6 @@
 # xrp
 
-soroban contract invoke \
+stellar contract invoke \
     --rpc-url "https://soroban-testnet.stellar.org/" \
     --network-passphrase "Test SDF Network ; September 2015"\
     --source SDLECWCIRM7DAZDUMMI4GKDDCPWQLEOITGDQXLPDWCL6R6F64XQPOTNK \
@@ -12,7 +12,7 @@ soroban contract invoke \
 
 # usdc
 
-soroban contract invoke \
+stellar contract invoke \
     --rpc-url "https://soroban-testnet.stellar.org/" \
     --network-passphrase "Test SDF Network ; September 2015"\
     --source SDLECWCIRM7DAZDUMMI4GKDDCPWQLEOITGDQXLPDWCL6R6F64XQPOTNK \

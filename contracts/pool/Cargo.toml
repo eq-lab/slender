@@ -18,7 +18,7 @@ price-feed-interface = { path = "../../interfaces/price-feed-interface", version
 flash-loan-receiver-interface = { path = "../../interfaces/flash-loan-receiver-interface", version = "0.1.0", package = "flash-loan-receiver-interface" }
 common = { path = "../common", version = "0.1.0", package = "common" }
 
-[dev_dependencies]
+[dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
 s-token-interface = { path = "../../interfaces/s-token-interface", features = [
     "testutils",

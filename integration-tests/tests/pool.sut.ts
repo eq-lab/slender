@@ -40,6 +40,7 @@ export interface FlashLoanAsset {
 interface PriceFeed {
     feed: string;
     feed_asset: SlenderAsset;
+    feed_asset_type: string;
     feed_decimals: number;
     twap_records: number;
     min_timestamp_delta: number;
@@ -79,7 +80,7 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
     await initToken(client, "USDC", "USD Coin", 9);
     await initToken(client, "RWA", "RWA asset", 9);
 
-    await initPool(client, `${generateSalt(++salt)}`, "XLM");
+    await initPool(client, `${generateSalt(++salt)}`);
     // need to create treasury account to be able to receive native XLM token
     await client.registerAccount(treasuryKeys.publicKey());
 
@@ -118,6 +119,7 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
             min_sanity_price_in_base: 99_999_999_999n,
             priceFeedConfig: {
                 feed_asset: "XLM",
+                feed_asset_type: 'Stellar',
                 feed_decimals: 14,
                 feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
@@ -132,6 +134,7 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
             min_sanity_price_in_base: 1n,
             priceFeedConfig: {
                 feed_asset: "XRP",
+                feed_asset_type: 'Stellar',
                 feed_decimals: 16,
                 feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
@@ -146,6 +149,7 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
             min_sanity_price_in_base: 1n,
             priceFeedConfig: {
                 feed_asset: "USDC",
+                feed_asset_type: 'Stellar',
                 feed_decimals: 16,
                 feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
@@ -160,11 +164,94 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
             min_sanity_price_in_base: 1n,
             priceFeedConfig: {
                 feed_asset: "RWA",
+                feed_asset_type: 'Stellar',
                 feed_decimals: 16,
                 feed: process.env.SLENDER_PRICE_FEED,
                 twap_records: 1,
                 min_timestamp_delta: 100_000_000_000,
                 timestamp_precision: "Sec"
+            },
+        },
+    ]);
+
+    console.log("    Contracts initialization has been finished");
+}
+
+export async function releaseInit(client: SorobanClient): Promise<void> {
+    console.log("    Contracts initialization has been started");
+
+    require("dotenv").config({ path: contractsFilename });
+
+    let salt = 0;
+    const generateSalt = (value: number): string =>
+        String(value).padStart(64, "0");
+
+    await initPool(client, `${generateSalt(++salt)}`);
+
+    await initSToken(client, "XRP", `${generateSalt(++salt)}`);
+    await initSToken(client, "USDC", `${generateSalt(++salt)}`);
+    await initSToken(client, "XLM", `${generateSalt(++salt)}`);
+
+    await initDToken(client, "XLM", `${generateSalt(++salt)}`);
+    await initDToken(client, "XRP", `${generateSalt(++salt)}`);
+    await initDToken(client, "USDC", `${generateSalt(++salt)}`);
+
+    await initPoolReserve(client, "XLM");
+    await initPoolReserve(client, "XRP");
+    await initPoolReserve(client, "USDC");
+
+    await initPoolCollateral(client, "XRP", 1);
+    await initPoolCollateral(client, "USDC", 2);
+    await initPoolCollateral(client, "XLM", 3);
+
+    await initPoolBorrowing(client, "XLM");
+    await initPoolBorrowing(client, "XRP");
+    await initPoolBorrowing(client, "USDC");
+
+    await initPoolPriceFeed(client, [
+        {
+            asset: "XLM",
+            asset_decimals: +process.env['XLM_DECIMALS'] ?? 7,
+            max_sanity_price_in_base: BigInt(+process.env['XLM_MAX_SANITY_PRICE_IN_BASE']),
+            min_sanity_price_in_base: BigInt(+process.env['XLM_MIN_SANITY_PRICE_IN_BASE']),
+            priceFeedConfig: {
+                feed_asset: "XLM",
+                feed_asset_type: process.env['XLM_FEED_ASSET_TYPE'],
+                feed_decimals: +process.env['XLM_FEED_DECIMALS'],
+                feed: process.env.SLENDER_PRICE_FEED,
+                twap_records: +process.env['XLM_PRICE_TWAP_RECORDS'],
+                min_timestamp_delta: +process.env['XLM_MIN_TIMESTAMP_DELTA'],
+                timestamp_precision: process.env['XLM_PRICE_TIMESTAMP_PRECISION']
+            },
+        },
+        {
+            asset: "XRP",
+            asset_decimals: +process.env['XRP_DECIMALS'] ?? 7,
+            max_sanity_price_in_base: BigInt(+process.env['XRP_MAX_SANITY_PRICE_IN_BASE']),
+            min_sanity_price_in_base: BigInt(+process.env['XRP_MIN_SANITY_PRICE_IN_BASE']),
+            priceFeedConfig: {
+                feed_asset: "XRP",
+                feed_asset_type: process.env['XRP_FEED_ASSET_TYPE'],
+                feed_decimals: +process.env['XRP_FEED_DECIMALS'],
+                feed: process.env.SLENDER_PRICE_FEED,
+                twap_records: +process.env['XRP_PRICE_TWAP_RECORDS'],
+                min_timestamp_delta: +process.env['XRP_MIN_TIMESTAMP_DELTA'],
+                timestamp_precision: process.env['XRP_PRICE_TIMESTAMP_PRECISION']
+            },
+        },
+        {
+            asset: "USDC",
+            asset_decimals: +process.env['USDC_DECIMALS'] ?? 7,
+            max_sanity_price_in_base: BigInt(+process.env['USDC_MAX_SANITY_PRICE_IN_BASE']),
+            min_sanity_price_in_base: BigInt(+process.env['USDC_MIN_SANITY_PRICE_IN_BASE']),
+            priceFeedConfig: {
+                feed_asset: "USDC",
+                feed_asset_type: process.env['USDC_FEED_ASSET_TYPE'],
+                feed_decimals: +process.env['USDC_FEED_DECIMALS'],
+                feed: process.env.SLENDER_PRICE_FEED,
+                twap_records: +process.env['USDC_PRICE_TWAP_RECORDS'],
+                min_timestamp_delta: +process.env['USDC_MIN_TIMESTAMP_DELTA'],
+                timestamp_precision: process.env['USDC_PRICE_TIMESTAMP_PRECISION']
             },
         },
     ]);
@@ -452,7 +539,7 @@ export async function deployReceiverMock(): Promise<string> {
     const flashLoadReceiverMockAddress = (
         (await new Promise((resolve, reject) => {
             exec(
-                `soroban contract deploy \
+                `stellar contract deploy \
         --wasm ../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm \
         --source ${adminKeys.secret()} \
         --rpc-url "${process.env.SOROBAN_RPC_URL}" \
@@ -484,7 +571,7 @@ export async function liquidateCli(
     const liquidateResult = (
         (await new Promise((resolve) => {
             exec(
-                `soroban --very-verbose contract invoke \
+                `stellar --very-verbose contract invoke \
         --id ${process.env.SLENDER_POOL} \
         --source ${liquidatorKeys.secret()} \
         --rpc-url "${process.env.SOROBAN_RPC_URL}" \
@@ -741,8 +828,7 @@ async function initDToken(
 
 async function initPool(
     client: SorobanClient,
-    salt: string,
-    base_asset: SlenderAsset
+    salt: string
 ): Promise<void> {
     await initContract<Array<any>>(
         "POOL",
@@ -756,20 +842,20 @@ async function initPool(
                 convertToScvBytes(process.env.SLENDER_POOL_HASH, "hex"),
                 convertToScvAddress(adminKeys.publicKey()),
                 convertToScvMap({
-                    base_asset_address: convertToScvAddress(process.env[`SLENDER_TOKEN_${base_asset}`]),
-                    base_asset_decimals: convertToScvU32(7),
-                    flash_loan_fee: convertToScvU32(5),
-                    grace_period: convertToScvU64(1),
-                    initial_health: convertToScvU32(2_500),
-                    ir_alpha: convertToScvU32(143),
-                    ir_initial_rate: convertToScvU32(200),
-                    ir_max_rate: convertToScvU32(50_000),
-                    ir_scaling_coeff: convertToScvU32(9_000),
-                    liquidation_protocol_fee: convertToScvU32(0),
-                    min_collat_amount: convertToScvI128(1n),
-                    min_debt_amount: convertToScvI128(1n),
-                    timestamp_window: convertToScvU64(20),
-                    user_assets_limit: convertToScvU32(4),
+                    base_asset_address: convertToScvAddress(process.env[`SLENDER_TOKEN_${process.env[`BASE_ASSET`] ?? 'XLM'}`]),
+                    base_asset_decimals: convertToScvU32(+process.env['BASE_ASSET_DECIMALS'] ?? 7),
+                    flash_loan_fee: convertToScvU32(+process.env['FLASH_LOAN_FEE_BPS'] ?? 5),
+                    grace_period: convertToScvU64(+process.env['GRACE_PERIOD_SEC'] ?? 1),
+                    initial_health: convertToScvU32(+process.env['INITIAL_HEALTH_BPS'] ?? 2_500),
+                    ir_alpha: convertToScvU32(+process.env['IR_ALPHA'] ?? 143),
+                    ir_initial_rate: convertToScvU32(+process.env['IR_INITIAL_RATE_BPS'] ?? 200),
+                    ir_max_rate: convertToScvU32(+process.env['IR_MAX_RATE_BPS'] ?? 50_000),
+                    ir_scaling_coeff: convertToScvU32(+process.env['IR_SCALING_COEFF_BPS'] ?? 9_000),
+                    liquidation_protocol_fee: convertToScvU32(+process.env['LIQUIDATION_PROTOCOL_FEE_BPS'] ?? 0),
+                    min_collat_amount: convertToScvI128(process.env['MIN_COLLAT_AMOUNT_IN_BASE'] ? BigInt(process.env['MIN_COLLAT_AMOUNT_IN_BASE']) : 1n),
+                    min_debt_amount: convertToScvI128(process.env['MIN_DEBT_AMOUNT_IN_BASE'] ? BigInt(process.env['MIN_DEBT_AMOUNT_IN_BASE']) : 1n),
+                    timestamp_window: convertToScvU64(+process.env['TIMESTAMP_WINDOW_SEC'] ?? 20),
+                    user_assets_limit: convertToScvU32(+process.env['USER_ASSET_LIMIT'] ?? 4),
                 })
             ),
         (result) => result[0]
@@ -810,10 +896,10 @@ async function initPoolCollateral(
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvMap({
                 // todo: trim to short string
-                discount: convertToScvU32(6000),
-                liq_cap: convertToScvI128(1000000000000000n),
-                pen_order: convertToScvU32(order),
-                util_cap: convertToScvU32(9000),
+                discount: convertToScvU32(+process.env[`${asset}_DISCOUNT_BPS`] ?? 6000),
+                liq_cap: convertToScvI128(process.env[`${asset}_LIQUIDITY_CAP`] ? BigInt(process.env[`${asset}_LIQUIDITY_CAP`]) : 1000000000000000n),
+                pen_order: convertToScvU32(+process.env[`${asset}_PENALTY_ORDER`] ?? order),
+                util_cap: convertToScvU32(+process.env[`${asset}_UTILIZATION_CAP`] ?? 9000),
             })
         )
     );

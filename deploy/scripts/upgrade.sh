@@ -11,7 +11,7 @@ fi
 source $BASEDIR/.$1.env
 
 invoke() {
-    local result=$(soroban --verbose contract invoke \
+    local result=$(stellar --verbose contract invoke \
         --source $2 \
         --id $1 \
         --rpc-url "$SOROBAN_RPC_URL" \
@@ -22,7 +22,7 @@ invoke() {
 }
 
 install() {
-    local hash=$(soroban contract install \
+    local hash=$(stellar contract install \
         --wasm $1 \
         --source $2 \
         --rpc-url "$SOROBAN_RPC_URL" \

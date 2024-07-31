@@ -19,7 +19,7 @@ pool-interface = { path = "../../interfaces/pool-interface", version = "0.1.0", 
 common = { path = "../common", version = "0.1.0", package = "common" }
 common-token = { path = "../common-token", version = "0.1.0", package = "common-token" }
 
-[dev_dependencies]
+[dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
 s-token-interface = { path = "../../interfaces/s-token-interface" }
 debt-token-interface = { path = "../../interfaces/debt-token-interface", version = "0.1.0", package = "debt-token-interface" }
