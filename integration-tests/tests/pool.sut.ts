@@ -36,7 +36,8 @@ export interface FlashLoanAsset {
     borrow: boolean;
 }
 
-interface PriceFeedConfig {
+
+interface PriceFeed {
     feed: string;
     feed_asset: SlenderAsset;
     feed_asset_type: string;
@@ -44,6 +45,13 @@ interface PriceFeedConfig {
     twap_records: number;
     min_timestamp_delta: number;
     timestamp_precision: string;
+}
+
+interface PriceFeedConfig {
+    feeds: PriceFeed[];
+    asset_decimals: number;
+    min_sanity_price_in_base: number;
+    max_sanity_price_in_base: number;
 }
 
 interface PriceData {
@@ -707,7 +715,7 @@ export async function readPriceFeed(
 ): Promise<PriceFeedConfig> {
     const xdrResponse = await client.simulateTransaction(
         process.env.SLENDER_POOL,
-        "price_feed",
+        "price_feeds",
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
     );
 
@@ -722,7 +730,7 @@ export async function readPrice(
     const xdrResponse = await client.simulateTransaction(
         feed,
         "lastprice",
-        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
     );
 
     return parseScvToJs<PriceData>(xdrResponse).price;
@@ -904,7 +912,7 @@ async function initPoolPriceFeed(
         asset_decimals: number,
         max_sanity_price_in_base: bigint,
         min_sanity_price_in_base: bigint,
-        priceFeedConfig: PriceFeedConfig,
+        priceFeedConfig: PriceFeed
     }[]
 ): Promise<void> {
     await initContract(
@@ -982,9 +990,9 @@ export async function inPoolBalanceOf(
 ): Promise<bigint> {
     const xdrResponse = await client.simulateTransaction(
         process.env.SLENDER_POOL,
-        "balance",
+        "token_balance",
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvAddress(who),
-        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`])
     );
 
     return parseScvToJs(xdrResponse);
