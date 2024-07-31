@@ -81,7 +81,7 @@ pub fn flash_loan(
                 &env.current_contract_address(),
                 receiver,
                 s_token_address,
-                &received_asset.amount,
+                &(received_asset.amount + received_asset.premium),
             );
 
             add_protocol_fee_vault(env, &received_asset.asset, received_asset.premium)?;
