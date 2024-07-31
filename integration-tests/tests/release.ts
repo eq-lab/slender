@@ -10,4 +10,3 @@ export async function main() {
   await deploy();
   await releaseInit(client)
 }
-
