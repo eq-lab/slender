@@ -850,7 +850,7 @@ async function initPool(
                     ir_alpha: convertToScvU32(+process.env['IR_ALPHA'] ?? 143),
                     ir_initial_rate: convertToScvU32(+process.env['IR_INITIAL_RATE_BPS'] ?? 200),
                     ir_max_rate: convertToScvU32(+process.env['IR_MAX_RATE_BPS'] ?? 50_000),
-                    ir_scaling_coeff: convertToScvU32(+process.env['IR_SCALING_COEFF'] ?? 9_000),
+                    ir_scaling_coeff: convertToScvU32(+process.env['IR_SCALING_COEFF_BPS'] ?? 9_000),
                     liquidation_protocol_fee: convertToScvU32(+process.env['LIQUIDATION_PROTOCOL_FEE_BPS'] ?? 0),
                     min_collat_amount: convertToScvI128(process.env['MIN_COLLAT_AMOUNT_IN_BASE'] ? BigInt(process.env['MIN_COLLAT_AMOUNT_IN_BASE']) : 1n),
                     min_debt_amount: convertToScvI128(process.env['MIN_DEBT_AMOUNT_IN_BASE'] ? BigInt(process.env['MIN_DEBT_AMOUNT_IN_BASE']) : 1n),
