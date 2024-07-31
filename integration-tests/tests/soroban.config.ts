@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from "fs";
 import { Keypair } from "stellar-sdk";
 
-export const contractsFilename = "../deploy/artifacts/.contracts";
+export const contractsFilename = `../deploy/artifacts/${process.env.NODE_ENV}/.contracts`;
 
 require("dotenv").config({ path: `../deploy/scripts/.${process.env.NODE_ENV}.env` });
 
