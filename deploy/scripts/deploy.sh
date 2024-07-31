@@ -1,8 +1,6 @@
 #!/bin/bash
 
 BASEDIR=$(dirname $0)
-ARTIFACTS=$BASEDIR/../artifacts
-MOCKS=$BASEDIR/../../mocks
 BUILD=$BASEDIR/../../target/wasm32-unknown-unknown/release
 
 source $BASEDIR/.$1.env
@@ -37,6 +35,8 @@ addressFromResult() {
 
 if [ $1 == "mainnet" ]
 then
+    ARTIFACTS=$BASEDIR/../artifacts/mainnet
+    
     cp $BUILD/*.wasm $ARTIFACTS
 
     echo "WASM files have been copied"
@@ -69,6 +69,9 @@ then
     POOL_HASH=$(install "$ARTIFACTS/pool.wasm" $ADMIN_SECRET)
     echo "  Pool wasm hash: $POOL_HASH"
 else
+    MOCKS=$BASEDIR/../../mocks
+    ARTIFACTS=$BASEDIR/../artifacts/testnet
+
     cp $BUILD/*.wasm $ARTIFACTS
     cp $MOCKS/soroban_token_contract.wasm $ARTIFACTS/token.wasm
 
