@@ -1,4 +1,4 @@
-import { Keypair, xdr } from "stellar-sdk";
+import { Keypair, xdr } from "@stellar/stellar-sdk";
 import { SendTransactionResult, SorobanClient } from "./soroban.client";
 import { adminKeys, contractsFilename, setEnv, treasuryKeys } from "./soroban.config";
 import {
@@ -211,7 +211,7 @@ export async function releaseInit(client: SorobanClient): Promise<void> {
     await initPoolPriceFeed(client, [
         {
             asset: "XLM",
-            asset_decimals: +process.env['XLM_DECIMALS'] ?? 7,
+            asset_decimals: +(process.env['XLM_DECIMALS'] ?? 7),
             max_sanity_price_in_base: BigInt(+process.env['XLM_MAX_SANITY_PRICE_IN_BASE']),
             min_sanity_price_in_base: BigInt(+process.env['XLM_MIN_SANITY_PRICE_IN_BASE']),
             priceFeedConfig: {
@@ -226,7 +226,7 @@ export async function releaseInit(client: SorobanClient): Promise<void> {
         },
         {
             asset: "XRP",
-            asset_decimals: +process.env['XRP_DECIMALS'] ?? 7,
+            asset_decimals: +(process.env['XRP_DECIMALS'] ?? 7),
             max_sanity_price_in_base: BigInt(+process.env['XRP_MAX_SANITY_PRICE_IN_BASE']),
             min_sanity_price_in_base: BigInt(+process.env['XRP_MIN_SANITY_PRICE_IN_BASE']),
             priceFeedConfig: {
@@ -241,7 +241,7 @@ export async function releaseInit(client: SorobanClient): Promise<void> {
         },
         {
             asset: "USDC",
-            asset_decimals: +process.env['USDC_DECIMALS'] ?? 7,
+            asset_decimals: +(process.env['USDC_DECIMALS'] ?? 7),
             max_sanity_price_in_base: BigInt(+process.env['USDC_MAX_SANITY_PRICE_IN_BASE']),
             min_sanity_price_in_base: BigInt(+process.env['USDC_MIN_SANITY_PRICE_IN_BASE']),
             priceFeedConfig: {
@@ -690,12 +690,12 @@ export function writeBudgetSnapshot(
             `${JSON.stringify(
                 {
                     [label]: {
-                        cost: transactionResult.simulation.cost,
+                        cost: transactionResult.simulation["cost"],
                         events: transactionResult.simulation.events.reduce(
                             (acc, e) => acc + e.event().toXDR().length,
                             0
                         ),
-                        readBytes: resources.readBytes(),
+                        readBytes: resources.diskReadBytes(),
                         writeBytes: resources.writeBytes(),
                         ledgerReads: resources.footprint().readOnly().length,
                         ledgerWrites: resources.footprint().readWrite().length,
@@ -843,19 +843,19 @@ async function initPool(
                 convertToScvAddress(adminKeys.publicKey()),
                 convertToScvMap({
                     base_asset_address: convertToScvAddress(process.env[`SLENDER_TOKEN_${process.env[`BASE_ASSET`] ?? 'XLM'}`]),
-                    base_asset_decimals: convertToScvU32(+process.env['BASE_ASSET_DECIMALS'] ?? 7),
-                    flash_loan_fee: convertToScvU32(+process.env['FLASH_LOAN_FEE_BPS'] ?? 5),
-                    grace_period: convertToScvU64(+process.env['GRACE_PERIOD_SEC'] ?? 1),
-                    initial_health: convertToScvU32(+process.env['INITIAL_HEALTH_BPS'] ?? 2_500),
-                    ir_alpha: convertToScvU32(+process.env['IR_ALPHA'] ?? 143),
-                    ir_initial_rate: convertToScvU32(+process.env['IR_INITIAL_RATE_BPS'] ?? 200),
-                    ir_max_rate: convertToScvU32(+process.env['IR_MAX_RATE_BPS'] ?? 50_000),
-                    ir_scaling_coeff: convertToScvU32(+process.env['IR_SCALING_COEFF_BPS'] ?? 9_000),
-                    liquidation_protocol_fee: convertToScvU32(+process.env['LIQUIDATION_PROTOCOL_FEE_BPS'] ?? 0),
+                    base_asset_decimals: convertToScvU32(+(process.env['BASE_ASSET_DECIMALS'] ?? 7)),
+                    flash_loan_fee: convertToScvU32(+(process.env['FLASH_LOAN_FEE_BPS'] ?? 5)),
+                    grace_period: convertToScvU64(+(process.env['GRACE_PERIOD_SEC'] ?? 1)),
+                    initial_health: convertToScvU32(+(process.env['INITIAL_HEALTH_BPS'] ?? 2_500)),
+                    ir_alpha: convertToScvU32(+(process.env['IR_ALPHA'] ?? 143)),
+                    ir_initial_rate: convertToScvU32(+(process.env['IR_INITIAL_RATE_BPS'] ?? 200)),
+                    ir_max_rate: convertToScvU32(+(process.env['IR_MAX_RATE_BPS'] ?? 50_000)),
+                    ir_scaling_coeff: convertToScvU32(+(process.env['IR_SCALING_COEFF_BPS'] ?? 9_000)),
+                    liquidation_protocol_fee: convertToScvU32(+(process.env['LIQUIDATION_PROTOCOL_FEE_BPS'] ?? 0)),
                     min_collat_amount: convertToScvI128(process.env['MIN_COLLAT_AMOUNT_IN_BASE'] ? BigInt(process.env['MIN_COLLAT_AMOUNT_IN_BASE']) : 1n),
                     min_debt_amount: convertToScvI128(process.env['MIN_DEBT_AMOUNT_IN_BASE'] ? BigInt(process.env['MIN_DEBT_AMOUNT_IN_BASE']) : 1n),
-                    timestamp_window: convertToScvU64(+process.env['TIMESTAMP_WINDOW_SEC'] ?? 20),
-                    user_assets_limit: convertToScvU32(+process.env['USER_ASSET_LIMIT'] ?? 4),
+                    timestamp_window: convertToScvU64(+(process.env['TIMESTAMP_WINDOW_SEC'] ?? 20)),
+                    user_assets_limit: convertToScvU32(+(process.env['USER_ASSET_LIMIT'] ?? 4)),
                 })
             ),
         (result) => result[0]
@@ -896,10 +896,10 @@ async function initPoolCollateral(
             convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
             convertToScvMap({
                 // todo: trim to short string
-                discount: convertToScvU32(+process.env[`${asset}_DISCOUNT_BPS`] ?? 6000),
+                discount: convertToScvU32(+(process.env[`${asset}_DISCOUNT_BPS`] ?? 6000)),
                 liq_cap: convertToScvI128(process.env[`${asset}_LIQUIDITY_CAP`] ? BigInt(process.env[`${asset}_LIQUIDITY_CAP`]) : 1000000000000000n),
-                pen_order: convertToScvU32(+process.env[`${asset}_PENALTY_ORDER`] ?? order),
-                util_cap: convertToScvU32(+process.env[`${asset}_UTILIZATION_CAP`] ?? 9000),
+                pen_order: convertToScvU32(+(process.env[`${asset}_PENALTY_ORDER`] ?? order)),
+                util_cap: convertToScvU32(+(process.env[`${asset}_UTILIZATION_CAP`] ?? 9000)),
             })
         )
     );

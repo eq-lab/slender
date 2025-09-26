@@ -1,15 +1,15 @@
-import { Contract, TimeoutInfinite, TransactionBuilder, Keypair, xdr, SorobanRpc, BASE_FEE } from "stellar-sdk";
+import { Contract, TimeoutInfinite, TransactionBuilder, Keypair, rpc, xdr, BASE_FEE } from "@stellar/stellar-sdk";
 import { promisify } from "util";
 import "./soroban.config";
 import { adminKeys } from "./soroban.config";
 
 export class SendTransactionResult {
-    response: SorobanRpc.Api.GetTransactionResponse;
-    simulation?: SorobanRpc.Api.SimulateTransactionSuccessResponse
+    response: rpc.Api.GetTransactionResponse;
+    simulation?: rpc.Api.SimulateTransactionSuccessResponse
 
     constructor(
-        response: SorobanRpc.Api.GetTransactionResponse,
-        simulation?: SorobanRpc.Api.SimulateTransactionSuccessResponse
+        response: rpc.Api.GetTransactionResponse,
+        simulation?: rpc.Api.SimulateTransactionSuccessResponse
     ) {
         this.response = response;
         this.simulation = simulation;
@@ -17,10 +17,10 @@ export class SendTransactionResult {
 }
 
 export class SorobanClient {
-    client: SorobanRpc.Server;
+    client: rpc.Server;
 
     constructor() {
-        this.client = new SorobanRpc.Server(process.env.SOROBAN_RPC_URL, {
+        this.client = new rpc.Server(process.env.SOROBAN_RPC_URL, {
             allowHttp: true
         });
         this.client.getHealth();
@@ -49,21 +49,21 @@ export class SorobanClient {
             .setTimeout(TimeoutInfinite)
             .build();
 
-        const simulated = await this.client.simulateTransaction(operation) as SorobanRpc.Api.SimulateTransactionSuccessResponse;
+        const simulated = await this.client.simulateTransaction(operation) as rpc.Api.SimulateTransactionSuccessResponse;
 
-        if (SorobanRpc.Api.isSimulationError(simulated)) {
+        if (rpc.Api.isSimulationError(simulated)) {
             throw new Error(simulated.error);
         } else if (!simulated.result) {
             throw new Error(`Invalid simulation: no result in ${simulated}`);
         }
 
-        const transaction = SorobanRpc.assembleTransaction(operation, simulated).build()
+        const transaction = rpc.assembleTransaction(operation, simulated).build()
 
         transaction.sign(signer);
 
         const response = await this.client.sendTransaction(transaction);
 
-        let result: SorobanRpc.Api.GetTransactionResponse;
+        let result: rpc.Api.GetTransactionResponse;
         let attempts = 15;
 
         if (response.status == "ERROR") {
@@ -74,15 +74,15 @@ export class SorobanClient {
             await delay(1000);
             result = await this.client.getTransaction(response.hash);
             attempts--;
-        } while (result.status === SorobanRpc.Api.GetTransactionStatus.NOT_FOUND && attempts > 0);
+        } while (result.status === rpc.Api.GetTransactionStatus.NOT_FOUND && attempts > 0);
 
-        if (result.status == SorobanRpc.Api.GetTransactionStatus.NOT_FOUND) {
+        if (result.status == rpc.Api.GetTransactionStatus.NOT_FOUND) {
             throw Error("Submitted transaction was not found");
         }
 
         if ("resultXdr" in result) {
-            const getResult = result as SorobanRpc.Api.GetTransactionResponse;
-            if (getResult.status !== SorobanRpc.Api.GetTransactionStatus.SUCCESS) {
+            const getResult = result as rpc.Api.GetTransactionResponse;
+            if (getResult.status !== rpc.Api.GetTransactionStatus.SUCCESS) {
                 throw new Error('Transaction result is insuccessfull');
             }
 
@@ -121,7 +121,7 @@ export class SorobanClient {
 
         const simulated = await this.client.simulateTransaction(operation);
 
-        if (SorobanRpc.Api.isSimulationError(simulated)) {
+        if (rpc.Api.isSimulationError(simulated)) {
             throw new Error(simulated.error);
         } else if (!simulated.result) {
             throw new Error(`invalid simulation: no result in ${simulated}`);

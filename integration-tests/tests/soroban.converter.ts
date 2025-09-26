@@ -1,4 +1,4 @@
-import { Address, xdr } from 'stellar-sdk';
+import { Address, xdr } from '@stellar/stellar-sdk';
 import { Buffer } from "node:buffer";
 import { bufToBigint } from 'bigint-conversion';
 
