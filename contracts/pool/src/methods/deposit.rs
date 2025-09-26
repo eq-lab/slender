@@ -136,7 +136,7 @@ fn do_deposit_fungible(
 
 fn do_deposit_rwa(env: &Env, who: &Address, asset: &Address, amount: i128) -> Result<bool, Error> {
     let balance_before = read_token_balance(env, asset, who);
-    token::Client::new(env, asset).transfer(who, &env.current_contract_address(), &amount);
+    token::Client::new(env, asset).transfer(who, env.current_contract_address(), &amount);
     let balance_after = balance_before
         .checked_add(amount)
         .ok_or(Error::MathOverflowError)?;
