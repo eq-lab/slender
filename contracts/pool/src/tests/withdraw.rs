@@ -1,8 +1,8 @@
 use super::sut::fill_pool;
 use crate::tests::sut::{fill_pool_two, init_pool, DAY};
 use crate::*;
-use soroban_sdk::symbol_short;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events};
+use soroban_sdk::{symbol_short, Map, Val};
 use soroban_sdk::{vec, IntoVal, Symbol};
 use tests::sut::set_time;
 
@@ -360,12 +360,23 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "withdraw"), user_1.clone()).into_val(&env),
-                (user_2.clone(), token_address.clone(), 1_000_000_000i128).into_val(&env)
+                Map::<Symbol, Val>::from_array(
+                    &env,
+                    [
+                        (Symbol::new(&env, "to"), user_2.clone().into_val(&env)),
+                        (Symbol::new(&env, "asset"), token_address.into_val(&env)),
+                        (
+                            Symbol::new(&env, "amount"),
+                            1_000_000_000i128.into_val(&env),
+                        ),
+                    ],
+                )
+                .into_val(&env)
             ),
         ]
     );
 
-    let event = events.get(23).unwrap();
+    let event = events.get(0).unwrap();
 
     assert_eq!(
         vec![&env, event],

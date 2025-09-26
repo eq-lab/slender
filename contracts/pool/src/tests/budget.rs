@@ -702,16 +702,12 @@ fn s_token_transfer() {
 }
 
 fn measure_budget(env: &Env, function: &str, callback: impl FnOnce()) {
-    let cpu_before = env.budget().cpu_instruction_cost();
-    let memory_before = env.budget().memory_bytes_cost();
+    env.cost_estimate().budget().reset_unlimited();
 
     callback();
 
-    let cpu_after = env.budget().cpu_instruction_cost();
-    let memory_after = env.budget().memory_bytes_cost();
-
-    let cpu = cpu_after - cpu_before;
-    let memory = memory_after - memory_before;
+    let cpu = env.cost_estimate().budget().cpu_instruction_cost();
+    let memory = env.cost_estimate().budget().memory_bytes_cost();
 
     let budget = &[
         std::format!("['{}'] = {{\n", function),

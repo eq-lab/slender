@@ -5,6 +5,7 @@ use pool_interface::types::pool_config::PoolConfig;
 use pool_interface::types::reserve_data::ReserveData;
 use soroban_sdk::{token, Address, Env};
 
+use crate::event::RepayEvent;
 use crate::storage::{
     read_reserve, read_token_balance, read_token_total_supply, write_token_balance,
     write_token_total_supply,
@@ -12,7 +13,7 @@ use crate::storage::{
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
-use crate::{add_protocol_fee_vault, add_token_balance, event, read_pause_info, read_pool_config};
+use crate::{add_protocol_fee_vault, add_token_balance, read_pause_info, read_pool_config};
 
 use super::account_position::calc_account_data;
 use super::utils::get_collat_coeff::get_collat_coeff;
@@ -168,7 +169,12 @@ pub fn do_repay(
     write_token_total_supply(env, debt_token_address, debt_token_supply_after)?;
     write_token_balance(env, debt_token_address, who, who_debt_after)?;
 
-    event::repay(env, who, asset, borrower_payback_amount);
+    RepayEvent {
+        who: who.clone(),
+        asset: asset.clone(),
+        amount: borrower_payback_amount,
+    }
+    .publish(env);
 
     user_configurator.write();
 

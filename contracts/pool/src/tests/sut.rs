@@ -18,29 +18,25 @@ use soroban_sdk::IntoVal;
 use soroban_sdk::{vec, Env};
 
 mod pool {
-    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/pool.wasm");
+    soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/pool.wasm");
 }
 
 mod flash_loan_receiver {
     soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm"
+        file = "../../target/wasm32v1-none/release/flash_loan_receiver_mock.wasm"
     );
 }
 
 mod s_token {
-    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/s_token.wasm");
+    soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/s_token.wasm");
 }
 
 mod debt_token {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/debt_token.wasm"
-    );
+    soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/debt_token.wasm");
 }
 
 mod price_feed {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/price_feed_mock.wasm"
-    );
+    soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/price_feed_mock.wasm");
 }
 
 pub const DAY: u64 = 24 * 60 * 60;
@@ -49,11 +45,11 @@ pub(crate) fn create_token_contract<'a>(
     e: &Env,
     admin: &Address,
 ) -> (TokenClient<'a>, TokenAdminClient<'a>) {
-    let stellar_asset_contract = e.register_stellar_asset_contract(admin.clone());
+    let stellar_asset_contract = e.register_stellar_asset_contract_v2(admin.clone());
 
     (
-        TokenClient::new(e, &stellar_asset_contract),
-        TokenAdminClient::new(e, &stellar_asset_contract),
+        TokenClient::new(e, &stellar_asset_contract.address()),
+        TokenAdminClient::new(e, &stellar_asset_contract.address()),
     )
 }
 
@@ -64,9 +60,9 @@ pub(crate) fn create_pool_contract<'a>(
     base_token: &Address,
 ) -> LendingPoolClient<'a> {
     let client = if use_wasm {
-        LendingPoolClient::new(e, &e.register_contract_wasm(None, pool::WASM))
+        LendingPoolClient::new(e, &e.register(pool::WASM, ()))
     } else {
-        LendingPoolClient::new(e, &e.register_contract(None, LendingPool))
+        LendingPoolClient::new(e, &e.register(LendingPool {}, ()))
     };
 
     let grace_period = 1;
@@ -101,7 +97,7 @@ pub(crate) fn create_s_token_contract<'a>(
     pool: &Address,
     underlying_asset: &Address,
 ) -> STokenClient<'a> {
-    let client = STokenClient::new(&e, &e.register_contract_wasm(None, s_token::WASM));
+    let client = STokenClient::new(&e, &e.register(s_token::WASM, ()));
 
     client.initialize(
         &"SToken".into_val(e),
@@ -118,8 +114,7 @@ pub(crate) fn create_debt_token_contract<'a>(
     pool: &Address,
     underlying_asset: &Address,
 ) -> DebtTokenClient<'a> {
-    let client: DebtTokenClient<'_> =
-        DebtTokenClient::new(&e, &e.register_contract_wasm(None, debt_token::WASM));
+    let client: DebtTokenClient<'_> = DebtTokenClient::new(&e, &e.register(debt_token::WASM, ()));
 
     client.initialize(
         &"DebtToken".into_val(e),
@@ -132,18 +127,15 @@ pub(crate) fn create_debt_token_contract<'a>(
 }
 
 pub(crate) fn create_price_feed_contract<'a>(e: &Env) -> PriceFeedClient<'a> {
-    PriceFeedClient::new(&e, &e.register_contract_wasm(None, price_feed::WASM))
+    PriceFeedClient::new(&e, &e.register(price_feed::WASM, ()))
 }
 
 pub(crate) fn create_flash_loan_receiver_contract<'a>(e: &Env) -> FlashLoanReceiverClient<'a> {
-    FlashLoanReceiverClient::new(
-        &e,
-        &e.register_contract_wasm(None, flash_loan_receiver::WASM),
-    )
+    FlashLoanReceiverClient::new(&e, &e.register(flash_loan_receiver::WASM, ()))
 }
 
 pub(crate) fn init_pool<'a>(env: &Env, use_pool_wasm: bool) -> Sut<'a> {
-    env.budget().reset_unlimited();
+    env.cost_estimate().budget().reset_unlimited();
 
     let admin = Address::generate(&env);
     let token_admin = Address::generate(&env);

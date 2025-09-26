@@ -1,7 +1,13 @@
 #![deny(warnings)]
 #![no_std]
 
-use crate::storage::*;
+use crate::{
+    event::{
+        ApproveEvent, BurnEvent, ClawbackEvent, InitializedEvent, MintEvent, SetAuthorizedEvent,
+        TransferEvent,
+    },
+    storage::*,
+};
 use common_token::{
     balance::*, require_nonnegative_amount, require_positive_amount, storage::*,
     verify_caller_is_pool,
@@ -66,7 +72,14 @@ impl STokenTrait for SToken {
             },
         );
 
-        event::initialized(&e, underlying_asset, pool, decimal, name, symbol);
+        InitializedEvent {
+            underlying_asset,
+            pool,
+            decimals: decimal,
+            name: name.clone(),
+            symbol: symbol.clone(),
+        }
+        .publish(&e);
     }
 
     fn upgrade(env: Env, new_wasm_hash: BytesN<32>) {
@@ -115,7 +128,14 @@ impl STokenTrait for SToken {
         require_nonnegative_amount(amount);
 
         write_allowance(&e, from.clone(), spender.clone(), amount, expiration_ledger);
-        event::approve(&e, from, spender, amount, expiration_ledger);
+
+        ApproveEvent {
+            from,
+            to: spender,
+            amount,
+            expiration_ledger,
+        }
+        .publish(&e);
     }
 
     /// Returns the balance of tokens for a specified `id`.
@@ -225,7 +245,12 @@ impl STokenTrait for SToken {
 
         spend_balance(&e, from.clone(), amount);
         add_total_supply(&e, amount.checked_neg().expect("s-token: no overflow"));
-        event::clawback(&e, from, amount);
+
+        ClawbackEvent {
+            from: from.clone(),
+            amount,
+        }
+        .publish(&e);
     }
 
     /// Sets the authorization status for a specified `id`.
@@ -243,7 +268,8 @@ impl STokenTrait for SToken {
         verify_caller_is_pool(&e);
 
         write_authorization(&e, id.clone(), authorize);
-        event::set_authorized(&e, id, authorize);
+
+        SetAuthorizedEvent { id, authorize }.publish(&e);
     }
 
     /// Mints a specified amount of tokens for a given `id` and returns total supply
@@ -262,7 +288,13 @@ impl STokenTrait for SToken {
         let pool = verify_caller_is_pool(&e);
 
         do_mint(&e, to.clone(), amount);
-        event::mint(&e, pool, to, amount);
+
+        MintEvent {
+            admin: pool,
+            to,
+            amount,
+        }
+        .publish(&e);
     }
 
     /// Burns a specified amount of tokens from the from account and returns total supply
@@ -283,7 +315,12 @@ impl STokenTrait for SToken {
         verify_caller_is_pool(&e);
 
         do_burn(&e, from.clone(), amount_to_burn, amount_to_withdraw, to);
-        event::burn(&e, from, amount_to_burn);
+
+        BurnEvent {
+            from,
+            amount: amount_to_burn,
+        }
+        .publish(&e);
     }
 
     /// Returns the number of decimal places used by the token.
@@ -367,7 +404,12 @@ impl STokenTrait for SToken {
         let token_client = token::Client::new(&e, &underlying_asset);
         token_client.transfer(&current_address, &to, &amount);
 
-        event::transfer(&e, current_address, to, amount);
+        TransferEvent {
+            from: current_address,
+            to: to.clone(),
+            amount,
+        }
+        .publish(&e);
     }
 
     /// Retrieves the address of the underlying asset.
@@ -413,7 +455,12 @@ fn do_transfer(e: &Env, from: Address, to: Address, amount: i128, validate: bool
         );
     }
 
-    event::transfer(e, from, to, amount)
+    TransferEvent {
+        from: from.clone(),
+        to: to.clone(),
+        amount,
+    }
+    .publish(e);
 }
 
 fn spend_allowance(e: &Env, from: Address, spender: Address, amount: i128) {

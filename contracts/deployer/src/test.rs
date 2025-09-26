@@ -8,23 +8,21 @@ use soroban_sdk::{
 };
 
 mod pool {
-    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/pool.wasm");
+    soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/pool.wasm");
 }
 
 mod s_token {
-    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/s_token.wasm");
+    soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/s_token.wasm");
 }
 
 mod debt_token {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/debt_token.wasm"
-    );
+    soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/debt_token.wasm");
 }
 
 #[test]
 fn deploy_pool_and_s_token() {
     let env = Env::default();
-    let client = DeployerClient::new(&env, &env.register_contract(None, Deployer));
+    let client = DeployerClient::new(&env, &env.register(Deployer, ()));
 
     let flash_loan_fee = 5;
     let initial_health = 2_500;
@@ -63,13 +61,14 @@ fn deploy_pool_and_s_token() {
         contract_id
     };
 
-    env.budget().reset_default();
+    env.cost_estimate().budget().reset_default();
 
     // Invoke contract to check that it is initialized.
     let pool_client = pool::Client::new(&env, &pool_contract_id);
     let underlying_asset = TokenClient::new(
         &env,
-        &env.register_stellar_asset_contract(Address::generate(&env)),
+        &env.register_stellar_asset_contract_v2(Address::generate(&env))
+            .address(),
     );
     // Deploy s-token
     let s_token_contract_id = {
@@ -93,7 +92,7 @@ fn deploy_pool_and_s_token() {
 
     let _s_token_client = s_token::Client::new(&env, &s_token_contract_id);
 
-    env.budget().reset_default();
+    env.cost_estimate().budget().reset_default();
 
     // Deploy debt token
     let debt_token_contract_id = {

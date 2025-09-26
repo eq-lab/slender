@@ -2,7 +2,7 @@ use crate::tests::sut::{fill_pool, init_pool};
 use pool_interface::types::flash_loan_asset::FlashLoanAsset;
 use pool_interface::types::pool_config::PoolConfig;
 use soroban_sdk::testutils::Events;
-use soroban_sdk::{vec, Bytes, Env, IntoVal, Symbol, Val, Vec};
+use soroban_sdk::{vec, Bytes, Env, IntoVal, Map, Symbol, Val, Vec};
 
 #[test]
 #[should_panic(expected = "HostError: Error(Contract, #307)")]
@@ -216,7 +216,15 @@ fn should_emit_events() {
                     &sut.reserves[0].token.address
                 )
                     .into_val(&env),
-                (1000000i128, 500i128, false).into_val(&env)
+                Map::<Symbol, Val>::from_array(
+                    &env,
+                    [
+                        (Symbol::new(&env, "amount"), 1000000i128.into_val(&env)),
+                        (Symbol::new(&env, "premium"), 500i128.into_val(&env),),
+                        (Symbol::new(&env, "borrow"), false.into_val(&env),),
+                    ],
+                )
+                .into_val(&env)
             ),
         ]
     );

@@ -6,6 +6,7 @@ use pool_interface::types::reserve_type::ReserveType;
 use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, token, Address, Env};
 
+use crate::event::LiquidationEvent;
 use crate::methods::utils::recalculate_reserve_data::recalculate_reserve_data;
 use crate::methods::utils::validation::require_not_in_grace_period;
 use crate::types::account_data::AccountData;
@@ -14,7 +15,7 @@ use crate::types::liquidation_asset::LiquidationAsset;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
 use crate::{
-    add_protocol_fee_vault, add_token_balance, event, read_pause_info, read_pool_config,
+    add_protocol_fee_vault, add_token_balance, read_pause_info, read_pool_config,
     read_token_balance, read_token_total_supply, write_token_balance, write_token_total_supply,
 };
 
@@ -56,7 +57,12 @@ pub fn liquidate(env: &Env, liquidator: &Address, who: &Address) -> Result<(), E
         &mut price_provider,
     )?;
 
-    event::liquidation(env, who, debt_covered_in_base, total_liq_in_base);
+    LiquidationEvent {
+        who: who.clone(),
+        covered_debt: debt_covered_in_base,
+        liquidated_collateral: total_liq_in_base,
+    }
+    .publish(env);
 
     Ok(())
 }

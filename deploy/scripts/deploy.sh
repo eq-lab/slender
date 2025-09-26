@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BASEDIR=$(dirname $0)
-BUILD=$BASEDIR/../../target/wasm32-unknown-unknown/release
+BUILD=$BASEDIR/../../target/wasm32v1-none/release
 
 source $BASEDIR/.$1.env
 

@@ -540,7 +540,7 @@ export async function deployReceiverMock(): Promise<string> {
         (await new Promise((resolve, reject) => {
             exec(
                 `stellar contract deploy \
-        --wasm ../target/wasm32-unknown-unknown/release/flash_loan_receiver_mock.wasm \
+        --wasm ../target/wasm32v1-none/release/flash_loan_receiver_mock.wasm \
         --source ${adminKeys.secret()} \
         --rpc-url "${process.env.SOROBAN_RPC_URL}" \
         --network-passphrase "${process.env.PASSPHRASE}"`,

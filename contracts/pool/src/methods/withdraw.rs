@@ -1,7 +1,9 @@
 use crate::add_token_balance;
+use crate::event::WithdrawEvent;
 use crate::methods::utils::get_collat_coeff::get_compounded_amount;
 use crate::methods::utils::get_collat_coeff::get_lp_amount;
 use crate::methods::utils::validation::require_gte_initial_health;
+use crate::read_pause_info;
 use crate::read_pool_config;
 use crate::storage::{
     read_reserve, read_token_balance, read_token_total_supply, write_token_balance,
@@ -10,7 +12,6 @@ use crate::storage::{
 use crate::types::calc_account_data_cache::CalcAccountDataCache;
 use crate::types::price_provider::PriceProvider;
 use crate::types::user_configurator::UserConfigurator;
-use crate::{event, read_pause_info};
 use pool_interface::types::asset_balance::AssetBalance;
 use pool_interface::types::error::Error;
 use pool_interface::types::reserve_type::ReserveType;
@@ -201,7 +202,13 @@ pub fn withdraw(
 
     user_configurator.write();
 
-    event::withdraw(env, who, asset, to, withdraw_amount);
+    WithdrawEvent {
+        who: who.clone(),
+        asset: asset.clone(),
+        to: to.clone(),
+        amount: withdraw_amount,
+    }
+    .publish(env);
 
     Ok(())
 }

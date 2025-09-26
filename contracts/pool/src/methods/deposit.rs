@@ -6,7 +6,7 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{token, Address, Env};
 
 use crate::add_token_balance;
-use crate::event;
+use crate::event::DepositEvent;
 use crate::read_pause_info;
 use crate::read_pool_config;
 use crate::storage::{
@@ -70,7 +70,12 @@ pub fn deposit(env: &Env, who: &Address, asset: &Address, amount: i128) -> Resul
             do_deposit_rwa(env, who, asset, amount)?
         };
 
-    event::deposit(env, who, asset, amount);
+    DepositEvent {
+        who: who.clone(),
+        asset: asset.clone(),
+        amount,
+    }
+    .publish(env);
 
     user_configurator
         .deposit(reserve.get_id(), asset, is_first_deposit)?

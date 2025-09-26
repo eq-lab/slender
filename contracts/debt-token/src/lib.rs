@@ -8,6 +8,8 @@ use debt_token_interface::DebtTokenTrait;
 use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, String};
 use soroban_token_sdk::metadata::TokenMetadata;
 
+use crate::event::{BurnEvent, ClawbackEvent, InitializedEvent, MintEvent, SetAuthorizedEvent};
+
 mod event;
 mod test;
 
@@ -48,18 +50,25 @@ impl DebtTokenTrait for DebtToken {
 
         // it can be optimized by passing decimals as argument
         let token = token::Client::new(&e, &underlying_asset);
-        let decimal = token.decimals();
+        let decimals = token.decimals();
 
         write_metadata(
             &e,
             TokenMetadata {
-                decimal,
+                decimal: decimals,
                 name: name.clone(),
                 symbol: symbol.clone(),
             },
         );
 
-        event::initialized(&e, underlying_asset, pool, decimal, name, symbol);
+        InitializedEvent {
+            underlying_asset,
+            pool,
+            decimals,
+            name,
+            symbol,
+        }
+        .publish(&e);
     }
 
     /// Upgrades the deployed contract wasm preserving the contract id.
@@ -143,7 +152,7 @@ impl DebtTokenTrait for DebtToken {
         spend_balance(&env, from.clone(), amount);
         add_total_supply(&env, amount.checked_neg().expect("debt-token: no overflow"));
 
-        event::burn(&env, from, amount);
+        BurnEvent { from, amount }.publish(&env);
     }
 
     fn burn_from(_env: Env, _spender: Address, _from: Address, _amount: i128) {
@@ -165,7 +174,8 @@ impl DebtTokenTrait for DebtToken {
         verify_caller_is_pool(&e);
 
         write_authorization(&e, id.clone(), authorize);
-        event::set_authorized(&e, id, authorize);
+
+        SetAuthorizedEvent { id, authorize }.publish(&e);
     }
 
     /// Mints a specified amount of tokens for a given `id`.
@@ -185,7 +195,13 @@ impl DebtTokenTrait for DebtToken {
 
         receive_balance(&env, to.clone(), amount);
         add_total_supply(&env, amount);
-        event::mint(&env, pool, to, amount);
+
+        MintEvent {
+            admin: pool,
+            to,
+            amount,
+        }
+        .publish(&env);
     }
 
     /// Clawbacks a specified amount of tokens from the from account.
@@ -206,7 +222,8 @@ impl DebtTokenTrait for DebtToken {
 
         spend_balance(&env, from.clone(), amount);
         add_total_supply(&env, amount.checked_neg().expect("debt-token: no overflow"));
-        event::clawback(&env, from, amount);
+
+        ClawbackEvent { from, amount }.publish(&env);
     }
 
     /// Returns the number of decimal places used by the token.

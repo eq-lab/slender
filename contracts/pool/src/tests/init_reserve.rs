@@ -83,7 +83,7 @@ fn should_fail_when_pool_not_initialized() {
     let (debt_token, _) = create_token_contract(&env, &token_admin);
 
     let pool: LendingPoolClient<'_> =
-        LendingPoolClient::new(&env, &env.register_contract(None, LendingPool));
+        LendingPoolClient::new(&env, &env.register(LendingPool {}, ()));
     let s_token = create_s_token_contract(&env, &pool.address, &underlying_token.address);
     assert!(pool.get_reserve(&underlying_token.address).is_none());
 
