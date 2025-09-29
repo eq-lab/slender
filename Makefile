@@ -20,7 +20,7 @@ build:
 	@ls -l target/wasm32v1-none/release/*.wasm
 
 deploy-contracts:
-	(cd deploy/artifacts && shopt -s dotglob; rm -rf *)
+	(cd deploy/artifacts/$(env) && shopt -s dotglob; rm -rf *)
 	./deploy/scripts/deploy.sh $(env)
 
 init-contracts:

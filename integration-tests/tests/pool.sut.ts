@@ -115,8 +115,8 @@ export async function init(client: SorobanClient, customXlm = true): Promise<voi
         {
             asset: "XLM",
             asset_decimals: 7,
-            max_sanity_price_in_base: 1n,
-            min_sanity_price_in_base: 99_999_999_999n,
+            max_sanity_price_in_base: 99_999_999_999n,
+            min_sanity_price_in_base: 1n,
             priceFeedConfig: {
                 feed_asset: "XLM",
                 feed_asset_type: 'Stellar',
@@ -358,6 +358,19 @@ export async function sTokenUnderlyingBalanceOf(
         "token_balance",
         convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
         convertToScvAddress(process.env[`SLENDER_S_TOKEN_${asset}`]),
+    );
+
+    return parseScvToJs(xdrResponse);
+}
+
+export async function protocolFee(
+    client: SorobanClient,
+    asset: SlenderAsset
+): Promise<bigint> {
+    const xdrResponse = await client.simulateTransaction(
+        process.env.SLENDER_POOL,
+        "protocol_fee",
+        convertToScvAddress(process.env[`SLENDER_TOKEN_${asset}`]),
     );
 
     return parseScvToJs(xdrResponse);

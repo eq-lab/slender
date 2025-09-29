@@ -17,7 +17,7 @@ deploy() {
 
 install() {
     local hash
-    hash=$(stellar contract install \
+    hash=$(stellar contract upload \
         --wasm $1 \
         --source $2 \
         --rpc-url "$SOROBAN_RPC_URL" \
