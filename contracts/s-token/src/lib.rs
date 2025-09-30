@@ -89,7 +89,7 @@ impl STokenTrait for SToken {
     }
 
     fn version() -> u32 {
-        1
+        2
     }
 
     /// Returns the amount of tokens that the `spender` is allowed to withdraw from the `from` address.

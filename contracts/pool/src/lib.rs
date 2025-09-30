@@ -53,7 +53,7 @@ impl LendingPoolTrait for LendingPool {
     }
 
     fn version() -> u32 {
-        1
+        2
     }
 
     fn init_reserve(env: Env, asset: Address, reserve_type: ReserveType) -> Result<(), Error> {

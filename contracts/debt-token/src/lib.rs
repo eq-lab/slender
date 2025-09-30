@@ -89,7 +89,7 @@ impl DebtTokenTrait for DebtToken {
 
     /// Returns the current version of the contract.
     fn version() -> u32 {
-        1
+        2
     }
 
     /// Returns the balance of tokens for a specified `id`.

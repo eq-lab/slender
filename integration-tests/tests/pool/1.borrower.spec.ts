@@ -23,8 +23,7 @@ import {
     borrower1Keys,
     borrower2Keys,
     lender1Keys,
-    lender2Keys,
-    treasuryKeys
+    lender2Keys
 } from "../soroban.config";
 // import { main } from '../release';
 import { assert, expect, use } from "chai";
