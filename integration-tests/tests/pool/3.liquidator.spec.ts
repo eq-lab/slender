@@ -38,11 +38,10 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         await deploy();
         await init(client);
 
-        
         lender1Address = lender1Keys.publicKey();
         borrower1Address = borrower1Keys.publicKey();
         liquidator1Address = liquidator1Keys.publicKey();
-        
+
         // uncomment to resume test with existing contracts
         // require("dotenv").config({ path: contractsFilename });
         // return;
@@ -181,13 +180,7 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
             && borrower1Position.npv > -210_000);
     });
 
-    it("Case 5: Liquidator tries to liquidate Borrower's position", async function () {
-        await expect(liquidate(client, liquidator1Keys, borrower1Address, true))
-            .to.eventually.rejected;
-    });
-
-    // TODO: requires optimization
-    it("Case 6: Liquidator liquidates Borrower's positions partialy", async function () {
+    it("Case 5: Liquidator liquidates Borrower's positions partialy", async function () {
         await mintUnderlyingTo(client, "XRP", liquidator1Address, 1_000_000_000n);
         await repay(client, liquidator1Keys, "XRP", I128_MAX);
         // Liquidator1 liquidates Borrower1's positions
@@ -196,8 +189,8 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         const liquidator1SUsdcBalanceBefore = await sTokenBalanceOf(client, "USDC", liquidator1Address);
         const borrower1SXrpBalanceBefore = await sTokenBalanceOf(client, "XRP", borrower1Address);
         const borrower1SUsdcBalanceBefore = await sTokenBalanceOf(client, "USDC", borrower1Address);
-        
-        await liquidate(client, liquidator1Keys, borrower1Address, true);
+
+        await liquidate(client, liquidator1Keys, borrower1Address);
 
         const liquidator1XrpBalanceAfter = await tokenBalanceOf(client, "XRP", liquidator1Address);
         const liquidator1SXrpBalanceAfter = await sTokenBalanceOf(client, "XRP", liquidator1Address);
@@ -216,8 +209,8 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
-        assert.equal(liquidator1XrpBalanceBefore, liquidator1XrpBalanceAfter);
-        assert(liquidator1SXrpBalanceBefore < liquidator1SXrpBalanceAfter);
+        assert.equal(liquidator1SXrpBalanceBefore, liquidator1SXrpBalanceAfter);
+        assert(liquidator1XrpBalanceBefore < liquidator1XrpBalanceAfter);
         assert.equal(liquidator1USDCBalance, 0n);
         assert(liquidator1SUsdcBalanceBefore <= liquidator1SUsdcBalanceAfter);
 
@@ -225,7 +218,7 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         assert(borrower1SUsdcBalanceBefore >= borrower1SUsdcBalanceAfter);
         assert.notEqual(borrower1DXlmBalance, 0n);
 
-        assert.equal(sXrpSupply, 40_000_000_000n);
+        assert.equal(sXrpSupply, 40000000000n - (borrower1SXrpBalanceBefore - borrower1SXrpBalanceAfter));
         assert.equal(sUsdcSupply, 40_000_000_000n);
 
         assert.notEqual(dXlmSupply, 0n);
@@ -235,16 +228,19 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         assert(borrower1Position.npv > 0n);
     });
 
-    it("Case 7: Borrower withdraw XRP partialy to NPV ~= 0", async function () {
+    it("Case 6: Borrower withdraw XRP partialy to NPV ~= 0", async function () {
         const borrower1SXrpBalanceBefore = await sTokenBalanceOf(client, "XRP", borrower1Address);
         // target balance ~3.3 XRP
-        const targetXRPBalance = 3_300_000_000n;
+        const targetXRPBalance = 1_000_000_000n;
         const toWithdraw = borrower1SXrpBalanceBefore - targetXRPBalance;
+        const borrower1Position = await accountPosition(client, borrower1Keys);
 
-        await withdraw(client, borrower1Keys, "XRP", toWithdraw < 0n ? 0n : toWithdraw);
+        assert(Number(borrower1Position.npv) / Number(borrower1Position.discounted_collateral) < 0.25);
+
+        await expect(withdraw(client, borrower1Keys, "XRP", toWithdraw < 0n ? 0n : toWithdraw)).to.eventually.rejected;
     });
 
-    it("Case 8: Drop the XRP price so Borrower's NPV <= 0", async function () {
+    it("Case 7: Drop the XRP price so Borrower's NPV <= 0", async function () {
         // XRP price is set to 0.4799999
         await initPrice(client, "XRP", 4_799_999_000_000_000n, 0);
 
@@ -253,7 +249,7 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         assert(borrower1Position.npv < 0n);
     });
 
-    it("Case 9: Liquidator liquidates Borrower's position partialy 2", async function () {
+    it("Case 8: Liquidator liquidates Borrower's position partialy 2", async function () {
         // Liquidator1 liquidates Borrower1's positions
         const liquidator1XrpBalanceBefore = await tokenBalanceOf(client, "XRP", liquidator1Address);
         const liquidator1SXrpBalanceBefore = await sTokenBalanceOf(client, "XRP", liquidator1Address);
@@ -267,7 +263,7 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
         const sUsdcSupplyBefore = await sTokenTotalSupply(client, "USDC");
         const borrower1PositionBefore = await accountPosition(client, borrower1Keys);
 
-        await liquidate(client, liquidator1Keys, borrower1Address, true);
+        await liquidate(client, liquidator1Keys, borrower1Address);
 
         const liquidator1XrpBalanceAfter = await tokenBalanceOf(client, "XRP", liquidator1Address);
         const liquidator1SXrpBalanceAfter = await sTokenBalanceOf(client, "XRP", liquidator1Address);
@@ -288,26 +284,25 @@ describe("LendingPool: Liquidation (receive STokens)", function () {
 
         assert(borrower1SXrpBalanceBefore > borrower1SXrpBalanceAfter);
         assert(borrower1DXlmBalanceBefore > borrower1DXlmBalanceAfter);
-        assert(borrower1SUsdcBalanceBefore > borrower1SUsdcBalanceAfter, `borrower1SUsdcBalanceBefore ${borrower1SUsdcBalanceBefore} borrower1SUsdcBalanceAfter ${borrower1SUsdcBalanceAfter}`);
+        assert.equal(borrower1SUsdcBalanceBefore, borrower1SUsdcBalanceAfter);
 
-        assert.equal(liquidator1XrpBalanceAfter, liquidator1XrpBalanceBefore);
-        assert(liquidator1SXrpBalanceBefore < liquidator1SXrpBalanceAfter);
+        assert.equal(liquidator1SXrpBalanceBefore, liquidator1SXrpBalanceAfter);
+        assert(liquidator1XrpBalanceBefore < liquidator1XrpBalanceAfter);
         assert.equal(liquidator1USDCBalanceAfter, 0n);
-        assert(liquidator1SUsdcBalanceBefore < liquidator1SUsdcBalanceAfter, `liquidator1SUsdcBalanceBefore ${liquidator1SUsdcBalanceBefore} liquidator1SUsdcBalanceAfter ${liquidator1SUsdcBalanceAfter}`);
 
-
-        assert.equal(sXrpSupplyBefore, sXrpSupplyAfter);
+        assert(sXrpSupplyAfter < sXrpSupplyBefore);
         assert.equal(sUsdcSupplyBefore, sUsdcSupplyAfter);
 
         assert.equal(dXlmSupply, borrower1DXlmBalanceAfter);
 
         assert(borrower1PositionBefore.npv <= borrower1PositionAfter.npv);
+        assert(borrower1PositionAfter.npv > 0n);
     });
 
-    it("Case 10: Liquidator cannot liquidate borrower without collateral", async function () {
+    it("Case 9: Liquidator cannot liquidate borrower without collateral", async function () {
         const borrower1Position = await accountPosition(client, borrower1Keys);
         if (borrower1Position.discounted_collateral === 0n) {
-            await expect(liquidate(client, liquidator1Keys, borrower1Address, true))
+            await expect(liquidate(client, liquidator1Keys, borrower1Address))
                 .to.eventually.rejected;
         }
     });
