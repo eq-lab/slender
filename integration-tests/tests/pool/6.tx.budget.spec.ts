@@ -77,10 +77,10 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await deposit(client, borrower1Keys, "XRP", 30_000_000_000n);
         await borrow(client, borrower1Keys, "USDC", 6_000_000_000n);
 
-        // Borrower2 deposits 20_000_000_000 USDC, borrows 60_000_000 XLM, 5_999_000_000 XRP
+        // Borrower2 deposits 20_000_000_000 USDC, borrows 60_000_000 XLM, 4_000_000_000 XRP
         await deposit(client, borrower2Keys, "USDC", 20_000_000_000n);
         await borrow(client, borrower2Keys, "XLM", 60_000_000n);
-        await borrow(client, borrower2Keys, "XRP", 5_900_000_000n);
+        await borrow(client, borrower2Keys, "XRP", 2_000_000_000n);
 
         try {
             fs.unlinkSync(BUDGET_SNAPSHOT_FILE);
@@ -137,7 +137,7 @@ describe("LendingPool: methods must not exceed CPU/MEM limits", function () {
         await initPrice(client, "USDC", 15_000_000_000_000_000n, 0);
 
         await expect(
-            liquidate(client, liquidator1Keys, borrower1Address, false)
+            liquidate(client, liquidator1Keys, borrower1Address)
                 .then((result) => writeBudgetSnapshot("liquidate", result))
         ).to.not.eventually.rejected;
         // await expect(
