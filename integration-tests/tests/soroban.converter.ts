@@ -1,4 +1,4 @@
-import { Address, xdr } from 'stellar-sdk';
+import { Address, xdr } from '@stellar/stellar-sdk';
 import { Buffer } from "node:buffer";
 import { bufToBigint } from 'bigint-conversion';
 
@@ -67,7 +67,7 @@ export function convertToScvBytes(value: string, encoding: BufferEncoding): xdr.
 }
 
 export function parseMetaXdrToJs<T>(meta: xdr.TransactionMeta): T {
-    const value = meta.v3()
+    const value = meta.v4()
         .sorobanMeta()
         .returnValue();
 

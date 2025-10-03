@@ -248,7 +248,7 @@ impl<'a> PriceProvider<'a> {
 
         let index = prices_len / 2;
 
-        let median_price = if prices_len % 2 == 0 {
+        let median_price = if prices_len.is_multiple_of(2) {
             let price_1 = prices.get_unchecked(index - 1);
             let price_2 = prices.get_unchecked(index);
 

@@ -2,7 +2,7 @@ use pool_interface::types::error::Error;
 use pool_interface::types::user_config::UserConfiguration;
 use soroban_sdk::{Address, Env};
 
-use crate::event;
+use crate::event::{ReserveUsedAsCollDisabledEvent, ReserveUsedAsCollEnabledEvent};
 use crate::methods::utils::validation::require_not_exceed_assets_limit;
 use crate::storage::{read_user_config, write_user_config};
 
@@ -47,7 +47,11 @@ impl<'a> UserConfigurator<'a> {
 
         user_config.set_using_as_collateral(env, reserve_id, false);
 
-        event::reserve_used_as_collateral_disabled(env, self.user, asset);
+        ReserveUsedAsCollDisabledEvent {
+            who: self.user.clone(),
+            asset: asset.clone(),
+        }
+        .publish(env);
 
         self.should_write = true;
 
@@ -71,7 +75,11 @@ impl<'a> UserConfigurator<'a> {
         user_config.set_using_as_collateral(env, reserve_id, true);
         require_not_exceed_assets_limit(env, user_config.total_assets(), assets_limit);
 
-        event::reserve_used_as_collateral_enabled(env, self.user, asset);
+        ReserveUsedAsCollEnabledEvent {
+            who: self.user.clone(),
+            asset: asset.clone(),
+        }
+        .publish(env);
 
         self.should_write = true;
 

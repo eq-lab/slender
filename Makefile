@@ -16,11 +16,11 @@ budget: build
 	cargo test -p pool budget --features budget -- --test-threads=1
 
 build:
-	cargo build --target wasm32-unknown-unknown --release 
-	@ls -l target/wasm32-unknown-unknown/release/*.wasm
+	cargo build --target wasm32v1-none --release 
+	@ls -l target/wasm32v1-none/release/*.wasm
 
 deploy-contracts:
-	(cd deploy/artifacts && shopt -s dotglob; rm -rf *)
+	(cd deploy/artifacts/$(env) && shopt -s dotglob; rm -rf *)
 	./deploy/scripts/deploy.sh $(env)
 
 init-contracts:
@@ -36,7 +36,7 @@ upgrade-pool-contract:
 	./deploy/scripts/upgrade.sh $(env)
 
 check:
-	cargo check --target wasm32-unknown-unknown --release
+	cargo check --target wasm32v1-none --release
 
 fmt:
 	cargo fmt --all

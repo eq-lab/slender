@@ -134,7 +134,7 @@ describe("LendingPool: Borrower position", function () {
         const borrower1PositionBefore = await accountPosition(client, borrower1Keys);
         console.log(borrower1PositionBefore);
 
-        await withdraw(client, borrower1Keys, "XRP", 5_000_000_000n);
+        await withdraw(client, borrower1Keys, "XRP", 100_000n);
 
         const borrower1XrpBalance = await tokenBalanceOf(client, "XRP", borrower1Address);
         const borrower1SXrpBalance = await sTokenBalanceOf(client, "XRP", borrower1Address);
@@ -142,21 +142,21 @@ describe("LendingPool: Borrower position", function () {
         const sXrpSupply = await sTokenTotalSupply(client, "XRP");
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
-        assert.equal(borrower1XrpBalance, 85_000_000_000n);
-        assert.equal(borrower1SXrpBalance, 15_000_000_000n);
-        assert.equal(sXrpBalance, 15_000_000_000n);
+        assert.equal(borrower1XrpBalance, 80_000_100_000n);
+        assert.equal(borrower1SXrpBalance, 19_999_900_000n);
+        assert.equal(sXrpBalance, 19_999_900_000n);
         assert.equal(sXrpSupply, borrower1SXrpBalance);
 
         assert(borrower1Position.debt >= 89_000_000n
             && borrower1Position.debt < 89_000_100n, `borrower1Position.debt ${borrower1Position.debt}`);
-        assert.equal(borrower1Position.discounted_collateral, 90_000_000n);
-        assert(borrower1Position.npv > 999_000n
-            && borrower1Position.npv <= 1_000_000n, `borrower1Position.npv ${borrower1Position.npv}`);
+        assert.equal(borrower1Position.discounted_collateral, 119_999_400n);
+        assert(borrower1Position.npv > 30_999_000
+            && borrower1Position.npv <= 31_000_000n, `borrower1Position.npv ${borrower1Position.npv}`);
     });
 
     it("Case 5: Drop the XRP price so Borrower's NPV <= 0", async function () {
         // XRP price is set to 0.9
-        await initPrice(client, "XRP", 9_000_000_000_000_000n, 0);
+        await initPrice(client, "XRP", 7_000_000_000_000_000n, 0);
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
@@ -182,7 +182,7 @@ describe("LendingPool: Borrower position", function () {
 
         assert(borrower1Position.debt >= 89_000_000n
             && borrower1Position.debt < 90_000_000n, `borrower1Position.debt ${borrower1Position.debt}`);
-        assert.equal(borrower1Position.discounted_collateral, 81_000_000n);
+        assert.equal(borrower1Position.discounted_collateral, 83_999_580n);
         assert(borrower1Position.npv < 0n
             && borrower1Position.npv > -10_000_000n);
     });
@@ -197,14 +197,14 @@ describe("LendingPool: Borrower position", function () {
         const sXrpSupply = await sTokenTotalSupply(client, "XRP");
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
-        assert.equal(borrower1XrpBalance, 85_000_000_000n);
-        assert.equal(borrower1SXrpBalance, 15_000_000_000n);
-        assert.equal(sXrpBalance, 15_000_000_000n);
+        assert.equal(borrower1XrpBalance, 80_000_100_000n);
+        assert.equal(borrower1SXrpBalance, 19_999_900_000n);
+        assert.equal(sXrpBalance, 19_999_900_000n);
         assert.equal(sXrpSupply, borrower1SXrpBalance);
 
         assert(borrower1Position.debt >= 89_000_000n
             && borrower1Position.debt < 90_000_000n, `borrower1Position.debt ${borrower1Position.debt}`);
-        assert.equal(borrower1Position.discounted_collateral, 81_000_000n);
+        assert.equal(borrower1Position.discounted_collateral, 83_999_580n);
         assert(borrower1Position.npv < 0n
             && borrower1Position.npv > -10_000_000n);
     });
@@ -222,18 +222,18 @@ describe("LendingPool: Borrower position", function () {
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
-        assert.equal(borrower1XrpBalance, 81_500_000_000n);
-        assert.equal(borrower1SXrpBalance, 18_500_000_000n);
+        assert.equal(borrower1XrpBalance, 76_500_100_000n);
+        assert.equal(borrower1SXrpBalance, 23_499_900_000n);
 
-        assert.equal(sXrpBalance, 18_500_000_000n);
+        assert.equal(sXrpBalance, 23_499_900_000n);
 
-        assert.equal(sXrpSupply, 18_500_000_000n);
+        assert.equal(sXrpSupply, 23_499_900_000n);
 
         assert(borrower1Position.debt >= 89_000_000n
             && borrower1Position.debt < 90_000_000n, `borrower1Position.debt ${borrower1Position.debt}`);
-        assert.equal(borrower1Position.discounted_collateral, 99_900_000n);
-        assert(borrower1Position.npv < 11_000_000n
-            && borrower1Position.npv > 10_000_000n);
+        assert.equal(borrower1Position.discounted_collateral, 98_699_580n);
+        assert(borrower1Position.npv > 9_600_000n
+            && borrower1Position.npv < 10_000_000n);
         assert(healthFactor(borrower1Position) < 0.25);
     });
 
@@ -255,15 +255,15 @@ describe("LendingPool: Borrower position", function () {
 
         assert(borrower1Position.debt >= 89_000_000n
             && borrower1Position.debt < 90_000_000n, `borrower1Position.debt ${borrower1Position.debt}`);
-        assert.equal(borrower1Position.discounted_collateral, 99_900_000n);
-        assert(borrower1Position.npv < 11_000_000n
-            && borrower1Position.npv > 10_000_000n);
+        assert.equal(borrower1Position.discounted_collateral, 98_699_580n);
+        assert(borrower1Position.npv > 9_600_000n
+            && borrower1Position.npv < 10_000_000n);
         assert(healthFactor(borrower1Position) < 0.25);
     });
 
     it("Case 10: Borrower deposits more to achieve health >= 0.25", async function () {
-        // Borrower1 deposits 3.5 XRP
-        await deposit(client, borrower1Keys, "XRP", 3_500_000_000n);
+        // Borrower1 deposits 7 XRP
+        await deposit(client, borrower1Keys, "XRP", 7_000_000_000n);
 
         const borrower1XrpBalance = await tokenBalanceOf(client, "XRP", borrower1Address);
         const borrower1SXrpBalance = await sTokenBalanceOf(client, "XRP", borrower1Address);
@@ -274,18 +274,18 @@ describe("LendingPool: Borrower position", function () {
 
         const borrower1Position = await accountPosition(client, borrower1Keys);
 
-        assert.equal(borrower1XrpBalance, 78_000_000_000n);
-        assert.equal(borrower1SXrpBalance, 22_000_000_000n);
+        assert.equal(borrower1XrpBalance, 69_500_100_000n);
+        assert.equal(borrower1SXrpBalance, 30_499_900_000n);
 
-        assert.equal(sXrpBalance, 22_000_000_000n);
+        assert.equal(sXrpBalance, 30_499_900_000n);
 
-        assert.equal(sXrpSupply, 22_000_000_000n);
+        assert.equal(sXrpSupply, 30_499_900_000n);
 
         assert(borrower1Position.debt >= 89_000_000n
             && borrower1Position.debt < 90_000_000n, `borrower1Position.debt ${borrower1Position.debt}`);
-        assert.equal(borrower1Position.discounted_collateral, 118_800_000n);
-        assert(borrower1Position.npv < 30_000_000n
-            && borrower1Position.npv > 29_000_000n);
+        assert.equal(borrower1Position.discounted_collateral, 128_099_580n);
+        assert(borrower1Position.npv < 40_000_000n
+            && borrower1Position.npv > 39_000_000n);
         assert(healthFactor(borrower1Position) >= 0.25);
     });
 
@@ -307,9 +307,9 @@ describe("LendingPool: Borrower position", function () {
 
         assert(borrower1Position.debt >= 89_000_000n
             && borrower1Position.debt < 90_000_000n, `borrower1Position.debt ${borrower1Position.debt}`);
-        assert.equal(borrower1Position.discounted_collateral, 118_800_000n);
-        assert(borrower1Position.npv < 30_000_000n
-            && borrower1Position.npv > 29_000_000n);
+        assert.equal(borrower1Position.discounted_collateral, 128_099_580n);
+        assert(borrower1Position.npv < 40_000_000n
+            && borrower1Position.npv > 39_000_000n);
         assert(healthFactor(borrower1Position) > 0.25);
     });
 });

@@ -1,4 +1,4 @@
-import { Keypair, xdr } from "stellar-sdk";
+import { Keypair, xdr } from "@stellar/stellar-sdk";
 import {
     I128_MAX,
     accountPosition,

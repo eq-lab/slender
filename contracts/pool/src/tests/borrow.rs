@@ -2,7 +2,7 @@ use super::sut::DAY;
 use crate::tests::sut::{fill_pool, init_pool, set_time};
 use pool_interface::types::pool_config::PoolConfig;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events};
-use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Symbol};
+use soroban_sdk::{symbol_short, vec, Address, Env, IntoVal, Map, Symbol, Val};
 
 #[test]
 fn should_require_authorized_caller() {
@@ -369,7 +369,14 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "borrow"), borrower.clone()).into_val(&env),
-                (token_address.clone(), 20_000_000i128).into_val(&env)
+                Map::<Symbol, Val>::from_array(
+                    &env,
+                    [
+                        (Symbol::new(&env, "asset"), token_address.into_val(&env)),
+                        (Symbol::new(&env, "amount"), 20_000_000i128.into_val(&env),),
+                    ],
+                )
+                .into_val(&env)
             ),
         ]
     );

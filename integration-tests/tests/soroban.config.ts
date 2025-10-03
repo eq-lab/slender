@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from "fs";
-import { Keypair } from "stellar-sdk";
+import { Keypair } from "@stellar/stellar-sdk";
 
 export const contractsFilename = `../deploy/artifacts/${process.env.NODE_ENV}/.contracts`;
 

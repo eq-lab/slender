@@ -1,7 +1,7 @@
 use crate::tests::sut::{fill_pool, init_pool, DAY};
 use crate::*;
 use soroban_sdk::testutils::Events;
-use soroban_sdk::{vec, IntoVal, Symbol};
+use soroban_sdk::{vec, IntoVal, Map, Symbol, Val};
 use tests::sut::set_time;
 
 #[test]
@@ -184,7 +184,14 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "repay"), borrower.clone()).into_val(&env),
-                (debt_token, 40_009_097i128).into_val(&env)
+                Map::<Symbol, Val>::from_array(
+                    &env,
+                    [
+                        (Symbol::new(&env, "asset"), debt_token.into_val(&env)),
+                        (Symbol::new(&env, "amount"), 40_009_097i128.into_val(&env),),
+                    ],
+                )
+                .into_val(&env)
             ),
         ]
     );

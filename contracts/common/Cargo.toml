@@ -3,6 +3,7 @@ name = "common"
 authors = ["eq-lab"]
 version = "0.1.0"
 edition = "2021"
+publish = false
 description = "Common units"
 
 [dependencies]

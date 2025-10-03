@@ -2,7 +2,7 @@ use pool_interface::types::collateral_params_input::CollateralParamsInput;
 use pool_interface::types::error::Error;
 use soroban_sdk::{Address, Env};
 
-use crate::event;
+use crate::event::CollatConfigChangeEvent;
 use crate::storage::{read_reserve, write_reserve};
 
 use super::utils::validation::{
@@ -22,7 +22,15 @@ pub fn configure_as_collateral(
     reserve.update_collateral_config(params);
 
     write_reserve(env, asset, &reserve);
-    event::collat_config_change(env, asset, params);
+
+    CollatConfigChangeEvent {
+        asset: asset.clone(),
+        liq_cap: params.liq_cap,
+        pen_order: params.pen_order,
+        util_cap: params.util_cap,
+        discount: params.discount,
+    }
+    .publish(env);
 
     Ok(())
 }

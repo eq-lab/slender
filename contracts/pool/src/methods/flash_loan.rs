@@ -5,9 +5,10 @@ use pool_interface::types::flash_loan_asset::FlashLoanAsset;
 use s_token_interface::STokenClient;
 use soroban_sdk::{assert_with_error, token, vec, Address, Bytes, Env, Vec};
 
+use crate::event::FlashLoanEvent;
 use crate::methods::utils::validation::require_not_in_grace_period;
 use crate::storage::{read_reserve, read_token_balance, read_token_total_supply};
-use crate::{add_protocol_fee_vault, event, read_pause_info, read_pool_config};
+use crate::{add_protocol_fee_vault, read_pause_info, read_pool_config};
 
 use super::borrow::do_borrow;
 use super::utils::recalculate_reserve_data::recalculate_reserve_data;
@@ -119,15 +120,15 @@ pub fn flash_loan(
             received_asset.premium
         };
 
-        event::flash_loan(
-            env,
-            who,
-            receiver,
-            &received_asset.asset,
-            received_asset.amount,
+        FlashLoanEvent {
+            who: who.clone(),
+            receiver: receiver.clone(),
+            asset: received_asset.asset.clone(),
+            amount: received_asset.amount,
             premium,
-            loan_asset.borrow,
-        );
+            borrow: loan_asset.borrow,
+        }
+        .publish(env);
     }
 
     Ok(())

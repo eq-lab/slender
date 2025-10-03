@@ -7,7 +7,7 @@ use s_token_interface::STokenClient;
 use soroban_sdk::{Address, Env};
 
 use crate::add_token_balance;
-use crate::event;
+use crate::event::BorrowEvent;
 use crate::read_pause_info;
 use crate::read_pool_config;
 use crate::storage::{
@@ -159,7 +159,12 @@ pub fn do_borrow(
 
     user_configurator.write();
 
-    event::borrow(env, who, asset, amount);
+    BorrowEvent {
+        who: who.clone(),
+        asset: asset.clone(),
+        amount,
+    }
+    .publish(env);
 
     Ok(debt_token_supply_after)
 }

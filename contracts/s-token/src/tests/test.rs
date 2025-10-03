@@ -15,38 +15,34 @@ use self::pool::{
 };
 
 mod pool {
-    soroban_sdk::contractimport!(file = "../../target/wasm32-unknown-unknown/release/pool.wasm");
+    soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/pool.wasm");
 }
 
 mod debt_token {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/debt_token.wasm"
-    );
+    soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/debt_token.wasm");
 }
 
 mod oracle {
-    soroban_sdk::contractimport!(
-        file = "../../target/wasm32-unknown-unknown/release/price_feed_mock.wasm"
-    );
+    soroban_sdk::contractimport!(file = "../../target/wasm32v1-none/release/price_feed_mock.wasm");
 }
 
 fn create_token<'a>(
-    e: &Env,
+    e: &'_ Env,
 ) -> (
     STokenClient<'a>,
     DebtTokenClient<'a>,
     pool::Client<'a>,
-    TokenClient,
-    TokenAdminClient,
+    TokenClient<'_>,
+    TokenAdminClient<'_>,
 ) {
     let pool_admin = Address::generate(e);
 
-    let pool = pool::Client::new(e, &e.register_contract_wasm(None, pool::WASM));
-    let s_token = STokenClient::new(e, &e.register_contract(None, SToken {}));
-    let stellar_asset = &e.register_stellar_asset_contract(pool_admin.clone());
+    let pool = pool::Client::new(e, &e.register(pool::WASM, ()));
+    let s_token = STokenClient::new(e, &e.register(SToken {}, ()));
+    let stellar_asset = &e.register_stellar_asset_contract_v2(pool_admin.clone());
 
-    let underlying_asset = TokenClient::new(e, stellar_asset);
-    let underlying_asset_admin = TokenAdminClient::new(e, stellar_asset);
+    let underlying_asset = TokenClient::new(e, &stellar_asset.address());
+    let underlying_asset_admin = TokenAdminClient::new(e, &stellar_asset.address());
 
     let flash_loan_fee = 5;
     let initial_health = 2_500;
@@ -72,8 +68,8 @@ fn create_token<'a>(
         },
     );
 
-    e.budget().reset_default();
-    let price_feed = oracle::Client::new(e, &e.register_contract_wasm(None, oracle::WASM));
+    e.cost_estimate().budget().reset_default();
+    let price_feed = oracle::Client::new(e, &e.register(oracle::WASM, ()));
 
     let feed_inputs = vec![
         &e,
@@ -105,10 +101,10 @@ fn create_token<'a>(
         &underlying_asset.address,
     );
 
-    e.budget().reset_default();
+    e.cost_estimate().budget().reset_default();
 
     let debt_token: DebtTokenClient<'_> =
-        DebtTokenClient::new(&e, &e.register_contract_wasm(None, debt_token::WASM));
+        DebtTokenClient::new(&e, &e.register(debt_token::WASM, ()));
 
     debt_token.initialize(
         &"DebtToken".into_val(e),
@@ -136,7 +132,7 @@ fn test() {
         ReserveType::Fungible(s_token.address.clone(), debt_token.address.clone());
     pool.init_reserve(&underlying.address, &init_reserve_input);
 
-    e.budget().reset_default();
+    e.cost_estimate().budget().reset_default();
 
     {
         let underlying_decimals = underlying.decimals();

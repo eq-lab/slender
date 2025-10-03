@@ -4,7 +4,7 @@ extern crate std;
 use crate::{tests::sut::init_pool, *};
 use soroban_sdk::{
     testutils::{AuthorizedFunction, AuthorizedInvocation, Events},
-    vec, IntoVal, Symbol,
+    vec, IntoVal, Map, Symbol, Val,
 };
 
 #[test]
@@ -156,14 +156,30 @@ fn should_emit_events() {
             &env,
             (
                 sut.pool.address.clone(),
-                (Symbol::new(&env, "collat_config_change"), &asset_address).into_val(&env),
                 (
-                    params.liq_cap,
-                    params.pen_order,
-                    params.util_cap,
-                    params.discount
+                    Symbol::new(&env, "collat_config_change"),
+                    asset_address.clone()
                 )
-                    .into_val(&env)
+                    .into_val(&env),
+                Map::<Symbol, Val>::from_array(
+                    &env,
+                    [
+                        (Symbol::new(&env, "liq_cap"), params.liq_cap.into_val(&env),),
+                        (
+                            Symbol::new(&env, "pen_order"),
+                            params.pen_order.into_val(&env),
+                        ),
+                        (
+                            Symbol::new(&env, "util_cap"),
+                            params.util_cap.into_val(&env),
+                        ),
+                        (
+                            Symbol::new(&env, "discount"),
+                            params.discount.into_val(&env),
+                        ),
+                    ],
+                )
+                .into_val(&env)
             ),
         ]
     );

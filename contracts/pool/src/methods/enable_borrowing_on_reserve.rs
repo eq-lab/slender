@@ -1,7 +1,7 @@
 use pool_interface::types::error::Error;
 use soroban_sdk::{Address, Env};
 
-use crate::event;
+use crate::event::{BorrowingDisabledEvent, BorrowingEnabledEvent};
 use crate::storage::{read_reserve, write_reserve};
 
 use super::utils::validation::{require_admin, require_fungible_reserve};
@@ -19,9 +19,15 @@ pub fn enable_borrowing_on_reserve(env: &Env, asset: &Address, enabled: bool) ->
     write_reserve(env, asset, &reserve);
 
     if enabled {
-        event::borrowing_enabled(env, asset);
+        BorrowingEnabledEvent {
+            asset: asset.clone(),
+        }
+        .publish(env);
     } else {
-        event::borrowing_disabled(env, asset);
+        BorrowingDisabledEvent {
+            asset: asset.clone(),
+        }
+        .publish(env);
     }
 
     Ok(())

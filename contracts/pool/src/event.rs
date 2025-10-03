@@ -1,107 +1,119 @@
-use pool_interface::types::{
-    collateral_params_input::CollateralParamsInput, pool_config::PoolConfig,
-};
-use soroban_sdk::{symbol_short, Address, Env, Symbol};
+use soroban_sdk::{contractevent, Address};
 
-pub(crate) fn initialized(e: &Env, admin: &Address, pool_config: &PoolConfig) {
-    let topics = (
-        Symbol::new(e, "initialize"),
-        admin,
-        pool_config.base_asset_address.clone(),
-    );
-    e.events().publish(
-        topics,
-        (
-            pool_config.ir_alpha,
-            pool_config.ir_initial_rate,
-            pool_config.ir_max_rate,
-            pool_config.ir_scaling_coeff,
-            pool_config.base_asset_decimals,
-            pool_config.initial_health,
-            pool_config.grace_period,
-            pool_config.timestamp_window,
-            pool_config.flash_loan_fee,
-            pool_config.user_assets_limit,
-            pool_config.min_collat_amount,
-            pool_config.min_debt_amount,
-            pool_config.liquidation_protocol_fee,
-        ),
-    );
+#[contractevent(topics=["initialize"], data_format = "map")]
+pub(crate) struct InitializedEvent {
+    #[topic]
+    pub admin: Address,
+    #[topic]
+    pub base_asset_address: Address,
+    pub ir_alpha: u32,
+    pub ir_initial_rate: u32,
+    pub ir_max_rate: u32,
+    pub ir_scaling_coeff: u32,
+    pub base_asset_decimals: u32,
+    pub initial_health: u32,
+    pub grace_period: u64,
+    pub timestamp_window: u64,
+    pub flash_loan_fee: u32,
+    pub user_assets_limit: u32,
+    pub min_collat_amount: i128,
+    pub min_debt_amount: i128,
+    pub liquidation_protocol_fee: u32,
 }
 
-pub(crate) fn reserve_used_as_collateral_enabled(e: &Env, who: &Address, asset: &Address) {
-    let topics = (Symbol::new(e, "reserve_used_as_coll_enabled"), who.clone());
-    e.events().publish(topics, asset.clone());
+#[contractevent(topics=["reserve_used_as_coll_enabled"], data_format = "single-value")]
+pub(crate) struct ReserveUsedAsCollEnabledEvent {
+    #[topic]
+    pub who: Address,
+    pub asset: Address,
 }
 
-pub(crate) fn reserve_used_as_collateral_disabled(e: &Env, who: &Address, asset: &Address) {
-    let topics = (Symbol::new(e, "reserve_used_as_coll_disabled"), who.clone());
-    e.events().publish(topics, asset.clone());
+#[contractevent(topics=["reserve_used_as_coll_disabled"], data_format = "single-value")]
+pub(crate) struct ReserveUsedAsCollDisabledEvent {
+    #[topic]
+    pub who: Address,
+    pub asset: Address,
 }
 
-pub(crate) fn deposit(e: &Env, who: &Address, asset: &Address, amount: i128) {
-    let topics = (symbol_short!("deposit"), who.clone());
-    e.events().publish(topics, (asset.clone(), amount));
+#[contractevent(topics=["deposit"], data_format = "map")]
+pub(crate) struct DepositEvent {
+    #[topic]
+    pub who: Address,
+    pub asset: Address,
+    pub amount: i128,
 }
 
-pub(crate) fn withdraw(e: &Env, who: &Address, asset: &Address, to: &Address, amount: i128) {
-    let topics = (symbol_short!("withdraw"), who.clone());
-    e.events().publish(topics, (to, asset.clone(), amount));
+#[contractevent(topics=["withdraw"], data_format = "map")]
+pub(crate) struct WithdrawEvent {
+    #[topic]
+    pub who: Address,
+    pub to: Address,
+    pub asset: Address,
+    pub amount: i128,
 }
 
-pub(crate) fn borrow(e: &Env, who: &Address, asset: &Address, amount: i128) {
-    let topics = (symbol_short!("borrow"), who.clone());
-    e.events().publish(topics, (asset.clone(), amount));
+#[contractevent(topics=["borrow"], data_format = "map")]
+pub(crate) struct BorrowEvent {
+    #[topic]
+    pub who: Address,
+    pub asset: Address,
+    pub amount: i128,
 }
 
-pub(crate) fn repay(e: &Env, who: &Address, asset: &Address, amount: i128) {
-    let topics = (symbol_short!("repay"), who.clone());
-    e.events().publish(topics, (asset.clone(), amount));
+#[contractevent(topics=["repay"], data_format = "map")]
+pub(crate) struct RepayEvent {
+    #[topic]
+    pub who: Address,
+    pub asset: Address,
+    pub amount: i128,
 }
 
-pub(crate) fn collat_config_change(e: &Env, asset: &Address, params: &CollateralParamsInput) {
-    let topics = (Symbol::new(e, "collat_config_change"), asset.clone());
-    e.events().publish(
-        topics,
-        (
-            params.liq_cap,
-            params.pen_order,
-            params.util_cap,
-            params.discount,
-        ),
-    );
+#[contractevent(topics=["collat_config_change"], data_format = "map")]
+pub(crate) struct CollatConfigChangeEvent {
+    #[topic]
+    pub asset: Address,
+    pub liq_cap: i128,
+    pub pen_order: u32,
+    pub util_cap: u32,
+    pub discount: u32,
 }
 
-pub(crate) fn borrowing_enabled(e: &Env, asset: &Address) {
-    let topics = (Symbol::new(e, "borrowing_enabled"), asset.clone());
-    e.events().publish(topics, ());
+#[contractevent(topics=["borrowing_enabled"], data_format = "single-value")]
+pub(crate) struct BorrowingEnabledEvent {
+    #[topic]
+    pub asset: Address,
 }
 
-pub(crate) fn borrowing_disabled(e: &Env, asset: &Address) {
-    let topics = (Symbol::new(e, "borrowing_disabled"), asset.clone());
-    e.events().publish(topics, ());
+#[contractevent(topics=["borrowing_disabled"], data_format = "single-value")]
+pub(crate) struct BorrowingDisabledEvent {
+    #[topic]
+    pub asset: Address,
 }
 
-pub(crate) fn reserve_status_changed(e: &Env, asset: &Address, activated: bool) {
-    let topics = (asset.clone(),);
-    e.events().publish(topics, activated);
+#[contractevent(topics=["reserve_status_changed"], data_format = "single-value")]
+pub(crate) struct ReserveStatusChangedEvent {
+    #[topic]
+    pub asset: Address,
+    pub activated: bool,
 }
 
-pub(crate) fn liquidation(e: &Env, who: &Address, covered_debt: i128, liquidated_collateral: i128) {
-    let topics = (Symbol::new(e, "liquidation"), who.clone());
-    e.events()
-        .publish(topics, (covered_debt, liquidated_collateral));
+#[contractevent(topics=["liquidation"], data_format = "map")]
+pub(crate) struct LiquidationEvent {
+    #[topic]
+    pub who: Address,
+    pub covered_debt: i128,
+    pub liquidated_collateral: i128,
 }
 
-pub(crate) fn flash_loan(
-    e: &Env,
-    who: &Address,
-    receiver: &Address,
-    asset: &Address,
-    amount: i128,
-    premium: i128,
-    borrow: bool,
-) {
-    let topics = (Symbol::new(e, "flash_loan"), who, receiver, asset);
-    e.events().publish(topics, (amount, premium, borrow));
+#[contractevent(topics=["flash_loan"], data_format = "map")]
+pub(crate) struct FlashLoanEvent {
+    #[topic]
+    pub who: Address,
+    #[topic]
+    pub receiver: Address,
+    #[topic]
+    pub asset: Address,
+    pub amount: i128,
+    pub premium: i128,
+    pub borrow: bool,
 }

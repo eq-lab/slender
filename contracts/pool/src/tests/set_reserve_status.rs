@@ -81,7 +81,7 @@ fn should_emit_events() {
             &env,
             (
                 sut.pool.address.clone(),
-                (&asset,).into_val(&env),
+                (Symbol::new(&env, "reserve_status_changed"), asset.clone()).into_val(&env),
                 (true).into_val(&env)
             ),
         ]
@@ -97,7 +97,7 @@ fn should_emit_events() {
             &env,
             (
                 sut.pool.address.clone(),
-                (&asset,).into_val(&env),
+                (Symbol::new(&env, "reserve_status_changed"), &asset).into_val(&env),
                 (false).into_val(&env)
             ),
         ]

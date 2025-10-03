@@ -1,43 +1,61 @@
-use soroban_sdk::{symbol_short, Address, Env, String, Symbol};
+use soroban_sdk::{contractevent, Address, String};
 
-pub(crate) fn approve(e: &Env, from: Address, to: Address, amount: i128, expiration_ledger: u32) {
-    let topics = (Symbol::new(e, "approve"), from, to);
-    e.events().publish(topics, (amount, expiration_ledger));
+#[contractevent(topics=["approve"], data_format = "map")]
+pub(crate) struct ApproveEvent {
+    #[topic]
+    pub from: Address,
+    #[topic]
+    pub to: Address,
+    pub amount: i128,
+    pub expiration_ledger: u32,
 }
 
-pub(crate) fn transfer(e: &Env, from: Address, to: Address, amount: i128) {
-    let topics = (symbol_short!("transfer"), from, to);
-    e.events().publish(topics, amount);
+#[contractevent(topics=["transfer"], data_format = "single-value")]
+pub(crate) struct TransferEvent {
+    #[topic]
+    pub from: Address,
+    #[topic]
+    pub to: Address,
+    pub amount: i128,
 }
 
-pub(crate) fn mint(e: &Env, admin: Address, to: Address, amount: i128) {
-    let topics = (symbol_short!("mint"), admin, to);
-    e.events().publish(topics, amount);
+#[contractevent(topics=["mint"], data_format = "single-value")]
+pub(crate) struct MintEvent {
+    #[topic]
+    pub admin: Address,
+    #[topic]
+    pub to: Address,
+    pub amount: i128,
 }
 
-pub(crate) fn clawback(e: &Env, from: Address, amount: i128) {
-    let topics = (symbol_short!("clawback"), from);
-    e.events().publish(topics, amount);
+#[contractevent(topics=["clawback"], data_format = "single-value")]
+pub(crate) struct ClawbackEvent {
+    #[topic]
+    pub from: Address,
+    pub amount: i128,
 }
 
-pub(crate) fn set_authorized(e: &Env, id: Address, authorize: bool) {
-    let topics = (Symbol::new(e, "set_authorized"), id);
-    e.events().publish(topics, authorize);
+#[contractevent(topics=["set_authorized"], data_format = "single-value")]
+pub(crate) struct SetAuthorizedEvent {
+    #[topic]
+    pub id: Address,
+    pub authorize: bool,
 }
 
-pub(crate) fn burn(e: &Env, from: Address, amount: i128) {
-    let topics = (symbol_short!("burn"), from);
-    e.events().publish(topics, amount);
+#[contractevent(topics=["burn"], data_format = "single-value")]
+pub(crate) struct BurnEvent {
+    #[topic]
+    pub from: Address,
+    pub amount: i128,
 }
 
-pub(crate) fn initialized(
-    e: &Env,
-    underlying_asset: Address,
-    pool: Address,
-    decimals: u32,
-    name: String,
-    symbol: String,
-) {
-    let topics = (symbol_short!("init"), underlying_asset, pool);
-    e.events().publish(topics, (decimals, name, symbol));
+#[contractevent(topics=["initialized"], data_format = "map")]
+pub(crate) struct InitializedEvent {
+    #[topic]
+    pub underlying_asset: Address,
+    #[topic]
+    pub pool: Address,
+    pub decimals: u32,
+    pub name: String,
+    pub symbol: String,
 }

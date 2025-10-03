@@ -21,7 +21,7 @@ use super::sut::{
     create_pool_contract, create_price_feed_contract, create_s_token_contract,
     create_token_contract, fill_pool, fill_pool_four, init_pool, set_time, DAY,
 };
-use super::upgrade::{debt_token_v2, pool_v2, s_token_v2};
+use super::upgrade::{debt_token_v100, pool_v100, s_token_v100};
 
 const CPU_LIMIT: u64 = 100_000_000;
 const MEM_LIMIT: u64 = 40 * 1024 * 1024;
@@ -644,10 +644,10 @@ fn upgrade() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let pool_v2_wasm = env.deployer().upload_contract_wasm(pool_v2::WASM);
+    let pool_v100_wasm = env.deployer().upload_contract_wasm(pool_v100::WASM);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.upgrade(&pool_v2_wasm);
+        sut.pool.upgrade(&pool_v100_wasm);
     });
 }
 
@@ -659,10 +659,10 @@ fn upgrade_s_token() {
     let sut = init_pool(&env, true);
     let asset = sut.reserves[0].token.address.clone();
 
-    let s_token_v2_wasm = env.deployer().upload_contract_wasm(s_token_v2::WASM);
+    let s_token_v100_wasm = env.deployer().upload_contract_wasm(s_token_v100::WASM);
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.upgrade_token(&asset, &true, &s_token_v2_wasm);
+        sut.pool.upgrade_token(&asset, &true, &s_token_v100_wasm);
     });
 }
 
@@ -672,11 +672,12 @@ fn upgrade_debt_token() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let debt_token_v2_wasm = env.deployer().upload_contract_wasm(debt_token_v2::WASM);
+    let debt_token_v100_wasm = env.deployer().upload_contract_wasm(debt_token_v100::WASM);
     let asset = sut.reserves[0].token.address.clone();
 
     measure_budget(&env, function_name!(), || {
-        sut.pool.upgrade_token(&asset, &false, &debt_token_v2_wasm);
+        sut.pool
+            .upgrade_token(&asset, &false, &debt_token_v100_wasm);
     });
 }
 
@@ -702,16 +703,12 @@ fn s_token_transfer() {
 }
 
 fn measure_budget(env: &Env, function: &str, callback: impl FnOnce()) {
-    let cpu_before = env.budget().cpu_instruction_cost();
-    let memory_before = env.budget().memory_bytes_cost();
+    env.cost_estimate().budget().reset_unlimited();
 
     callback();
 
-    let cpu_after = env.budget().cpu_instruction_cost();
-    let memory_after = env.budget().memory_bytes_cost();
-
-    let cpu = cpu_after - cpu_before;
-    let memory = memory_after - memory_before;
+    let cpu = env.cost_estimate().budget().cpu_instruction_cost();
+    let memory = env.cost_estimate().budget().memory_bytes_cost();
 
     let budget = &[
         std::format!("['{}'] = {{\n", function),

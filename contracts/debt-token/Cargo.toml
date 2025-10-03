@@ -3,6 +3,7 @@ name = "debt-token"
 version = "0.1.0"
 edition = "2021"
 authors = ["eq-lab"]
+publish = false
 description = "Debt-token contract"
 
 [lib]

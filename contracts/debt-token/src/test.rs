@@ -11,11 +11,12 @@ use crate::DebtToken;
 fn create_token<'a>(e: &Env) -> (DebtTokenClient<'a>, Address) {
     let pool = Address::generate(e);
 
-    let token = DebtTokenClient::new(e, &e.register_contract(None, DebtToken {}));
+    let token = DebtTokenClient::new(e, &e.register(DebtToken {}, ()));
 
     let underlying_asset = TokenClient::new(
         &e,
-        &e.register_stellar_asset_contract(Address::generate(&e)),
+        &e.register_stellar_asset_contract_v2(Address::generate(&e))
+            .address(),
     );
 
     token.initialize(
@@ -34,11 +35,12 @@ fn initialize() {
     e.mock_all_auths();
     let pool = Address::generate(&e);
 
-    let token = DebtTokenClient::new(&e, &e.register_contract(None, DebtToken {}));
+    let token = DebtTokenClient::new(&e, &e.register(DebtToken {}, ()));
 
     let underlying_asset = TokenClient::new(
         &e,
-        &e.register_stellar_asset_contract(Address::generate(&e)),
+        &e.register_stellar_asset_contract_v2(Address::generate(&e))
+            .address(),
     );
 
     token.initialize(

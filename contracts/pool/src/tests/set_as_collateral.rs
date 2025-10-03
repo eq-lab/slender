@@ -216,7 +216,7 @@ fn should_fail_when_collat_lt_min_position_amount() {
 
 /// Init for set_as_collateral tests.
 /// Returns Sut, user address, reserve index and token address
-fn init(env: &Env) -> (Sut, Address, u8, Address) {
+fn init(env: &'_ Env) -> (Sut<'_>, Address, u8, Address) {
     let sut = init_pool(env, false);
 
     let user = Address::generate(env);
@@ -231,7 +231,7 @@ fn init(env: &Env) -> (Sut, Address, u8, Address) {
 }
 
 /// Returns Sut, user address, collat reserve index, debt reserve index, collat token address, debt token address
-pub fn init_with_debt(env: &Env) -> (Sut, Address, (u8, u8), (Address, Address)) {
+pub fn init_with_debt(env: &'_ Env) -> (Sut<'_>, Address, (u8, u8), (Address, Address)) {
     let (sut, user, collat_reserve_index, collat_address) = init(env);
     let lender = Address::generate(env);
     let token_admin = &sut.reserves[1].token_admin;

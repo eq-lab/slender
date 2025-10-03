@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BASEDIR=$(dirname $0)
-BUILD=$BASEDIR/../../target/wasm32-unknown-unknown/release
+BUILD=$BASEDIR/../../target/wasm32v1-none/release
 
 source $BASEDIR/.$1.env
 
@@ -17,7 +17,7 @@ deploy() {
 
 install() {
     local hash
-    hash=$(stellar contract install \
+    hash=$(stellar contract upload \
         --wasm $1 \
         --source $2 \
         --rpc-url "$SOROBAN_RPC_URL" \

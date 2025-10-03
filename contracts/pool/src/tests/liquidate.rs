@@ -4,7 +4,7 @@ use common::FixedI128;
 use price_feed_interface::types::asset::Asset;
 use price_feed_interface::types::price_data::PriceData;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events};
-use soroban_sdk::{symbol_short, vec, IntoVal, Symbol};
+use soroban_sdk::{symbol_short, vec, IntoVal, Map, Symbol, Val};
 use tests::sut::set_time;
 
 use super::sut::fill_pool_six;
@@ -791,7 +791,20 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "liquidation"), borrower.clone()).into_val(&env),
-                (12_346_441_522i128, 15_434_514_766i128).into_val(&env)
+                Map::<Symbol, Val>::from_array(
+                    &env,
+                    [
+                        (
+                            Symbol::new(&env, "covered_debt"),
+                            12_346_441_522i128.into_val(&env)
+                        ),
+                        (
+                            Symbol::new(&env, "liquidated_collateral"),
+                            15_434_514_766i128.into_val(&env),
+                        ),
+                    ],
+                )
+                .into_val(&env)
             ),
         ]
     );

@@ -11,6 +11,7 @@ import {
     inPoolBalanceOf,
     init,
     mintUnderlyingTo,
+    protocolFee,
     repay,
     sTokenBalanceOf,
     sTokenTotalSupply,
@@ -22,8 +23,7 @@ import {
     borrower1Keys,
     borrower2Keys,
     lender1Keys,
-    lender2Keys,
-    treasuryKeys
+    lender2Keys
 } from "../soroban.config";
 // import { main } from '../release';
 import { assert, expect, use } from "chai";
@@ -36,7 +36,6 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
     let borrower1Address: string;
     let lender2Address: string;
     let borrower2Address: string;
-    let treasuryAddress: string;
 
     before(async function () {
         client = new SorobanClient();
@@ -51,7 +50,6 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         lender2Address = lender2Keys.publicKey();
         borrower1Address = borrower1Keys.publicKey();
         borrower2Address = borrower2Keys.publicKey();
-        treasuryAddress = treasuryKeys.publicKey();
 
         // uncomment to resume test with existing contracts
         // require("dotenv").config({ path: contractsFilename });
@@ -248,17 +246,19 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         // Borrower1 repays 1.0 XLM
         await repay(client, borrower1Keys, "XLM", 10_000_000n);
 
+        const sXlmTokenBalance = await tokenBalanceOf(client, "XLM", process.env.SLENDER_S_TOKEN_XLM);
         const borrower1XlmBalance = await tokenBalanceOf(client, "XLM", borrower1Address);
-        const treasuryXlmBalance = await tokenBalanceOf(client, "XLM", treasuryAddress);
         const borrower1DXlmBalance = await debtTokenBalanceOf(client, "XLM", borrower1Address);
         const sXlmBalance = await sTokenUnderlyingBalanceOf(client, "XLM");
+        const protocolFeeXlmBalance = await protocolFee(client, "XLM");
         const dXlmSupply = await debtTokenTotalSupply(client, "XLM");
 
         assert.equal(borrower1XlmBalance, 79_999_999n);
-        assert(treasuryXlmBalance > 0 && treasuryXlmBalance < 1_000n);
+        assert(protocolFeeXlmBalance > 0 && protocolFeeXlmBalance < 1_000n);
         assert(borrower1DXlmBalance > 80_000_000n
             && borrower1DXlmBalance < 80_010_000n);
-        assert.equal(sXlmBalance + treasuryXlmBalance, 10_000_000n);
+        assert.equal(sXlmBalance + protocolFeeXlmBalance, 10_000_000n);
+        assert.equal(sXlmTokenBalance, 10_000_000n);
         assert.equal(dXlmSupply, borrower1DXlmBalance);
     });
 
@@ -268,17 +268,17 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         await repay(client, borrower1Keys, "XLM", 90_000_000n);
 
         const borrower1XlmBalance = await tokenBalanceOf(client, "XLM", borrower1Address);
-        const treasuryXlmBalance = await tokenBalanceOf(client, "XLM", treasuryAddress);
+        const protocolFeeXlmBalance = await protocolFee(client, "XLM");
         const borrower1DXlmBalance = await debtTokenBalanceOf(client, "XLM", borrower1Address);
         const sXlmBalance = await sTokenUnderlyingBalanceOf(client, "XLM");
         const dXlmSupply = await debtTokenTotalSupply(client, "XLM");
 
         assert(borrower1XlmBalance < 10_000_000n
             && borrower1XlmBalance > 9_990_000n);
-        assert(treasuryXlmBalance > 0 && treasuryXlmBalance < 1_000n);
+        assert(protocolFeeXlmBalance > 0 && protocolFeeXlmBalance < 1_000n);
         assert.equal(borrower1DXlmBalance, 0n);
-        assert(sXlmBalance + treasuryXlmBalance > 90_000_000n
-            && sXlmBalance + treasuryXlmBalance < 90_010_000n);
+        assert(sXlmBalance + protocolFeeXlmBalance > 90_000_000n
+            && sXlmBalance + protocolFeeXlmBalance < 90_010_000n);
         assert.equal(dXlmSupply, borrower1DXlmBalance);
     });
 
@@ -288,17 +288,17 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         await repay(client, borrower2Keys, "XRP", 10_000_000_000n);
 
         const borrower2XrpBalance = await tokenBalanceOf(client, "XRP", borrower2Address);
-        const treasuryXrpBalance = await tokenBalanceOf(client, "XRP", treasuryAddress);
+        const protocolFeeXrpBalance = await protocolFee(client, "XRP");
         const borrower2DXrpBalance = await debtTokenBalanceOf(client, "XRP", borrower2Address);
         const sXrpBalance = await sTokenUnderlyingBalanceOf(client, "XRP");
         const dXrpSupply = await debtTokenTotalSupply(client, "XRP");
 
         assert(borrower2XrpBalance < 1_000_000_000n
             && borrower2XrpBalance > 999_000_000n);
-        assert(treasuryXrpBalance > 0 && treasuryXrpBalance < 100_000n);
+        assert(protocolFeeXrpBalance > 0 && protocolFeeXrpBalance < 100_000n);
         assert.equal(borrower2DXrpBalance, 0n);
-        assert(sXrpBalance + treasuryXrpBalance > 9_000_000_000n
-            && sXrpBalance + treasuryXrpBalance < 9_001_000_000n);
+        assert(sXrpBalance + protocolFeeXrpBalance > 9_000_000_000n
+            && sXrpBalance + protocolFeeXrpBalance < 9_001_000_000n);
         assert.equal(dXrpSupply, borrower2DXrpBalance);
     });
 
@@ -456,8 +456,9 @@ describe("LendingPool: Lenders get and borrowers pay interest when time passed",
         const borrower1InPoolBalanceAfter = await inPoolBalanceOf(client, "RWA", borrower1Address);
         const borrower1AccountPositionAfter = await accountPosition(client, borrower1Keys);
 
-        assert.equal(borrwer1RWABalanceAfter - borrwer1RWABalanceBefore, 0n);
-        assert.equal(borrower1InPoolBalanceBefore - borrower1InPoolBalanceAfter, 0n);
+        assert.equal(borrwer1RWABalanceBefore + toWithdraw, borrwer1RWABalanceAfter);
+        assert.equal(borrower1InPoolBalanceBefore - toWithdraw, 0n);
+        assert.equal(borrower1InPoolBalanceAfter, 0n);
         assert(borrower1AccountPositionBefore.npv > borrower1AccountPositionAfter.npv);
     })
 

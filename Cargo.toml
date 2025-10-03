@@ -32,10 +32,11 @@ inherits = "release"
 debug-assertions = true
 
 [workspace.dependencies.soroban-sdk]
-version = "21.0.1-preview.3"
+version = "23.0.2"
 
 [workspace.dependencies.soroban-token-sdk]
-version = "21.0.1-preview.3"
+version = "23.0.2"
 
 [workspace.dependencies.soroban-fixed-point-math]
-version = "1.1.1"
+git = "https://github.com/eq-lab/soroban-fixed-point-math"
+tag = "soroban-sdk-23.0.2"

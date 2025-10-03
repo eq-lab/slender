@@ -22,7 +22,7 @@ invoke() {
 }
 
 install() {
-    local hash=$(stellar contract install \
+    local hash=$(stellar contract upload \
         --wasm $1 \
         --source $2 \
         --rpc-url "$SOROBAN_RPC_URL" \
@@ -30,7 +30,7 @@ install() {
     echo $hash
 }
 
-POOL_HASH=$(install "../target/wasm32-unknown-unknown/release/pool.wasm" $ADMIN_SECRET)
+POOL_HASH=$(install "../target/wasm32v1-none/release/pool.wasm" $ADMIN_SECRET)
 echo "Pool wasm hash: $POOL_HASH"
 echo "$POOL_HASH">$BASEDIR/../artifacts/pool.wasm.upgrades.hash
 

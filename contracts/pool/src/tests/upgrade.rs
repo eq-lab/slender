@@ -7,16 +7,16 @@ use soroban_sdk::{symbol_short, vec, IntoVal};
 use crate::tests::sut::init_pool;
 use crate::*;
 
-pub mod pool_v2 {
-    soroban_sdk::contractimport!(file = "../../mocks/pool_v2_mock.wasm");
+pub mod pool_v100 {
+    soroban_sdk::contractimport!(file = "../../mocks/pool_v100_mock.wasm");
 }
 
-pub mod s_token_v2 {
-    soroban_sdk::contractimport!(file = "../../mocks/s_token_v2_mock.wasm");
+pub mod s_token_v100 {
+    soroban_sdk::contractimport!(file = "../../mocks/s_token_v100_mock.wasm");
 }
 
-pub mod debt_token_v2 {
-    soroban_sdk::contractimport!(file = "../../mocks/debt_token_v2_mock.wasm");
+pub mod debt_token_v100 {
+    soroban_sdk::contractimport!(file = "../../mocks/debt_token_v100_mock.wasm");
 }
 
 #[test]
@@ -25,7 +25,7 @@ fn should_require_admin() {
     env.mock_all_auths();
 
     let sut = init_pool(&env, true);
-    let pool_v2_wasm = env.deployer().upload_contract_wasm(pool_v2::WASM);
+    let pool_v2_wasm = env.deployer().upload_contract_wasm(pool_v100::WASM);
 
     sut.pool.upgrade(&pool_v2_wasm);
 
@@ -53,9 +53,9 @@ fn should_upgrade_contracts() {
     let sut = init_pool(&env, true);
     let asset = sut.reserves[0].token.address.clone();
 
-    let pool_v2_wasm = env.deployer().upload_contract_wasm(pool_v2::WASM);
-    let s_token_v2_wasm = env.deployer().upload_contract_wasm(s_token_v2::WASM);
-    let debt_token_v2_wasm = env.deployer().upload_contract_wasm(debt_token_v2::WASM);
+    let pool_v2_wasm = env.deployer().upload_contract_wasm(pool_v100::WASM);
+    let s_token_v2_wasm = env.deployer().upload_contract_wasm(s_token_v100::WASM);
+    let debt_token_v2_wasm = env.deployer().upload_contract_wasm(debt_token_v100::WASM);
 
     let pool_version_before = sut.pool.version();
     let s_token_version_before = sut.s_token().version();
@@ -69,10 +69,10 @@ fn should_upgrade_contracts() {
     let s_token_version_after = sut.s_token().version();
     let debt_token_version_after = sut.debt_token().version();
 
-    assert_eq!(pool_version_before, 1);
-    assert_eq!(pool_version_after, 2);
-    assert_eq!(s_token_version_before, 1);
-    assert_eq!(s_token_version_after, 2);
-    assert_eq!(debt_token_version_before, 1);
-    assert_eq!(debt_token_version_after, 2);
+    assert_eq!(pool_version_before, 2);
+    assert_eq!(pool_version_after, 100);
+    assert_eq!(s_token_version_before, 2);
+    assert_eq!(s_token_version_after, 100);
+    assert_eq!(debt_token_version_before, 2);
+    assert_eq!(debt_token_version_after, 100);
 }

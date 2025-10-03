@@ -22,7 +22,10 @@ impl Deployer {
         admin: Address,
         pool_config: PoolConfig,
     ) -> (Address, Val) {
-        let id = env.deployer().with_current_contract(salt).deploy(wasm_hash);
+        let id = env
+            .deployer()
+            .with_current_contract(salt)
+            .deploy_v2(wasm_hash, ());
         let init_fn = Symbol::new(&env, "initialize");
         let init_args = vec![&env, admin.into_val(&env), pool_config.into_val(&env)];
         let res: Val = env.invoke_contract(&id, &init_fn, init_args);
@@ -42,7 +45,10 @@ impl Deployer {
         pool: Address,
         underlying_asset: Address,
     ) -> (Address, Val) {
-        let id = env.deployer().with_current_contract(salt).deploy(wasm_hash);
+        let id = env
+            .deployer()
+            .with_current_contract(salt)
+            .deploy_v2(wasm_hash, ());
         let init_fn = Symbol::new(&env, "initialize");
         let init_args = vec![
             &env,
@@ -68,7 +74,10 @@ impl Deployer {
         pool: Address,
         underlying_asset: Address,
     ) -> (Address, Val) {
-        let id = env.deployer().with_current_contract(salt).deploy(wasm_hash);
+        let id = env
+            .deployer()
+            .with_current_contract(salt)
+            .deploy_v2(wasm_hash, ());
         let init_fn = Symbol::new(&env, "initialize");
         let init_args = vec![
             &env,

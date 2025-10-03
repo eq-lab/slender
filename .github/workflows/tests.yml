@@ -2,27 +2,26 @@ name: Linter and tests
 
 on:
   push:
-    branches: [ "master", "develop" ]
+    branches: ["master", "develop"]
   pull_request:
-    branches: [ "master", "develop" ]
+    branches: ["master", "develop"]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   tests:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Linter
-      run: make fmt-check
-    - name: Clippy
-      run: make clippy
-    - name: Test
-      run: |
-        rustup target add wasm32-unknown-unknown
-        make test
-    - name: Check
-      run: make check
+      - uses: actions/checkout@v3
+      - name: Linter
+        run: make fmt-check
+      - name: Clippy
+        run: make clippy
+      - name: Test
+        run: |
+          rustup target add wasm32v1-none
+          make test
+      - name: Check
+        run: make check

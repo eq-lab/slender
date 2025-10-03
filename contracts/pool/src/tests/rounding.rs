@@ -22,7 +22,7 @@ fn rounding_deposit_withdraw() {
     std::println!("debt coeff {:?}", sut.pool.debt_coeff(&token_address));
     // i = 1 will panic with s-token: invalid mint amount, cause mint_amount would be equal to 0
     for i in 2..101 {
-        env.budget().reset_unlimited();
+        env.cost_estimate().budget().reset_unlimited();
 
         let balance_before = sut.reserves[1].token.balance(&attacker);
         let s_balance_before = sut.reserves[1].s_token().balance(&attacker);
@@ -88,7 +88,7 @@ fn rounding_borrow_repay() {
     std::println!("debt coeff {:?}", sut.pool.debt_coeff(&token_address));
     // i = 1 will panic with zero or negative amount is not allowed, cause mint_amount would be equal to 0
     for i in 2..101 {
-        env.budget().reset_unlimited();
+        env.cost_estimate().budget().reset_unlimited();
 
         let balance_before = sut.reserves[1].token.balance(&attacker);
         let d_balance_before = sut.reserves[1].debt_token().balance(&attacker);

@@ -34,7 +34,7 @@ impl FlashLoanReceiverTrait for FlashLoanReceiver {
 
             let token_client = token::Client::new(&env, &asset.asset);
 
-            token_client.transfer(&initiator, &env.current_contract_address(), &asset.premium);
+            token_client.transfer(&initiator, env.current_contract_address(), &asset.premium);
 
             token_client.approve(
                 &env.current_contract_address(),

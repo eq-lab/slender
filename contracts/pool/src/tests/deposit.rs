@@ -1,7 +1,7 @@
 use crate::tests::sut::{fill_pool, init_pool, DAY};
 use crate::*;
 use soroban_sdk::testutils::{Address as _, AuthorizedFunction, Events};
-use soroban_sdk::{symbol_short, vec, IntoVal, Symbol};
+use soroban_sdk::{symbol_short, vec, IntoVal, Map, Symbol, Val};
 use tests::sut::set_time;
 
 #[test]
@@ -237,7 +237,17 @@ fn should_emit_events() {
             (
                 sut.pool.address.clone(),
                 (Symbol::new(&env, "deposit"), user.clone()).into_val(&env),
-                (token_address, 5_000_000_000i128).into_val(&env)
+                Map::<Symbol, Val>::from_array(
+                    &env,
+                    [
+                        (Symbol::new(&env, "asset"), token_address.into_val(&env),),
+                        (
+                            Symbol::new(&env, "amount"),
+                            5_000_000_000i128.into_val(&env),
+                        ),
+                    ],
+                )
+                .into_val(&env)
             ),
         ]
     );
